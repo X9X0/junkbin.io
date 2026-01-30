@@ -8,7 +8,8 @@ from .base import *
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[])
+# Always allow localhost and backend for health checks and internal communication
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) + ['localhost', 'backend', '127.0.0.1']
 
 # CORS - Restrict to specific origins
 CORS_ALLOW_ALL_ORIGINS = False
