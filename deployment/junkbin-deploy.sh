@@ -564,17 +564,31 @@ HOOK
 # Deploy application
 deploy_app() {
     log_step "Deploying Junkbin.io..."
-    
+
+    # Clear frontend build volume to prevent stale builds
+    log_info "Clearing frontend build volume..."
+    docker compose down frontend nginx 2>/dev/null || true
+
+    # Get the volume name (project name + volume name)
+    PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+    VOLUME_NAME="${PROJECT_NAME}_frontend_build"
+
+    # Remove the frontend build volume if it exists
+    if docker volume ls -q | grep -q "^${VOLUME_NAME}$"; then
+        docker volume rm "$VOLUME_NAME" 2>/dev/null || true
+        log_info "Removed stale frontend build volume"
+    fi
+
     # Build and start containers
     docker compose build
     docker compose up -d
-    
+
     # Wait for services to be ready
     sleep 15
-    
+
     # Collect static files
     docker compose exec -T backend python manage.py collectstatic --noinput
-    
+
     log_info "Application deployed successfully"
 }
 
