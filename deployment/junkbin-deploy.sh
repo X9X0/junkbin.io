@@ -228,7 +228,7 @@ install_nodejs() {
     # Install Node 22 LTS
     sudo -u $DEPLOY_USER bash -c "
         export NVM_DIR='$DEPLOY_HOME/.nvm'
-        [ -s '\$NVM_DIR/nvm.sh' ] && \. '\$NVM_DIR/nvm.sh'
+        [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
         nvm install $REQUIRED_NODE_MAJOR
         nvm alias default $REQUIRED_NODE_MAJOR
         nvm use default
@@ -249,7 +249,7 @@ build_frontend() {
     # Use nvm to ensure correct Node version
     sudo -u $DEPLOY_USER bash -c "
         export NVM_DIR='$DEPLOY_HOME/.nvm'
-        [ -s '\$NVM_DIR/nvm.sh' ] && \. '\$NVM_DIR/nvm.sh'
+        [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
         cd '$PWD'
 
         # Read .nvmrc if present
