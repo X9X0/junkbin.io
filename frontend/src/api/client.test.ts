@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { server } from '../test/mocks/server';
 import { http, HttpResponse } from 'msw';
 import api from './client';
@@ -15,7 +15,7 @@ describe('API Client', () => {
     it('adds Authorization header when token exists', async () => {
       localStorage.setItem('access_token', 'my-access-token');
 
-      let capturedHeaders: Headers | null = null;
+      let capturedHeaders: Headers | undefined;
       server.use(
         http.get(`${API_URL}/test/`, ({ request }) => {
           capturedHeaders = request.headers;
@@ -25,11 +25,11 @@ describe('API Client', () => {
 
       await api.get('/test/');
 
-      expect(capturedHeaders?.get('Authorization')).toBe('Bearer my-access-token');
+      expect(capturedHeaders!.get('Authorization')).toBe('Bearer my-access-token');
     });
 
     it('does not add Authorization header when no token', async () => {
-      let capturedHeaders: Headers | null = null;
+      let capturedHeaders: Headers | undefined;
       server.use(
         http.get(`${API_URL}/test/`, ({ request }) => {
           capturedHeaders = request.headers;
@@ -39,7 +39,7 @@ describe('API Client', () => {
 
       await api.get('/test/');
 
-      expect(capturedHeaders?.get('Authorization')).toBeNull();
+      expect(capturedHeaders!.get('Authorization')).toBeNull();
     });
   });
 
@@ -81,9 +81,11 @@ describe('API Client', () => {
       localStorage.setItem('refresh_token', 'invalid-refresh-token');
 
       // Mock window.location
-      const originalLocation = window.location;
-      delete (window as any).location;
-      window.location = { href: '' } as Location;
+      const originalHref = window.location.href;
+      Object.defineProperty(window, 'location', {
+        value: { href: '' },
+        writable: true,
+      });
 
       server.use(
         http.get(`${API_URL}/protected/`, () => {
@@ -111,7 +113,10 @@ describe('API Client', () => {
       expect(window.location.href).toBe('/login');
 
       // Restore window.location
-      window.location = originalLocation;
+      Object.defineProperty(window, 'location', {
+        value: { href: originalHref },
+        writable: true,
+      });
     });
 
     it('does not retry if no refresh token exists', async () => {

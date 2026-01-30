@@ -121,7 +121,7 @@ export const handlers = [
   }),
 
   http.post(`${API_URL}/products/`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json(
       { ...mockProduct, ...body },
       { status: 201 }
@@ -165,7 +165,7 @@ export const handlers = [
   }),
 
   http.post(`${API_URL}/components/`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json() as Record<string, unknown>;
     return HttpResponse.json(
       { ...mockComponent, ...body },
       { status: 201 }

@@ -269,7 +269,7 @@ describe('Submit Page', () => {
       // Select component type - find the select that has "Select Type"
       const selects = screen.getAllByRole('combobox');
       const typeSelect = selects.find(s => s.textContent?.includes('Select Type') ||
-        Array.from(s.options).some((o: any) => o.text === 'Select Type...'));
+        Array.from((s as HTMLSelectElement).options).some((o) => o.text === 'Select Type...'));
       if (typeSelect) {
         await user.selectOptions(typeSelect, 'ic');
       }
@@ -281,7 +281,6 @@ describe('Submit Page', () => {
 
   describe('step indicators', () => {
     it('shows correct step as active', async () => {
-      const user = userEvent.setup();
       render(<Submit />);
 
       // Check step 1 is active initially

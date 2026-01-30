@@ -42,10 +42,8 @@ describe('Login Page', () => {
 
   describe('form validation', () => {
     it('requires username and password', async () => {
-      const user = userEvent.setup();
       render(<Login />);
 
-      const submitButton = screen.getByRole('button', { name: /LOGIN/i });
       const usernameInput = screen.getByPlaceholderText(/Enter username/i);
       const passwordInput = screen.getByPlaceholderText(/Enter password/i);
 

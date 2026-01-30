@@ -179,9 +179,7 @@ describe('ImageUpload', () => {
         expect(screen.getByText(/1 image ready/i)).toBeInTheDocument();
       });
 
-      // Find and click remove button (X icon)
-      const removeButton = screen.getByRole('button', { name: '' }); // X button has no accessible name
-      // We need a better way to find it - look for the card and its button
+      // Find and click remove button - look for the card and its button
       const card = screen.getByText(/remove.jpg/i).closest('.card-cyber');
       const removeBtn = card?.querySelector('button');
       if (removeBtn) {
