@@ -1,0 +1,131 @@
+# Junkbin.io
+
+> "NO USER SERVICEABLE PARTS INSIDE" - We respectfully disagree.
+
+A community-driven database for documenting electronic components found in consumer electronics. Transform e-waste into a searchable salvage ground for repair and DIY projects.
+
+## 🎯 Mission
+
+Help people repair their devices by cataloging which consumer products contain specific electronic components. Turn landfill-bound electronics into a valuable parts database.
+
+## ✨ Features
+
+- **Product Database**: Document make, model, revision, and region
+- **Component Catalog**: Cross-reference ICs, FETs, passives, and modules
+- **Visual Documentation**: High-res PCB photos with component locations
+- **Smart Search**: Find products containing specific parts
+- **Community Moderation**: Report inaccuracies, build reputation
+- **Dual Submission Levels**: Basic (major components) or Advanced (everything)
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Git
+- Linux server (Ubuntu 22.04+, Fedora 39+, Arch, or Debian 12+)
+- Domain name (for SSL)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/junkbin.io.git
+cd junkbin.io
+
+# Run deployment script
+chmod +x deployment/junkbin-deploy.sh
+sudo ./deployment/junkbin-deploy.sh
+
+# Follow the prompts for:
+# - Domain name
+# - Email for SSL certificates
+# - Admin credentials
+```
+
+### Manual Development Setup
+
+```bash
+# Backend
+cd backend
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py createsuperuser
+python manage.py runserver
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+## 📖 Documentation
+
+- [Full Roadmap](docs/ROADMAP.md) - Complete project plan
+- [API Documentation](docs/API.md) - RESTful API reference
+- [Contributing Guide](docs/CONTRIBUTING.md) - How to contribute
+- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
+- [User Guide](docs/USER_GUIDE.md) - Using the platform
+
+## 🎨 Tech Stack
+
+### Backend
+- Django 5.x + Django REST Framework
+- PostgreSQL 15+
+- Redis 7+
+- Celery
+
+### Frontend
+- React 18+ with Vite
+- Tailwind CSS
+- Material-UI / Chakra UI
+- React Query
+
+### Infrastructure
+- Docker & Docker Compose
+- Nginx
+- Let's Encrypt SSL
+- MinIO / S3 storage
+
+## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details.
+
+### Areas We Need Help
+
+- [ ] Component database population
+- [ ] PCB photography
+- [ ] Code contributions
+- [ ] Documentation
+- [ ] UI/UX design
+- [ ] Testing
+
+## 📜 License
+
+- **Code**: MIT License
+- **User Content**: Creative Commons BY-SA 4.0
+
+See [LICENSE](LICENSE) for details.
+
+## 🔒 Security
+
+Found a security issue? Please email security@junkbin.io instead of creating a public issue.
+
+## 🌟 Acknowledgments
+
+- Inspired by Wikipedia's collaborative model
+- Built for the right-to-repair community
+- Dedicated to reducing e-waste
+
+## 📞 Contact
+
+- **Website**: https://junkbin.io
+- **Discord**: [Join our community](#)
+- **Email**: hello@junkbin.io
+- **Twitter**: [@junkbin_io](#)
+
+---
+
+*"They tried to hide the parts. We're bringing them to light."*

@@ -1,0 +1,687 @@
+# Junkbin.io - Project Roadmap
+## "NO USER SERVICEABLE PARTS INSIDE" - The E-Waste Salvage Database
+
+---
+
+## Project Vision
+
+A community-driven database documenting electronic components found in consumer electronics, transforming e-waste into a searchable parts catalog for repair and salvage purposes. Think Wikipedia meets Octopart for teardown documentation.
+
+---
+
+## Core Concept
+
+Users document components inside consumer electronics by posting:
+- Make, model, revision, region
+- High-quality PCB photos
+- Bill of materials (BOM)
+- Component locations and reference designators
+
+Other users can search this database to find which consumer products contain specific components they need for repairs.
+
+---
+
+## Tech Stack
+
+### Backend
+- **Framework**: Django 5.x (Python 3.11+)
+  - Built-in admin panel
+  - Django REST Framework for API
+  - Django-allauth for OAuth/SSO
+  - Django-moderation for content review
+- **Database**: PostgreSQL 15+
+  - Full-text search capabilities
+  - JSONB for flexible component metadata
+  - PostGIS for potential future geolocation features
+- **Cache/Queue**: Redis 7+
+  - Session management
+  - Celery task queue
+  - Search result caching
+- **Task Queue**: Celery
+  - Email verification
+  - Image processing and thumbnail generation
+  - Periodic cleanup tasks
+  - Report aggregation
+
+### Frontend
+- **Framework**: React 19 with Vite 7.3 (Node.js 22 via nvm)
+- **UI Library**: Custom components with Lucide React icons
+- **Styling**: Tailwind CSS v3 with custom cyberpunk theme
+- **State Management**: React Query 5.x + Context API (AuthContext)
+- **Image Handling**: Custom ImageUpload component with drag & drop
+
+### Infrastructure
+- **Containerization**: Docker + Docker Compose
+- **Web Server**: Nginx (reverse proxy, static file serving)
+- **SSL/TLS**: Let's Encrypt with certbot
+- **Storage**: 
+  - Local filesystem (development)
+  - MinIO or AWS S3 (production)
+- **Backup**: Automated PostgreSQL dumps + file storage sync
+- **Monitoring**: 
+  - Prometheus + Grafana (future)
+  - Basic health check endpoints (MVP)
+
+### Deployment Targets
+- Ubuntu 22.04/24.04 LTS
+- Fedora 39+
+- Arch Linux
+- Debian 12+
+- Any systemd-based Linux distribution
+
+---
+
+## Database Schema
+
+### Core Tables
+
+#### 1. Users (Extended Django User)
+```
+- id (UUID)
+- username
+- email
+- email_verified
+- oauth_provider (google, github, microsoft, null)
+- reputation_score (calculated)
+- contribution_count
+- report_count (times user's content was reported)
+- review_count (times user's content triggered review)
+- is_trusted (boolean, earned status)
+- created_at
+- last_login
+```
+
+#### 2. Products
+```
+- id (UUID)
+- manufacturer
+- model_number
+- revision (optional)
+- region (US, EU, JP, etc.)
+- category (TV, Router, Phone, etc.)
+- year_manufactured (optional)
+- fcc_id (optional)
+- description (text)
+- primary_image (reference)
+- created_at
+- updated_at
+- created_by (User FK)
+```
+
+#### 3. Components
+```
+- id (UUID)
+- part_number (indexed)
+- manufacturer
+- component_type (IC, FET, Resistor, Capacitor, Module, etc.)
+- package_type (SOT-23, SOIC-8, 0805, etc.)
+- description
+- datasheet_url
+- typical_function (voltage regulator, MCU, etc.)
+- created_at
+- updated_at
+- created_by (User FK)
+```
+
+#### 4. ProductComponents (Junction Table)
+```
+- id (UUID)
+- product_id (FK)
+- component_id (FK)
+- reference_designator (U1, R5, C12, etc.)
+- quantity
+- location_description (near HDMI port, on power board, etc.)
+- notes
+- image_reference (which image shows this component)
+- submission_level (basic, advanced)
+- created_at
+- created_by (User FK)
+```
+
+#### 5. Images
+```
+- id (UUID)
+- product_id (FK)
+- file_path
+- thumbnail_path
+- image_type (overview, closeup, backside, schematic)
+- caption
+- uploaded_at
+- uploaded_by (User FK)
+```
+
+#### 6. Submissions
+```
+- id (UUID)
+- product_id (FK)
+- submission_type (new_product, update_existing, component_addition)
+- submission_level (basic, advanced)
+- status (pending, approved, rejected)
+- submitted_at
+- submitted_by (User FK)
+- reviewed_at
+- reviewed_by (User FK, nullable)
+- review_notes
+```
+
+#### 7. Reports
+```
+- id (UUID)
+- reported_item_type (product, component, product_component)
+- reported_item_id (UUID)
+- reporter (User FK)
+- reason (incorrect_info, duplicate, spam, other)
+- description
+- status (pending, investigating, resolved, dismissed)
+- created_at
+- resolved_at
+- resolved_by (User FK, nullable)
+- resolution_notes
+```
+
+#### 8. UserReviews
+```
+- id (UUID)
+- user_id (FK to user being reviewed)
+- triggered_by (report_id FK)
+- review_type (manual, automatic_threshold)
+- status (pending, cleared, sanctioned)
+- created_at
+- reviewed_at
+- reviewer_id (User FK)
+- notes
+```
+
+---
+
+## Feature Breakdown
+
+### Phase 1: MVP (Weeks 1-6) ✅ COMPLETE
+
+#### Week 1-2: Infrastructure & Backend Foundation
+- [x] Set up development environment
+- [x] Create Django project structure
+- [x] Configure PostgreSQL database (SQLite for dev, PostgreSQL ready for prod)
+- [x] Implement core models (User, Product, Component, ProductComponent)
+- [x] Set up Django admin interface
+- [x] Create database migrations
+- [x] Implement basic API endpoints (CRUD for products)
+- [ ] Set up Redis and Celery (deferred to production)
+- [x] Configure email backend
+
+#### Week 2-3: Authentication & User Management
+- [x] Implement email/password registration
+- [x] Email verification workflow
+- [x] Google OAuth integration (django-allauth configured)
+- [x] Basic user profile pages
+- [x] Password reset functionality
+- [x] Session management (JWT with refresh tokens)
+
+#### Week 3-4: Core Submission Features
+- [x] Product submission form (backend)
+- [x] Image upload handling (with thumbnails via django-imagekit)
+- [x] Basic/Advanced submission levels
+- [x] Component search functionality
+- [x] Product-component linking
+- [x] Reference designator tracking
+
+#### Week 4-5: Frontend Development
+- [x] React project setup with Vite (Vite 7.3 + Node 22)
+- [x] Cyberpunk dark theme implementation (custom Tailwind theme)
+- [x] "NO USER SERVICEABLE PARTS INSIDE" Easter eggs
+- [x] Product listing page (search, filter, grid/list view)
+- [x] Product detail page (gallery, components, schematics, image upload)
+- [x] Component search interface (43 component types, cross-reference)
+- [x] Submission form UI (multi-step wizard)
+- [x] Image gallery with zoom (basic gallery implemented)
+
+#### Week 5-6: Admin & Moderation
+- [x] Admin dashboard for content review (Django admin)
+- [ ] Bulk user contribution review tools
+- [x] Basic moderation queue
+- [x] User contribution statistics
+- [x] Simple report system (3-strike moderation)
+
+### Phase 2: Enhanced Features (Weeks 7-14) 🔄 IN PROGRESS
+
+#### Week 7-8: Advanced Search & Filtering
+- [x] Multi-parameter search (products, components, schematics)
+- [x] Filter by manufacturer, category, region
+- [x] Component cross-reference search
+- [x] "Find products containing component X"
+- [ ] Search result caching
+- [x] Search suggestions/autocomplete (header dropdown with live results)
+
+#### Week 9-10: Reporting & Moderation System
+- [x] User report submission form (ReportModal component)
+- [ ] Report review workflow
+- [x] 3-strike automatic review trigger
+- [x] User reputation system (contribution_count, is_trusted)
+- [ ] Badge/achievement system
+- [x] Trusted user status
+
+#### Week 10-11: Data Import/Export
+- [ ] CSV bulk import tool
+- [x] BOM template downloads (CSV template + instructions)
+- [x] API for programmatic access (REST API complete)
+- [x] Export product data as CSV/JSON (JSON + BOM CSV export)
+- [ ] Batch component addition
+
+#### Week 12-13: Polish & UX Improvements
+- [x] Mobile responsive design (tabs, tables, forms, search)
+- [ ] Progressive Web App (PWA) capabilities
+- [x] Image optimization and lazy loading (LazyImage component)
+- [ ] Search performance optimization
+- [x] User onboarding flow (OnboardingTips component with dismissable tips)
+- [x] Tutorial/help system (Keyboard shortcuts modal, ? to open)
+
+#### Week 14: Testing & Documentation ✅ COMPLETE
+- [x] Unit tests for critical paths (pytest + vitest)
+- [x] Integration tests (backend workflow tests)
+- [x] API documentation (Swagger/OpenAPI via drf-spectacular)
+- [ ] User documentation
+- [x] Deployment documentation (junkbin-deploy.sh, backup.sh, restore.sh)
+- [ ] Security audit
+
+##### Test Coverage Implemented:
+**Backend (pytest + factory_boy):**
+- Users: Reputation system, trusted user promotion, permissions
+- Reports: 3-strike system, report resolution, user reviews
+- Submissions: Approval/rejection workflow, status transitions
+- Products: Slug generation, component counts, view counts
+- Components: Usage count tracking
+- Integration: Full submission workflow, reputation flow
+
+**Frontend (vitest + MSW + testing-library):**
+- AuthContext: Login, logout, token restoration
+- API Client: Token refresh, authorization headers, retry logic
+- Login/Register pages: Form validation, error handling
+- AddComponentForm: Search mode, new mode, submission
+- ImageUpload: File validation, drag/drop, upload
+- Submit wizard: Step progression, form validation
+
+### Phase 3: Advanced Features (Weeks 15-20)
+
+#### Community Features
+- [ ] User comments on products
+- [ ] Component verification voting
+- [ ] User-to-user messaging
+- [ ] Contribution leaderboards
+- [ ] Community guidelines enforcement
+
+#### Integration & Automation
+- [ ] Octopart API integration (component cross-reference)
+- [ ] DigiKey/Mouser API (availability/pricing)
+- [ ] Datasheet auto-linking
+- [ ] AI-assisted component recognition from images
+- [ ] iFixit integration for repair guides
+- [ ] Discord/Slack webhooks for notifications
+
+#### Advanced Analytics
+- [ ] Prometheus metrics
+- [ ] Grafana dashboards
+- [ ] Component popularity tracking
+- [ ] Search analytics
+- [ ] User engagement metrics
+
+---
+
+## Deployment Script Features
+
+The `junkbin-deploy.sh` script will handle:
+
+### Pre-flight Checks
+- Detect Linux distribution (Ubuntu/Debian/Fedora/Arch)
+- Check system requirements (RAM, disk space)
+- Verify user has sudo privileges
+- Check for port conflicts (80, 443, 5432, 6379)
+
+### Dependency Installation
+- Docker & Docker Compose
+- Git
+- SSL certificate tools (certbot)
+- System utilities (curl, wget, etc.)
+
+### Security Hardening
+- Configure firewall (ufw/firewalld)
+- Install and configure fail2ban
+- SSH hardening (disable root login, key-only auth)
+- Set up automatic security updates
+
+### Application Deployment
+- Clone repository
+- Create `.env` file from template
+- Generate secure random keys
+- Initialize database
+- Run migrations
+- Create superuser account
+- Collect static files
+- Start Docker containers
+
+### SSL/TLS Setup
+- Domain verification
+- Let's Encrypt certificate generation
+- Auto-renewal cron job
+- HTTPS redirect configuration
+
+### Backup Configuration
+- Daily PostgreSQL dumps
+- Image file backups
+- Retention policy (30 days)
+- Backup restoration testing
+
+### Monitoring Setup
+- Health check endpoints
+- Log rotation (logrotate)
+- Disk space monitoring
+- Service restart on failure (systemd)
+
+### Update & Maintenance
+- Pull latest code
+- Apply migrations
+- Restart services
+- Zero-downtime deployment (future)
+
+---
+
+## Cyberpunk Aesthetic Elements
+
+### Color Palette (Implemented)
+- **cyber-black**: #0a0a0f (deep black)
+- **cyber-darker**: #0d0d14 (darker bg)
+- **cyber-dark**: #12121a (dark bg)
+- **cyber-gray**: #1a1a24 (card bg)
+- **cyber-light**: #2a2a3a (borders)
+- **cyber-cyan**: #05d9e8 (primary - products)
+- **cyber-pink**: #ff2a6d (secondary - components)
+- **cyber-green**: #39ff14 (tertiary - schematics)
+- **cyber-yellow**: #f9f002 (warning/featured)
+
+### Typography
+- **Headers**: Orbitron, Rajdhani, or Share Tech Mono
+- **Body**: Inter or Roboto
+- **Code/Technical**: Fira Code or JetBrains Mono
+
+### Visual Effects (Implemented)
+- [x] Scanlines overlay effect (.scanlines)
+- [x] Glitch text animation (.glitch with data-text)
+- [x] Neon glow on buttons and cards
+- [x] Grid background pattern
+- [x] Chromatic aberration on hover (.chromatic-aberration)
+- [x] CRT flicker effect (.crt)
+- [x] Terminal-styled inputs with glow (.terminal-input)
+- [x] Blinking cursor animation (.blink)
+- [x] Neon pulsing border (.neon-border)
+- [x] Static noise overlay (.noise)
+
+### "NO USER SERVICEABLE PARTS INSIDE" Placement
+1. **Background watermark** - Ghosted on main pages
+2. **Login page** - Diagonal across background
+3. **404 page** - Featured prominently with glitch effect
+4. **Favicon** - Stylized "NUSPI" or warning symbol
+5. **Page source comments** - ASCII art version
+6. **Footer** - Small text with strikethrough
+7. **About page** - Ironic mission statement
+8. **Loading screens** - Animated text
+9. **Error messages** - "WARNING: NO USER SERVICEABLE PARTS INSIDE... just kidding, tear it apart!"
+10. **Easter egg** - Konami code reveals full manifesto
+
+---
+
+## API Endpoints (RESTful)
+
+### Authentication
+- `POST /api/auth/register` - User registration
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `POST /api/auth/verify-email` - Email verification
+- `POST /api/auth/reset-password` - Password reset
+- `GET /api/auth/oauth/google` - Google OAuth
+
+### Products
+- `GET /api/products` - List products (paginated, filterable)
+- `POST /api/products` - Create product
+- `GET /api/products/{id}` - Get product details
+- `PUT /api/products/{id}` - Update product
+- `DELETE /api/products/{id}` - Delete product (admin only)
+- `GET /api/products/{id}/components` - Get product's component list
+- `POST /api/products/{id}/images` - Upload product images
+
+### Components
+- `GET /api/components` - Search components
+- `POST /api/components` - Create component
+- `GET /api/components/{id}` - Get component details
+- `PUT /api/components/{id}` - Update component
+- `GET /api/components/{id}/products` - Products containing this component
+
+### Submissions
+- `GET /api/submissions` - List pending submissions (admin)
+- `POST /api/submissions` - Submit new product/update
+- `PUT /api/submissions/{id}/approve` - Approve submission (admin)
+- `PUT /api/submissions/{id}/reject` - Reject submission (admin)
+
+### Reports
+- `POST /api/reports` - Submit report
+- `GET /api/reports` - List reports (admin)
+- `PUT /api/reports/{id}/resolve` - Resolve report (admin)
+
+### User
+- `GET /api/users/{id}` - Get user profile
+- `GET /api/users/{id}/contributions` - User's contributions
+- `GET /api/users/{id}/stats` - User statistics
+
+### Search
+- `GET /api/search/products?q={query}` - Search products
+- `GET /api/search/components?q={query}` - Search components
+- `GET /api/search/cross-reference?part={number}` - Find products with component
+
+---
+
+## Security Considerations
+
+### Authentication
+- bcrypt password hashing
+- JWT tokens with short expiration
+- Refresh token rotation
+- Rate limiting on auth endpoints
+- CAPTCHA on registration (optional)
+
+### Authorization
+- Role-based access control (User, Moderator, Admin)
+- Object-level permissions
+- API key rate limiting
+- CORS configuration
+
+### Data Protection
+- SQL injection prevention (ORM)
+- XSS protection (input sanitization)
+- CSRF tokens
+- Secure file uploads (type/size validation)
+- Image sanitization (strip EXIF data)
+
+### Infrastructure
+- HTTPS only (HSTS headers)
+- Security headers (CSP, X-Frame-Options)
+- Regular dependency updates
+- Automated security scanning
+- Log monitoring for suspicious activity
+
+---
+
+## Performance Optimization
+
+### Database
+- Proper indexing on search fields
+- Query optimization with select_related/prefetch_related
+- Database connection pooling
+- Read replicas for scaling (future)
+
+### Caching
+- Redis for session data
+- Query result caching
+- Static file CDN (future)
+- Browser caching headers
+
+### Frontend
+- Code splitting
+- Lazy loading images
+- Service worker for offline support
+- Optimized image formats (WebP)
+- Minification and compression
+
+---
+
+## Testing Strategy
+
+### Unit Tests ✅ IMPLEMENTED
+- Model validation (User, Product, Component, Submission, Report)
+- API endpoint responses (via MSW mocks)
+- Authentication flows (AuthContext, token refresh)
+- Permission checks (IsOwnerOrReadOnly, IsModerator, IsTrustedUser)
+
+**Backend Tools:** pytest, pytest-django, factory_boy
+**Frontend Tools:** vitest, @testing-library/react, msw
+
+### Integration Tests ✅ IMPLEMENTED
+- User registration to submission workflow
+- Submission approval → reputation gain flow
+- 3-strike system → user review trigger
+- Component linking → count updates
+- Report and moderation workflow
+
+### End-to-End Tests (Future)
+- Critical user journeys (Playwright/Cypress)
+- Cross-browser compatibility
+- Mobile responsiveness
+
+### Running Tests
+```bash
+# Backend
+cd backend
+DJANGO_SETTINGS_MODULE=config.settings.test pytest -v
+pytest --cov=apps --cov-report=html  # Coverage report
+
+# Frontend
+cd frontend
+npm run test           # Run all tests
+npm run test:coverage  # Coverage report
+```
+
+---
+
+## Success Metrics
+
+### Community Growth
+- New user registrations per month
+- Active contributors (>1 submission/month)
+- Total products documented
+- Total components cataloged
+- Geographic distribution
+
+### Engagement
+- Average submissions per user
+- Search queries per day
+- Component cross-references performed
+- Time on site
+- Return visitor rate
+
+### Quality
+- Report-to-submission ratio
+- Average time to review
+- User reputation distribution
+- Datasheet link completion rate
+
+---
+
+## Future Expansion Ideas
+
+### Technical
+- Mobile apps (iOS/Android)
+- Browser extension for inline shopping
+- API marketplace
+- Machine learning for component recognition
+- Blockchain verification (component authenticity)
+- 3D PCB visualization
+
+### Community
+- Regional chapters/meetups
+- Certification program for contributors
+- Bounty system for hard-to-find teardowns
+- Educational content (repair tutorials)
+- Sustainability impact tracking
+
+### Business
+- Premium features (API access, advanced analytics)
+- Partnerships with repair shops
+- Component marketplace integration
+- Repair service directory
+- Corporate sponsorships from manufacturers
+
+---
+
+## License & Legal
+
+### Code License
+- MIT or Apache 2.0 (open source)
+
+### Content License
+- Creative Commons BY-SA 4.0 for user contributions
+- Requires attribution
+- Allows commercial use
+- Share-alike provision
+
+### Terms of Service
+- User-generated content ownership
+- Right to remove inappropriate content
+- No warranty on data accuracy
+- DMCA compliance
+- GDPR compliance (right to deletion)
+
+---
+
+## Contributing Guidelines
+
+### Code Contributions
+- Fork and pull request workflow
+- Code style guide (PEP 8 for Python, ESLint for JS)
+- Required tests for new features
+- Documentation updates
+
+### Content Contributions
+- Photography guidelines (resolution, lighting, angles)
+- BOM formatting standards
+- Component naming conventions
+- Citation of sources
+
+---
+
+## Project Timeline Summary
+
+| Phase | Duration | Key Deliverables |
+|-------|----------|------------------|
+| Phase 1: MVP | 6 weeks | Core functionality, basic UI, deployment script |
+| Phase 2: Enhanced | 8 weeks | Advanced search, moderation, imports, polish |
+| Phase 3: Advanced | 6 weeks | Integrations, analytics, community features |
+| **Total** | **20 weeks** | **Fully-featured platform** |
+
+---
+
+## Next Steps
+
+1. ~~**Add schematic upload form**~~ ✅ - Schematic upload added to Product detail schematics tab
+2. ~~**Test infrastructure**~~ ✅ - Backend (pytest) and frontend (vitest) testing complete
+3. ~~**Implement global search**~~ ✅ - Global search page with tabbed results
+4. ~~**Add pagination**~~ ✅ - Products, components, and schematics list pages
+5. **Run tests and fix issues** - Execute `pytest` (backend) and `npm test` (frontend)
+6. **Mobile responsive polish** - Test and optimize for various screen sizes
+7. **User documentation** - Create user guide for contributors
+8. **Security audit** - Review authentication, permissions, and data validation
+9. **Production deployment** - Run `junkbin-deploy.sh` with PostgreSQL and SSL
+
+---
+
+*"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
+
+**Last Updated**: January 30, 2026
+**Version**: 1.2
+**Status**: MVP Complete - Phase 2 Testing Complete

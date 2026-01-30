@@ -1,0 +1,494 @@
+"""
+Django base settings for Junkbin.io
+
+Common settings shared across all environments.
+"""
+import os
+from pathlib import Path
+from datetime import timedelta
+
+import environ
+
+# Build paths inside the project like this: BASE_DIR / 'subdir'.
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# Initialize environment variables
+env = environ.Env(
+    DEBUG=(bool, False),
+    ALLOWED_HOSTS=(list, []),
+)
+
+# Read .env file if it exists
+environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
+
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production')
+
+# Application definition
+DJANGO_APPS = [
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    'django.contrib.sites',
+]
+
+THIRD_PARTY_APPS = [
+    'rest_framework',
+    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
+    'corsheaders',
+    'django_filters',
+    'drf_spectacular',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'django_celery_beat',
+    'django_celery_results',
+    'imagekit',
+    'storages',
+]
+
+LOCAL_APPS = [
+    'apps.users',
+    'apps.products',
+    'apps.components',
+    'apps.submissions',
+    'apps.reports',
+    'apps.api',
+]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+]
+
+ROOT_URLCONF = 'config.urls'
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [BASE_DIR / 'templates'],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+            ],
+        },
+    },
+]
+
+WSGI_APPLICATION = 'config.wsgi.application'
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Database
+DATABASES = {
+    'default': env.db('DATABASE_URL', default='postgres://junkbin:junkbin@localhost:5432/junkbin')
+}
+
+# Custom User Model
+AUTH_USER_MODEL = 'users.User'
+
+# Password validation
+AUTH_PASSWORD_VALIDATORS = [
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+]
+
+# Internationalization
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Media files (user uploads)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Sites framework
+SITE_ID = 1
+
+# =============================================================================
+# Django REST Framework
+# =============================================================================
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'apps.api.pagination.StandardResultsSetPagination',
+    'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '100/hour',
+        'user': '1000/hour',
+    },
+}
+
+# =============================================================================
+# Simple JWT
+# =============================================================================
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+    'ALGORITHM': 'HS256',
+    'AUTH_HEADER_TYPES': ('Bearer',),
+    'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
+    'USER_ID_FIELD': 'id',
+    'USER_ID_CLAIM': 'user_id',
+}
+
+# =============================================================================
+# DRF Spectacular (API Documentation)
+# =============================================================================
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Junkbin.io API',
+    'DESCRIPTION': 'Community-driven e-waste component database API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'TAGS': [
+        {'name': 'auth', 'description': 'Authentication endpoints'},
+        {'name': 'users', 'description': 'User management'},
+        {'name': 'products', 'description': 'Product documentation'},
+        {'name': 'components', 'description': 'Electronic components'},
+        {'name': 'submissions', 'description': 'Content submissions'},
+        {'name': 'reports', 'description': 'User reports'},
+        {'name': 'search', 'description': 'Search functionality'},
+    ],
+}
+
+# =============================================================================
+# Django Allauth
+# =============================================================================
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_LOGOUT_ON_GET = False
+ACCOUNT_LOGOUT_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/'
+LOGIN_URL = '/api/auth/login/'
+
+# Social Account Providers
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+        'APP': {
+            'client_id': env('OAUTH_GOOGLE_CLIENT_ID', default=''),
+            'secret': env('OAUTH_GOOGLE_CLIENT_SECRET', default=''),
+        }
+    }
+}
+
+# =============================================================================
+# Celery Configuration
+# =============================================================================
+CELERY_BROKER_URL = env('REDIS_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+# =============================================================================
+# Caching
+# =============================================================================
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': env('REDIS_URL', default='redis://localhost:6379/1'),
+    }
+}
+
+# =============================================================================
+# Email Configuration
+# =============================================================================
+EMAIL_BACKEND = env('EMAIL_BACKEND', default='django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = env('EMAIL_HOST', default='localhost')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@junkbin.io')
+
+# =============================================================================
+# File Storage
+# =============================================================================
+STORAGE_BACKEND = env('STORAGE_BACKEND', default='local')
+
+if STORAGE_BACKEND == 's3':
+    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+    AWS_ACCESS_KEY_ID = env('AWS_ACCESS_KEY_ID', default='')
+    AWS_SECRET_ACCESS_KEY = env('AWS_SECRET_ACCESS_KEY', default='')
+    AWS_STORAGE_BUCKET_NAME = env('AWS_STORAGE_BUCKET_NAME', default='')
+    AWS_S3_REGION_NAME = env('AWS_S3_REGION_NAME', default='us-east-1')
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+
+# =============================================================================
+# Image Processing
+# =============================================================================
+IMAGEKIT_DEFAULT_CACHEFILE_STRATEGY = 'imagekit.cachefiles.strategies.Optimistic'
+IMAGEKIT_CACHEFILE_DIR = 'cache'
+
+# Maximum upload sizes
+MAX_IMAGE_SIZE_MB = env.int('MAX_IMAGE_SIZE_MB', default=10)
+MAX_IMAGE_SIZE = MAX_IMAGE_SIZE_MB * 1024 * 1024  # Convert to bytes
+ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+
+# =============================================================================
+# Junkbin-Specific Settings
+# =============================================================================
+
+# Moderation settings
+REPORT_STRIKE_THRESHOLD = 3  # Number of reports before automatic review
+TRUSTED_USER_CONTRIBUTION_THRESHOLD = 50  # Contributions needed for trusted status
+TRUSTED_USER_MIN_REPUTATION = 100  # Minimum reputation for trusted status
+
+# Submission settings
+SUBMISSION_LEVELS = [
+    ('basic', 'Basic (Major Components Only)'),
+    ('advanced', 'Advanced (Complete BOM)'),
+]
+
+# Component types
+COMPONENT_TYPES = [
+    # Active components
+    ('ic', 'Integrated Circuit'),
+    ('mcu', 'Microcontroller'),
+    ('transistor', 'Transistor'),
+    ('mosfet', 'MOSFET'),
+    ('diode', 'Diode'),
+    ('regulator', 'Voltage Regulator'),
+    ('opamp', 'Op-Amp'),
+    # Passive components
+    ('resistor', 'Resistor'),
+    ('capacitor', 'Capacitor'),
+    ('inductor', 'Inductor'),
+    ('transformer', 'Transformer'),
+    ('crystal', 'Crystal/Oscillator'),
+    ('fuse', 'Fuse'),
+    ('ferrite', 'Ferrite Bead'),
+    # Electromechanical
+    ('relay', 'Relay'),
+    ('switch', 'Switch'),
+    ('connector', 'Connector'),
+    ('socket', 'Socket/Header'),
+    # RF/Wireless
+    ('antenna', 'Antenna'),
+    ('rf_module', 'RF Module'),
+    ('balun', 'Balun/Filter'),
+    # Power
+    ('battery', 'Battery/Cell'),
+    ('power_jack', 'Power Jack/Barrel'),
+    ('usb_port', 'USB Port'),
+    # Display/Output
+    ('led', 'LED'),
+    ('display', 'Display/LCD'),
+    ('speaker', 'Speaker/Buzzer'),
+    # Sensors
+    ('sensor', 'Sensor'),
+    ('thermistor', 'Thermistor/NTC'),
+    # Modules & Assemblies
+    ('module', 'Module/Daughter Board'),
+    ('pcb_assembly', 'PCB Assembly'),
+    # Cabling & Wiring
+    ('cable', 'Cable/Wire Harness'),
+    ('flex_cable', 'Flex Cable/FPC'),
+    ('coax', 'Coaxial Cable'),
+    # Other
+    ('heatsink', 'Heatsink'),
+    ('shield', 'EMI Shield'),
+    ('mechanical', 'Mechanical Part'),
+    ('other', 'Other'),
+]
+
+# Product categories
+PRODUCT_CATEGORIES = [
+    # Computing
+    ('desktop', 'Desktop Computer'),
+    ('laptop', 'Laptop/Notebook'),
+    ('tablet', 'Tablet'),
+    ('server', 'Server'),
+    ('sbc', 'Single Board Computer'),
+    # Mobile
+    ('phone', 'Smartphone'),
+    ('feature_phone', 'Feature Phone'),
+    ('pager', 'Pager/Beeper'),
+    # Display
+    ('tv', 'Television'),
+    ('monitor', 'Monitor'),
+    ('projector', 'Projector'),
+    # Networking
+    ('router', 'Router'),
+    ('modem', 'Modem'),
+    ('switch', 'Network Switch'),
+    ('access_point', 'Access Point'),
+    ('extender', 'Range Extender'),
+    # Audio/Video
+    ('audio', 'Audio Equipment'),
+    ('speaker', 'Speaker/Soundbar'),
+    ('headphones', 'Headphones/Earbuds'),
+    ('camera', 'Camera'),
+    ('camcorder', 'Camcorder'),
+    ('dvr', 'DVR/NVR'),
+    ('streaming', 'Streaming Device'),
+    # Gaming
+    ('gaming', 'Gaming Console'),
+    ('handheld', 'Handheld Gaming'),
+    ('controller', 'Game Controller'),
+    # Peripherals
+    ('keyboard', 'Keyboard'),
+    ('mouse', 'Mouse'),
+    ('printer', 'Printer'),
+    ('scanner', 'Scanner'),
+    ('webcam', 'Webcam'),
+    # Remote Controls
+    ('remote', 'Remote Control'),
+    ('universal_remote', 'Universal Remote'),
+    # Power
+    ('power_supply', 'Power Supply/Adapter'),
+    ('ups', 'UPS/Battery Backup'),
+    ('charger', 'Charger'),
+    ('power_strip', 'Power Strip/Surge Protector'),
+    # Storage
+    ('hdd', 'Hard Drive'),
+    ('ssd', 'SSD'),
+    ('nas', 'NAS'),
+    ('usb_drive', 'USB Drive'),
+    # Home Automation
+    ('iot', 'IoT Device'),
+    ('smart_home', 'Smart Home Hub'),
+    ('thermostat', 'Smart Thermostat'),
+    ('doorbell', 'Smart Doorbell'),
+    ('security_cam', 'Security Camera'),
+    # Appliances
+    ('appliance', 'Home Appliance'),
+    ('hvac', 'HVAC/Climate Control'),
+    ('kitchen', 'Kitchen Appliance'),
+    # Automotive
+    ('automotive', 'Automotive Electronics'),
+    ('dashcam', 'Dash Camera'),
+    ('gps', 'GPS/Navigation'),
+    ('obd', 'OBD Device'),
+    # Specialized
+    ('medical', 'Medical Device'),
+    ('industrial', 'Industrial Equipment'),
+    ('test_equipment', 'Test Equipment'),
+    ('radio', 'Radio/Transceiver'),
+    ('drone', 'Drone/UAV'),
+    # Other
+    ('other', 'Other'),
+]
+
+# Region codes
+REGIONS = [
+    ('us', 'United States'),
+    ('eu', 'European Union'),
+    ('uk', 'United Kingdom'),
+    ('jp', 'Japan'),
+    ('cn', 'China'),
+    ('kr', 'South Korea'),
+    ('tw', 'Taiwan'),
+    ('au', 'Australia'),
+    ('ca', 'Canada'),
+    ('global', 'Global/Universal'),
+    ('other', 'Other'),
+]
+
+# Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {process:d} {thread:d} {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'formatter': 'simple',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'apps': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+    },
+}

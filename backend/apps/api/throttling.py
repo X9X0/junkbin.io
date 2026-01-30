@@ -1,0 +1,64 @@
+"""
+Throttling classes for Junkbin.io API
+"""
+from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
+
+
+class BurstRateThrottle(UserRateThrottle):
+    """
+    Throttle for burst requests (e.g., rapid searches).
+
+    Allows short bursts but limits sustained high-frequency access.
+    """
+
+    scope = 'burst'
+
+
+class SustainedRateThrottle(UserRateThrottle):
+    """
+    Throttle for sustained request rate.
+
+    For regular API usage throughout the day.
+    """
+
+    scope = 'sustained'
+
+
+class SubmissionRateThrottle(UserRateThrottle):
+    """
+    Throttle for content submissions.
+
+    Prevents spam submissions.
+    """
+
+    scope = 'submission'
+
+
+class ReportRateThrottle(UserRateThrottle):
+    """
+    Throttle for report submissions.
+
+    Prevents report spam/abuse.
+    """
+
+    scope = 'report'
+
+
+class AuthRateThrottle(AnonRateThrottle):
+    """
+    Throttle for authentication endpoints.
+
+    Prevents brute force attacks.
+    """
+
+    scope = 'auth'
+
+
+class SearchRateThrottle(UserRateThrottle):
+    """
+    Throttle for search requests.
+
+    Search can be expensive, so we limit it more strictly.
+    """
+
+    scope = 'search'
