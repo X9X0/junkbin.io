@@ -462,13 +462,24 @@ EOF
 # Initialize database
 init_database() {
     log_step "Initializing database..."
-    
+
+    # Build backend image first
+    log_info "Building backend container..."
+    docker compose build backend
+
+    # Start database services and backend
+    log_info "Starting database services..."
     docker compose up -d postgres redis
     sleep 10  # Wait for PostgreSQL to start
-    
+
+    # Start backend container
+    log_info "Starting backend container..."
+    docker compose up -d backend
+    sleep 5  # Wait for backend to start
+
     docker compose exec -T backend python manage.py migrate
     log_info "Database migrations completed"
-    
+
     # Create superuser
     log_info "Creating admin superuser..."
     docker compose exec -T backend python manage.py createsuperuser --noinput || true
