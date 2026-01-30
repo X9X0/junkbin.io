@@ -248,6 +248,7 @@ build_frontend() {
 
     # Use nvm to ensure correct Node version
     sudo -u $DEPLOY_USER bash -c "
+        set -e
         export NVM_DIR='$DEPLOY_HOME/.nvm'
         [ -s \"\$NVM_DIR/nvm.sh\" ] && \. \"\$NVM_DIR/nvm.sh\"
         cd '$PWD'
@@ -257,8 +258,7 @@ build_frontend() {
             nvm use
         fi
 
-        npm ci
-        npm run build
+        npm ci && npm run build
     "
 
     cd ..
