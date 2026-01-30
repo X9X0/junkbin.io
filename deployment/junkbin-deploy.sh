@@ -126,19 +126,36 @@ check_requirements() {
     fi
 }
 
+# Clean up any existing containers from previous runs
+cleanup_existing() {
+    log_step "Cleaning up any existing containers..."
+
+    if command -v docker &> /dev/null && docker info &> /dev/null; then
+        # Stop any existing junkbin containers
+        if [ -f "docker-compose.yml" ]; then
+            docker compose down 2>/dev/null || true
+            log_info "Stopped existing containers"
+        fi
+    fi
+}
+
 # Check for port conflicts
 check_ports() {
     log_step "Checking for port conflicts..."
-    
+
     REQUIRED_PORTS=(80 443 5432 6379)
     CONFLICTS=()
-    
+
     for PORT in "${REQUIRED_PORTS[@]}"; do
-        if netstat -tuln 2>/dev/null | grep -q ":$PORT " || ss -tuln 2>/dev/null | grep -q ":$PORT "; then
-            CONFLICTS+=($PORT)
+        # Check if port is in use, but ignore docker-proxy (our own containers)
+        if ss -tuln 2>/dev/null | grep -q ":$PORT "; then
+            # Check if it's docker-proxy (from our own previous run)
+            if ! ss -tlnp 2>/dev/null | grep ":$PORT " | grep -q "docker-proxy"; then
+                CONFLICTS+=($PORT)
+            fi
         fi
     done
-    
+
     if [ ${#CONFLICTS[@]} -gt 0 ]; then
         log_error "Port conflicts detected on: ${CONFLICTS[*]}"
         log_error "Please free up these ports before continuing"
@@ -586,6 +603,7 @@ main() {
     check_root
     detect_os
     check_requirements
+    cleanup_existing
     check_ports
     install_dependencies
     install_nodejs
