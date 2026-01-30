@@ -268,48 +268,52 @@ build_frontend() {
 # Install Docker
 install_docker() {
     log_step "Installing Docker..."
-    
-    if command -v docker &> /dev/null; then
+
+    if ! command -v docker &> /dev/null; then
+        # Docker not installed, install it
+        case "$OS" in
+            ubuntu|debian)
+                # Add Docker's official GPG key
+                install -m 0755 -d /etc/apt/keyrings
+                curl -fsSL https://download.docker.com/linux/$OS/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+                chmod a+r /etc/apt/keyrings/docker.gpg
+
+                # Add Docker repository
+                echo \
+                  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS \
+                  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+                  tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+                apt-get update
+                apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                ;;
+            fedora)
+                dnf -y install dnf-plugins-core
+                dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+                dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                ;;
+            centos|rhel|almalinux|rocky)
+                dnf -y install dnf-plugins-core
+                dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                ;;
+            arch)
+                pacman -S --noconfirm docker docker-compose
+                ;;
+        esac
+        log_info "Docker installed: $(docker --version)"
+    else
         log_info "Docker already installed: $(docker --version)"
-        return
     fi
-    
-    case "$OS" in
-        ubuntu|debian)
-            # Add Docker's official GPG key
-            install -m 0755 -d /etc/apt/keyrings
-            curl -fsSL https://download.docker.com/linux/$OS/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-            chmod a+r /etc/apt/keyrings/docker.gpg
-            
-            # Add Docker repository
-            echo \
-              "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$OS \
-              $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-              tee /etc/apt/sources.list.d/docker.list > /dev/null
-            
-            apt-get update
-            apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            ;;
-        fedora)
-            dnf -y install dnf-plugins-core
-            dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
-            dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            ;;
-        centos|rhel|almalinux|rocky)
-            dnf -y install dnf-plugins-core
-            dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
-            dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-            ;;
-        arch)
-            pacman -S --noconfirm docker docker-compose
-            ;;
-    esac
-    
-    # Start and enable Docker
-    systemctl start docker
+
+    # Always ensure Docker is running and enabled
+    if ! systemctl is-active --quiet docker; then
+        log_info "Starting Docker daemon..."
+        systemctl start docker
+    fi
     systemctl enable docker
-    
-    log_info "Docker installed: $(docker --version)"
+
+    log_info "Docker daemon is running"
 }
 
 # Configure firewall
