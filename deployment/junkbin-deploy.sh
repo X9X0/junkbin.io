@@ -402,14 +402,21 @@ generate_secret_key() {
 # Create .env file
 create_env_file() {
     log_step "Creating environment configuration..."
-    
+
     read -p "Enter domain name (e.g., junkbin.io): " DOMAIN
     read -p "Enter admin email: " ADMIN_EMAIL
     read -p "Enter database password: " -s DB_PASSWORD
     echo
-    
+
+    # Export for use in other functions
+    export DOMAIN
+    export ADMIN_EMAIL
+
+    # Get server IP for ALLOWED_HOSTS
+    SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
+
     SECRET_KEY=$(generate_secret_key)
-    
+
     cat > .env << EOF
 # Junkbin.io Environment Configuration
 # Generated: $(date)
@@ -417,7 +424,7 @@ create_env_file() {
 # Django Settings
 SECRET_KEY='${SECRET_KEY}'
 DEBUG=False
-ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN}
+ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},${SERVER_IP}
 
 # Database
 DATABASE_URL=postgresql://junkbin:${DB_PASSWORD}@postgres:5432/junkbin
@@ -488,26 +495,70 @@ init_database() {
 # Setup SSL certificates
 setup_ssl() {
     log_step "Setting up SSL certificates..."
-    
+
     if [ "$DEV_MODE" = true ]; then
         log_warn "Development mode - skipping SSL setup"
         return
     fi
-    
-    read -p "Enter domain name: " DOMAIN
-    read -p "Enter email for Let's Encrypt: " LE_EMAIL
-    
-    certbot certonly --nginx \
-        -d $DOMAIN \
-        -d www.$DOMAIN \
-        --email $LE_EMAIL \
+
+    # Check if certificates already exist
+    if [ -f "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
+        log_info "SSL certificates already exist for ${DOMAIN}"
+        return
+    fi
+
+    # Install certbot if not present
+    if ! command -v certbot &> /dev/null; then
+        log_info "Installing certbot..."
+        case "$OS" in
+            ubuntu|debian)
+                apt-get install -y certbot
+                ;;
+            fedora|centos|rhel|almalinux|rocky)
+                dnf install -y certbot
+                ;;
+            arch)
+                pacman -S --noconfirm certbot
+                ;;
+        esac
+    fi
+
+    # Stop nginx to free port 80 for standalone mode
+    log_info "Stopping nginx for certificate acquisition..."
+    docker compose stop nginx 2>/dev/null || true
+
+    # Get certificate using standalone mode
+    log_info "Requesting SSL certificate for ${DOMAIN}..."
+    certbot certonly --standalone \
+        -d ${DOMAIN} \
+        -d www.${DOMAIN} \
+        --email ${ADMIN_EMAIL} \
         --agree-tos \
         --non-interactive
-    
-    # Setup auto-renewal
-    (crontab -l 2>/dev/null; echo "0 0 * * * certbot renew --quiet") | crontab -
-    
-    log_info "SSL certificates installed"
+
+    if [ $? -eq 0 ]; then
+        log_info "SSL certificates installed successfully"
+
+        # Setup auto-renewal with pre/post hooks to handle nginx
+        cat > /etc/letsencrypt/renewal-hooks/pre/stop-nginx.sh << 'HOOK'
+#!/bin/bash
+cd /root/junkbin.io && docker compose stop nginx
+HOOK
+        chmod +x /etc/letsencrypt/renewal-hooks/pre/stop-nginx.sh
+
+        cat > /etc/letsencrypt/renewal-hooks/post/start-nginx.sh << 'HOOK'
+#!/bin/bash
+cd /root/junkbin.io && docker compose start nginx
+HOOK
+        chmod +x /etc/letsencrypt/renewal-hooks/post/start-nginx.sh
+
+        log_info "Auto-renewal configured with nginx hooks"
+    else
+        log_warn "SSL certificate acquisition failed - site will run on HTTP only"
+    fi
+
+    # Restart nginx
+    docker compose start nginx 2>/dev/null || true
 }
 
 # Deploy application
