@@ -442,15 +442,15 @@ EOF
 init_database() {
     log_step "Initializing database..."
     
-    docker-compose up -d postgres redis
+    docker compose up -d postgres redis
     sleep 10  # Wait for PostgreSQL to start
     
-    docker-compose exec -T backend python manage.py migrate
+    docker compose exec -T backend python manage.py migrate
     log_info "Database migrations completed"
     
     # Create superuser
     log_info "Creating admin superuser..."
-    docker-compose exec -T backend python manage.py createsuperuser --noinput || true
+    docker compose exec -T backend python manage.py createsuperuser --noinput || true
 }
 
 # Setup SSL certificates
@@ -483,14 +483,14 @@ deploy_app() {
     log_step "Deploying Junkbin.io..."
     
     # Build and start containers
-    docker-compose build
-    docker-compose up -d
+    docker compose build
+    docker compose up -d
     
     # Wait for services to be ready
     sleep 15
     
     # Collect static files
-    docker-compose exec -T backend python manage.py collectstatic --noinput
+    docker compose exec -T backend python manage.py collectstatic --noinput
     
     log_info "Application deployed successfully"
 }
@@ -507,7 +507,7 @@ setup_backups() {
 BACKUP_DIR="/opt/junkbin-backups"
 DATE=$(date +%Y%m%d_%H%M%S)
 cd /opt/junkbin.io
-docker-compose exec -T postgres pg_dump -U junkbin junkbin | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
+docker compose exec -T postgres pg_dump -U junkbin junkbin | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
 tar -czf "$BACKUP_DIR/media_$DATE.tar.gz" backend/media/
 find "$BACKUP_DIR" -name "*.gz" -mtime +30 -delete
 EOF
@@ -538,13 +538,13 @@ Access Points:
 Next Steps:
   1. Configure OAuth credentials in .env file
   2. Configure email settings in .env file
-  3. Restart services: docker-compose restart
+  3. Restart services: docker compose restart
   4. Visit admin panel to create initial content
   
 Useful Commands:
-  - View logs: docker-compose logs -f
-  - Restart: docker-compose restart
-  - Stop: docker-compose down
+  - View logs: docker compose logs -f
+  - Restart: docker compose restart
+  - Stop: docker compose down
   - Update: ./junkbin-deploy.sh --update
   - Backup: ./junkbin-deploy.sh --backup
 
