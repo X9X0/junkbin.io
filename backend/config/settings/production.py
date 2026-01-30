@@ -49,17 +49,26 @@ PERMISSIONS_POLICY = {
 # =============================================================================
 # Email Configuration (Production)
 # =============================================================================
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = env('EMAIL_HOST')
-EMAIL_PORT = env.int('EMAIL_PORT', default=587)
-EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
-EMAIL_HOST_USER = env('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@junkbin.io')
-SERVER_EMAIL = env('SERVER_EMAIL', default='errors@junkbin.io')
+EMAIL_HOST = env('EMAIL_HOST', default='')
 
-# Require email verification in production
-ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+if EMAIL_HOST:
+    # SMTP configured - use real email
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+    EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+    EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+    EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+    EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+    DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default='noreply@junkbin.io')
+    SERVER_EMAIL = env('SERVER_EMAIL', default='errors@junkbin.io')
+    # Require email verification when SMTP is configured
+    ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
+else:
+    # No SMTP configured - use console backend (prints to logs)
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    DEFAULT_FROM_EMAIL = 'noreply@junkbin.io'
+    SERVER_EMAIL = 'errors@junkbin.io'
+    # Skip email verification when no SMTP
+    ACCOUNT_EMAIL_VERIFICATION = 'optional'
 
 # =============================================================================
 # Database Connection Pooling
