@@ -13,8 +13,11 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=[]) + ['localhost', 'backend',
 
 # CORS - Restrict to specific origins
 CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[])
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['https://junkbin.io', 'https://www.junkbin.io'])
 CORS_ALLOW_CREDENTIALS = True
+
+# CSRF - Required for Django 4.0+ with HTTPS
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['https://junkbin.io', 'https://www.junkbin.io'])
 
 # =============================================================================
 # Security Settings
