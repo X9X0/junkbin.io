@@ -227,3 +227,108 @@ class UserActivity(models.Model):
 
     def __str__(self):
         return f'{self.user.username} - {self.activity_type} at {self.created_at}'
+
+
+class AdminAuditLog(models.Model):
+    """
+    Audit log for admin actions to track who did what and when.
+    Critical for security monitoring and accountability.
+    """
+
+    class ActionType(models.TextChoices):
+        USER_TRUSTED = 'user_trusted', _('Granted Trusted Status')
+        USER_UNTRUSTED = 'user_untrusted', _('Revoked Trusted Status')
+        USER_MODERATOR = 'user_moderator', _('Granted Moderator Status')
+        USER_UNMODERATOR = 'user_unmoderator', _('Revoked Moderator Status')
+        USER_SUSPENDED = 'user_suspended', _('Suspended User')
+        USER_UNSUSPENDED = 'user_unsuspended', _('Unsuspended User')
+        PRODUCT_APPROVED = 'product_approved', _('Approved Product')
+        PRODUCT_UNAPPROVED = 'product_unapproved', _('Unapproved Product')
+        PRODUCT_FEATURED = 'product_featured', _('Featured Product')
+        SUBMISSION_APPROVED = 'submission_approved', _('Approved Submission')
+        SUBMISSION_REJECTED = 'submission_rejected', _('Rejected Submission')
+        COMPONENT_VERIFIED = 'component_verified', _('Verified Component')
+        REPORT_RESOLVED = 'report_resolved', _('Resolved Report')
+        OTHER = 'other', _('Other Action')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    admin_user = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='admin_actions',
+        help_text=_('Admin who performed the action')
+    )
+    action_type = models.CharField(
+        max_length=30,
+        choices=ActionType.choices
+    )
+    target_model = models.CharField(
+        max_length=100,
+        help_text=_('Model type affected (e.g., User, Product)')
+    )
+    target_id = models.CharField(
+        max_length=100,
+        help_text=_('ID of the affected object')
+    )
+    target_repr = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=_('String representation of the target at action time')
+    )
+    details = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=_('Additional action details and changes made')
+    )
+    ip_address = models.GenericIPAddressField(
+        null=True,
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('admin audit log')
+        verbose_name_plural = _('admin audit logs')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['admin_user', '-created_at']),
+            models.Index(fields=['action_type', '-created_at']),
+            models.Index(fields=['target_model', 'target_id']),
+        ]
+
+    def __str__(self):
+        return f'{self.admin_user} - {self.action_type} - {self.target_repr}'
+
+    @classmethod
+    def log_action(cls, request, action_type, target, details=None):
+        """
+        Helper method to log an admin action.
+
+        Args:
+            request: The HTTP request object
+            action_type: ActionType enum value
+            target: The object being acted upon
+            details: Optional dict of additional details
+        """
+        ip_address = None
+        if request:
+            x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+            if x_forwarded_for:
+                ip_address = x_forwarded_for.split(',')[0].strip()
+            else:
+                ip_address = request.META.get('REMOTE_ADDR')
+
+        return cls.objects.create(
+            admin_user=request.user if request and request.user.is_authenticated else None,
+            action_type=action_type,
+            target_model=target.__class__.__name__,
+            target_id=str(target.pk),
+            target_repr=str(target)[:255],
+            details=details or {},
+            ip_address=ip_address,
+        )

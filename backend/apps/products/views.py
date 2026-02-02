@@ -22,6 +22,7 @@ from .serializers import (
 )
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
+from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin
 
 
 @extend_schema_view(
@@ -69,7 +70,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         if self.action in ['create']:
             return [permissions.IsAuthenticated()]
         elif self.action in ['update', 'partial_update', 'destroy']:
-            return [permissions.IsAuthenticated()]
+            # Require authentication AND ownership (or staff/moderator)
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         return [permissions.AllowAny()]
 
     def retrieve(self, request, *args, **kwargs):
@@ -88,10 +90,11 @@ class ProductViewSet(viewsets.ModelViewSet):
             product.save(update_fields=['is_approved'])
 
     def perform_update(self, serializer):
-        # If not staff/moderator, reset approval status on edit
+        # Save the update (permission already checked by IsOwnerOrReadOnly)
         instance = serializer.save()
+        # Reset approval if non-staff/moderator edits an approved product
         if not self.request.user.is_staff and not self.request.user.is_moderator:
-            if instance.is_approved and instance.created_by != self.request.user:
+            if instance.is_approved:
                 instance.is_approved = False
                 instance.save(update_fields=['is_approved'])
 

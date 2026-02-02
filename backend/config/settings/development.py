@@ -21,6 +21,7 @@ ALLOWED_HOSTS = ['localhost', '127.0.0.1', '0.0.0.0', '*']
 
 # CORS - Allow all origins in development
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
 
 # Disable SSL/HTTPS requirements in development
 SECURE_SSL_REDIRECT = False

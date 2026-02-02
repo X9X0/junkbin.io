@@ -8,11 +8,16 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     """
     Object-level permission to only allow owners of an object to edit it.
     Assumes the model instance has a `created_by` attribute.
+    Staff and moderators can always edit.
     """
 
     def has_object_permission(self, request, view, obj):
         # Read permissions are allowed to any request
         if request.method in permissions.SAFE_METHODS:
+            return True
+
+        # Staff and moderators can always edit
+        if request.user.is_staff or getattr(request.user, 'is_moderator', False):
             return True
 
         # Check for created_by field

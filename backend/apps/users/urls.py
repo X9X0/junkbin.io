@@ -10,6 +10,8 @@ from .views import (
     CurrentUserView,
     PasswordChangeView,
     PreferencesView,
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
 )
 
 router = DefaultRouter()
@@ -20,5 +22,7 @@ urlpatterns = [
     path('auth/register/', UserRegistrationView.as_view(), name='register'),
     path('auth/me/', CurrentUserView.as_view(), name='current-user'),
     path('auth/password/change/', PasswordChangeView.as_view(), name='password-change'),
+    path('auth/password/reset/', PasswordResetRequestView.as_view(), name='password-reset-request'),
+    path('auth/password/reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path('auth/preferences/', PreferencesView.as_view(), name='preferences'),
 ]

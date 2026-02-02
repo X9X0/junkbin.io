@@ -6,10 +6,16 @@ Models for documenting consumer electronics products and their images.
 import uuid
 from django.db import models
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill, ResizeToFit
+
+
+# Allowed file extensions for uploads
+ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
+ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
 
 
 def product_image_path(instance, filename):
@@ -223,7 +229,8 @@ class ProductImage(models.Model):
     # Image file
     image = models.ImageField(
         upload_to=product_image_path,
-        help_text=_('High-resolution product image')
+        help_text=_('High-resolution product image'),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)]
     )
 
     # Generated thumbnails
@@ -338,7 +345,8 @@ class Schematic(models.Model):
     # File
     file = models.FileField(
         upload_to=schematic_file_path,
-        help_text=_('Schematic file (PDF, PNG, JPG, etc.)')
+        help_text=_('Schematic file (PDF, PNG, JPG, etc.)'),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_SCHEMATIC_EXTENSIONS)]
     )
     file_type = models.CharField(
         max_length=20,

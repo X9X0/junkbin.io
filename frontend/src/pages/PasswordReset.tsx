@@ -1,14 +1,12 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { LogIn, AlertCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Mail, AlertCircle, CheckCircle } from 'lucide-react';
+import api from '../api/client';
 
-export default function Login() {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+export default function PasswordReset() {
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -17,24 +15,45 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      await login({ username, password });
-      navigate('/');
+      await api.post('/auth/password/reset/', { email });
+      setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid credentials');
+      setError(err.response?.data?.error || 'Failed to send reset email');
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (success) {
+    return (
+      <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
+        <div className="w-full max-w-md">
+          <div className="card-cyber p-8 text-center">
+            <CheckCircle className="h-16 w-16 text-cyber-cyan mx-auto mb-4" />
+            <h1 className="font-display text-2xl font-bold text-white mb-4">
+              CHECK YOUR <span className="text-cyber-cyan">EMAIL</span>
+            </h1>
+            <p className="text-gray-400 mb-6">
+              If an account with that email exists, we've sent password reset instructions.
+            </p>
+            <Link to="/login" className="btn-cyber inline-block">
+              BACK TO LOGIN
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            SYSTEM <span className="text-cyber-cyan">LOGIN</span>
+            RESET <span className="text-cyber-cyan">PASSWORD</span>
           </h1>
           <p className="text-gray-500 font-mono text-sm">
-            Access the repair database
+            Enter your email to receive reset instructions
           </p>
         </div>
 
@@ -49,35 +68,16 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                USERNAME
+                EMAIL ADDRESS
               </label>
               <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="input-cyber"
-                placeholder="Enter username"
+                placeholder="Enter your email"
                 required
               />
-            </div>
-
-            <div>
-              <label className="block text-sm font-mono text-gray-400 mb-2">
-                PASSWORD
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="input-cyber"
-                placeholder="Enter password"
-                required
-              />
-              <div className="mt-2 text-right">
-                <Link to="/reset-password" className="text-sm text-cyber-cyan hover:underline">
-                  Forgot password?
-                </Link>
-              </div>
             </div>
 
             <button
@@ -86,11 +86,11 @@ export default function Login() {
               className="w-full btn-cyber flex items-center justify-center gap-2 py-3"
             >
               {isLoading ? (
-                <span className="animate-pulse">AUTHENTICATING...</span>
+                <span className="animate-pulse">SENDING...</span>
               ) : (
                 <>
-                  <LogIn className="h-4 w-4" />
-                  LOGIN
+                  <Mail className="h-4 w-4" />
+                  SEND RESET LINK
                 </>
               )}
             </button>
@@ -99,9 +99,9 @@ export default function Login() {
           <div className="divider-circuit" />
 
           <p className="text-center text-sm text-gray-500">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-cyber-cyan hover:underline">
-              Register
+            Remember your password?{' '}
+            <Link to="/login" className="text-cyber-cyan hover:underline">
+              Login
             </Link>
           </p>
         </div>

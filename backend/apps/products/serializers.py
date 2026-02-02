@@ -5,6 +5,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from .models import Product, ProductImage, Schematic
+from utils.file_validation import validate_image_file, validate_schematic_file
+from utils.image_processing import strip_exif
 
 User = get_user_model()
 
@@ -47,6 +49,20 @@ class ProductImageUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductImage
         fields = ['image', 'image_type', 'caption', 'display_order']
+
+    def validate_image(self, value):
+        """Validate image file and strip EXIF data for privacy."""
+        # Verify file content matches extension using magic bytes
+        validate_image_file(value)
+
+        # Strip EXIF data to protect user privacy (removes GPS, camera info, etc.)
+        stripped = strip_exif(value)
+        if stripped != value:
+            # Update the file with EXIF-stripped version
+            value.file = stripped
+            value.seek(0)
+
+        return value
 
 
 class CreatedBySerializer(serializers.ModelSerializer):
@@ -212,6 +228,11 @@ class SchematicUploadSerializer(serializers.ModelSerializer):
             'page_count', 'source_type', 'source_url', 'source_notes',
             'repair_relevance'
         ]
+
+    def validate_file(self, value):
+        """Validate schematic file content matches extension using magic bytes."""
+        validate_schematic_file(value)
+        return value
 
     def create(self, validated_data):
         validated_data['uploaded_by'] = self.context['request'].user

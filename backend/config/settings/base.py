@@ -51,6 +51,7 @@ THIRD_PARTY_APPS = [
     'django_celery_results',
     'imagekit',
     'storages',
+    'axes',
 ]
 
 LOCAL_APPS = [
@@ -66,12 +67,14 @@ INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'csp.middleware.CSPMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'axes.middleware.AxesMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
@@ -130,18 +133,32 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
+# Upload size limits (10 MB)
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Sites framework
 SITE_ID = 1
 
+# Frontend URL for password reset links
+FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
+
+# Admin URL (can be obfuscated for security)
+ADMIN_URL = env('ADMIN_URL', default='admin/')
+
+# Admin IP whitelist (empty = allow all, for development)
+# Example: ADMIN_ALLOWED_IPS=10.0.0.1,192.168.1.0/24
+ADMIN_ALLOWED_IPS = env.list('ADMIN_ALLOWED_IPS', default=[])
+
 # =============================================================================
 # Django REST Framework
 # =============================================================================
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'apps.users.authentication.CookieJWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
@@ -162,6 +179,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '100/hour',
         'user': '1000/hour',
+        'auth': '5/minute',
     },
 }
 
@@ -179,6 +197,14 @@ SIMPLE_JWT = {
     'AUTH_HEADER_NAME': 'HTTP_AUTHORIZATION',
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',
+
+    # HttpOnly cookie settings for XSS protection
+    'AUTH_COOKIE': 'access_token',
+    'AUTH_COOKIE_REFRESH': 'refresh_token',
+    'AUTH_COOKIE_SECURE': not DEBUG if 'DEBUG' in dir() else True,  # HTTPS only in production
+    'AUTH_COOKIE_HTTP_ONLY': True,  # Not accessible via JavaScript
+    'AUTH_COOKIE_SAMESITE': 'Lax',  # CSRF protection
+    'AUTH_COOKIE_PATH': '/',
 }
 
 # =============================================================================
@@ -205,6 +231,7 @@ SPECTACULAR_SETTINGS = {
 # Django Allauth
 # =============================================================================
 AUTHENTICATION_BACKENDS = [
+    'axes.backends.AxesStandaloneBackend',
     'django.contrib.auth.backends.ModelBackend',
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
@@ -233,6 +260,19 @@ SOCIALACCOUNT_PROVIDERS = {
         }
     }
 }
+
+# =============================================================================
+# Django Axes (Brute Force Protection)
+# =============================================================================
+AXES_FAILURE_LIMIT = 5  # Lock out after 5 failed attempts
+AXES_COOLOFF_TIME = 1  # Lock out for 1 hour (in hours)
+AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by username + IP combo
+AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
+AXES_LOCKOUT_CALLABLE = None  # Use default lockout response
+AXES_META_PRECEDENCE_ORDER = [
+    'HTTP_X_FORWARDED_FOR',
+    'REMOTE_ADDR',
+]
 
 # =============================================================================
 # Celery Configuration

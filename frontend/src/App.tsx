@@ -12,6 +12,8 @@ import Schematics from './pages/Schematics';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PasswordReset from './pages/PasswordReset';
+import PasswordResetConfirm from './pages/PasswordResetConfirm';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
 import './index.css';
@@ -43,6 +45,8 @@ function App() {
               <Route path="profile" element={<Profile />} />
               <Route path="login" element={<Login />} />
               <Route path="register" element={<Register />} />
+              <Route path="reset-password" element={<PasswordReset />} />
+              <Route path="reset-password/:uid/:token" element={<PasswordResetConfirm />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>

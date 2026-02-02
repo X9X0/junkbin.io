@@ -8,6 +8,9 @@ from .base import *
 DEBUG = False
 
 # Use faster password hasher for tests
+# NOTE: MD5 is intentionally used here for TEST SPEED ONLY.
+# This is NOT secure for production - it's only acceptable in tests
+# where password hashing happens frequently and security is not a concern.
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]

@@ -32,6 +32,12 @@ SECURE_HSTS_SECONDS = 31536000  # 1 year
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_HSTS_PRELOAD = True
 
+# Referrer Policy
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+# Cross-Origin Isolation Headers
+SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
+
 # Content Security Policy (via django-csp)
 CSP_DEFAULT_SRC = ("'self'",)
 CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
@@ -39,12 +45,42 @@ CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
 CSP_SCRIPT_SRC = ("'self'",)
 CSP_IMG_SRC = ("'self'", "data:", "https:")
 CSP_CONNECT_SRC = ("'self'",)
+CSP_FRAME_SRC = ("'none'",)
+CSP_OBJECT_SRC = ("'none'",)
+CSP_BASE_URI = ("'self'",)
+CSP_FORM_ACTION = ("'self'",)
+CSP_FRAME_ANCESTORS = ("'none'",)
+CSP_UPGRADE_INSECURE_REQUESTS = True
 
-# Permissions Policy
+# Permissions Policy - explicitly disable unnecessary browser features
 PERMISSIONS_POLICY = {
-    'geolocation': [],
-    'microphone': [],
+    'accelerometer': [],
+    'ambient-light-sensor': [],
+    'autoplay': [],
+    'battery': [],
     'camera': [],
+    'cross-origin-isolated': [],
+    'display-capture': [],
+    'document-domain': [],
+    'encrypted-media': [],
+    'execution-while-not-rendered': [],
+    'execution-while-out-of-viewport': [],
+    'fullscreen': [],
+    'geolocation': [],
+    'gyroscope': [],
+    'keyboard-map': [],
+    'magnetometer': [],
+    'microphone': [],
+    'midi': [],
+    'navigation-override': [],
+    'payment': [],
+    'picture-in-picture': [],
+    'publickey-credentials-get': [],
+    'screen-wake-lock': [],
+    'sync-xhr': [],
+    'usb': [],
+    'web-share': [],
+    'xr-spatial-tracking': [],
 }
 
 # =============================================================================
@@ -169,4 +205,14 @@ LOGGING = {
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'anon': '50/hour',
     'user': '500/hour',
+    'auth': '5/minute',
 }
+
+# =============================================================================
+# Admin Security
+# =============================================================================
+# Add admin IP whitelist middleware in production
+MIDDLEWARE.insert(
+    MIDDLEWARE.index('django.contrib.auth.middleware.AuthenticationMiddleware') + 1,
+    'apps.api.middleware.AdminIPWhitelistMiddleware'
+)

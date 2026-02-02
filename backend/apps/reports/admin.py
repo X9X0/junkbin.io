@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 
 from .models import Report, UserReview
+from apps.users.models import AdminAuditLog
 
 
 @admin.register(Report)
@@ -127,6 +128,12 @@ class UserReviewAdmin(admin.ModelAdmin):
                 UserReview.Status.CLEARED,
                 'Bulk cleared via admin'
             )
+            AdminAuditLog.log_action(
+                request,
+                AdminAuditLog.ActionType.OTHER,
+                review.user,
+                {'action': 'user_review_cleared', 'review_id': str(review.id)}
+            )
             count += 1
         self.message_user(request, f'{count} users cleared.')
 
@@ -139,10 +146,16 @@ class UserReviewAdmin(admin.ModelAdmin):
                 UserReview.Status.WARNING_ISSUED,
                 'Warning issued via admin'
             )
+            AdminAuditLog.log_action(
+                request,
+                AdminAuditLog.ActionType.OTHER,
+                review.user,
+                {'action': 'warning_issued', 'review_id': str(review.id)}
+            )
             count += 1
         self.message_user(request, f'{count} warnings issued.')
 
-    @admin.action(description='Suspend users')
+    @admin.action(description='SUSPEND users (deactivates accounts)')
     def suspend_users(self, request, queryset):
         count = 0
         for review in queryset.filter(status='pending'):
@@ -151,5 +164,20 @@ class UserReviewAdmin(admin.ModelAdmin):
                 UserReview.Status.SUSPENDED,
                 'Suspended via admin bulk action'
             )
+            # Log this critical action
+            AdminAuditLog.log_action(
+                request,
+                AdminAuditLog.ActionType.USER_SUSPENDED,
+                review.user,
+                {
+                    'review_id': str(review.id),
+                    'review_type': review.review_type,
+                    'trigger_report_count': review.trigger_report_count,
+                }
+            )
             count += 1
-        self.message_user(request, f'{count} users suspended.')
+        self.message_user(
+            request,
+            f'{count} users suspended. This action has been logged.',
+            level='warning'
+        )

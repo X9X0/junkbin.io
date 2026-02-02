@@ -8,7 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -18,24 +18,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('access_token');
-    if (token) {
-      auth.me()
-        .then(setUser)
-        .catch(() => {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-        })
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
+    // Check auth status by calling /me endpoint
+    // Tokens are now in HttpOnly cookies, so we just try the request
+    auth.me()
+      .then(setUser)
+      .catch(() => {
+        // Not authenticated or token invalid
+        setUser(null);
+      })
+      .finally(() => setIsLoading(false));
   }, []);
 
   const login = async (credentials: LoginCredentials) => {
-    const tokens = await auth.login(credentials);
-    localStorage.setItem('access_token', tokens.access);
-    localStorage.setItem('refresh_token', tokens.refresh);
+    // Login sets HttpOnly cookies automatically
+    await auth.login(credentials);
     const userData = await auth.me();
     setUser(userData);
   };
@@ -46,9 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login({ username: data.username, password: data.password });
   };
 
-  const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+  const logout = async () => {
+    try {
+      // Call logout endpoint to clear cookies and blacklist token
+      await auth.logout();
+    } catch {
+      // Ignore errors, still clear local state
+    }
     setUser(null);
   };
 

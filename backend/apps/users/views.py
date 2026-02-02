@@ -6,10 +6,14 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Count, Q
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from .serializers import (
@@ -19,8 +23,11 @@ from .serializers import (
     UserStatsSerializer,
     PasswordChangeSerializer,
     PreferencesSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmSerializer,
 )
 from .permissions import IsOwnerOrReadOnly
+from utils.email import send_password_reset_email
 
 User = get_user_model()
 
@@ -110,21 +117,48 @@ class UserRegistrationView(generics.CreateAPIView):
         responses={201: UserSerializer}
     )
     def create(self, request, *args, **kwargs):
+        from django.conf import settings
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
 
-        return Response({
+        response = Response({
             'user': UserSerializer(user).data,
             'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
+                'refresh': refresh_token,
+                'access': access_token,
             },
             'message': 'Registration successful. Please verify your email.'
         }, status=status.HTTP_201_CREATED)
+
+        # Set HttpOnly cookies for tokens
+        jwt_settings = settings.SIMPLE_JWT
+        response.set_cookie(
+            key=jwt_settings.get('AUTH_COOKIE', 'access_token'),
+            value=access_token,
+            httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
+            secure=jwt_settings.get('AUTH_COOKIE_SECURE', True),
+            samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+            path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+            max_age=int(jwt_settings['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+        )
+        response.set_cookie(
+            key=jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token'),
+            value=refresh_token,
+            httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
+            secure=jwt_settings.get('AUTH_COOKIE_SECURE', True),
+            samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+            path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+            max_age=int(jwt_settings['REFRESH_TOKEN_LIFETIME'].total_seconds()),
+        )
+
+        return response
 
 
 class CurrentUserView(APIView):
@@ -208,3 +242,83 @@ class PreferencesView(APIView):
         request.user.save(update_fields=['preferences'])
 
         return Response(serializer.data)
+
+
+class PasswordResetRequestView(APIView):
+    """Request a password reset email."""
+
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    @extend_schema(
+        description='Request a password reset email',
+        request=PasswordResetRequestSerializer,
+        responses={200: None}
+    )
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        email = serializer.validated_data['email']
+
+        try:
+            user = User.objects.get(email=email, is_active=True)
+            # Generate token and uid
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+            # Send reset email
+            send_password_reset_email(user, token, uid)
+        except User.DoesNotExist:
+            # Don't reveal whether email exists - always return success
+            pass
+
+        return Response({
+            'message': 'If an account with this email exists, a password reset link has been sent.'
+        })
+
+
+class PasswordResetConfirmView(APIView):
+    """Confirm password reset with token."""
+
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    @extend_schema(
+        description='Confirm password reset with token',
+        request=PasswordResetConfirmSerializer,
+        responses={200: None}
+    )
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        uid = serializer.validated_data['uid']
+        token = serializer.validated_data['token']
+        new_password = serializer.validated_data['new_password']
+
+        try:
+            # Decode uid to get user
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+
+            # Verify token
+            if not default_token_generator.check_token(user, token):
+                return Response(
+                    {'error': 'Invalid or expired reset link.'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Set new password
+            user.set_password(new_password)
+            user.save()
+
+            return Response({'message': 'Password has been reset successfully.'})
+
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response(
+                {'error': 'Invalid reset link.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )

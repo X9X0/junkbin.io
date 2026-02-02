@@ -3,14 +3,129 @@ API URL configuration for Junkbin.io
 
 All API endpoints are organized under /api/
 """
+from django.conf import settings
 from django.urls import path, include
+from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.views import APIView
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
     TokenRefreshView,
     TokenVerifyView,
 )
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .views import APIRootView, SearchView, HealthCheckView, StatsView
+
+
+def set_token_cookies(response, access_token, refresh_token=None):
+    """Set HttpOnly cookies for JWT tokens."""
+    jwt_settings = settings.SIMPLE_JWT
+
+    response.set_cookie(
+        key=jwt_settings.get('AUTH_COOKIE', 'access_token'),
+        value=access_token,
+        httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
+        secure=jwt_settings.get('AUTH_COOKIE_SECURE', True),
+        samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+        path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+        max_age=int(jwt_settings['ACCESS_TOKEN_LIFETIME'].total_seconds()),
+    )
+
+    if refresh_token:
+        response.set_cookie(
+            key=jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token'),
+            value=refresh_token,
+            httponly=jwt_settings.get('AUTH_COOKIE_HTTP_ONLY', True),
+            secure=jwt_settings.get('AUTH_COOKIE_SECURE', True),
+            samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
+            path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+            max_age=int(jwt_settings['REFRESH_TOKEN_LIFETIME'].total_seconds()),
+        )
+
+    return response
+
+
+def clear_token_cookies(response):
+    """Clear JWT token cookies."""
+    jwt_settings = settings.SIMPLE_JWT
+
+    response.delete_cookie(
+        key=jwt_settings.get('AUTH_COOKIE', 'access_token'),
+        path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+    )
+    response.delete_cookie(
+        key=jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token'),
+        path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+    )
+
+    return response
+
+
+class CookieTokenObtainPairView(TokenObtainPairView):
+    """Token obtain view that sets HttpOnly cookies."""
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        if response.status_code == 200 and 'access' in response.data:
+            response = set_token_cookies(
+                response,
+                response.data['access'],
+                response.data.get('refresh')
+            )
+            # Remove tokens from response body for cookie-based flow
+            # Keep them for backwards compatibility with localStorage clients
+        return super().finalize_response(request, response, *args, **kwargs)
+
+
+class CookieTokenRefreshView(TokenRefreshView):
+    """Token refresh view that reads from and sets HttpOnly cookies."""
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        # Try to get refresh token from cookie if not in body
+        if 'refresh' not in request.data:
+            refresh_token = request.COOKIES.get(
+                settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
+            )
+            if refresh_token:
+                request._full_data = {'refresh': refresh_token}
+
+        return super().post(request, *args, **kwargs)
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        if response.status_code == 200 and 'access' in response.data:
+            response = set_token_cookies(
+                response,
+                response.data['access'],
+                response.data.get('refresh')
+            )
+        return super().finalize_response(request, response, *args, **kwargs)
+
+
+class LogoutView(APIView):
+    """Logout view that clears token cookies."""
+
+    def post(self, request):
+        response = Response({'message': 'Logged out successfully'})
+        response = clear_token_cookies(response)
+
+        # Try to blacklist the refresh token if provided
+        refresh_token = request.COOKIES.get(
+            settings.SIMPLE_JWT.get('AUTH_COOKIE_REFRESH', 'refresh_token')
+        ) or request.data.get('refresh')
+
+        if refresh_token:
+            try:
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+            except Exception:
+                pass  # Token may already be blacklisted or invalid
+
+        return response
+
 
 urlpatterns = [
     # API Root
@@ -20,10 +135,11 @@ urlpatterns = [
     path('health/', HealthCheckView.as_view(), name='health-check'),
     path('stats/', StatsView.as_view(), name='stats'),
 
-    # JWT Authentication
-    path('auth/token/', TokenObtainPairView.as_view(), name='token-obtain-pair'),
-    path('auth/token/refresh/', TokenRefreshView.as_view(), name='token-refresh'),
+    # JWT Authentication (rate limited, cookie-based)
+    path('auth/token/', CookieTokenObtainPairView.as_view(), name='token-obtain-pair'),
+    path('auth/token/refresh/', CookieTokenRefreshView.as_view(), name='token-refresh'),
     path('auth/token/verify/', TokenVerifyView.as_view(), name='token-verify'),
+    path('auth/logout/', LogoutView.as_view(), name='logout'),
 
     # App endpoints
     path('', include('apps.users.urls')),

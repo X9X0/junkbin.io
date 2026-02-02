@@ -18,6 +18,7 @@ from .serializers import (
     CrossReferenceResultSerializer,
 )
 from .filters import ComponentFilter, ProductComponentFilter
+from apps.api.permissions import IsOwnerOrReadOnly
 
 
 @extend_schema_view(
@@ -45,8 +46,11 @@ class ComponentViewSet(viewsets.ModelViewSet):
         return ComponentDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action == 'create':
             return [permissions.IsAuthenticated()]
+        elif self.action in ['update', 'partial_update']:
+            # Require authentication AND ownership (or staff/moderator)
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         elif self.action == 'destroy':
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
@@ -213,8 +217,11 @@ class ProductComponentViewSet(viewsets.ModelViewSet):
         return ProductComponentSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update']:
+        if self.action == 'create':
             return [permissions.IsAuthenticated()]
+        elif self.action in ['update', 'partial_update']:
+            # Require authentication AND ownership (or staff/moderator)
+            return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         elif self.action == 'destroy':
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]

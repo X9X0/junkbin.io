@@ -189,6 +189,9 @@ class HealthCheckView(APIView):
         responses={200: dict}
     )
     def get(self, request):
+        import logging
+        logger = logging.getLogger(__name__)
+
         # Basic health check
         health = {
             'status': 'healthy',
@@ -203,7 +206,9 @@ class HealthCheckView(APIView):
             health['services']['database'] = 'ok'
         except Exception as e:
             health['status'] = 'degraded'
-            health['services']['database'] = f'error: {str(e)}'
+            health['services']['database'] = 'error'
+            # Log the actual error for debugging, but don't expose to clients
+            logger.error(f'Health check database error: {str(e)}')
 
         # Check cache
         try:
@@ -212,9 +217,11 @@ class HealthCheckView(APIView):
             if cache.get('health_check') == 'ok':
                 health['services']['cache'] = 'ok'
             else:
-                health['services']['cache'] = 'error: cache not responding'
+                health['services']['cache'] = 'error'
+                logger.warning('Health check cache not responding correctly')
         except Exception as e:
-            health['services']['cache'] = f'error: {str(e)}'
+            health['services']['cache'] = 'error'
+            logger.error(f'Health check cache error: {str(e)}')
 
         status_code = 200 if health['status'] == 'healthy' else 503
         return Response(health, status=status_code)

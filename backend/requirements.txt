@@ -55,6 +55,8 @@ boto3>=1.34.0
 django-ratelimit>=4.1.0
 django-csp>=3.8
 django-permissions-policy>=4.19.0
+python-magic>=0.4.27
+django-axes>=6.0.0
 
 # ========================================
 # Utilities

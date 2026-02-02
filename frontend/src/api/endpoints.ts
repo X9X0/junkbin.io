@@ -28,9 +28,14 @@ export const auth = {
     return response.data;
   },
 
-  refreshToken: async (refresh: string): Promise<{ access: string }> => {
-    const response = await api.post('/auth/token/refresh/', { refresh });
+  refreshToken: async (): Promise<{ access: string }> => {
+    // Token refresh uses HttpOnly cookies, no need to pass refresh token
+    const response = await api.post('/auth/token/refresh/', {});
     return response.data;
+  },
+
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout/', {});
   },
 };
 

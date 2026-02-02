@@ -14,8 +14,8 @@ from drf_spectacular.views import (
 )
 
 urlpatterns = [
-    # Django Admin
-    path('admin/', admin.site.urls),
+    # Django Admin (configurable URL via ADMIN_URL setting for security)
+    path(settings.ADMIN_URL, admin.site.urls),
 
     # API v1
     path('api/', include('apps.api.urls')),

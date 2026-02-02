@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _
 
-from .models import User, UserActivity
+from .models import User, UserActivity, AdminAuditLog
 
 
 @admin.register(User)
@@ -61,22 +61,63 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
 
-    actions = ['make_trusted', 'revoke_trusted', 'make_moderator']
+    actions = ['make_trusted', 'revoke_trusted', 'make_moderator', 'revoke_moderator']
 
     @admin.action(description='Grant trusted status to selected users')
     def make_trusted(self, request, queryset):
-        updated = queryset.update(is_trusted=True)
-        self.message_user(request, f'{updated} users granted trusted status.')
+        for user in queryset:
+            if not user.is_trusted:
+                user.is_trusted = True
+                user.save(update_fields=['is_trusted'])
+                AdminAuditLog.log_action(
+                    request,
+                    AdminAuditLog.ActionType.USER_TRUSTED,
+                    user,
+                    {'previous_value': False}
+                )
+        self.message_user(request, f'{queryset.count()} users granted trusted status.')
 
     @admin.action(description='Revoke trusted status from selected users')
     def revoke_trusted(self, request, queryset):
-        updated = queryset.update(is_trusted=False)
-        self.message_user(request, f'Trusted status revoked from {updated} users.')
+        for user in queryset:
+            if user.is_trusted:
+                user.is_trusted = False
+                user.save(update_fields=['is_trusted'])
+                AdminAuditLog.log_action(
+                    request,
+                    AdminAuditLog.ActionType.USER_UNTRUSTED,
+                    user,
+                    {'previous_value': True}
+                )
+        self.message_user(request, f'Trusted status revoked from {queryset.count()} users.')
 
     @admin.action(description='Make selected users moderators')
     def make_moderator(self, request, queryset):
-        updated = queryset.update(is_moderator=True)
-        self.message_user(request, f'{updated} users granted moderator status.')
+        for user in queryset:
+            if not user.is_moderator:
+                user.is_moderator = True
+                user.save(update_fields=['is_moderator'])
+                AdminAuditLog.log_action(
+                    request,
+                    AdminAuditLog.ActionType.USER_MODERATOR,
+                    user,
+                    {'previous_value': False}
+                )
+        self.message_user(request, f'{queryset.count()} users granted moderator status.')
+
+    @admin.action(description='Revoke moderator status from selected users')
+    def revoke_moderator(self, request, queryset):
+        for user in queryset:
+            if user.is_moderator:
+                user.is_moderator = False
+                user.save(update_fields=['is_moderator'])
+                AdminAuditLog.log_action(
+                    request,
+                    AdminAuditLog.ActionType.USER_UNMODERATOR,
+                    user,
+                    {'previous_value': True}
+                )
+        self.message_user(request, f'Moderator status revoked from {queryset.count()} users.')
 
 
 @admin.register(UserActivity)
@@ -94,3 +135,28 @@ class UserActivityAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@admin.register(AdminAuditLog)
+class AdminAuditLogAdmin(admin.ModelAdmin):
+    """Admin for viewing admin action audit logs."""
+
+    list_display = ['created_at', 'admin_user', 'action_type', 'target_model', 'target_repr']
+    list_filter = ['action_type', 'target_model', 'created_at']
+    search_fields = ['admin_user__username', 'target_repr', 'target_id']
+    readonly_fields = [
+        'id', 'admin_user', 'action_type', 'target_model', 'target_id',
+        'target_repr', 'details', 'ip_address', 'created_at'
+    ]
+    ordering = ['-created_at']
+    date_hierarchy = 'created_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        # Only superusers can delete audit logs
+        return request.user.is_superuser
