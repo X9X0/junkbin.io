@@ -13,6 +13,11 @@ import type {
 
 // Auth endpoints
 export const auth = {
+  // Get CSRF token cookie - must be called before any POST requests
+  getCsrfToken: async (): Promise<void> => {
+    await api.get('/auth/csrf/');
+  },
+
   login: async (credentials: LoginCredentials): Promise<AuthTokens> => {
     const response = await api.post('/auth/token/', credentials);
     return response.data;

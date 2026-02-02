@@ -5,6 +5,8 @@ All API endpoints are organized under /api/
 """
 from django.conf import settings
 from django.urls import path, include
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
@@ -16,6 +18,15 @@ from rest_framework_simplejwt.views import (
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .views import APIRootView, SearchView, HealthCheckView, StatsView
+
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class GetCSRFTokenView(APIView):
+    """Endpoint to get CSRF cookie for SPA."""
+    permission_classes = []
+
+    def get(self, request):
+        return Response({'detail': 'CSRF cookie set'})
 
 
 def set_token_cookies(response, access_token, refresh_token=None):
@@ -134,6 +145,9 @@ urlpatterns = [
     # Health Check & Stats
     path('health/', HealthCheckView.as_view(), name='health-check'),
     path('stats/', StatsView.as_view(), name='stats'),
+
+    # CSRF token endpoint for SPA
+    path('auth/csrf/', GetCSRFTokenView.as_view(), name='csrf-token'),
 
     # JWT Authentication (rate limited, cookie-based)
     path('auth/token/', CookieTokenObtainPairView.as_view(), name='token-obtain-pair'),

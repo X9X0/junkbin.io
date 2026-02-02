@@ -18,9 +18,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check auth status by calling /me endpoint
-    // Tokens are now in HttpOnly cookies, so we just try the request
-    auth.me()
+    // First get CSRF token, then check auth status
+    auth.getCsrfToken()
+      .then(() => auth.me())
       .then(setUser)
       .catch(() => {
         // Not authenticated or token invalid
