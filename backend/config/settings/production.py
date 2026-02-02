@@ -38,19 +38,23 @@ SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
 # Cross-Origin Isolation Headers
 SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 
-# Content Security Policy (via django-csp)
-CSP_DEFAULT_SRC = ("'self'",)
-CSP_STYLE_SRC = ("'self'", "'unsafe-inline'", "https://fonts.googleapis.com")
-CSP_FONT_SRC = ("'self'", "https://fonts.gstatic.com")
-CSP_SCRIPT_SRC = ("'self'",)
-CSP_IMG_SRC = ("'self'", "data:", "https:")
-CSP_CONNECT_SRC = ("'self'",)
-CSP_FRAME_SRC = ("'none'",)
-CSP_OBJECT_SRC = ("'none'",)
-CSP_BASE_URI = ("'self'",)
-CSP_FORM_ACTION = ("'self'",)
-CSP_FRAME_ANCESTORS = ("'none'",)
-CSP_UPGRADE_INSECURE_REQUESTS = True
+# Content Security Policy (via django-csp 4.0+)
+CONTENT_SECURITY_POLICY = {
+    "DIRECTIVES": {
+        "default-src": ["'self'"],
+        "script-src": ["'self'"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "font-src": ["'self'", "https://fonts.gstatic.com"],
+        "img-src": ["'self'", "data:", "https:"],
+        "connect-src": ["'self'"],
+        "frame-src": ["'none'"],
+        "object-src": ["'none'"],
+        "base-uri": ["'self'"],
+        "form-action": ["'self'"],
+        "frame-ancestors": ["'none'"],
+        "upgrade-insecure-requests": True,
+    }
+}
 
 # Permissions Policy - explicitly disable unnecessary browser features
 PERMISSIONS_POLICY = {
