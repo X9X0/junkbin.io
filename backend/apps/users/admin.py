@@ -61,7 +61,7 @@ class UserAdmin(BaseUserAdmin):
         }),
     )
 
-    actions = ['make_trusted', 'revoke_trusted', 'make_moderator', 'revoke_moderator']
+    actions = ['make_trusted', 'revoke_trusted', 'make_moderator', 'revoke_moderator', 'resend_verification_email']
 
     @admin.action(description='Grant trusted status to selected users')
     def make_trusted(self, request, queryset):
@@ -118,6 +118,27 @@ class UserAdmin(BaseUserAdmin):
                     {'previous_value': True}
                 )
         self.message_user(request, f'Moderator status revoked from {queryset.count()} users.')
+
+    @admin.action(description='Resend verification email to selected users')
+    def resend_verification_email(self, request, queryset):
+        from utils.email import send_verification_email
+
+        sent = 0
+        skipped = 0
+        for user in queryset:
+            if user.email_verified:
+                skipped += 1
+                continue
+            try:
+                send_verification_email(user)
+                sent += 1
+            except Exception:
+                pass
+
+        if sent:
+            self.message_user(request, f'Verification email sent to {sent} user(s).')
+        if skipped:
+            self.message_user(request, f'{skipped} user(s) already verified - skipped.', level='WARNING')
 
 
 @admin.register(UserActivity)
