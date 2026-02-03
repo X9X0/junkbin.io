@@ -127,6 +127,8 @@ class UserRegistrationView(generics.CreateAPIView):
 
         # Send verification email
         try:
+            # Refresh user from DB to ensure we have the latest state for token generation
+            user.refresh_from_db()
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
             send_verification_email(user, token, uid)
