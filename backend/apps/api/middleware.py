@@ -2,8 +2,26 @@
 Custom middleware for Junkbin.io API
 """
 from django.conf import settings
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 import re
+
+
+def axes_lockout_response(request, credentials, *args, **kwargs):
+    """
+    Custom lockout response for django-axes.
+    Returns a JSON response with helpful information for locked out users.
+    """
+    cooloff_time = getattr(settings, 'AXES_COOLOFF_TIME', 1)
+
+    return JsonResponse(
+        {
+            'detail': f'Account temporarily locked due to too many failed login attempts. '
+                      f'Please try again in {cooloff_time} hour(s) or contact support.',
+            'error_code': 'account_locked',
+            'cooloff_hours': cooloff_time,
+        },
+        status=403
+    )
 
 
 class AdminIPWhitelistMiddleware:
