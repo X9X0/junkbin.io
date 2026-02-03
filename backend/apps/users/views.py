@@ -111,6 +111,8 @@ class UserRegistrationView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserRegistrationSerializer
     permission_classes = [permissions.AllowAny]
+    # No authentication required for registration, so no CSRF needed
+    authentication_classes = []
 
     @extend_schema(
         description='Register a new user account',
