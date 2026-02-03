@@ -266,10 +266,10 @@ SOCIALACCOUNT_PROVIDERS = {
 # =============================================================================
 AXES_FAILURE_LIMIT = 5  # Lock out after 5 failed attempts
 AXES_COOLOFF_TIME = 1  # Lock out for 1 hour (in hours)
-AXES_LOCK_OUT_BY_COMBINATION_USER_AND_IP = True  # Lock by username + IP combo
+AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # Lock by username + IP combo
 AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
-AXES_LOCKOUT_CALLABLE = None  # Use default lockout response
-AXES_META_PRECEDENCE_ORDER = [
+AXES_IPWARE_PROXY_COUNT = 1  # Trust 1 proxy (nginx)
+AXES_IPWARE_META_PRECEDENCE_ORDER = [
     'HTTP_X_FORWARDED_FOR',
     'REMOTE_ADDR',
 ]
