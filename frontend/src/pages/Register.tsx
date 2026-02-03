@@ -10,7 +10,7 @@ export default function Register() {
     username: '',
     email: '',
     password: '',
-    password2: '',
+    password_confirm: '',
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ export default function Register() {
     e.preventDefault();
     setError('');
 
-    if (formData.password !== formData.password2) {
+    if (formData.password !== formData.password_confirm) {
       setError('Passwords do not match');
       return;
     }
@@ -119,8 +119,8 @@ export default function Register() {
               </label>
               <input
                 type="password"
-                name="password2"
-                value={formData.password2}
+                name="password_confirm"
+                value={formData.password_confirm}
                 onChange={handleChange}
                 className="input-cyber"
                 placeholder="Repeat password"
