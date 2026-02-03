@@ -307,6 +307,47 @@ class EmailVerificationView(APIView):
         return Response({'message': 'Email verified successfully'})
 
 
+class ResendVerificationView(APIView):
+    """Resend verification email to user."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    @extend_schema(
+        description='Resend verification email',
+        responses={200: None}
+    )
+    def post(self, request):
+        email = request.data.get('email')
+
+        if not email:
+            return Response(
+                {'error': 'Email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            # Don't reveal if email exists
+            return Response({'message': 'If an account exists with this email, a verification link has been sent.'})
+
+        if user.email_verified:
+            return Response({'message': 'Email is already verified.'})
+
+        try:
+            send_verification_email(user)
+        except Exception:
+            return Response(
+                {'error': 'Failed to send verification email. Please try again later.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        return Response({'message': 'If an account exists with this email, a verification link has been sent.'})
+
+
 class PasswordResetRequestView(APIView):
     """Request a password reset email."""
 

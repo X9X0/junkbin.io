@@ -11,6 +11,7 @@ from .views import (
     PasswordChangeView,
     PreferencesView,
     EmailVerificationView,
+    ResendVerificationView,
     PasswordResetRequestView,
     PasswordResetConfirmView,
 )
@@ -22,6 +23,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path('auth/register/', UserRegistrationView.as_view(), name='register'),
     path('auth/verify-email/', EmailVerificationView.as_view(), name='verify-email'),
+    path('auth/resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
     path('auth/me/', CurrentUserView.as_view(), name='current-user'),
     path('auth/password/change/', PasswordChangeView.as_view(), name='password-change'),
     path('auth/password/reset/', PasswordResetRequestView.as_view(), name='password-reset-request'),
