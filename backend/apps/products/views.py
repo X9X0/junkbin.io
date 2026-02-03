@@ -22,7 +22,7 @@ from .serializers import (
 )
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
-from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin
+from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
 
 
 @extend_schema_view(
@@ -67,8 +67,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create']:
-            return [permissions.IsAuthenticated()]
+        if self.action in ['create', 'add_component', 'upload_image', 'upload_schematic']:
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
@@ -327,7 +327,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create']:
-            return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]

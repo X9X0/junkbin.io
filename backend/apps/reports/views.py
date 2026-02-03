@@ -19,6 +19,7 @@ from .serializers import (
     UserReviewCompleteSerializer,
 )
 from apps.users.permissions import IsModerator
+from apps.api.permissions import IsVerifiedEmail
 
 
 @extend_schema_view(
@@ -58,7 +59,7 @@ class ReportViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create']:
-            return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['resolve', 'pending']:
             return [IsModerator()]
         elif self.action in ['destroy']:

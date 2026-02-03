@@ -18,7 +18,7 @@ from .serializers import (
     CrossReferenceResultSerializer,
 )
 from .filters import ComponentFilter, ProductComponentFilter
-from apps.api.permissions import IsOwnerOrReadOnly
+from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
 
 
 @extend_schema_view(
@@ -46,8 +46,8 @@ class ComponentViewSet(viewsets.ModelViewSet):
         return ComponentDetailSerializer
 
     def get_permissions(self):
-        if self.action == 'create':
-            return [permissions.IsAuthenticated()]
+        if self.action in ['create', 'add_cross_reference']:
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update']:
             # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
@@ -218,7 +218,7 @@ class ProductComponentViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update']:
             # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]

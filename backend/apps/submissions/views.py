@@ -18,6 +18,7 @@ from .serializers import (
     SubmissionCommentCreateSerializer,
 )
 from apps.users.permissions import IsModerator
+from apps.api.permissions import IsVerifiedEmail
 
 
 @extend_schema_view(
@@ -56,8 +57,8 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         return queryset
 
     def get_permissions(self):
-        if self.action in ['create']:
-            return [permissions.IsAuthenticated()]
+        if self.action in ['create', 'comments']:
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['review', 'pending']:
             return [IsModerator()]
         return [permissions.IsAuthenticated()]
