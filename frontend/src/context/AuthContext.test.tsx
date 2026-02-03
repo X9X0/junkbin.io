@@ -187,7 +187,7 @@ describe('AuthContext', () => {
           username: 'newuser',
           email: 'new@example.com',
           password: 'password123',
-          password2: 'password123',
+          password_confirm: 'password123',
         });
       });
 
