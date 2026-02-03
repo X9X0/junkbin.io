@@ -40,7 +40,11 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // Skip refresh logic for auth endpoints to prevent infinite loops
+    const skipRefreshUrls = ['/auth/me/', '/auth/token/', '/auth/token/refresh/', '/auth/csrf/'];
+    const shouldSkipRefresh = skipRefreshUrls.some(url => originalRequest.url?.includes(url));
+
+    if (error.response?.status === 401 && !originalRequest._retry && !shouldSkipRefresh) {
       originalRequest._retry = true;
 
       try {
@@ -54,8 +58,8 @@ api.interceptors.response.use(
         // Retry original request - new token is in cookie
         return api(originalRequest);
       } catch (refreshError) {
-        // Refresh failed, redirect to login
-        window.location.href = '/login';
+        // Refresh failed - don't redirect, just reject
+        return Promise.reject(refreshError);
       }
     }
 
