@@ -14,6 +14,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import PasswordReset from './pages/PasswordReset';
 import PasswordResetConfirm from './pages/PasswordResetConfirm';
+import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
 import './index.css';
@@ -47,6 +48,7 @@ function App() {
               <Route path="register" element={<Register />} />
               <Route path="reset-password" element={<PasswordReset />} />
               <Route path="reset-password/:uid/:token" element={<PasswordResetConfirm />} />
+              <Route path="verify-email/:uid/:token" element={<VerifyEmail />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
