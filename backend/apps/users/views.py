@@ -127,11 +127,7 @@ class UserRegistrationView(generics.CreateAPIView):
 
         # Send verification email
         try:
-            # Refresh user from DB to ensure we have the latest state for token generation
-            user.refresh_from_db()
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-            send_verification_email(user, token, uid)
+            send_verification_email(user)
         except Exception:
             pass  # Don't fail registration if email fails
 
@@ -267,27 +263,36 @@ class EmailVerificationView(APIView):
         responses={200: None}
     )
     def post(self, request):
-        uid = request.data.get('uid')
+        from utils.email import verify_email_token
+
         token = request.data.get('token')
 
-        if not uid or not token:
+        if not token:
             return Response(
-                {'error': 'Missing uid or token'},
+                {'error': 'Missing token'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Verify the signed token
+        data = verify_email_token(token)
+        if not data:
+            return Response(
+                {'error': 'Invalid or expired verification link'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
-            user_id = force_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(pk=user_id)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = User.objects.get(pk=data['user_id'])
+        except User.DoesNotExist:
             return Response(
-                {'error': 'Invalid verification link'},
+                {'error': 'User not found'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        if not default_token_generator.check_token(user, token):
+        # Verify email matches
+        if user.email != data['email']:
             return Response(
-                {'error': 'Invalid or expired verification link'},
+                {'error': 'Email mismatch'},
                 status=status.HTTP_400_BAD_REQUEST
             )
 

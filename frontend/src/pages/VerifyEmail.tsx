@@ -4,14 +4,14 @@ import { CheckCircle, AlertCircle, Mail } from 'lucide-react';
 import api from '../api/client';
 
 export default function VerifyEmail() {
-  const { uid, token } = useParams<{ uid: string; token: string }>();
+  const { token } = useParams<{ token: string }>();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     const verifyEmail = async () => {
       try {
-        const response = await api.post('/auth/verify-email/', { uid, token });
+        const response = await api.post('/auth/verify-email/', { token });
         setMessage(response.data.message || 'Email verified successfully!');
         setStatus('success');
       } catch (err: any) {
@@ -20,13 +20,13 @@ export default function VerifyEmail() {
       }
     };
 
-    if (uid && token) {
+    if (token) {
       verifyEmail();
     } else {
       setStatus('error');
       setMessage('Invalid verification link.');
     }
-  }, [uid, token]);
+  }, [token]);
 
   if (status === 'loading') {
     return (

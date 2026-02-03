@@ -104,18 +104,41 @@ def send_report_resolved_email(report):
     )
 
 
-def send_verification_email(user, token, uid):
+def generate_email_verification_token(user):
+    """Generate a signed token for email verification."""
+    from django.core import signing
+    return signing.dumps({'user_id': str(user.pk), 'email': user.email}, salt='email-verification')
+
+
+def verify_email_token(token, max_age=86400):
+    """
+    Verify an email verification token.
+
+    Args:
+        token: The signed token
+        max_age: Token validity in seconds (default 24 hours)
+
+    Returns:
+        dict with user_id and email if valid, None otherwise
+    """
+    from django.core import signing
+    try:
+        return signing.loads(token, salt='email-verification', max_age=max_age)
+    except signing.BadSignature:
+        return None
+
+
+def send_verification_email(user):
     """
     Send email verification link to new users.
 
     Args:
         user: User object
-        token: Email verification token
-        uid: URL-safe base64 encoded user ID
     """
     from django.conf import settings
 
-    verify_url = f"{settings.FRONTEND_URL}/verify-email/{uid}/{token}"
+    token = generate_email_verification_token(user)
+    verify_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
 
     return send_templated_email(
         subject='Verify your Junkbin.io email',

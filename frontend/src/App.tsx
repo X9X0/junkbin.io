@@ -48,7 +48,7 @@ function App() {
               <Route path="register" element={<Register />} />
               <Route path="reset-password" element={<PasswordReset />} />
               <Route path="reset-password/:uid/:token" element={<PasswordResetConfirm />} />
-              <Route path="verify-email/:uid/:token" element={<VerifyEmail />} />
+              <Route path="verify-email/:token" element={<VerifyEmail />} />
               <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
