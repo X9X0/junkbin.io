@@ -63,6 +63,7 @@ services:
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD:-}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-noreply@junkbin.io}
       - SERVER_EMAIL=${SERVER_EMAIL:-errors@junkbin.io}
+      - FRONTEND_URL=${FRONTEND_URL:-https://junkbin.io}
     volumes:
       - ./backend:/app
       - media_files:/app/media

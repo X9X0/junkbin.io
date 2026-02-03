@@ -104,6 +104,30 @@ def send_report_resolved_email(report):
     )
 
 
+def send_verification_email(user, token, uid):
+    """
+    Send email verification link to new users.
+
+    Args:
+        user: User object
+        token: Email verification token
+        uid: URL-safe base64 encoded user ID
+    """
+    from django.conf import settings
+
+    verify_url = f"{settings.FRONTEND_URL}/verify-email/{uid}/{token}"
+
+    return send_templated_email(
+        subject='Verify your Junkbin.io email',
+        template_name='email_verification',
+        context={
+            'user': user,
+            'verify_url': verify_url,
+        },
+        recipient_list=[user.email]
+    )
+
+
 def send_password_reset_email(user, token, uid):
     """
     Send password reset email with reset link.

@@ -27,7 +27,7 @@ from .serializers import (
     PasswordResetConfirmSerializer,
 )
 from .permissions import IsOwnerOrReadOnly
-from utils.email import send_password_reset_email
+from utils.email import send_password_reset_email, send_verification_email
 
 User = get_user_model()
 
@@ -124,6 +124,14 @@ class UserRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
+
+        # Send verification email
+        try:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            send_verification_email(user, token, uid)
+        except Exception:
+            pass  # Don't fail registration if email fails
 
         # Generate JWT tokens
         refresh = RefreshToken.for_user(user)
@@ -244,6 +252,52 @@ class PreferencesView(APIView):
         request.user.save(update_fields=['preferences'])
 
         return Response(serializer.data)
+
+
+class EmailVerificationView(APIView):
+    """Verify user email address."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        description='Verify email address with token',
+        responses={200: None}
+    )
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+
+        if not uid or not token:
+            return Response(
+                {'error': 'Missing uid or token'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            return Response(
+                {'error': 'Invalid verification link'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not default_token_generator.check_token(user, token):
+            return Response(
+                {'error': 'Invalid or expired verification link'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if user.email_verified:
+            return Response({'message': 'Email already verified'})
+
+        from django.utils import timezone
+        user.email_verified = True
+        user.email_verified_at = timezone.now()
+        user.save(update_fields=['email_verified', 'email_verified_at'])
+
+        return Response({'message': 'Email verified successfully'})
 
 
 class PasswordResetRequestView(APIView):

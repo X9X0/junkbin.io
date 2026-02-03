@@ -1,0 +1,16 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+Email Verification
+
+Hello {{ user.username }},
+
+Welcome to Junkbin.io! Please verify your email address by clicking the link below:
+
+{{ verify_url }}
+
+If you didn't create an account on Junkbin.io, you can safely ignore this email.
+
+This link will expire in 24 hours.
+
+---
+Junkbin.io
