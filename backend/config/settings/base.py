@@ -22,7 +22,8 @@ env = environ.Env(
 environ.Env.read_env(os.path.join(BASE_DIR.parent, '.env'))
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env('SECRET_KEY', default='django-insecure-change-me-in-production')
+# No default - SECRET_KEY must be explicitly set in environment
+SECRET_KEY = env('SECRET_KEY')
 
 # Application definition
 DJANGO_APPS = [
@@ -102,8 +103,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.application'
 
 # Database
+# No default - DATABASE_URL must be explicitly set in environment
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='postgres://junkbin:junkbin@localhost:5432/junkbin')
+    'default': env.db('DATABASE_URL')
 }
 
 # Custom User Model
@@ -201,7 +203,7 @@ SIMPLE_JWT = {
     # HttpOnly cookie settings for XSS protection
     'AUTH_COOKIE': 'access_token',
     'AUTH_COOKIE_REFRESH': 'refresh_token',
-    'AUTH_COOKIE_SECURE': not DEBUG if 'DEBUG' in dir() else True,  # HTTPS only in production
+    'AUTH_COOKIE_SECURE': False,  # Overridden to True in production.py
     'AUTH_COOKIE_HTTP_ONLY': True,  # Not accessible via JavaScript
     'AUTH_COOKIE_SAMESITE': 'Lax',  # CSRF protection
     'AUTH_COOKIE_PATH': '/',

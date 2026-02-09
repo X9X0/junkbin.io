@@ -3,6 +3,12 @@ Django test settings for Junkbin.io
 
 Settings optimized for running tests.
 """
+import os
+
+# Test SECRET_KEY - only used in tests
+os.environ.setdefault('SECRET_KEY', 'test-insecure-key-for-testing-only-never-use-in-production')
+os.environ.setdefault('DATABASE_URL', 'sqlite:///:memory:')
+
 from .base import *
 
 DEBUG = False

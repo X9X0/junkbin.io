@@ -4,6 +4,12 @@ Django development settings for Junkbin.io
 Settings for local development environment.
 """
 import os
+
+# Development SECRET_KEY - NEVER use in production
+# This must be set BEFORE importing base to satisfy the requirement
+os.environ.setdefault('SECRET_KEY', 'dev-insecure-key-for-local-development-only-abc123xyz789')
+os.environ.setdefault('DATABASE_URL', 'sqlite:///db.sqlite3')
+
 from .base import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
