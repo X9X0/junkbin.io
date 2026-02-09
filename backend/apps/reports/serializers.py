@@ -150,7 +150,7 @@ class ReportResolveSerializer(serializers.Serializer):
     action = serializers.ChoiceField(
         choices=['valid', 'invalid', 'dismiss']
     )
-    notes = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True, max_length=5000)
 
 
 class UserReviewListSerializer(serializers.ModelSerializer):
@@ -209,5 +209,5 @@ class UserReviewCompleteSerializer(serializers.Serializer):
     status = serializers.ChoiceField(
         choices=['cleared', 'warning_issued', 'restricted', 'suspended']
     )
-    notes = serializers.CharField(required=False, allow_blank=True)
-    action_taken = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True, max_length=5000)
+    action_taken = serializers.CharField(required=False, allow_blank=True, max_length=2000)

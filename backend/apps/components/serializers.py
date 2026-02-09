@@ -181,10 +181,10 @@ class ProductComponentCreateSerializer(serializers.ModelSerializer):
 class ComponentSearchSerializer(serializers.Serializer):
     """Serializer for component search parameters."""
 
-    q = serializers.CharField(required=False, allow_blank=True)
-    manufacturer = serializers.CharField(required=False)
-    component_type = serializers.CharField(required=False)
-    package_type = serializers.CharField(required=False)
+    q = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    manufacturer = serializers.CharField(required=False, max_length=200)
+    component_type = serializers.CharField(required=False, max_length=50)
+    package_type = serializers.CharField(required=False, max_length=50)
 
 
 class CrossReferenceResultSerializer(serializers.Serializer):

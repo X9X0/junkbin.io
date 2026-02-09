@@ -118,7 +118,7 @@ class SubmissionReviewSerializer(serializers.Serializer):
     action = serializers.ChoiceField(
         choices=['approve', 'reject', 'request_changes']
     )
-    notes = serializers.CharField(required=False, allow_blank=True)
+    notes = serializers.CharField(required=False, allow_blank=True, max_length=5000)
 
 
 class SubmissionCommentCreateSerializer(serializers.ModelSerializer):

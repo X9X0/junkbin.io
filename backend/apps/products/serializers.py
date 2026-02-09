@@ -171,10 +171,10 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 class ProductSearchSerializer(serializers.Serializer):
     """Serializer for product search parameters."""
 
-    q = serializers.CharField(required=False, allow_blank=True)
-    manufacturer = serializers.CharField(required=False)
-    category = serializers.CharField(required=False)
-    region = serializers.CharField(required=False)
+    q = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    manufacturer = serializers.CharField(required=False, max_length=200)
+    category = serializers.CharField(required=False, max_length=50)
+    region = serializers.CharField(required=False, max_length=20)
     year_min = serializers.IntegerField(required=False)
     year_max = serializers.IntegerField(required=False)
     has_component = serializers.UUIDField(required=False)
