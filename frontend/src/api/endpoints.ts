@@ -224,3 +224,11 @@ export const stats = {
     return response.data;
   },
 };
+
+// Newsletter endpoint
+export const newsletter = {
+  subscribe: async (email: string, source: string = 'landing'): Promise<{ message: string; email: string }> => {
+    const response = await api.post('/newsletter/subscribe/', { email, source });
+    return response.data;
+  },
+};

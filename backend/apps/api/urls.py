@@ -161,6 +161,7 @@ urlpatterns = [
     path('', include('apps.components.urls')),
     path('', include('apps.submissions.urls')),
     path('', include('apps.reports.urls')),
+    path('newsletter/', include('apps.newsletter.urls')),
 
     # Search endpoint
     path('search/', SearchView.as_view(), name='search'),

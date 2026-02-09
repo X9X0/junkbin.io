@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { stats } from '../api/endpoints';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { stats, newsletter } from '../api/endpoints';
 import {
   Terminal,
   Cpu,
@@ -17,17 +17,32 @@ import {
 export default function Home() {
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState('');
 
   const { data: siteStats } = useQuery({
     queryKey: ['stats'],
     queryFn: stats.get,
   });
 
+  const subscribeMutation = useMutation({
+    mutationFn: (email: string) => newsletter.subscribe(email, 'landing'),
+    onSuccess: () => {
+      setSubmitted(true);
+      setEmail('');
+      setError('');
+    },
+    onError: (err: any) => {
+      const message = err.response?.data?.email?.[0]
+        || err.response?.data?.detail
+        || 'Failed to subscribe. Please try again.';
+      setError(message);
+    },
+  });
+
   const handleNotify = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: Implement email collection
-    setSubmitted(true);
-    setEmail('');
+    setError('');
+    subscribeMutation.mutate(email);
   };
 
   return (
@@ -97,22 +112,34 @@ export default function Home() {
             </h2>
 
             {!submitted ? (
-              <form onSubmit={handleNotify} className="flex flex-col sm:flex-row gap-3">
-                <div className="flex-1 relative">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="enter_email@domain.com"
-                    required
-                    className="terminal-input w-full px-4 py-3 text-cyber-cyan placeholder-cyber-cyan/40"
-                  />
-                  <Terminal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-cyber-cyan/30" />
+              <form onSubmit={handleNotify} className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex-1 relative">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="enter_email@domain.com"
+                      required
+                      disabled={subscribeMutation.isPending}
+                      className="terminal-input w-full px-4 py-3 text-cyber-cyan placeholder-cyber-cyan/40 disabled:opacity-50"
+                    />
+                    <Terminal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-cyber-cyan/30" />
+                  </div>
+                  <button
+                    type="submit"
+                    className="btn-cyber whitespace-nowrap disabled:opacity-50"
+                    disabled={subscribeMutation.isPending}
+                  >
+                    <Mail className="h-4 w-4 inline mr-2" />
+                    {subscribeMutation.isPending ? 'SUBSCRIBING...' : 'NOTIFY ME'}
+                  </button>
                 </div>
-                <button type="submit" className="btn-cyber whitespace-nowrap">
-                  <Mail className="h-4 w-4 inline mr-2" />
-                  NOTIFY ME
-                </button>
+                {error && (
+                  <div className="text-cyber-pink font-mono text-sm">
+                    <span className="text-cyber-pink">ERROR:</span> {error}
+                  </div>
+                )}
               </form>
             ) : (
               <div className="border border-cyber-green/50 bg-cyber-green/10 p-4 font-mono text-cyber-green text-sm">
