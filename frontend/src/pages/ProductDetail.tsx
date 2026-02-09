@@ -453,6 +453,7 @@ export default function ProductDetail() {
                       <tr className="border-b border-cyber-light/30 text-left">
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">DESIGNATOR</th>
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">PART NUMBER</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">VALUE</th>
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">MANUFACTURER</th>
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">TYPE</th>
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">QTY</th>
@@ -474,6 +475,9 @@ export default function ProductDetail() {
                             >
                               {pc.component.part_number}
                             </Link>
+                          </td>
+                          <td className="py-3 px-4 font-mono text-cyber-yellow text-sm">
+                            {pc.component.primary_value || '-'}
                           </td>
                           <td className="py-3 px-4 text-gray-400">
                             {pc.component.manufacturer}
@@ -504,6 +508,9 @@ export default function ProductDetail() {
                           </div>
                           <div className="text-xs text-gray-400 truncate">
                             {pc.component.manufacturer}
+                            {pc.component.primary_value && (
+                              <span className="ml-2 text-cyber-yellow">{pc.component.primary_value}</span>
+                            )}
                           </div>
                         </div>
                         {pc.reference_designator && (

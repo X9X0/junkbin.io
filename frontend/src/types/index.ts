@@ -61,6 +61,7 @@ export interface Component {
   component_type_display?: string;
   description?: string;
   package_type?: string;
+  primary_value?: string;
   datasheet_url?: string;
   usage_count: number;
   is_verified: boolean;

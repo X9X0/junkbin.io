@@ -24,13 +24,14 @@ class ComponentListSerializer(serializers.ModelSerializer):
         source='get_component_type_display',
         read_only=True
     )
+    primary_value = serializers.CharField(read_only=True)
 
     class Meta:
         model = Component
         fields = [
             'id', 'part_number', 'manufacturer', 'component_type',
             'component_type_display', 'package_type', 'typical_function',
-            'datasheet_url', 'usage_count', 'is_verified'
+            'primary_value', 'datasheet_url', 'usage_count', 'is_verified'
         ]
 
 

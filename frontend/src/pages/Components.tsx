@@ -249,6 +249,12 @@ export default function Components() {
                     )}
                   </div>
 
+                  {component.primary_value && (
+                    <div className="font-mono text-sm text-cyber-yellow mt-1">
+                      {component.primary_value}
+                    </div>
+                  )}
+
                   {component.description && viewMode === 'list' && (
                     <p className="mt-2 text-sm text-gray-400 line-clamp-2">
                       {component.description}

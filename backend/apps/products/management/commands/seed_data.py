@@ -103,8 +103,8 @@ PRODUCTS = [
         "category": "other",
         "year_manufactured": 2022,
         "fcc_id": "2A2V6-FZ",
-        "description": "Multi-tool device for pentesters and hardware enthusiasts — sub-GHz radio, NFC, RFID, IR, iButton, and GPIO.",
-        "teardown_notes": "Six Phillips screws on the back. Two-piece plastic shell. Battery is a standard LiPo pouch cell. LCD and buttons connect via FPC.",
+        "description": "Multi-tool device for pentesters and hardware enthusiasts. STM32WB55 dual-core MCU, CC1101 sub-GHz transceiver (315/433/868/915 MHz), ST25R3916 NFC (13.56 MHz), IR transceiver, iButton/1-Wire, 128x64 ST7567 LCD, 2100 mAh LiPo, USB-C (USB 2.0), and 18-pin GPIO header with 3.3V/5V/UART/SPI/I2C/USB.",
+        "teardown_notes": "Six Phillips screws on the back. Two-piece plastic shell. Main PCB has STM32WB55 at center, CC1101 sub-GHz section near left antenna pad, ST25R3916 NFC section near top antenna loop. Battery is a 2100 mAh LiPo pouch cell connected via JST. LCD and buttons connect via FPC. GPIO header is directly soldered to main PCB.",
     },
 ]
 
@@ -178,8 +178,8 @@ COMPONENTS = [
         "part_number": "STM32WB55RGV6",
         "component_type": "mcu",
         "package_type": "VFQFPN-68",
-        "description": "Dual-core MCU — Cortex-M4 at 64 MHz + Cortex-M0+ for BLE 5.0 stack.",
-        "typical_function": "Wireless microcontroller (BLE/Zigbee)",
+        "description": "Dual-core MCU — Cortex-M4 at 64 MHz (app processor) + Cortex-M0+ at 32 MHz (BLE 5.4/802.15.4 radio stack). 1 MB flash, 256 KB SRAM.",
+        "typical_function": "Wireless microcontroller (BLE 5.4 / Zigbee / Thread)",
         "specifications": {"flash_kb": 1024, "ram_kb": 256, "frequency_mhz": 64},
     },
     {
@@ -377,6 +377,34 @@ COMPONENTS = [
         "typical_function": "WiFi/BLE microcontroller",
         "specifications": {"cores": 2, "frequency_mhz": 240, "psram_mb": 8},
     },
+    # --- Flipper Zero specific ---
+    {
+        "manufacturer": "Texas Instruments",
+        "part_number": "CC1101RGPR",
+        "component_type": "rf_module",
+        "package_type": "QFN-20",
+        "description": "Low-power sub-1 GHz RF transceiver supporting 300-348 MHz, 387-464 MHz, and 779-928 MHz bands. Max +12 dBm output, OOK/2-FSK/4-FSK/MSK modulation. Used in Flipper Zero for sub-GHz communication.",
+        "typical_function": "Sub-1 GHz RF transceiver",
+        "specifications": {"frequency_ghz": 0.915, "pout_dbm": 12, "modulation": "OOK/FSK/MSK", "sensitivity_dbm": -116},
+    },
+    {
+        "manufacturer": "STMicroelectronics",
+        "part_number": "ST25R3916-AQWT",
+        "component_type": "ic",
+        "package_type": "UFQFPN-32",
+        "description": "High-performance NFC universal device (NFCD) with integrated analog front-end. Supports NFC-A/B/F/V, ISO 14443A/B, ISO 15693, FeliCa, and EMVCo. 1.6 W antenna driver output. Used in Flipper Zero for NFC/RFID operations at 13.56 MHz.",
+        "typical_function": "NFC/RFID transceiver",
+        "specifications": {"frequency_mhz": 13.56, "protocols": "NFC-A/B/F/V, ISO 14443, ISO 15693", "tx_power_w": 1.6},
+    },
+    {
+        "manufacturer": "Sitronix",
+        "part_number": "ST7567",
+        "component_type": "display",
+        "package_type": "COG",
+        "description": "65x132 dot-matrix LCD controller/driver with SPI interface, used to drive the Flipper Zero 128x64 monochrome LCD. 1/65 duty, 1/9 bias.",
+        "typical_function": "LCD controller/driver",
+        "specifications": {"resolution": "128x64", "interface": "SPI", "voltage_v": 3.3},
+    },
 ]
 
 # (product index, component index, ref_designator, quantity, location_description, board_name, notes)
@@ -393,18 +421,18 @@ PRODUCT_COMPONENT_LINKS = [
     # Raspberry Pi 4 Model B
     (1, 1, "U1", 1, "Center of board (top)", "Main Board", "BCM2711 quad-core SoC"),
     (1, 10, "U2", 1, "Top, adjacent to SoC", "Main Board", "4 GB DDR4 SDRAM (PoP or discrete depending on SKU)"),
-    (1, 27, "U3", 1, "Top, near USB ports", "Main Board", "Gigabit Ethernet PHY"),
-    (1, 28, "U4", 1, "Top, near GPIO header", "Main Board", "WiFi/BT combo module"),
-    (1, 24, "J1", 1, "Edge, USB-C power input", "Main Board", "USB-C power connector"),
+    (1, 26, "U3", 1, "Top, near USB ports", "Main Board", "Gigabit Ethernet PHY"),
+    (1, 27, "U4", 1, "Top, near GPIO header", "Main Board", "WiFi/BT combo module"),
+    (1, 23, "J1", 1, "Edge, USB-C power input", "Main Board", "USB-C power connector"),
     (1, 19, "C1", 25, "Distributed", "Main Board", "Decoupling capacitors for SoC and memory"),
 
     # Sony DualSense
     (2, 7, "U1", 1, "Center of main PCB", "Main Board", "Wireless MCU — handles BLE and proprietary 2.4 GHz"),
-    (2, 25, "U5", 1, "Near center of PCB", "Main Board", "6-axis IMU for motion controls"),
+    (2, 24, "U5", 1, "Near center of PCB", "Main Board", "6-axis IMU for motion controls"),
     (2, 9, "U6", 1, "Near touchpad connector", "Main Board", "Touch controller MCU"),
     (2, 19, "C3", 18, "Around MCU and RF section", "Main Board", ""),
     (2, 22, "R7", 15, "Distributed", "Main Board", "Bias and pull-up resistors"),
-    (2, 24, "J2", 1, "Bottom edge of controller", "Main Board", "USB-C charge/data port"),
+    (2, 23, "J2", 1, "Bottom edge of controller", "Main Board", "USB-C charge/data port"),
 
     # Apple AirPods Pro 2
     (3, 4, "U1", 1, "Inside earbud (potted)", "Earbud PCB", "H2 chip — audio, ANC, Bluetooth"),
@@ -430,10 +458,10 @@ PRODUCT_COMPONENT_LINKS = [
     (6, 2, "U1", 1, "Center of main board, under heatsink/copper", "Main Board", "Custom AMD Van Gogh APU"),
     (6, 11, "U2", 2, "Either side of APU", "Main Board", "LPDDR5 memory (2x 4 GB = 8 GB)"),
     (6, 16, "U10", 1, "Near battery connector", "Main Board", "Buck-boost for battery power path"),
-    (6, 26, "U12", 1, "Near USB-C port", "Main Board", "Battery charge management"),
-    (6, 25, "U15", 1, "Near left stick", "Main Board", "Motion sensor IMU"),
+    (6, 25, "U12", 1, "Near USB-C port", "Main Board", "Battery charge management"),
+    (6, 24, "U15", 1, "Near left stick", "Main Board", "Motion sensor IMU"),
     (6, 13, "U20", 1, "Near USB-C port", "Main Board", "USB PD controller"),
-    (6, 24, "J1", 1, "Top edge, near vent", "Main Board", "USB-C port"),
+    (6, 23, "J1", 1, "Top edge, near vent", "Main Board", "USB-C port"),
     (6, 19, "C30", 35, "Distributed across main board", "Main Board", ""),
 
     # Framework Laptop 16
@@ -441,7 +469,7 @@ PRODUCT_COMPONENT_LINKS = [
     (7, 15, "U5", 1, "Near CPU VRM cluster", "Mainboard", "CPU core voltage regulator controller"),
     (7, 14, "U6", 1, "Near SSD slot", "Mainboard", "MPS step-down for SSD/IO rail"),
     (7, 13, "U10", 2, "Near each USB-C port", "Mainboard", "USB-C PD controllers (2 ports)"),
-    (7, 24, "J1", 2, "Left and right edge card slots", "Mainboard", "USB-C expansion card receptacles"),
+    (7, 23, "J1", 2, "Left and right edge card slots", "Mainboard", "USB-C expansion card receptacles"),
     (7, 19, "C50", 50, "Distributed across mainboard", "Mainboard", ""),
     (7, 22, "R20", 20, "Around CPU, memory, and PD ICs", "Mainboard", ""),
     (7, 20, "L5", 6, "VRM output stages", "Mainboard", "Power inductors for CPU and GPU rails"),
@@ -453,12 +481,14 @@ PRODUCT_COMPONENT_LINKS = [
     (8, 22, "R10", 10, "Distributed", "Display Board", ""),
 
     # Flipper Zero
-    (9, 7, "U1", 1, "Center of main PCB", "Main Board", "STM32WB55 — main application + BLE MCU"),
-    (9, 8, "U2", 1, "Near sub-GHz antenna pad", "Main Board", "nRF52840 not used here — CC1101 variant may differ; this is the NFC/RFID front-end controller"),
+    (9, 7, "U1", 1, "Center of main PCB", "Main Board", "STM32WB55 — dual-core MCU (Cortex-M4 + Cortex-M0+), main app processor + BLE 5.4 radio"),
+    (9, 29, "U2", 1, "Near left sub-GHz antenna pad", "Main Board", "CC1101 — sub-1 GHz transceiver for 315/433/868/915 MHz protocols"),
+    (9, 30, "U3", 1, "Near top NFC antenna loop", "Main Board", "ST25R3916 — NFC/RFID analog front-end for 13.56 MHz (ISO 14443, ISO 15693, FeliCa)"),
+    (9, 31, "U4", 1, "Near LCD FPC connector", "Main Board", "ST7567 — 128x64 monochrome LCD controller/driver (SPI)"),
     (9, 19, "C8", 20, "Distributed across board", "Main Board", "Decoupling capacitors"),
     (9, 22, "R5", 12, "Distributed", "Main Board", "Pull-ups and bias network"),
-    (9, 24, "J1", 1, "Bottom edge", "Main Board", "USB-C port for charging and data"),
-    (9, 26, "U8", 1, "Near USB-C", "Main Board", "Battery charger IC"),
+    (9, 23, "J1", 1, "Bottom edge", "Main Board", "USB-C port for charging and USB 2.0 data (12 Mbps)"),
+    (9, 25, "U8", 1, "Near USB-C", "Main Board", "Battery charger IC (2100 mAh LiPo)"),
 ]
 
 

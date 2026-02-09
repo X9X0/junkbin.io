@@ -134,6 +134,110 @@ class Component(models.Model):
     def __str__(self):
         return f'{self.manufacturer} {self.part_number}'
 
+    @property
+    def primary_value(self):
+        """Extract the main characteristic from specifications based on component type."""
+        specs = self.specifications or {}
+        if not specs:
+            return ''
+
+        # Map component types to their primary spec key and unit
+        extraction_rules = {
+            'resistor':   [('resistance_ohm', self._format_ohms)],
+            'capacitor':  [('capacitance_nf', self._format_farads_from_nf),
+                           ('capacitance_pf', self._format_farads_from_pf),
+                           ('capacitance_uf', self._format_farads_from_uf)],
+            'inductor':   [('inductance_uh', self._format_henries_from_uh),
+                           ('inductance_nh', self._format_henries_from_nh)],
+            'ferrite':    [('impedance_ohm', lambda v: f'{v} \u03A9 @ {specs.get("frequency_mhz", "?")} MHz')],
+            'crystal':    [('frequency_mhz', lambda v: self._format_freq(v))],
+            'ic':         [('frequency_ghz', lambda v: f'{v} GHz'),
+                           ('speed_mbps', lambda v: f'{v} Mbps'),
+                           ('capacity_gb', lambda v: f'{v} GB'),
+                           ('capacity_tb', lambda v: f'{v} TB'),
+                           ('channels', lambda v: f'{v}-ch'),
+                           ('cores', lambda v: f'{v}-core')],
+            'mcu':        [('frequency_mhz', lambda v: f'{v} MHz'),
+                           ('flash_kb', lambda v: f'{v} KB flash')],
+            'regulator':  [('iout_a', lambda v: f'{v} A'),
+                           ('output_a', lambda v: f'{v} A')],
+            'rf_module':  [('frequency_ghz', lambda v: f'{v} GHz'),
+                           ('pout_dbm', lambda v: f'{v} dBm')],
+            'sensor':     [('axes', lambda v: f'{v}-axis IMU')],
+            'connector':  [('pins', lambda v: f'{v}-pin'),
+                           ('standard', lambda v: str(v))],
+            'led':        [('wavelength_nm', lambda v: f'{v} nm'),
+                           ('color', lambda v: str(v))],
+            'diode':      [('vf_v', lambda v: f'{v} V'),
+                           ('current_a', lambda v: f'{v} A')],
+            'mosfet':     [('vds_v', lambda v: f'{v} V'),
+                           ('rds_mohm', lambda v: f'{v} m\u03A9')],
+            'transistor': [('hfe', lambda v: f'hFE {v}'),
+                           ('vce_v', lambda v: f'{v} V')],
+            'battery':    [('capacity_mah', lambda v: f'{v} mAh'),
+                           ('voltage_v', lambda v: f'{v} V')],
+            'fuse':       [('current_a', lambda v: f'{v} A'),
+                           ('voltage_v', lambda v: f'{v} V')],
+            'display':    [('resolution', lambda v: str(v)),
+                           ('size_in', lambda v: f'{v}"')],
+        }
+
+        rules = extraction_rules.get(self.component_type, [])
+        for key, formatter in rules:
+            val = specs.get(key)
+            if val is not None:
+                return formatter(val)
+
+        return ''
+
+    @staticmethod
+    def _format_ohms(val):
+        if val >= 1_000_000:
+            return f'{val / 1_000_000:g} M\u03A9'
+        if val >= 1_000:
+            return f'{val / 1_000:g} k\u03A9'
+        return f'{val:g} \u03A9'
+
+    @staticmethod
+    def _format_farads_from_nf(val):
+        if val >= 1_000:
+            return f'{val / 1_000:g} \u00B5F'
+        if val < 1:
+            return f'{val * 1_000:g} pF'
+        return f'{val:g} nF'
+
+    @staticmethod
+    def _format_farads_from_pf(val):
+        if val >= 1_000_000:
+            return f'{val / 1_000_000:g} \u00B5F'
+        if val >= 1_000:
+            return f'{val / 1_000:g} nF'
+        return f'{val:g} pF'
+
+    @staticmethod
+    def _format_farads_from_uf(val):
+        if val >= 1_000:
+            return f'{val / 1_000:g} mF'
+        return f'{val:g} \u00B5F'
+
+    @staticmethod
+    def _format_henries_from_uh(val):
+        if val >= 1_000:
+            return f'{val / 1_000:g} mH'
+        return f'{val:g} \u00B5H'
+
+    @staticmethod
+    def _format_henries_from_nh(val):
+        if val >= 1_000:
+            return f'{val / 1_000:g} \u00B5H'
+        return f'{val:g} nH'
+
+    @staticmethod
+    def _format_freq(val):
+        if val >= 1_000:
+            return f'{val / 1_000:g} GHz'
+        return f'{val:g} MHz'
+
     def update_usage_count(self):
         """Update the denormalized usage count."""
         self.usage_count = self.product_components.count()
