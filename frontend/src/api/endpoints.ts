@@ -176,8 +176,8 @@ export const components = {
   },
 
   crossReference: async (id: string): Promise<Product[]> => {
-    const response = await api.get(`/components/${id}/cross_reference/`);
-    return response.data;
+    const response = await api.get(`/components/${id}/products/`);
+    return response.data.results || response.data;
   },
 };
 

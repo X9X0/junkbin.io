@@ -180,6 +180,7 @@ COMPONENTS = [
         "package_type": "VFQFPN-68",
         "description": "Dual-core MCU — Cortex-M4 at 64 MHz (app processor) + Cortex-M0+ at 32 MHz (BLE 5.4/802.15.4 radio stack). 1 MB flash, 256 KB SRAM.",
         "typical_function": "Wireless microcontroller (BLE 5.4 / Zigbee / Thread)",
+        "datasheet_url": "https://www.st.com/resource/en/datasheet/stm32wb55rg.pdf",
         "specifications": {"flash_kb": 1024, "ram_kb": 256, "frequency_mhz": 64},
     },
     {
@@ -385,6 +386,7 @@ COMPONENTS = [
         "package_type": "QFN-20",
         "description": "Low-power sub-1 GHz RF transceiver supporting 300-348 MHz, 387-464 MHz, and 779-928 MHz bands. Max +12 dBm output, OOK/2-FSK/4-FSK/MSK modulation. Used in Flipper Zero for sub-GHz communication.",
         "typical_function": "Sub-1 GHz RF transceiver",
+        "datasheet_url": "https://www.ti.com/lit/ds/symlink/cc1101.pdf",
         "specifications": {"frequency_ghz": 0.915, "pout_dbm": 12, "modulation": "OOK/FSK/MSK", "sensitivity_dbm": -116},
     },
     {
@@ -394,6 +396,7 @@ COMPONENTS = [
         "package_type": "UFQFPN-32",
         "description": "High-performance NFC universal device (NFCD) with integrated analog front-end. Supports NFC-A/B/F/V, ISO 14443A/B, ISO 15693, FeliCa, and EMVCo. 1.6 W antenna driver output. Used in Flipper Zero for NFC/RFID operations at 13.56 MHz.",
         "typical_function": "NFC/RFID transceiver",
+        "datasheet_url": "https://www.st.com/resource/en/datasheet/st25r3916.pdf",
         "specifications": {"frequency_mhz": 13.56, "protocols": "NFC-A/B/F/V, ISO 14443, ISO 15693", "tx_power_w": 1.6},
     },
     {
@@ -594,6 +597,7 @@ class Command(BaseCommand):
                     "description": data.get("description", ""),
                     "typical_function": data.get("typical_function", ""),
                     "specifications": data.get("specifications", {}),
+                    "datasheet_url": data.get("datasheet_url", ""),
                     "is_verified": True,
                     "created_by": admin,
                 },
