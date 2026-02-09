@@ -69,6 +69,7 @@ services:
       - CSRF_COOKIE_SECURE=${CSRF_COOKIE_SECURE:-True}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
       - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS}
+      - CSP_UPGRADE_INSECURE=${CSP_UPGRADE_INSECURE:-True}
     volumes:
       - ./backend:/app
       - media_files:/app/media

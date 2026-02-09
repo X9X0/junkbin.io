@@ -47,7 +47,7 @@ CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
         "script-src": ["'self'"],
-        "style-src": ["'self'", "https://fonts.googleapis.com"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
         "img-src": ["'self'", "data:", "https:"],
         "connect-src": ["'self'"],
@@ -56,7 +56,7 @@ CONTENT_SECURITY_POLICY = {
         "base-uri": ["'self'"],
         "form-action": ["'self'"],
         "frame-ancestors": ["'none'"],
-        "upgrade-insecure-requests": True,
+        "upgrade-insecure-requests": env.bool("CSP_UPGRADE_INSECURE", default=True),
     }
 }
 

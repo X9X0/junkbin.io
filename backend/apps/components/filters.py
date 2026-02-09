@@ -40,10 +40,10 @@ class ComponentFilter(django_filters.FilterSet):
     # Ordering
     ordering = django_filters.OrderingFilter(
         fields=(
-            ('created_at', 'created'),
+            ('created_at', 'created_at'),
             ('manufacturer', 'manufacturer'),
             ('part_number', 'part_number'),
-            ('usage_count', 'usage'),
+            ('usage_count', 'usage_count'),
         )
     )
 

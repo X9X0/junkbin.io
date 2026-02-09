@@ -57,10 +57,10 @@ class ProductFilter(django_filters.FilterSet):
     # Ordering
     ordering = django_filters.OrderingFilter(
         fields=(
-            ('created_at', 'created'),
+            ('created_at', 'created_at'),
             ('manufacturer', 'manufacturer'),
-            ('component_count', 'components'),
-            ('view_count', 'views'),
+            ('component_count', 'component_count'),
+            ('view_count', 'view_count'),
         )
     )
 
