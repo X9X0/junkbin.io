@@ -231,6 +231,11 @@ temp/
 *.temp
 
 # ========================================
+# Private Documentation
+# ========================================
+Docs/
+
+# ========================================
 # Project Specific
 # ========================================
 # User uploaded media files (keep structure, ignore content)
