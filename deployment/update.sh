@@ -57,12 +57,16 @@ docker compose build backend frontend
 
 # 3. Recreate containers (frontend needs volume reset for new build assets)
 log_step "Stopping frontend and nginx..."
-docker compose down frontend nginx
+docker compose rm -sf frontend nginx
 
 COMPOSE_PROJECT="$(docker compose config --format json | python3 -c 'import sys,json; print(json.load(sys.stdin)["name"])')"
 FRONTEND_VOL="${COMPOSE_PROJECT}_frontend_build"
-log_step "Removing frontend build volume ($FRONTEND_VOL)..."
-docker volume rm "$FRONTEND_VOL" 2>/dev/null || true
+if docker volume ls -q | grep -q "^${FRONTEND_VOL}$"; then
+    log_step "Removing frontend build volume ($FRONTEND_VOL)..."
+    docker volume rm "$FRONTEND_VOL"
+else
+    log_warn "Volume $FRONTEND_VOL not found (will be created fresh)"
+fi
 
 log_step "Starting all containers..."
 docker compose up -d
