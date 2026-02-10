@@ -226,4 +226,4 @@ MIDDLEWARE.insert(
 # =============================================================================
 # JWT Cookie Security (Production)
 # =============================================================================
-SIMPLE_JWT['AUTH_COOKIE_SECURE'] = True  # HTTPS only
+SIMPLE_JWT['AUTH_COOKIE_SECURE'] = env.bool('AUTH_COOKIE_SECURE', default=True)

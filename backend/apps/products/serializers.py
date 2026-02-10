@@ -14,19 +14,19 @@ User = get_user_model()
 class ProductImageSerializer(serializers.ModelSerializer):
     """Serializer for product images."""
 
-    thumbnail_url = serializers.SerializerMethodField()
-    medium_url = serializers.SerializerMethodField()
+    thumbnail = serializers.SerializerMethodField()
+    medium = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductImage
         fields = [
-            'id', 'image', 'thumbnail_url', 'medium_url',
+            'id', 'image', 'thumbnail', 'medium',
             'image_type', 'caption', 'display_order',
             'width', 'height', 'uploaded_at'
         ]
         read_only_fields = ['id', 'width', 'height', 'uploaded_at']
 
-    def get_thumbnail_url(self, obj):
+    def get_thumbnail(self, obj):
         if obj.thumbnail:
             request = self.context.get('request')
             if request:
@@ -34,7 +34,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             return obj.thumbnail.url
         return None
 
-    def get_medium_url(self, obj):
+    def get_medium(self, obj):
         if obj.medium:
             request = self.context.get('request')
             if request:
@@ -78,6 +78,8 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     created_by = CreatedBySerializer(read_only=True)
     primary_image = serializers.SerializerMethodField()
+    image_count = serializers.SerializerMethodField()
+    schematic_count = serializers.SerializerMethodField()
     category_display = serializers.CharField(
         source='get_category_display',
         read_only=True
@@ -92,7 +94,8 @@ class ProductListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'slug', 'manufacturer', 'model_number', 'revision',
             'region', 'region_display', 'category', 'category_display',
-            'year_manufactured', 'component_count', 'primary_image',
+            'year_manufactured', 'component_count', 'image_count',
+            'schematic_count', 'primary_image',
             'created_by', 'created_at', 'is_approved', 'is_featured'
         ]
 
@@ -102,12 +105,20 @@ class ProductListSerializer(serializers.ModelSerializer):
             return ProductImageSerializer(image, context=self.context).data
         return None
 
+    def get_image_count(self, obj):
+        return obj.images.count()
+
+    def get_schematic_count(self, obj):
+        return obj.schematics.filter(is_approved=True).count()
+
 
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for single product view."""
 
     created_by = CreatedBySerializer(read_only=True)
     images = ProductImageSerializer(many=True, read_only=True)
+    image_count = serializers.SerializerMethodField()
+    schematic_count = serializers.SerializerMethodField()
     category_display = serializers.CharField(
         source='get_category_display',
         read_only=True
@@ -124,7 +135,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'region', 'region_display', 'category', 'category_display',
             'subcategory', 'year_manufactured', 'fcc_id', 'ic_id',
             'part_number', 'description', 'teardown_notes',
-            'component_count', 'view_count', 'images',
+            'component_count', 'image_count', 'schematic_count',
+            'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
             'is_approved', 'is_featured'
         ]
@@ -133,6 +145,12 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'created_by', 'created_at', 'updated_at',
             'is_approved', 'is_featured'
         ]
+
+    def get_image_count(self, obj):
+        return obj.images.count()
+
+    def get_schematic_count(self, obj):
+        return obj.schematics.filter(is_approved=True).count()
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):

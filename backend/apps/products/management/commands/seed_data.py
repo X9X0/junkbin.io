@@ -531,6 +531,8 @@ class Command(BaseCommand):
             email="admin@junkbin.local",
             password="admin",
         )
+        admin.email_verified = True
+        admin.save(update_fields=["email_verified"])
         self.stdout.write(self.style.WARNING("Created default admin user (admin / admin)."))
         return admin
 

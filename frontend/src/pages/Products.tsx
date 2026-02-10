@@ -185,9 +185,9 @@ export default function Products() {
                     viewMode === 'grid' ? 'aspect-video mb-4' : 'w-24 h-24 flex-shrink-0'
                   )}
                 >
-                  {product.images?.[0] ? (
+                  {product.primary_image ? (
                     <LazyImage
-                      src={product.images[0].thumbnail || product.images[0].image}
+                      src={product.primary_image.thumbnail || product.primary_image.image}
                       alt={product.model_number}
                       className="w-full h-full object-cover"
                       fallback={<Cpu className="h-8 w-8 text-gray-600" />}

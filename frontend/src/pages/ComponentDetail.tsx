@@ -130,9 +130,9 @@ export default function ComponentDetail() {
                 >
                   {/* Image */}
                   <div className="aspect-video mb-4 bg-cyber-black flex items-center justify-center border border-cyber-light/20">
-                    {product.images?.[0] ? (
+                    {product.primary_image ? (
                       <img
-                        src={product.images[0].thumbnail || product.images[0].image}
+                        src={product.primary_image.thumbnail || product.primary_image.image}
                         alt={product.model_number}
                         className="w-full h-full object-cover"
                       />

@@ -35,15 +35,17 @@ export interface Product {
   created_by?: CreatedBy;
   created_at: string;
   images?: ProductImage[];
+  primary_image?: ProductImage;
 }
 
 export interface ProductImage {
   id: string;
   image: string;
   thumbnail?: string;
+  medium?: string;
   caption?: string;
   image_type: string;
-  is_primary: boolean;
+  display_order?: number;
 }
 
 export interface CreatedBy {
