@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: #0a0e27;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #1a1e37;
+            padding: 30px;
+            border-radius: 8px;
+            border: 1px solid #00f0ff;
+        }
+        .logo {
+            color: #00f0ff;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .tagline {
+            color: #666b7a;
+            font-size: 12px;
+            margin-bottom: 30px;
+        }
+        h1 {
+            color: #00f0ff;
+            font-size: 24px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #00f0ff;
+            color: #0a0e27 !important;
+            padding: 12px 30px;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .info {
+            background-color: rgba(0, 240, 255, 0.1);
+            border-left: 4px solid #00f0ff;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #333;
+            color: #666b7a;
+            font-size: 12px;
+        }
+        a {
+            color: #00f0ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">Junkbin.io</div>
+        <div class="tagline">NO USER SERVICEABLE PARTS INSIDE</div>
+
+        <h1>We're live.</h1>
+
+        <p>Junkbin.io is officially up and running. You asked us to let you know &mdash; so here it is.</p>
+
+        <div class="info">
+            <strong>What you can do now:</strong><br>
+            <ul style="margin: 10px 0; padding-left: 20px;">
+                <li>Browse schematics and component data for popular devices</li>
+                <li>Search by component part number to find cross-references</li>
+                <li>Contribute your own repair knowledge to the community</li>
+            </ul>
+        </div>
+
+        <a href="{{ site_url }}" class="button">Check it out</a>
+
+        <p>Thanks for believing in the right to repair. We built this for people like you.</p>
+
+        <div class="footer">
+            <p>You received this because you subscribed to launch updates on Junkbin.io.</p>
+            <p>&copy; {{ year }} Junkbin.io</p>
+        </div>
+    </div>
+</body>
+</html>

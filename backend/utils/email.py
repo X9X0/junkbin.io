@@ -1,6 +1,8 @@
 """
 Email utilities for Junkbin.io
 """
+from datetime import datetime
+
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -29,6 +31,7 @@ def send_templated_email(
     context['site_name'] = 'Junkbin.io'
     context['site_url'] = settings.SITE_URL if hasattr(settings, 'SITE_URL') else ''
     context['tagline'] = 'NO USER SERVICEABLE PARTS INSIDE'
+    context['year'] = datetime.now().year
 
     # Render templates
     text_content = render_to_string(f'emails/{template_name}.txt', context)
