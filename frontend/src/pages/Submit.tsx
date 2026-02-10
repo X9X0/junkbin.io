@@ -136,7 +136,17 @@ export default function Submit() {
       navigate(`/products/${data.id}`);
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || 'Failed to create product');
+      const data = err.response?.data;
+      if (data?.detail) {
+        setError(data.detail);
+      } else if (data && typeof data === 'object') {
+        const messages = Object.entries(data)
+          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+          .join('; ');
+        setError(messages || 'Failed to create product');
+      } else {
+        setError('Failed to create product');
+      }
     },
   });
 
@@ -149,7 +159,17 @@ export default function Submit() {
       navigate('/components');
     },
     onError: (err: any) => {
-      setError(err.response?.data?.detail || err.message || 'Failed to create component');
+      const data = err.response?.data;
+      if (data?.detail) {
+        setError(data.detail);
+      } else if (data && typeof data === 'object') {
+        const messages = Object.entries(data)
+          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+          .join('; ');
+        setError(messages || 'Failed to create component');
+      } else {
+        setError('Failed to create component');
+      }
     },
   });
 

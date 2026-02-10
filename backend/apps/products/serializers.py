@@ -163,6 +163,16 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'category', 'subcategory', 'year_manufactured',
             'fcc_id', 'ic_id', 'part_number', 'description', 'teardown_notes'
         ]
+        extra_kwargs = {
+            'revision': {'required': False, 'default': ''},
+            'region': {'required': False, 'default': 'global'},
+            'subcategory': {'required': False, 'default': ''},
+            'fcc_id': {'required': False, 'default': ''},
+            'ic_id': {'required': False, 'default': ''},
+            'part_number': {'required': False, 'default': ''},
+            'description': {'required': False, 'default': ''},
+            'teardown_notes': {'required': False, 'default': ''},
+        }
 
     def validate(self, attrs):
         # Check for duplicate product

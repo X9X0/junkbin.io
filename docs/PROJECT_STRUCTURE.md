@@ -89,6 +89,18 @@ junkbin.io/
 │   │   │   ├── signals.py             # Auto-trigger on 3 strikes
 │   │   │   └── tests/
 │   │   │
+│   │   ├── newsletter/                 # Newsletter / email collection
+│   │   │   ├── __init__.py
+│   │   │   ├── models.py              # Subscriber model
+│   │   │   ├── views.py               # SubscribeView API
+│   │   │   ├── serializers.py         # Input validation
+│   │   │   ├── urls.py                # Route: subscribe/
+│   │   │   ├── admin.py               # Admin with CSV export
+│   │   │   ├── tests.py               # 11 unit tests
+│   │   │   └── management/
+│   │   │       └── commands/
+│   │   │           └── send_launch_email.py  # Launch blast command
+│   │   │
 │   │   └── api/                       # API configuration
 │   │       ├── __init__.py
 │   │       ├── urls.py                # API root routing
@@ -109,9 +121,14 @@ junkbin.io/
 │   │
 │   ├── templates/                     # Django templates
 │   │   ├── base.html
-│   │   ├── emails/                    # Email templates
+│   │   ├── emails/                    # Email templates (inline CSS for Gmail)
 │   │   │   ├── verification.html
-│   │   │   └── password_reset.html
+│   │   │   ├── email_verification.html
+│   │   │   ├── password_reset.html
+│   │   │   ├── newsletter_confirm.html  # Subscribe confirmation
+│   │   │   ├── newsletter_confirm.txt
+│   │   │   ├── launch_announcement.html # Launch blast email
+│   │   │   └── launch_announcement.txt
 │   │   └── errors/
 │   │       ├── 404.html
 │   │       └── 500.html
@@ -309,4 +326,4 @@ See `.env.example` for required environment variables including:
 
 ---
 
-**Last Updated**: January 2026
+**Last Updated**: February 2026
