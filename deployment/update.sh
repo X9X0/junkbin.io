@@ -55,8 +55,16 @@ fi
 log_step "Building Docker images..."
 docker compose build backend frontend
 
-# 3. Recreate containers
-log_step "Recreating containers..."
+# 3. Recreate containers (frontend needs volume reset for new build assets)
+log_step "Stopping frontend and nginx..."
+docker compose down frontend nginx
+
+COMPOSE_PROJECT="$(docker compose config --format json | python3 -c 'import sys,json; print(json.load(sys.stdin)["name"])')"
+FRONTEND_VOL="${COMPOSE_PROJECT}_frontend_build"
+log_step "Removing frontend build volume ($FRONTEND_VOL)..."
+docker volume rm "$FRONTEND_VOL" 2>/dev/null || true
+
+log_step "Starting all containers..."
 docker compose up -d
 
 # 4. Run migrations
