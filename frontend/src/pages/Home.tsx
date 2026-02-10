@@ -321,7 +321,7 @@ export default function Home() {
             "NO USER SERVICEABLE PARTS INSIDE"
           </h2>
           <p className="text-gray-400 mb-6">
-            Manufacturers don't want you to fix your devices. We're building a database to prove them wrong.
+            Manufacturers don't want you to fix your devices. We're building a database to enable you to do it anyway.
             Every documented component, every shared schematic, every teardown photo helps independent
             repair shops, hobbyists, and consumers fight for their right to repair.
           </p>
