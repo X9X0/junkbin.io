@@ -280,7 +280,7 @@ Other users can search this database to find which consumer products contain spe
 - [x] Integration tests (backend workflow tests)
 - [x] API documentation (Swagger/OpenAPI via drf-spectacular)
 - [ ] User documentation
-- [x] Deployment documentation (junkbin-deploy.sh, backup.sh, restore.sh)
+- [x] Deployment documentation (junkbin-deploy.sh, update.sh, backup.sh, restore.sh)
 - [ ] Security audit
 
 ##### Test Coverage Implemented:
@@ -364,11 +364,11 @@ The `junkbin-deploy.sh` script will handle:
 - Auto-renewal cron job
 - HTTPS redirect configuration
 
-### Backup Configuration
-- Daily PostgreSQL dumps
-- Image file backups
-- Retention policy (30 days)
-- Backup restoration testing
+### Backup Configuration ✅ COMPLETE
+- ~~Daily PostgreSQL dumps~~ — `deployment/backup.sh` (Docker + `--dev` mode)
+- ~~Image file backups~~ — media backed up from Docker volume
+- ~~Retention policy (30 days)~~ — auto-cleanup of old backups
+- ~~Backup restoration testing~~ — `deployment/restore.sh` with confirmation prompt
 
 ### Monitoring Setup
 - Health check endpoints

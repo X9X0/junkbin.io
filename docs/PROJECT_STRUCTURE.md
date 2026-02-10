@@ -222,8 +222,8 @@ junkbin.io/
 ├── deployment/                        # Deployment scripts & configs
 │   ├── junkbin-deploy.sh              # Main deployment script
 │   ├── update.sh                      # Update script
-│   ├── backup.sh                      # Backup script
-│   ├── restore.sh                     # Restore script
+│   ├── backup.sh                      # Backup script (--dev for non-Docker)
+│   ├── restore.sh                     # Restore script (--dev for non-Docker)
 │   │
 │   ├── nginx/                         # Nginx configurations
 │   │   ├── nginx.conf                 # Main config
