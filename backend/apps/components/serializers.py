@@ -67,11 +67,12 @@ class ComponentCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Component
         fields = [
-            'part_number', 'manufacturer', 'manufacturer_aliases',
+            'id', 'part_number', 'manufacturer', 'manufacturer_aliases',
             'component_type', 'package_type', 'description',
             'typical_function', 'specifications', 'datasheet_url',
             'octopart_url', 'alternative_part_numbers'
         ]
+        read_only_fields = ['id']
 
     def validate(self, attrs):
         # Check for duplicate
