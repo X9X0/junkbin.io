@@ -2,90 +2,32 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: #0a0e27;
-            color: #e0e0e0;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #1a1e37;
-            padding: 30px;
-            border-radius: 8px;
-            border: 1px solid #00f0ff;
-        }
-        .logo {
-            color: #00f0ff;
-            font-size: 28px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .tagline {
-            color: #666b7a;
-            font-size: 12px;
-            margin-bottom: 30px;
-        }
-        h1 {
-            color: #00f0ff;
-            font-size: 24px;
-        }
-        .button {
-            display: inline-block;
-            background-color: #00f0ff;
-            color: #0a0e27 !important;
-            padding: 12px 30px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-            margin: 20px 0;
-        }
-        .info {
-            background-color: rgba(0, 240, 255, 0.1);
-            border-left: 4px solid #00f0ff;
-            padding: 15px;
-            margin: 20px 0;
-        }
-        .footer {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #333;
-            color: #666b7a;
-            font-size: 12px;
-        }
-        a {
-            color: #00f0ff;
-        }
-    </style>
 </head>
-<body>
-    <div class="container">
-        <div class="logo">Junkbin.io</div>
-        <div class="tagline">NO USER SERVICEABLE PARTS INSIDE</div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0e27; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #1a1e37; padding: 30px; border-radius: 8px; border: 1px solid #00f0ff; box-sizing: border-box;">
+        <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
 
-        <h1>Welcome to Junkbin.io!</h1>
+        <h1 style="color: #00f0ff; font-size: 24px;">Welcome to Junkbin.io!</h1>
 
-        <p>Hello {{ user.username }},</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Hello {{ user.username }},</p>
 
-        <p>Thanks for signing up! Please verify your email address by clicking the button below:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Thanks for signing up! Please verify your email address by clicking the button below:</p>
 
-        <a href="{{ verify_url }}" class="button">Verify Email</a>
+        <a href="{{ verify_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Verify Email</a>
 
-        <p>If the button doesn't work, copy and paste this link into your browser:</p>
-        <p style="word-break: break-all;"><a href="{{ verify_url }}">{{ verify_url }}</a></p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5; word-break: break-all;"><a href="{{ verify_url }}" style="color: #00f0ff;">{{ verify_url }}</a></p>
 
-        <div class="info">
-            <strong>Didn't create this account?</strong><br>
-            If you didn't sign up for Junkbin.io, you can safely ignore this email.
+        <div style="background-color: #17334b; border-left: 4px solid #00f0ff; padding: 15px; margin: 20px 0;">
+            <strong style="color: #e0e0e0;">Didn't create this account?</strong><br>
+            <span style="color: #c0c0c0;">If you didn't sign up for Junkbin.io, you can safely ignore this email.</span>
         </div>
 
-        <p>This link will expire in 24 hours.</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">This link will expire in 24 hours.</p>
 
-        <div class="footer">
-            <p>&copy; {{ year }} Junkbin.io</p>
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
+            <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
         </div>
     </div>
 </body>
