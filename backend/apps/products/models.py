@@ -236,7 +236,7 @@ class ProductImage(models.Model):
     # Generated thumbnails
     thumbnail = ImageSpecField(
         source='image',
-        processors=[ResizeToFill(300, 300)],
+        processors=[ResizeToFill(480, 270)],
         format='JPEG',
         options={'quality': 85}
     )
