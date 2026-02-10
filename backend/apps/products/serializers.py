@@ -159,10 +159,11 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'manufacturer', 'model_number', 'revision', 'region',
+            'id', 'slug', 'manufacturer', 'model_number', 'revision', 'region',
             'category', 'subcategory', 'year_manufactured',
             'fcc_id', 'ic_id', 'part_number', 'description', 'teardown_notes'
         ]
+        read_only_fields = ['id', 'slug']
         extra_kwargs = {
             'revision': {'required': False, 'default': ''},
             'region': {'required': False, 'default': 'global'},
