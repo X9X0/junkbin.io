@@ -155,8 +155,8 @@ export default function Submit() {
       const response = await api.post('/components/', data);
       return response.data;
     },
-    onSuccess: () => {
-      navigate('/components');
+    onSuccess: (data) => {
+      navigate(`/components/${data.id}/products`);
     },
     onError: (err: any) => {
       const data = err.response?.data;
