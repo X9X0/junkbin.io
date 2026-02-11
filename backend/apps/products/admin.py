@@ -1,7 +1,10 @@
 """
 Product admin configuration for Junkbin.io
 """
+import csv
+
 from django.contrib import admin
+from django.http import HttpResponse
 from django.utils.html import format_html
 
 from .models import Product, ProductImage, Schematic
@@ -91,7 +94,7 @@ class ProductAdmin(admin.ModelAdmin):
 
     inlines = [ProductImageInline, SchematicInline]
 
-    actions = ['approve_products', 'unapprove_products', 'feature_products']
+    actions = ['approve_products', 'unapprove_products', 'feature_products', 'export_as_csv']
 
     @admin.action(description='Approve selected products')
     def approve_products(self, request, queryset):
@@ -107,6 +110,30 @@ class ProductAdmin(admin.ModelAdmin):
     def feature_products(self, request, queryset):
         updated = queryset.update(is_featured=True)
         self.message_user(request, f'{updated} products featured.')
+
+    @admin.action(description='Export selected products as CSV')
+    def export_as_csv(self, request, queryset):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="products.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Manufacturer', 'Model Number', 'Revision', 'Region',
+            'Category', 'Subcategory', 'Year', 'FCC ID',
+            'Component Count', 'Approved', 'Featured', 'Created At'
+        ])
+
+        for product in queryset:
+            writer.writerow([
+                product.manufacturer, product.model_number,
+                product.revision, product.region,
+                product.category, product.subcategory,
+                product.year_manufactured or '', product.fcc_id,
+                product.component_count, product.is_approved,
+                product.is_featured, product.created_at.isoformat()
+            ])
+
+        return response
 
 
 @admin.register(ProductImage)

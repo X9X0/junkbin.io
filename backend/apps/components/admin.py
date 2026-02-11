@@ -1,7 +1,10 @@
 """
 Component admin configuration for Junkbin.io
 """
+import csv
+
 from django.contrib import admin
+from django.http import HttpResponse
 
 from .models import Component, ProductComponent
 
@@ -61,12 +64,35 @@ class ComponentAdmin(admin.ModelAdmin):
 
     inlines = [ProductComponentInline]
 
-    actions = ['verify_components']
+    actions = ['verify_components', 'export_as_csv']
 
     @admin.action(description='Verify selected components')
     def verify_components(self, request, queryset):
         updated = queryset.update(is_verified=True)
         self.message_user(request, f'{updated} components verified.')
+
+    @admin.action(description='Export selected components as CSV')
+    def export_as_csv(self, request, queryset):
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="components.csv"'
+
+        writer = csv.writer(response)
+        writer.writerow([
+            'Manufacturer', 'Part Number', 'Type', 'Package',
+            'Typical Function', 'Description', 'Datasheet URL',
+            'Usage Count', 'Verified', 'Created At'
+        ])
+
+        for comp in queryset:
+            writer.writerow([
+                comp.manufacturer, comp.part_number,
+                comp.component_type, comp.package_type,
+                comp.typical_function, comp.description,
+                comp.datasheet_url, comp.usage_count,
+                comp.is_verified, comp.created_at.isoformat()
+            ])
+
+        return response
 
 
 @admin.register(ProductComponent)
