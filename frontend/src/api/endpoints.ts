@@ -208,7 +208,15 @@ export const schematics = {
 export const search = {
   global: async (query: string): Promise<any> => {
     const response = await api.get('/search/', { params: { q: query } });
-    return response.data;
+    const data = response.data;
+    // Flatten nested pagination: { results: { products: { results: [...] } } }
+    // into the shape components expect: { products: [...], components: [...], schematics: [...] }
+    const r = data.results || data;
+    return {
+      products: r.products?.results || r.products || [],
+      components: r.components?.results || r.components || [],
+      schematics: r.schematics?.results || r.schematics || [],
+    };
   },
 };
 
