@@ -208,10 +208,11 @@ export default function Components() {
             )}
           >
             {data.results.map((component) => (
-              <div
+              <Link
                 key={component.id}
+                to={`/components/${component.id}/products`}
                 className={clsx(
-                  'card-cyber hover:border-cyber-pink/50 transition-all group',
+                  'card-cyber hover:border-cyber-pink/50 transition-all group block',
                   viewMode === 'grid' ? 'p-4' : 'p-4 flex gap-4'
                 )}
               >
@@ -281,16 +282,15 @@ export default function Components() {
 
                   {/* Cross-reference link */}
                   <div className="mt-3 pt-3 border-t border-cyber-light/20">
-                    <Link
-                      to={`/components/${component.id}/products`}
-                      className="text-xs font-mono text-cyber-cyan hover:text-white transition-colors flex items-center gap-1"
+                    <span
+                      className="text-xs font-mono text-cyber-cyan group-hover:text-white transition-colors flex items-center gap-1"
                     >
                       <Cpu className="h-3.5 w-3.5" />
                       Find products with this component →
-                    </Link>
+                    </span>
                   </div>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}
