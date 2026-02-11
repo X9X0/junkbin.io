@@ -18,6 +18,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
 import ScrollToTop from './components/ScrollToTop';
+import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -35,25 +36,27 @@ function App() {
       <AuthProvider>
         <BrowserRouter>
           <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Layout />}>
-              <Route index element={<Home />} />
-              <Route path="products" element={<Products />} />
-              <Route path="products/:id" element={<ProductDetail />} />
-              <Route path="components" element={<Components />} />
-              <Route path="components/:id/products" element={<ComponentDetail />} />
-              <Route path="schematics" element={<Schematics />} />
-              <Route path="search" element={<Search />} />
-              <Route path="submit" element={<Submit />} />
-              <Route path="profile" element={<Profile />} />
-              <Route path="login" element={<Login />} />
-              <Route path="register" element={<Register />} />
-              <Route path="reset-password" element={<PasswordReset />} />
-              <Route path="reset-password/:uid/:token" element={<PasswordResetConfirm />} />
-              <Route path="verify-email/:token" element={<VerifyEmail />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
+          <ErrorBoundary>
+            <Routes>
+              <Route path="/" element={<Layout />}>
+                <Route index element={<Home />} />
+                <Route path="products" element={<Products />} />
+                <Route path="products/:id" element={<ProductDetail />} />
+                <Route path="components" element={<Components />} />
+                <Route path="components/:id/products" element={<ComponentDetail />} />
+                <Route path="schematics" element={<Schematics />} />
+                <Route path="search" element={<Search />} />
+                <Route path="submit" element={<Submit />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="login" element={<Login />} />
+                <Route path="register" element={<Register />} />
+                <Route path="reset-password" element={<PasswordReset />} />
+                <Route path="reset-password/:uid/:token" element={<PasswordResetConfirm />} />
+                <Route path="verify-email/:token" element={<VerifyEmail />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+            </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

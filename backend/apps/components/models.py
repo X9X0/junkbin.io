@@ -152,10 +152,12 @@ class Component(models.Model):
             'ferrite':    [('impedance_ohm', lambda v: f'{v} \u03A9 @ {specs.get("frequency_mhz", "?")} MHz')],
             'crystal':    [('frequency_mhz', lambda v: self._format_freq(v))],
             'ic':         [('frequency_ghz', lambda v: f'{v} GHz'),
+                           ('frequency_mhz', lambda v: self._format_freq(v)),
                            ('speed_mbps', lambda v: f'{v} Mbps'),
                            ('capacity_gb', lambda v: f'{v} GB'),
                            ('capacity_tb', lambda v: f'{v} TB'),
                            ('channels', lambda v: f'{v}-ch'),
+                           ('charge_current_a', lambda v: f'{v} A'),
                            ('cores', lambda v: f'{v}-core')],
             'mcu':        [('frequency_mhz', lambda v: f'{v} MHz'),
                            ('flash_kb', lambda v: f'{v} KB flash')],
@@ -163,7 +165,8 @@ class Component(models.Model):
                            ('output_a', lambda v: f'{v} A')],
             'rf_module':  [('frequency_ghz', lambda v: f'{v} GHz'),
                            ('pout_dbm', lambda v: f'{v} dBm')],
-            'sensor':     [('axes', lambda v: f'{v}-axis IMU')],
+            'sensor':     [('axes', lambda v: f'{v}-axis IMU'),
+                           ('frequency_khz', lambda v: f'{v} kHz')],
             'connector':  [('pins', lambda v: f'{v}-pin'),
                            ('standard', lambda v: str(v))],
             'led':        [('wavelength_nm', lambda v: f'{v} nm'),
@@ -180,6 +183,8 @@ class Component(models.Model):
                            ('voltage_v', lambda v: f'{v} V')],
             'display':    [('resolution', lambda v: str(v)),
                            ('size_in', lambda v: f'{v}"')],
+            'other':      [('frequency_ghz', lambda v: f'{v} GHz'),
+                           ('frequency_mhz', lambda v: self._format_freq(v))],
         }
 
         rules = extraction_rules.get(self.component_type, [])
@@ -274,9 +279,9 @@ class ProductComponent(models.Model):
 
     # Location on PCB
     reference_designator = models.CharField(
-        max_length=20,
+        max_length=255,
         blank=True,
-        help_text=_('Reference designator (U1, R5, C12, etc.)')
+        help_text=_('Reference designator(s), e.g. "U1" or "C1, C3, C8, C10"')
     )
     quantity = models.PositiveSmallIntegerField(
         default=1,

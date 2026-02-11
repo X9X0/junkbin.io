@@ -209,8 +209,8 @@ LOGGING = {
 # Rate Limiting (Stricter in production)
 # =============================================================================
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
-    'anon': '50/hour',
-    'user': '500/hour',
+    'anon': '300/hour',
+    'user': '1000/hour',
     'auth': '5/minute',
 }
 

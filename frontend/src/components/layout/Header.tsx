@@ -10,15 +10,24 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  // Search suggestions query with debounce
+  // Debounce search query — wait 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Search suggestions query with debounced input
   const { data: suggestions, isLoading: isSearching } = useQuery({
-    queryKey: ['searchSuggestions', searchQuery],
-    queryFn: () => search.global(searchQuery),
-    enabled: searchQuery.length >= 2 && showSuggestions,
+    queryKey: ['searchSuggestions', debouncedQuery],
+    queryFn: () => search.global(debouncedQuery),
+    enabled: debouncedQuery.length >= 2 && showSuggestions,
     staleTime: 30000,
   });
 

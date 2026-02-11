@@ -183,6 +183,7 @@ class HealthCheckView(APIView):
     """
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = []  # No rate limiting for health checks
 
     @extend_schema(
         description='Health check endpoint',

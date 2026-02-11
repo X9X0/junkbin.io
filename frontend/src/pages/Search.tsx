@@ -27,6 +27,8 @@ interface SearchResult {
     manufacturer: string;
     component_type: string;
     component_type_display?: string;
+    package_type?: string;
+    primary_value?: string;
   }>;
   schematics: Array<{
     id: string;
@@ -242,9 +244,21 @@ export default function Search() {
                               {component.part_number}
                             </h3>
                             <div className="text-gray-400 text-sm">{component.manufacturer}</div>
-                            <span className="badge-cyber text-cyber-pink border-cyber-pink/50 text-[10px] mt-1">
-                              {component.component_type_display || component.component_type}
-                            </span>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <span className="badge-cyber text-cyber-pink border-cyber-pink/50 text-[10px]">
+                                {component.component_type_display || component.component_type}
+                              </span>
+                              {component.package_type && (
+                                <span className="badge-cyber text-gray-400 border-gray-600 text-[10px]">
+                                  {component.package_type}
+                                </span>
+                              )}
+                              {component.primary_value && (
+                                <span className="font-mono text-sm text-cyber-yellow">
+                                  {component.primary_value}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <ExternalLink className="h-4 w-4 text-gray-600 group-hover:text-cyber-pink transition-colors" />
                         </Link>
