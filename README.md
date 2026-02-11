@@ -117,7 +117,7 @@ Found a security issue? Please email security@junkbin.io instead of creating a p
 ## 📞 Contact
 
 - **Website**: https://junkbin.io
-- **Email**: hello@junkbin.io
+- **Email**: admin@junkbin.io
 
 ---
 
