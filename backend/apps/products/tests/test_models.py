@@ -81,24 +81,16 @@ class TestProductSlugGeneration:
 
     def test_numeric_suffix_increments(self, product_factory):
         """Numeric suffix increments for multiple collisions."""
-        # Create products with same base slug
-        product1 = product_factory(manufacturer='Acme', model_number='Widget')
-
-        # Force same slug attempt by temporarily clearing slug
-        product2 = Product.objects.create(
-            manufacturer='Acme',
-            model_number='Widget',
-            revision='',
-            region='global',
-            category='other'
+        # Create products with same base slug but different regions
+        # to avoid unique_product_variant constraint
+        product1 = product_factory(
+            manufacturer='Acme', model_number='Widget', region='global'
         )
-
-        product3 = Product.objects.create(
-            manufacturer='Acme',
-            model_number='Widget',
-            revision='',
-            region='global',
-            category='other'
+        product2 = product_factory(
+            manufacturer='Acme', model_number='Widget', region='us'
+        )
+        product3 = product_factory(
+            manufacturer='Acme', model_number='Widget', region='eu'
         )
 
         slugs = [product1.slug, product2.slug, product3.slug]

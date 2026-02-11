@@ -59,15 +59,26 @@ class TestStrikeThresholdSignal:
         assert reviews[1].trigger_report_count == 6
 
     def test_no_duplicate_pending_review(self, report_factory, user_factory, product_factory, user_review_factory):
-        """No duplicate UserReview created if one is already pending."""
-        reported_user = user_factory(report_count=2, review_count=0)
+        """No duplicate UserReview created if one already exists at same threshold."""
+        reported_user = user_factory(report_count=0, review_count=0)
         resolver = user_factory(is_moderator=True)
         product = product_factory(created_by=reported_user)
 
-        # Create a pending review first
-        existing_review = user_review_factory(user=reported_user, status='pending')
+        # Create and resolve 2 valid reports (building toward threshold)
+        for _ in range(2):
+            report = report_factory(
+                reported_user=reported_user,
+                status='pending',
+                object_id=product.id
+            )
+            report.resolve_as_valid(resolver)
 
-        # Resolve another valid report (would be strike #3)
+        # Create a pending review at threshold 3 manually
+        existing_review = user_review_factory(
+            user=reported_user, status='pending', trigger_report_count=3
+        )
+
+        # Resolve another valid report (strike #3)
         report = report_factory(
             reported_user=reported_user,
             status='pending',
@@ -75,7 +86,7 @@ class TestStrikeThresholdSignal:
         )
         report.resolve_as_valid(resolver)
 
-        # Should still only have the one review
+        # Should still only have the one review (no duplicate at threshold 3)
         reviews = UserReview.objects.filter(user=reported_user)
         assert reviews.count() == 1
         assert reviews.first().id == existing_review.id
@@ -143,9 +154,18 @@ class TestStrikeThresholdSignal:
 
     def test_review_triggered_by_is_set(self, report_factory, user_factory, product_factory):
         """Created UserReview has triggered_by report set."""
-        reported_user = user_factory(report_count=2, review_count=0)
+        reported_user = user_factory(report_count=0, review_count=0)
         resolver = user_factory(is_moderator=True)
         product = product_factory(created_by=reported_user)
+
+        # Create and resolve 2 valid reports first
+        for _ in range(2):
+            report = report_factory(
+                reported_user=reported_user,
+                status='pending',
+                object_id=product.id
+            )
+            report.resolve_as_valid(resolver)
 
         # The 3rd strike triggers the review
         third_report = report_factory(

@@ -34,9 +34,23 @@ class SubscriberModelTests(TestCase):
 
 class SubscribeAPITests(APITestCase):
     """Tests for the subscribe API endpoint."""
+    throttle_classes = []
 
     def setUp(self):
         self.url = reverse('newsletter-subscribe')
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        from apps.newsletter.views import SubscribeView
+        cls._orig_throttle = SubscribeView.throttle_classes
+        SubscribeView.throttle_classes = []
+
+    @classmethod
+    def tearDownClass(cls):
+        from apps.newsletter.views import SubscribeView
+        SubscribeView.throttle_classes = cls._orig_throttle
+        super().tearDownClass()
 
     def test_subscribe_success(self):
         """Test successful subscription."""
