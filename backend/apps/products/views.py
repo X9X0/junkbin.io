@@ -6,9 +6,13 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from django.shortcuts import get_object_or_404
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+from utils.cache import staff_key_prefix
 
 from .models import Product, ProductImage, Schematic
 from .serializers import (
@@ -73,6 +77,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         return [permissions.AllowAny()]
+
+    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -176,6 +184,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    @method_decorator(cache_page(60 * 15))
     @action(detail=False, methods=['get'])
     def featured(self, request):
         """Get featured products."""
@@ -190,6 +199,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    @method_decorator(cache_page(60 * 10))
     @action(detail=False, methods=['get'])
     def recent(self, request):
         """Get recently added products."""
@@ -201,6 +211,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    @method_decorator(cache_page(60 * 60))
     @action(detail=False, methods=['get'])
     def categories(self, request):
         """Get list of categories with counts."""
@@ -228,6 +239,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         return Response(result)
 
+    @method_decorator(cache_page(60 * 60))
     @action(detail=False, methods=['get'])
     def manufacturers(self, request):
         """Get list of manufacturers with counts."""

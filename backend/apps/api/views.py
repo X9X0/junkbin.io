@@ -8,7 +8,11 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from rest_framework.reverse import reverse
 from django.db.models import Q
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+
+from utils.cache import staff_key_prefix
 
 from apps.products.models import Product
 from apps.components.models import Component
@@ -94,6 +98,7 @@ class SearchView(APIView):
         ],
         responses={200: dict}
     )
+    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
     def get(self, request):
         query = request.query_params.get('q', '').strip()
         search_type = request.query_params.get('type', 'all')
@@ -162,6 +167,7 @@ class StatsView(APIView):
         description='Get database statistics',
         responses={200: dict}
     )
+    @method_decorator(cache_page(60 * 15))
     def get(self, request):
         from apps.products.models import Product, Schematic
         from apps.components.models import Component
