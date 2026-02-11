@@ -63,11 +63,9 @@ npm run dev
 
 ## 📖 Documentation
 
-- [Full Roadmap](docs/ROADMAP.md) - Complete project plan
-- [API Documentation](docs/API.md) - RESTful API reference
-- [Contributing Guide](docs/CONTRIBUTING.md) - How to contribute
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
-- [User Guide](docs/USER_GUIDE.md) - Using the platform
+- [Roadmap](docs/ROADMAP.md) - Project roadmap with feature breakdown
+- [Project Structure](docs/PROJECT_STRUCTURE.md) - Codebase layout and conventions
+- [API Docs](https://junkbin.io/api/docs/) - Interactive Swagger/OpenAPI reference
 
 ## 🎨 Tech Stack
 
@@ -78,22 +76,19 @@ npm run dev
 - Celery
 
 ### Frontend
-- React 18+ with Vite
+- React 19 with Vite 7.3
+- TypeScript
 - Tailwind CSS
-- Material-UI / Chakra UI
 - React Query
 
 ### Infrastructure
 - Docker & Docker Compose
 - Nginx
 - Let's Encrypt SSL
-- MinIO / S3 storage
 
 ## 🤝 Contributing
 
-We welcome contributions! Please see [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details.
-
-### Areas We Need Help
+We welcome contributions! Areas we need help with:
 
 - [ ] Component database population
 - [ ] PCB photography
@@ -122,9 +117,7 @@ Found a security issue? Please email security@junkbin.io instead of creating a p
 ## 📞 Contact
 
 - **Website**: https://junkbin.io
-- **Discord**: [Join our community](#)
 - **Email**: hello@junkbin.io
-- **Twitter**: [@junkbin_io](#)
 
 ---
 

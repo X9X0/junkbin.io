@@ -261,11 +261,53 @@ Other users can search this database to find which consumer products contain spe
 - [x] Trusted user status
 
 #### Week 10-11: Data Import/Export
-- [ ] CSV bulk import tool
+- [ ] CSV BOM import with column mapping (see details below)
 - [x] BOM template downloads (CSV template + instructions)
 - [x] API for programmatic access (REST API complete)
 - [x] Export product data as CSV/JSON (JSON + BOM CSV export)
+- [x] **Flipper Zero BOM import command** - `manage.py import_flipper_bom` imports ~93 components with reference designators from Excel BOM (Feb 11, 2026)
 - [ ] Batch component addition
+
+##### CSV BOM Import — Implementation Notes
+
+**Overview:** Allow users to upload a CSV bill-of-materials and bulk-import components
+linked to a product. Available on both the frontend (product detail page) and Django admin.
+
+**Frontend upload flow (multi-step wizard):**
+1. User selects a product, then uploads a CSV file
+2. Site parses headers and shows a **column mapping UI** — each CSV header gets a
+   dropdown to select which site field it maps to
+3. **Auto-detect common aliases** so most CSVs work without manual mapping:
+   - `Mfr` / `MFG` / `Manufacturer` → `manufacturer`
+   - `P/N` / `Part Number` / `MPN` → `part_number`
+   - `Ref Des` / `RefDes` / `Designator` / `Reference` → `reference_designator`
+   - `Qty` / `Quantity` / `Count` → `quantity`
+   - `Type` / `Component Type` → `component_type`
+   - `Package` / `Footprint` / `Package Type` → `package_type`
+   - `Value` / `Nominal Value` → `primary_value`
+   - `Description` / `Desc` → `description`
+   - `Location` / `Board Location` → `location_description`
+   - `Notes` / `Comments` → `notes`
+4. User corrects any unmatched columns, previews parsed rows in a table
+5. Submit — backend creates/links components in bulk
+
+**Admin side:**
+- Use `django-import-export` library — provides import button in admin with column
+  mapping, preview, and dry-run mode out of the box. Much less custom code needed.
+- Add to both `ComponentAdmin` and `ProductComponentAdmin`
+
+**Key design decisions:**
+- **Component matching:** lookup-or-create by `(manufacturer, part_number)`. If a
+  component already exists, reuse it; otherwise create a new one.
+- **Product context:** BOM import is always in the context of a specific product
+  (launched from product detail page, or product selected first in a wizard).
+- **Row-level validation:** Bad rows should not kill the whole import. Show per-row
+  errors and let users fix or skip individual rows.
+- **Dry-run preview:** Show what will be created vs. matched before committing.
+- **Backend endpoint:** `POST /api/products/{id}/import_bom/` accepting multipart
+  form data (CSV file + column mapping JSON).
+
+**Estimated effort:** 3-5 days (backend endpoint + admin import + frontend wizard UI)
 
 #### Week 12-13: Polish & UX Improvements
 - [x] Mobile responsive design (tabs, tables, forms, search)
@@ -281,7 +323,7 @@ Other users can search this database to find which consumer products contain spe
 - [x] API documentation (Swagger/OpenAPI via drf-spectacular)
 - [ ] User documentation
 - [x] Deployment documentation (junkbin-deploy.sh, update.sh, backup.sh, restore.sh)
-- [ ] Security audit
+- [x] Security audit (Feb 3, 2026 — see `Docs/SECURITY_AUDIT.md`)
 
 ##### Test Coverage Implemented:
 **Backend (pytest + factory_boy):**
@@ -368,7 +410,7 @@ The `junkbin-deploy.sh` script will handle:
 - ~~Daily PostgreSQL dumps~~ — `deployment/backup.sh` (Docker + `--dev` mode)
 - ~~Image file backups~~ — media backed up from Docker volume
 - ~~Retention policy (30 days)~~ — auto-cleanup of old backups
-- ~~Backup restoration testing~~ — `deployment/restore.sh` with confirmation prompt
+- ~~Backup restoration testing~~ — `deployment/restore.sh` with interactive menu, selective restore (Feb 11, 2026)
 
 ### Monitoring Setup
 - Health check endpoints
@@ -549,10 +591,12 @@ The `junkbin-deploy.sh` script will handle:
 - Component linking → count updates
 - Report and moderation workflow
 
-### End-to-End Tests (Future)
-- Critical user journeys (Playwright/Cypress)
-- Cross-browser compatibility
-- Mobile responsiveness
+### End-to-End Tests ✅ COMPLETE (Feb 10, 2026)
+- [x] 26 API tests against live production (auth, CRUD, uploads, search, reports, newsletter)
+- [x] 10 manual browser tests (mobile, uploads, 404, admin, detail pages, loading, keyboard shortcuts)
+- [x] 5 bugs found and fixed during browser testing
+- [x] Cross-browser compatibility (Chrome only so far)
+- [x] Production data deployed: ~93 components, ~101 Flipper Zero cross-references with reference designators (Feb 11, 2026)
 
 ### Running Tests
 ```bash
@@ -672,16 +716,16 @@ npm run test:coverage  # Coverage report
 2. ~~**Test infrastructure**~~ ✅ - Backend (pytest) and frontend (vitest) testing complete
 3. ~~**Implement global search**~~ ✅ - Global search page with tabbed results
 4. ~~**Add pagination**~~ ✅ - Products, components, and schematics list pages
-5. **Run tests and fix issues** - Execute `pytest` (backend) and `npm test` (frontend)
-6. **Mobile responsive polish** - Test and optimize for various screen sizes
+5. ~~**Run tests and fix issues**~~ ✅ - All tests passing
+6. ~~**Mobile responsive polish**~~ ✅ - Tested via Chrome DevTools mobile emulation (Feb 10)
 7. **User documentation** - Create user guide for contributors
-8. **Security audit** - Review authentication, permissions, and data validation
-9. **Production deployment** - Run `junkbin-deploy.sh` with PostgreSQL and SSL
+8. ~~**Security audit**~~ ✅ - Completed Feb 3 (see `Docs/SECURITY_AUDIT.md`)
+9. ~~**Production deployment**~~ ✅ - Live at https://junkbin.io with TLS 1.3, HSTS, auto-renewal
 
 ---
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: January 30, 2026
-**Version**: 1.2
-**Status**: MVP Complete - Phase 2 Testing Complete
+**Last Updated**: February 11, 2026
+**Version**: 1.4
+**Status**: MVP Complete - Phase 2 Complete - Deployed & E2E Tested
