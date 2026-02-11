@@ -4,9 +4,13 @@ Component views for Junkbin.io API
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_spectacular.utils import extend_schema, extend_schema_view
+
+from utils.cache import staff_key_prefix
 
 from .models import Component, ProductComponent
 from .serializers import (
@@ -54,6 +58,10 @@ class ComponentViewSet(viewsets.ModelViewSet):
         elif self.action == 'destroy':
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
+
+    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
 
     @action(detail=True, methods=['get'])
     def products(self, request, pk=None):
@@ -114,6 +122,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         component.cross_references.add(other_component)
         return Response({'detail': 'Cross-reference added'})
 
+    @method_decorator(cache_page(60 * 60))
     @action(detail=False, methods=['get'])
     def types(self, request):
         """Get list of component types with counts."""
@@ -140,6 +149,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
 
         return Response(result)
 
+    @method_decorator(cache_page(60 * 60))
     @action(detail=False, methods=['get'])
     def manufacturers(self, request):
         """Get list of component manufacturers with counts."""

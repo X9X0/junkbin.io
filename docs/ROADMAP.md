@@ -206,7 +206,7 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Set up Django admin interface
 - ✅ Create database migrations
 - ✅ Implement basic API endpoints (CRUD for products)
-- ⬜ Set up Redis and Celery (deferred to production)
+- ✅ Set up Redis and Celery (running in Docker Compose stack)
 - ✅ Configure email backend
 
 #### Week 2-3: Authentication & User Management
@@ -249,7 +249,7 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Filter by manufacturer, category, region
 - ✅ Component cross-reference search
 - ✅ "Find products containing component X"
-- ⬜ Search result caching
+- ✅ Search result caching (Redis `cache_page` on list/search/stats endpoints)
 - ✅ Search suggestions/autocomplete (header dropdown with live results)
 
 #### Week 9-10: Reporting & Moderation System
