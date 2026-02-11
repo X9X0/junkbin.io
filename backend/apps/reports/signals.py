@@ -33,10 +33,10 @@ def check_strike_threshold(sender, instance, created, **kwargs):
 
     # Check if we've hit a threshold (3, 6, 9, etc.)
     if strike_count > 0 and strike_count % threshold == 0:
-        # Check if there's already a pending review
+        # Check if there's already a review at this threshold
         existing_review = UserReview.objects.filter(
             user=user,
-            status__in=['pending', 'in_progress']
+            trigger_report_count=strike_count
         ).exists()
 
         if not existing_review:
