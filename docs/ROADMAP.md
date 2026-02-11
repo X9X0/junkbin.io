@@ -199,74 +199,74 @@ Other users can search this database to find which consumer products contain spe
 ### Phase 1: MVP (Weeks 1-6) ✅ COMPLETE
 
 #### Week 1-2: Infrastructure & Backend Foundation
-- [x] Set up development environment
-- [x] Create Django project structure
-- [x] Configure PostgreSQL database (SQLite for dev, PostgreSQL ready for prod)
-- [x] Implement core models (User, Product, Component, ProductComponent)
-- [x] Set up Django admin interface
-- [x] Create database migrations
-- [x] Implement basic API endpoints (CRUD for products)
-- [ ] Set up Redis and Celery (deferred to production)
-- [x] Configure email backend
+- ✅ Set up development environment
+- ✅ Create Django project structure
+- ✅ Configure PostgreSQL database (SQLite for dev, PostgreSQL ready for prod)
+- ✅ Implement core models (User, Product, Component, ProductComponent)
+- ✅ Set up Django admin interface
+- ✅ Create database migrations
+- ✅ Implement basic API endpoints (CRUD for products)
+- ⬜ Set up Redis and Celery (deferred to production)
+- ✅ Configure email backend
 
 #### Week 2-3: Authentication & User Management
-- [x] Implement email/password registration
-- [x] Email verification workflow
-- [x] Google OAuth integration (django-allauth configured)
-- [x] Basic user profile pages
-- [x] Password reset functionality
-- [x] Session management (JWT with refresh tokens)
+- ✅ Implement email/password registration
+- ✅ Email verification workflow
+- ✅ Google OAuth integration (django-allauth configured)
+- ✅ Basic user profile pages
+- ✅ Password reset functionality
+- ✅ Session management (JWT with refresh tokens)
 
 #### Week 3-4: Core Submission Features
-- [x] Product submission form (backend)
-- [x] Image upload handling (with thumbnails via django-imagekit)
-- [x] Basic/Advanced submission levels
-- [x] Component search functionality
-- [x] Product-component linking
-- [x] Reference designator tracking
+- ✅ Product submission form (backend)
+- ✅ Image upload handling (with thumbnails via django-imagekit)
+- ✅ Basic/Advanced submission levels
+- ✅ Component search functionality
+- ✅ Product-component linking
+- ✅ Reference designator tracking
 
 #### Week 4-5: Frontend Development
-- [x] React project setup with Vite (Vite 7.3 + Node 22)
-- [x] Cyberpunk dark theme implementation (custom Tailwind theme)
-- [x] "NO USER SERVICEABLE PARTS INSIDE" Easter eggs
-- [x] Product listing page (search, filter, grid/list view)
-- [x] Product detail page (gallery, components, schematics, image upload)
-- [x] Component search interface (43 component types, cross-reference)
-- [x] Submission form UI (multi-step wizard)
-- [x] Image gallery with zoom (basic gallery implemented)
+- ✅ React project setup with Vite (Vite 7.3 + Node 22)
+- ✅ Cyberpunk dark theme implementation (custom Tailwind theme)
+- ✅ "NO USER SERVICEABLE PARTS INSIDE" Easter eggs
+- ✅ Product listing page (search, filter, grid/list view)
+- ✅ Product detail page (gallery, components, schematics, image upload)
+- ✅ Component search interface (43 component types, cross-reference)
+- ✅ Submission form UI (multi-step wizard)
+- ✅ Image gallery with zoom (basic gallery implemented)
 
 #### Week 5-6: Admin & Moderation
-- [x] Admin dashboard for content review (Django admin)
-- [ ] Bulk user contribution review tools
-- [x] Basic moderation queue
-- [x] User contribution statistics
-- [x] Simple report system (3-strike moderation)
+- ✅ Admin dashboard for content review (Django admin)
+- ⬜ Bulk user contribution review tools
+- ✅ Basic moderation queue
+- ✅ User contribution statistics
+- ✅ Simple report system (3-strike moderation)
 
 ### Phase 2: Enhanced Features (Weeks 7-14) 🔄 IN PROGRESS
 
 #### Week 7-8: Advanced Search & Filtering
-- [x] Multi-parameter search (products, components, schematics)
-- [x] Filter by manufacturer, category, region
-- [x] Component cross-reference search
-- [x] "Find products containing component X"
-- [ ] Search result caching
-- [x] Search suggestions/autocomplete (header dropdown with live results)
+- ✅ Multi-parameter search (products, components, schematics)
+- ✅ Filter by manufacturer, category, region
+- ✅ Component cross-reference search
+- ✅ "Find products containing component X"
+- ⬜ Search result caching
+- ✅ Search suggestions/autocomplete (header dropdown with live results)
 
 #### Week 9-10: Reporting & Moderation System
-- [x] User report submission form (ReportModal component)
-- [ ] Report review workflow
-- [x] 3-strike automatic review trigger
-- [x] User reputation system (contribution_count, is_trusted)
-- [ ] Badge/achievement system
-- [x] Trusted user status
+- ✅ User report submission form (ReportModal component)
+- ⬜ Report review workflow
+- ✅ 3-strike automatic review trigger
+- ✅ User reputation system (contribution_count, is_trusted)
+- ⬜ Badge/achievement system
+- ✅ Trusted user status
 
 #### Week 10-11: Data Import/Export
-- [ ] CSV BOM import with column mapping (see details below)
-- [x] BOM template downloads (CSV template + instructions)
-- [x] API for programmatic access (REST API complete)
-- [x] Export product data as CSV/JSON (JSON + BOM CSV export)
-- [x] **Flipper Zero BOM import command** - `manage.py import_flipper_bom` imports ~93 components with reference designators from Excel BOM (Feb 11, 2026)
-- [ ] Batch component addition
+- ⬜ CSV BOM import with column mapping (see details below)
+- ✅ BOM template downloads (CSV template + instructions)
+- ✅ API for programmatic access (REST API complete)
+- ✅ Export product data as CSV/JSON (JSON + BOM CSV export)
+- ✅ **Flipper Zero BOM import command** - `manage.py import_flipper_bom` imports ~93 components with reference designators from Excel BOM (Feb 11, 2026)
+- ⬜ Batch component addition
 
 ##### CSV BOM Import — Implementation Notes
 
@@ -310,20 +310,20 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 **Estimated effort:** 3-5 days (backend endpoint + admin import + frontend wizard UI)
 
 #### Week 12-13: Polish & UX Improvements
-- [x] Mobile responsive design (tabs, tables, forms, search)
-- [ ] Progressive Web App (PWA) capabilities
-- [x] Image optimization and lazy loading (LazyImage component)
-- [ ] Search performance optimization
-- [x] User onboarding flow (OnboardingTips component with dismissable tips)
-- [x] Tutorial/help system (Keyboard shortcuts modal, ? to open)
+- ✅ Mobile responsive design (tabs, tables, forms, search)
+- ⬜ Progressive Web App (PWA) capabilities
+- ✅ Image optimization and lazy loading (LazyImage component)
+- ⬜ Search performance optimization
+- ✅ User onboarding flow (OnboardingTips component with dismissable tips)
+- ✅ Tutorial/help system (Keyboard shortcuts modal, ? to open)
 
 #### Week 14: Testing & Documentation ✅ COMPLETE
-- [x] Unit tests for critical paths (pytest + vitest)
-- [x] Integration tests (backend workflow tests)
-- [x] API documentation (Swagger/OpenAPI via drf-spectacular)
-- [ ] User documentation
-- [x] Deployment documentation (junkbin-deploy.sh, update.sh, backup.sh, restore.sh)
-- [x] Security audit (Feb 3, 2026 — see `Docs/SECURITY_AUDIT.md`)
+- ✅ Unit tests for critical paths (pytest + vitest)
+- ✅ Integration tests (backend workflow tests)
+- ✅ API documentation (Swagger/OpenAPI via drf-spectacular)
+- ⬜ User documentation
+- ✅ Deployment documentation (junkbin-deploy.sh, update.sh, backup.sh, restore.sh)
+- ✅ Security audit (Feb 3, 2026 — see `Docs/SECURITY_AUDIT.md`)
 
 ##### Test Coverage Implemented:
 **Backend (pytest + factory_boy):**
@@ -345,26 +345,26 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 ### Phase 3: Advanced Features (Weeks 15-20)
 
 #### Community Features
-- [ ] User comments on products
-- [ ] Component verification voting
-- [ ] User-to-user messaging
-- [ ] Contribution leaderboards
-- [ ] Community guidelines enforcement
+- ⬜ User comments on products
+- ⬜ Component verification voting
+- ⬜ User-to-user messaging
+- ⬜ Contribution leaderboards
+- ⬜ Community guidelines enforcement
 
 #### Integration & Automation
-- [ ] Octopart API integration (component cross-reference)
-- [ ] DigiKey/Mouser API (availability/pricing)
-- [ ] Datasheet auto-linking
-- [ ] AI-assisted component recognition from images
-- [ ] iFixit integration for repair guides
-- [ ] Discord/Slack webhooks for notifications
+- ⬜ Octopart API integration (component cross-reference)
+- ⬜ DigiKey/Mouser API (availability/pricing)
+- ⬜ Datasheet auto-linking
+- ⬜ AI-assisted component recognition from images
+- ⬜ iFixit integration for repair guides
+- ⬜ Discord/Slack webhooks for notifications
 
 #### Advanced Analytics
-- [ ] Prometheus metrics
-- [ ] Grafana dashboards
-- [ ] Component popularity tracking
-- [ ] Search analytics
-- [ ] User engagement metrics
+- ⬜ Prometheus metrics
+- ⬜ Grafana dashboards
+- ⬜ Component popularity tracking
+- ⬜ Search analytics
+- ⬜ User engagement metrics
 
 ---
 
@@ -445,16 +445,16 @@ The `junkbin-deploy.sh` script will handle:
 - **Code/Technical**: Fira Code or JetBrains Mono
 
 ### Visual Effects (Implemented)
-- [x] Scanlines overlay effect (.scanlines)
-- [x] Glitch text animation (.glitch with data-text)
-- [x] Neon glow on buttons and cards
-- [x] Grid background pattern
-- [x] Chromatic aberration on hover (.chromatic-aberration)
-- [x] CRT flicker effect (.crt)
-- [x] Terminal-styled inputs with glow (.terminal-input)
-- [x] Blinking cursor animation (.blink)
-- [x] Neon pulsing border (.neon-border)
-- [x] Static noise overlay (.noise)
+- ✅ Scanlines overlay effect (.scanlines)
+- ✅ Glitch text animation (.glitch with data-text)
+- ✅ Neon glow on buttons and cards
+- ✅ Grid background pattern
+- ✅ Chromatic aberration on hover (.chromatic-aberration)
+- ✅ CRT flicker effect (.crt)
+- ✅ Terminal-styled inputs with glow (.terminal-input)
+- ✅ Blinking cursor animation (.blink)
+- ✅ Neon pulsing border (.neon-border)
+- ✅ Static noise overlay (.noise)
 
 ### "NO USER SERVICEABLE PARTS INSIDE" Placement
 1. **Background watermark** - Ghosted on main pages
@@ -592,11 +592,11 @@ The `junkbin-deploy.sh` script will handle:
 - Report and moderation workflow
 
 ### End-to-End Tests ✅ COMPLETE (Feb 10, 2026)
-- [x] 26 API tests against live production (auth, CRUD, uploads, search, reports, newsletter)
-- [x] 10 manual browser tests (mobile, uploads, 404, admin, detail pages, loading, keyboard shortcuts)
-- [x] 5 bugs found and fixed during browser testing
-- [x] Cross-browser compatibility (Chrome only so far)
-- [x] Production data deployed: ~93 components, ~101 Flipper Zero cross-references with reference designators (Feb 11, 2026)
+- ✅ 26 API tests against live production (auth, CRUD, uploads, search, reports, newsletter)
+- ✅ 10 manual browser tests (mobile, uploads, 404, admin, detail pages, loading, keyboard shortcuts)
+- ✅ 5 bugs found and fixed during browser testing
+- ✅ Cross-browser compatibility (Chrome only so far)
+- ✅ Production data deployed: ~93 components, ~101 Flipper Zero cross-references with reference designators (Feb 11, 2026)
 
 ### Running Tests
 ```bash
