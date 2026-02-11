@@ -17,6 +17,7 @@ import PasswordResetConfirm from './pages/PasswordResetConfirm';
 import VerifyEmail from './pages/VerifyEmail';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
+import ScrollToTop from './components/ScrollToTop';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -33,6 +34,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
+          <ScrollToTop />
           <Routes>
             <Route path="/" element={<Layout />}>
               <Route index element={<Home />} />

@@ -267,16 +267,17 @@ export default function Components() {
                       Found in {component.usage_count} products
                     </span>
                     {component.datasheet_url && (
-                      <a
-                        href={component.datasheet_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
                         className="flex items-center gap-1 text-gray-500 hover:text-cyber-cyan transition-colors"
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          window.open(component.datasheet_url, '_blank', 'noopener,noreferrer');
+                        }}
                       >
                         <ExternalLink className="h-3 w-3" />
                         Datasheet
-                      </a>
+                      </button>
                     )}
                   </div>
 
