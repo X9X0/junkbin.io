@@ -90,12 +90,12 @@ npm run dev
 
 We welcome contributions! Areas we need help with:
 
-- [ ] Component database population
-- [ ] PCB photography
-- [ ] Code contributions
-- [ ] Documentation
-- [ ] UI/UX design
-- [ ] Testing
+- ⬜ Component database population
+- ⬜ PCB photography
+- ⬜ Code contributions
+- ⬜ Documentation
+- ⬜ UI/UX design
+- ⬜ Testing
 
 ## 📜 License
 
