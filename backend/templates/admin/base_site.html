@@ -16,7 +16,7 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
     vertical-align: middle;
-    transition: opacity 0.2s;
+    transition: background 0.3s, color 0.3s;
   }
   #system-status-indicator:hover { opacity: 0.85; }
   #system-status-indicator .dot {
@@ -25,48 +25,54 @@
     border-radius: 50%;
     display: inline-block;
   }
-  .ssi-loading { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
-  .ssi-loading .dot { background: rgba(255,255,255,0.3); }
-  .ssi-ok { background: rgba(40,167,69,0.2); color: #28a745; }
-  .ssi-ok .dot { background: #28a745; }
-  .ssi-warn { background: rgba(255,193,7,0.2); color: #ffc107; }
-  .ssi-warn .dot { background: #ffc107; }
-  .ssi-error { background: rgba(220,53,69,0.25); color: #ff6b7a; }
-  .ssi-error .dot { background: #dc3545; animation: pulse-dot 1.5s ease-in-out infinite; }
+  #system-status-indicator.ssi-loading { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.5); }
+  #system-status-indicator.ssi-loading .dot { background: rgba(255,255,255,0.3); }
+  #system-status-indicator.ssi-ok { background: rgba(40,167,69,0.25); color: #2ecc40; }
+  #system-status-indicator.ssi-ok .dot { background: #28a745; }
+  #system-status-indicator.ssi-warn { background: rgba(255,193,7,0.25); color: #ffdc00; }
+  #system-status-indicator.ssi-warn .dot { background: #ffc107; }
+  #system-status-indicator.ssi-error { background: rgba(220,53,69,0.3); color: #ff6b7a; }
+  #system-status-indicator.ssi-error .dot { background: #dc3545; animation: pulse-dot 1.5s ease-in-out infinite; }
   @keyframes pulse-dot {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.4; }
   }
 </style>
-<a id="system-status-indicator" href="{% url 'admin-system-status' %}" class="ssi-loading" title="System Status">
+<a id="system-status-indicator" href="{% url 'admin-system-status' %}" class="ssi-loading" title="Loading status...">
   <span class="dot"></span>
-  <span class="ssi-label">...</span>
+  <span class="ssi-label">Loading...</span>
 </a>
 <script>
 (function() {
   var el = document.getElementById('system-status-indicator');
   if (!el) return;
   var url = '{% url "admin-system-status-json" %}';
+  var labels = {ok: 'Operational', warn: 'Degraded', error: 'Critical'};
+
+  function applyStatus(status, title) {
+    el.className = 'ssi-' + status;
+    el.id = 'system-status-indicator';
+    el.querySelector('.ssi-label').textContent = labels[status] || 'Critical';
+    el.title = title;
+  }
+
   function update() {
-    fetch(url, {credentials: 'same-origin'}).then(function(r) {
-      if (!r.ok) throw new Error(r.status);
+    fetch(url, {credentials: 'same-origin', redirect: 'manual'}).then(function(r) {
+      if (r.type === 'opaqueredirect' || !r.ok) {
+        applyStatus('error', 'Could not fetch status (not authenticated)');
+        return null;
+      }
       return r.json();
     }).then(function(data) {
+      if (!data) return;
       var s = data.overall || 'error';
-      el.className = 'ssi-' + s;
-      el.id = 'system-status-indicator';
-      var labels = {ok: 'All OK', warn: 'Warning', error: 'Issues'};
-      el.querySelector('.ssi-label').textContent = labels[s] || s;
       var parts = [];
       for (var name in data.services) {
         if (data.services[name] !== 'ok') parts.push(name + ': ' + data.services[name]);
       }
-      el.title = parts.length ? parts.join(', ') : 'All systems operational';
+      applyStatus(s, parts.length ? parts.join(', ') : 'All systems operational');
     }).catch(function() {
-      el.className = 'ssi-error';
-      el.id = 'system-status-indicator';
-      el.querySelector('.ssi-label').textContent = 'N/A';
-      el.title = 'Could not fetch status';
+      applyStatus('error', 'Could not fetch status');
     });
   }
   update();
