@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
-from .models import Product, ProductImage, Schematic
+from .models import Product, ProductImage, ProductComment, Schematic
 
 
 class ProductImageInline(admin.TabularInline):
@@ -41,6 +41,15 @@ class SchematicInline(admin.TabularInline):
         'title', 'schematic_type', 'file', 'source_type',
         'is_approved', 'download_count', 'uploaded_by', 'uploaded_at'
     ]
+
+
+class ProductCommentInline(admin.TabularInline):
+    """Inline admin for product comments."""
+
+    model = ProductComment
+    extra = 0
+    readonly_fields = ['author', 'created_at']
+    fields = ['author', 'content', 'created_at']
 
 
 @admin.register(Product)
@@ -92,7 +101,7 @@ class ProductAdmin(admin.ModelAdmin):
         )}),
     )
 
-    inlines = [ProductImageInline, SchematicInline]
+    inlines = [ProductImageInline, SchematicInline, ProductCommentInline]
 
     actions = ['approve_products', 'unapprove_products', 'feature_products', 'export_as_csv']
 
@@ -240,3 +249,18 @@ class SchematicAdmin(admin.ModelAdmin):
     def unapprove_schematics(self, request, queryset):
         updated = queryset.update(is_approved=False)
         self.message_user(request, f'{updated} schematics unapproved.')
+
+
+@admin.register(ProductComment)
+class ProductCommentAdmin(admin.ModelAdmin):
+    """Admin for product comments."""
+
+    list_display = ['product', 'author', 'content_preview', 'created_at']
+    list_filter = ['created_at']
+    search_fields = ['author__username', 'content', 'product__manufacturer', 'product__model_number']
+    readonly_fields = ['id', 'created_at', 'updated_at']
+    ordering = ['-created_at']
+
+    def content_preview(self, obj):
+        return obj.content[:80] + '...' if len(obj.content) > 80 else obj.content
+    content_preview.short_description = 'Content'

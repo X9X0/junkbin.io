@@ -1,6 +1,7 @@
 import api from './client';
 import type {
   Product,
+  ProductComment,
   Component,
   Schematic,
   User,
@@ -94,6 +95,20 @@ export const products = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
+  },
+
+  comments: async (id: string, page?: number): Promise<PaginatedResponse<ProductComment>> => {
+    const response = await api.get(`/products/${id}/comments/`, { params: { page } });
+    return response.data;
+  },
+
+  addComment: async (id: string, content: string): Promise<ProductComment> => {
+    const response = await api.post(`/products/${id}/comments/`, { content });
+    return response.data;
+  },
+
+  deleteComment: async (productId: string, commentId: string): Promise<void> => {
+    await api.delete(`/products/${productId}/comments/${commentId}/`);
   },
 
   uploadSchematic: async (id: string, formData: FormData): Promise<Schematic> => {
