@@ -6,6 +6,7 @@ import ImageUpload from '../components/ImageUpload';
 import SchematicUpload from '../components/SchematicUpload';
 import AddComponentForm from '../components/AddComponentForm';
 import ReportModal from '../components/ReportModal';
+import ProductComments from '../components/ProductComments';
 import {
   Cpu,
   FileText,
@@ -17,6 +18,7 @@ import {
   Camera,
   Flag,
   Share2,
+  MessageSquare,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -26,7 +28,7 @@ export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
-  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments'>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -305,7 +307,8 @@ export default function ProductDetail() {
               { key: 'images', label: 'Images', icon: Camera },
               { key: 'components', label: 'Parts', icon: Cpu },
               { key: 'schematics', label: 'Docs', icon: FileText },
-            ].map(({ key, label, icon: Icon }) => (
+              { key: 'comments', label: 'Comments', icon: MessageSquare, count: product.comment_count },
+            ].map(({ key, label, icon: Icon, count }) => (
               <button
                 key={key}
                 onClick={() => setActiveTab(key as typeof activeTab)}
@@ -318,6 +321,11 @@ export default function ProductDetail() {
               >
                 <Icon className="h-4 w-4" />
                 {label}
+                {count !== undefined && count > 0 && (
+                  <span className="text-[10px] bg-cyber-cyan/20 text-cyber-cyan px-1.5 py-0.5 rounded-full font-mono">
+                    {count}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -678,6 +686,9 @@ export default function ProductDetail() {
               </ul>
             </div>
           </div>
+        )}
+        {activeTab === 'comments' && (
+          <ProductComments productId={id!} />
         )}
       </div>
 

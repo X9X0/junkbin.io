@@ -345,7 +345,7 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 ### Phase 3: Advanced Features (Weeks 15-20)
 
 #### Community Features
-- ⬜ User comments on products
+- ✅ User comments on products
 - ⬜ Component verification voting
 - ⬜ User-to-user messaging
 - ✅ Contribution leaderboards
@@ -726,6 +726,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: February 11, 2026
-**Version**: 1.4
+**Last Updated**: February 12, 2026
+**Version**: 1.5
 **Status**: MVP Complete - Phase 2 Complete - Deployed & E2E Tested

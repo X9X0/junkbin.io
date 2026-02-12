@@ -14,13 +14,15 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
 
-from .models import Product, ProductImage, Schematic
+from .models import Product, ProductImage, ProductComment, Schematic
 from .serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
     ProductCreateSerializer,
     ProductImageSerializer,
     ProductImageUploadSerializer,
+    ProductCommentSerializer,
+    ProductCommentCreateSerializer,
     SchematicSerializer,
     SchematicUploadSerializer,
 )
@@ -71,10 +73,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'add_component', 'upload_image', 'upload_schematic']:
-            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
+        if self.action in ['create', 'add_component', 'upload_image', 'upload_schematic', 'comments']:
+            if self.request.method == 'POST':
+                return [permissions.IsAuthenticated(), IsVerifiedEmail()]
+            return [permissions.AllowAny()]
+        elif self.action == 'comment_detail':
+            return [permissions.IsAuthenticated()]
         elif self.action in ['update', 'partial_update', 'destroy']:
-            # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         return [permissions.AllowAny()]
 
@@ -271,6 +276,53 @@ class ProductViewSet(viewsets.ModelViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=['get', 'post'])
+    def comments(self, request, pk=None):
+        """Get or add comments on a product."""
+        product = self.get_object()
+
+        if request.method == 'GET':
+            comments = product.comments.select_related('author').all()
+            page = self.paginate_queryset(comments)
+            if page is not None:
+                serializer = ProductCommentSerializer(page, many=True)
+                return self.get_paginated_response(serializer.data)
+            serializer = ProductCommentSerializer(comments, many=True)
+            return Response(serializer.data)
+
+        # POST — add comment
+        serializer = ProductCommentCreateSerializer(
+            data=request.data,
+            context={'request': request, 'product': product}
+        )
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save()
+        return Response(
+            ProductCommentSerializer(comment).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @action(
+        detail=True,
+        methods=['delete'],
+        url_path='comments/(?P<comment_id>[^/.]+)',
+        url_name='comment-detail'
+    )
+    def comment_detail(self, request, pk=None, comment_id=None):
+        """Delete a comment (owner or moderator only)."""
+        product = self.get_object()
+        comment = get_object_or_404(ProductComment, pk=comment_id, product=product)
+
+        # Only author or moderator/staff can delete
+        if comment.author != request.user and not request.user.is_staff and not request.user.is_moderator:
+            return Response(
+                {'detail': 'You do not have permission to delete this comment.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        comment.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
         detail=True,

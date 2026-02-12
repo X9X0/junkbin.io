@@ -4,7 +4,7 @@ Product serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Product, ProductImage, Schematic
+from .models import Product, ProductImage, ProductComment, Schematic
 from utils.file_validation import validate_image_file, validate_schematic_file
 from utils.image_processing import strip_exif
 
@@ -89,13 +89,15 @@ class ProductListSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    comment_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
             'id', 'slug', 'manufacturer', 'model_number', 'revision',
             'region', 'region_display', 'category', 'category_display',
             'year_manufactured', 'component_count', 'image_count',
-            'schematic_count', 'primary_image',
+            'schematic_count', 'comment_count', 'primary_image',
             'created_by', 'created_at', 'is_approved', 'is_featured'
         ]
 
@@ -110,6 +112,9 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_schematic_count(self, obj):
         return obj.schematics.filter(is_approved=True).count()
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
 
 
 class ProductDetailSerializer(serializers.ModelSerializer):
@@ -128,6 +133,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         read_only=True
     )
 
+    comment_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Product
         fields = [
@@ -136,7 +143,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'subcategory', 'year_manufactured', 'fcc_id', 'ic_id',
             'part_number', 'description', 'teardown_notes',
             'component_count', 'image_count', 'schematic_count',
-            'view_count', 'images',
+            'comment_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
             'is_approved', 'is_featured'
         ]
@@ -151,6 +158,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_schematic_count(self, obj):
         return obj.schematics.filter(is_approved=True).count()
+
+    def get_comment_count(self, obj):
+        return obj.comments.count()
 
 
 class ProductCreateSerializer(serializers.ModelSerializer):
@@ -265,4 +275,28 @@ class SchematicUploadSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['uploaded_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class ProductCommentSerializer(serializers.ModelSerializer):
+    """Serializer for reading product comments."""
+
+    author = CreatedBySerializer(read_only=True)
+
+    class Meta:
+        model = ProductComment
+        fields = ['id', 'author', 'content', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'author', 'created_at', 'updated_at']
+
+
+class ProductCommentCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating product comments."""
+
+    class Meta:
+        model = ProductComment
+        fields = ['content']
+
+    def create(self, validated_data):
+        validated_data['author'] = self.context['request'].user
+        validated_data['product'] = self.context['product']
         return super().create(validated_data)

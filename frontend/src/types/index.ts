@@ -32,6 +32,7 @@ export interface Product {
   component_count: number;
   image_count: number;
   schematic_count: number;
+  comment_count?: number;
   created_by?: CreatedBy;
   created_at: string;
   images?: ProductImage[];
@@ -52,6 +53,14 @@ export interface CreatedBy {
   id: string;
   username: string;
   avatar?: string;
+}
+
+export interface ProductComment {
+  id: string;
+  author: CreatedBy;
+  content: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // Component types

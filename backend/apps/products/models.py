@@ -457,3 +457,43 @@ class Schematic(models.Model):
         Schematic.objects.filter(pk=self.pk).update(
             download_count=F('download_count') + 1
         )
+
+
+class ProductComment(models.Model):
+    """
+    User comments on products — repair tips, questions, notes.
+    """
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='comments'
+    )
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='product_comments'
+    )
+    content = models.TextField(
+        max_length=2000,
+        help_text=_('Comment text (max 2000 characters)')
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('product comment')
+        verbose_name_plural = _('product comments')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['product', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'Comment by {self.author} on {self.product}'
