@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -99,6 +99,13 @@ export default function Header() {
               className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
             >
               SCHEMATICS
+            </Link>
+            <Link
+              to="/leaderboard"
+              className="font-mono text-sm text-gray-400 hover:text-cyber-yellow transition-colors flex items-center gap-1"
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              RANKS
             </Link>
             {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
               <Link
@@ -310,6 +317,14 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               SCHEMATICS
+            </Link>
+            <Link
+              to="/leaderboard"
+              className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-yellow flex items-center gap-1"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Trophy className="h-3.5 w-3.5" />
+              LEADERBOARD
             </Link>
             {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
               <Link

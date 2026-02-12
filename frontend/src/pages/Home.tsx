@@ -184,13 +184,13 @@ export default function Home() {
               <div className="text-gray-500 font-mono text-xs tracking-wider">SCHEMATICS</div>
             </div>
 
-            <div className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50">
+            <Link to="/leaderboard" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-yellow/50 transition-colors group cursor-pointer block">
               <Users className="h-6 w-6 text-cyber-yellow mx-auto mb-3" />
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-yellow mb-1">
                 {siteStats?.contributors ?? '—'}
               </div>
-              <div className="text-gray-500 font-mono text-xs tracking-wider">CONTRIBUTORS</div>
-            </div>
+              <div className="text-gray-500 group-hover:text-cyber-yellow font-mono text-xs tracking-wider transition-colors">CONTRIBUTORS</div>
+            </Link>
           </div>
         </div>
       </section>

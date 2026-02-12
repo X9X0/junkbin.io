@@ -311,7 +311,7 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 
 #### Week 12-13: Polish & UX Improvements
 - ✅ Mobile responsive design (tabs, tables, forms, search)
-- ⬜ Progressive Web App (PWA) capabilities
+- ✅ Progressive Web App (PWA) capabilities
 - ✅ Image optimization and lazy loading (LazyImage component)
 - ⬜ Search performance optimization
 - ✅ User onboarding flow (OnboardingTips component with dismissable tips)
@@ -348,7 +348,7 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 - ⬜ User comments on products
 - ⬜ Component verification voting
 - ⬜ User-to-user messaging
-- ⬜ Contribution leaderboards
+- ✅ Contribution leaderboards
 - ⬜ Community guidelines enforcement
 
 #### Integration & Automation
