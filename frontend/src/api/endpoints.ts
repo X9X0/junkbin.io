@@ -9,6 +9,9 @@ import type {
   LoginCredentials,
   RegisterData,
   ProductFilters,
+  Report,
+  ReportStats,
+  UserReview,
 } from '../types';
 
 // Auth endpoints
@@ -229,6 +232,62 @@ export const stats = {
     contributors: number;
   }> => {
     const response = await api.get('/stats/');
+    return response.data;
+  },
+};
+
+// Reports endpoints (moderation)
+export const reports = {
+  list: async (params?: any): Promise<PaginatedResponse<Report>> => {
+    const response = await api.get('/reports/', { params });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<Report> => {
+    const response = await api.get(`/reports/${id}/`);
+    return response.data;
+  },
+
+  pending: async (params?: any): Promise<PaginatedResponse<Report>> => {
+    const response = await api.get('/reports/pending/', { params });
+    return response.data;
+  },
+
+  resolve: async (id: string, data: { action: string; notes?: string }): Promise<Report> => {
+    const response = await api.post(`/reports/${id}/resolve/`, data);
+    return response.data;
+  },
+
+  stats: async (): Promise<ReportStats> => {
+    const response = await api.get('/reports/stats/');
+    return response.data;
+  },
+};
+
+// User reviews endpoints (moderation)
+export const reviews = {
+  list: async (params?: any): Promise<PaginatedResponse<UserReview>> => {
+    const response = await api.get('/user-reviews/', { params });
+    return response.data;
+  },
+
+  pending: async (params?: any): Promise<PaginatedResponse<UserReview>> => {
+    const response = await api.get('/user-reviews/pending/', { params });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<UserReview> => {
+    const response = await api.get(`/user-reviews/${id}/`);
+    return response.data;
+  },
+
+  start: async (id: string): Promise<UserReview> => {
+    const response = await api.post(`/user-reviews/${id}/start_review/`);
+    return response.data;
+  },
+
+  complete: async (id: string, data: { status: string; notes?: string; action_taken?: string }): Promise<UserReview> => {
+    const response = await api.post(`/user-reviews/${id}/complete/`, data);
     return response.data;
   },
 };
