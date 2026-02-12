@@ -58,9 +58,10 @@ Other users can search this database to find which consumer products contain spe
   - Local filesystem (development)
   - MinIO or AWS S3 (production)
 - **Backup**: Automated PostgreSQL dumps + file storage sync
-- **Monitoring**: 
+- **Monitoring**:
   - Prometheus + Grafana (future)
-  - Basic health check endpoints (MVP)
+  - Health check endpoints (`/api/health/`, nginx `/health`)
+  - Admin system status dashboard (service health, metrics, Celery tasks)
 
 ### Deployment Targets
 - Ubuntu 22.04/24.04 LTS
@@ -359,6 +360,11 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 - ⬜ iFixit integration for repair guides
 - ⬜ Discord/Slack webhooks for notifications
 
+#### Infrastructure & Operations
+- ✅ Admin system status dashboard — PostgreSQL, Redis, Celery workers, Celery Beat health checks; CPU/memory/disk metrics; recent task history; app stats; quick links (Feb 12, 2026)
+- ✅ Nginx cache headers — `no-cache` on index.html, immutable caching on hashed assets, proper 404 for missing assets (Feb 12, 2026)
+- ✅ Docker healthcheck fix — IPv4 `127.0.0.1` instead of `localhost` (IPv6 resolution issue) (Feb 12, 2026)
+
 #### Advanced Analytics
 - ⬜ Prometheus metrics
 - ⬜ Grafana dashboards
@@ -413,7 +419,8 @@ The `junkbin-deploy.sh` script will handle:
 - ~~Backup restoration testing~~ — `deployment/restore.sh` with interactive menu, selective restore (Feb 11, 2026)
 
 ### Monitoring Setup
-- Health check endpoints
+- ✅ Health check endpoints (`/api/health/`, nginx `/health`)
+- ✅ Admin system status dashboard (`/admin/system-status/`) — service health, system metrics, Celery task history, app stats, quick links (Feb 12, 2026)
 - Log rotation (logrotate)
 - Disk space monitoring
 - Service restart on failure (systemd)
@@ -727,5 +734,5 @@ npm run test:coverage  # Coverage report
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
 **Last Updated**: February 12, 2026
-**Version**: 1.5
-**Status**: MVP Complete - Phase 2 Complete - Deployed & E2E Tested
+**Version**: 1.6
+**Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Deployed & E2E Tested
