@@ -1,0 +1,215 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}System Status | {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; System Status
+  </div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .status-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 16px; }
+  .status-card h3 { margin: 0 0 8px; font-size: 14px; color: #333; }
+  .status-card .detail { font-size: 12px; color: #666; margin-top: 4px; word-break: break-all; }
+  .status-ok { border-left: 4px solid #28a745; }
+  .status-warn { border-left: 4px solid #ffc107; }
+  .status-error { border-left: 4px solid #dc3545; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #fff; }
+  .badge-ok { background: #28a745; }
+  .badge-warn { background: #ffc107; color: #333; }
+  .badge-error { background: #dc3545; }
+  .badge-SUCCESS { background: #28a745; }
+  .badge-FAILURE { background: #dc3545; }
+  .badge-PENDING { background: #ffc107; color: #333; }
+  .badge-STARTED { background: #17a2b8; }
+  .badge-RETRY { background: #fd7e14; }
+
+  .overall-status { padding: 12px 20px; border-radius: 4px; margin-bottom: 24px; font-weight: bold; font-size: 16px; }
+  .overall-ok { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+  .overall-bad { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+  .section-title { font-size: 16px; font-weight: bold; color: #333; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #79aec8; }
+
+  .meter { background: #e9ecef; border-radius: 4px; height: 20px; overflow: hidden; margin: 4px 0; }
+  .meter-fill { height: 100%; border-radius: 4px; transition: width 0.3s; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: bold; color: #fff; }
+  .meter-ok { background: #28a745; }
+  .meter-warn { background: #ffc107; }
+  .meter-danger { background: #dc3545; }
+
+  .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .metric-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 12px 16px; }
+  .metric-card .label { font-size: 12px; color: #666; margin-bottom: 4px; }
+  .metric-card .value { font-size: 13px; color: #333; margin-top: 4px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 16px; text-align: center; }
+  .stat-card .number { font-size: 28px; font-weight: bold; color: #417690; }
+  .stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+  .stat-card.alert .number { color: #dc3545; }
+
+  .task-table { width: 100%; border-collapse: collapse; background: #fff; margin-bottom: 24px; }
+  .task-table th { background: #79aec8; color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }
+  .task-table td { padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .task-table tr:hover { background: #f8f9fa; }
+
+  .links-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .links-row a { display: inline-block; padding: 8px 16px; background: #79aec8; color: #fff; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold; }
+  .links-row a:hover { background: #417690; }
+
+  .log-hint { background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; padding: 12px 16px; font-family: monospace; font-size: 12px; color: #555; margin-bottom: 24px; }
+  .log-hint code { background: #e9ecef; padding: 2px 6px; border-radius: 3px; }
+
+  .refresh-note { text-align: right; font-size: 11px; color: #999; margin-bottom: 12px; }
+</style>
+
+<div class="refresh-note">
+  Auto-refresh: <a href="" onclick="location.reload(); return false;">Reload now</a>
+</div>
+
+<!-- Overall Status -->
+<div class="overall-status {% if all_ok %}overall-ok{% else %}overall-bad{% endif %}">
+  {% if all_ok %}
+    All systems operational
+  {% else %}
+    One or more services have issues
+  {% endif %}
+</div>
+
+<!-- Services -->
+<div class="section-title">Services</div>
+<div class="status-grid">
+  {% for name, info in services.items %}
+  <div class="status-card status-{{ info.status }}">
+    <h3>
+      {{ name }}
+      <span class="status-badge badge-{{ info.status }}">{{ info.status }}</span>
+    </h3>
+    <div class="detail">{{ info.detail }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- System Metrics -->
+<div class="section-title">System Metrics</div>
+<div class="metrics-grid">
+  <div class="metric-card">
+    <div class="label">CPU Usage</div>
+    <div class="meter">
+      <div class="meter-fill {% if metrics.cpu.percent > 90 %}meter-danger{% elif metrics.cpu.percent > 70 %}meter-warn{% else %}meter-ok{% endif %}"
+           style="width: {{ metrics.cpu.percent }}%">
+        {{ metrics.cpu.percent }}%
+      </div>
+    </div>
+  </div>
+  <div class="metric-card">
+    <div class="label">Memory</div>
+    <div class="meter">
+      <div class="meter-fill {% if metrics.memory.percent > 90 %}meter-danger{% elif metrics.memory.percent > 70 %}meter-warn{% else %}meter-ok{% endif %}"
+           style="width: {{ metrics.memory.percent }}%">
+        {{ metrics.memory.percent }}%
+      </div>
+    </div>
+    <div class="value">{{ metrics.memory.used }} / {{ metrics.memory.total }}</div>
+  </div>
+  <div class="metric-card">
+    <div class="label">Disk (/app)</div>
+    <div class="meter">
+      <div class="meter-fill {% if metrics.disk.percent > 90 %}meter-danger{% elif metrics.disk.percent > 70 %}meter-warn{% else %}meter-ok{% endif %}"
+           style="width: {{ metrics.disk.percent }}%">
+        {{ metrics.disk.percent }}%
+      </div>
+    </div>
+    <div class="value">{{ metrics.disk.used }} / {{ metrics.disk.total }}</div>
+  </div>
+</div>
+
+<!-- Application Stats -->
+<div class="section-title">Application</div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="number">{{ stats.products_approved }}</div>
+    <div class="label">Products (approved)</div>
+  </div>
+  <div class="stat-card {% if stats.products_pending > 0 %}alert{% endif %}">
+    <div class="number">{{ stats.products_pending }}</div>
+    <div class="label">Products (pending)</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ stats.components }}</div>
+    <div class="label">Components</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ stats.schematics }}</div>
+    <div class="label">Schematics</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ stats.users }}</div>
+    <div class="label">Users</div>
+  </div>
+  <div class="stat-card {% if stats.pending_reports > 0 %}alert{% endif %}">
+    <div class="number">{{ stats.pending_reports }}</div>
+    <div class="label">Pending Reports</div>
+  </div>
+  <div class="stat-card {% if stats.pending_reviews > 0 %}alert{% endif %}">
+    <div class="number">{{ stats.pending_reviews }}</div>
+    <div class="label">Pending Reviews</div>
+  </div>
+</div>
+
+<!-- Recent Celery Tasks -->
+<div class="section-title">
+  Recent Tasks
+  {% if task_info.failures_24h > 0 %}
+    <span class="status-badge badge-error">{{ task_info.failures_24h }} failure{{ task_info.failures_24h|pluralize }} in 24h</span>
+  {% endif %}
+</div>
+{% if task_info.tasks %}
+<table class="task-table">
+  <thead>
+    <tr>
+      <th>Status</th>
+      <th>Task</th>
+      <th>Completed</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for task in task_info.tasks %}
+    <tr>
+      <td><span class="status-badge badge-{{ task.status }}">{{ task.status }}</span></td>
+      <td>{{ task.name }}</td>
+      <td>{{ task.date_done|timesince }} ago</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p style="color: #666; font-style: italic;">No task results recorded yet.</p>
+{% endif %}
+
+<!-- Quick Links -->
+<div class="section-title">Quick Links</div>
+<div class="links-row">
+  {% for link in links %}
+  <a href="{{ link.url }}">{{ link.label }}</a>
+  {% endfor %}
+</div>
+
+<!-- Log Access Hints -->
+<div class="section-title">Viewing Logs</div>
+<div class="log-hint">
+  <strong>Backend:</strong> <code>docker compose logs backend --tail=100 -f</code><br>
+  <strong>Celery:</strong> <code>docker compose logs celery --tail=100 -f</code><br>
+  <strong>Nginx:</strong> <code>docker compose logs nginx --tail=100 -f</code><br>
+  <strong>All:</strong> <code>docker compose logs --tail=50 -f</code>
+</div>
+
+<script>
+// Auto-refresh every 60 seconds
+setTimeout(function() { location.reload(); }, 60000);
+</script>
+{% endblock %}

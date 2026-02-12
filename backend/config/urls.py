@@ -12,8 +12,12 @@ from drf_spectacular.views import (
     SpectacularRedocView,
     SpectacularSwaggerView,
 )
+from apps.api.admin_views import system_status
 
 urlpatterns = [
+    # Admin system status dashboard (must be before admin.site.urls)
+    path(settings.ADMIN_URL + 'system-status/', system_status, name='admin-system-status'),
+
     # Django Admin (configurable URL via ADMIN_URL setting for security)
     path(settings.ADMIN_URL, admin.site.urls),
 
