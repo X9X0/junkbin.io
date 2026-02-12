@@ -1,6 +1,7 @@
 """
 System status dashboard for Django admin.
 """
+import json
 import logging
 from datetime import timedelta
 
@@ -9,11 +10,15 @@ from celery import current_app
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db import connection
 from django.core.cache import cache
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
 
 logger = logging.getLogger(__name__)
+
+STATUS_CACHE_KEY = '_system_status_result'
+STATUS_CACHE_TTL = 30  # seconds
 
 
 def _check_database():
@@ -141,16 +146,35 @@ def _get_app_stats():
     }
 
 
-@staff_member_required
-def system_status(request):
+def _run_service_checks():
+    """Run all service checks and return services dict + overall status."""
     services = {
         'PostgreSQL': _check_database(),
         'Redis': _check_redis(),
         'Celery Workers': _check_celery(),
         'Celery Beat': _check_celery_beat(),
     }
-
     all_ok = all(s['status'] == 'ok' for s in services.values())
+    has_error = any(s['status'] == 'error' for s in services.values())
+    if all_ok:
+        overall = 'ok'
+    elif has_error:
+        overall = 'error'
+    else:
+        overall = 'warn'
+
+    result = {'services': services, 'all_ok': all_ok, 'overall': overall}
+    # Cache for the header status indicator
+    try:
+        cache.set(STATUS_CACHE_KEY, json.dumps(result), STATUS_CACHE_TTL)
+    except Exception:
+        pass
+    return result
+
+
+@staff_member_required
+def system_status(request):
+    checks = _run_service_checks()
 
     admin_prefix = reverse('admin:index')
 
@@ -167,8 +191,8 @@ def system_status(request):
     context = {
         **admin.site.each_context(request),
         'title': 'System Status',
-        'services': services,
-        'all_ok': all_ok,
+        'services': checks['services'],
+        'all_ok': checks['all_ok'],
         'metrics': _get_system_metrics(),
         'task_info': _get_recent_tasks(),
         'stats': _get_app_stats(),
@@ -176,3 +200,25 @@ def system_status(request):
         'has_permission': True,
     }
     return render(request, 'admin/system_status.html', context)
+
+
+@staff_member_required
+def system_status_json(request):
+    """Lightweight JSON endpoint for the admin header status indicator.
+
+    Returns cached result from the last full dashboard load, or runs a
+    fresh check if the cache is empty.
+    """
+    cached = cache.get(STATUS_CACHE_KEY)
+    if cached:
+        result = json.loads(cached)
+    else:
+        result = _run_service_checks()
+
+    return JsonResponse({
+        'overall': result['overall'],
+        'services': {
+            name: info['status']
+            for name, info in result['services'].items()
+        },
+    })
