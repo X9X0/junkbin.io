@@ -292,6 +292,14 @@ export const reviews = {
   },
 };
 
+// Users endpoints (leaderboard)
+export const users = {
+  list: async (params?: Record<string, any>): Promise<PaginatedResponse<User>> => {
+    const response = await api.get('/users/', { params });
+    return response.data;
+  },
+};
+
 // Newsletter endpoint
 export const newsletter = {
   subscribe: async (email: string, source: string = 'landing'): Promise<{ message: string; email: string }> => {
