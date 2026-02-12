@@ -126,6 +126,67 @@ export interface RegisterData {
   password_confirm: string;
 }
 
+// Report types
+export interface UserMinimal {
+  id: string;
+  username: string;
+  is_trusted: boolean;
+  is_moderator: boolean;
+}
+
+export interface ReportedItemData {
+  type: string;
+  id: string;
+  display: string;
+  manufacturer?: string;
+  model_number?: string;
+  part_number?: string;
+}
+
+export interface Report {
+  id: string;
+  content_type: string;
+  content_type_name: string;
+  object_id: string;
+  reason: string;
+  reason_display: string;
+  description: string;
+  reporter: UserMinimal;
+  reported_user: UserMinimal | null;
+  created_at: string;
+  status: string;
+  status_display: string;
+  counted_as_strike: boolean;
+  resolved_at: string | null;
+  resolved_by: UserMinimal | null;
+  resolution_notes: string;
+  reported_item_data: ReportedItemData | null;
+}
+
+export interface ReportStats {
+  total: number;
+  pending: number;
+  resolved_valid: number;
+  resolved_invalid: number;
+}
+
+export interface UserReview {
+  id: string;
+  user: UserMinimal;
+  review_type: string;
+  review_type_display: string;
+  status: string;
+  status_display: string;
+  trigger_report_count: number;
+  triggered_by: Report | null;
+  related_reports: Report[];
+  created_at: string;
+  reviewed_at: string | null;
+  reviewer: UserMinimal | null;
+  notes: string;
+  action_taken: string;
+}
+
 // Search/filter types
 export interface ProductFilters {
   search?: string;

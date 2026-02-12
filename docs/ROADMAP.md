@@ -254,7 +254,7 @@ Other users can search this database to find which consumer products contain spe
 
 #### Week 9-10: Reporting & Moderation System
 - ✅ User report submission form (ReportModal component)
-- ⬜ Report review workflow
+- ✅ Report review workflow (frontend moderation dashboard at /moderation)
 - ✅ 3-strike automatic review trigger
 - ✅ User reputation system (contribution_count, is_trusted)
 - ⬜ Badge/achievement system
