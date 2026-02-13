@@ -171,6 +171,10 @@ class ComponentViewSet(viewsets.ModelViewSet):
 
         This is the main feature: "Find products containing part X"
         """
+        from django.db.models import Count, Prefetch
+        from apps.products.models import Product
+        from apps.products.serializers import ProductListSerializer
+
         part_number = request.query_params.get('part')
         if not part_number:
             return Response(
@@ -178,21 +182,39 @@ class ComponentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Find matching components
+        # Find matching components with prefetched approved products and count
+        approved_products = Product.objects.filter(
+            is_approved=True
+        ).distinct()
+
         components = Component.objects.filter(
             models.Q(part_number__icontains=part_number) |
             models.Q(alternative_part_numbers__contains=[part_number])
+        ).prefetch_related(
+            Prefetch(
+                'product_components__product',
+                queryset=approved_products,
+            )
+        ).annotate(
+            total_approved_products=Count(
+                'product_components__product',
+                filter=models.Q(product_components__product__is_approved=True),
+                distinct=True,
+            )
         )
 
         results = []
         for component in components:
-            from apps.products.models import Product
-            from apps.products.serializers import ProductListSerializer
-
-            products = Product.objects.filter(
-                product_components__component=component,
-                is_approved=True
-            ).distinct()[:10]
+            # Get products from prefetched data (no extra queries)
+            products = []
+            seen = set()
+            for pc in component.product_components.all():
+                p = pc.product
+                if p.is_approved and p.pk not in seen:
+                    products.append(p)
+                    seen.add(p.pk)
+                if len(products) >= 10:
+                    break
 
             results.append({
                 'component': ComponentListSerializer(component).data,
@@ -201,10 +223,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
                     many=True,
                     context={'request': request}
                 ).data,
-                'total_products': Product.objects.filter(
-                    product_components__component=component,
-                    is_approved=True
-                ).count()
+                'total_products': component.total_approved_products,
             })
 
         return Response(results)

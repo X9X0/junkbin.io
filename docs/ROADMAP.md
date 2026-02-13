@@ -314,7 +314,7 @@ linked to a product. Available on both the frontend (product detail page) and Dj
 - ✅ Mobile responsive design (tabs, tables, forms, search)
 - ✅ Progressive Web App (PWA) capabilities
 - ✅ Image optimization and lazy loading (LazyImage component)
-- ⬜ Search performance optimization
+- ✅ Search performance optimization — PostgreSQL full-text search (SearchVector/SearchRank with GIN indexes), pg_trgm trigram indexes on 8 text fields, N+1 cross-reference fix (Feb 13, 2026)
 - ✅ User onboarding flow (OnboardingTips component with dismissable tips)
 - ✅ Tutorial/help system (Keyboard shortcuts modal, ? to open)
 
@@ -560,8 +560,9 @@ The `junkbin-deploy.sh` script will handle:
 ## Performance Optimization
 
 ### Database
-- Proper indexing on search fields
-- Query optimization with select_related/prefetch_related
+- ✅ Proper indexing on search fields — GIN trigram indexes (pg_trgm) on 8 text fields, GIN indexes on SearchVectorFields
+- ✅ Query optimization with select_related/prefetch_related — N+1 fix in cross_reference endpoint
+- ✅ Full-text search with relevance ranking — PostgreSQL SearchVector/SearchQuery/SearchRank with weighted fields
 - Database connection pooling
 - Read replicas for scaling (future)
 
@@ -733,6 +734,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: February 12, 2026
-**Version**: 1.6
+**Last Updated**: February 13, 2026
+**Version**: 1.7
 **Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Deployed & E2E Tested

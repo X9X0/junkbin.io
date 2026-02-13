@@ -6,6 +6,8 @@ Models for documenting consumer electronics products and their images.
 import uuid
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.core.validators import FileExtensionValidator
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
@@ -142,6 +144,9 @@ class Product(models.Model):
         help_text=_('Number of times viewed')
     )
 
+    # Full-text search vector (auto-updated on save)
+    search_vector = SearchVectorField(null=True, editable=False)
+
     class Meta:
         verbose_name = _('product')
         verbose_name_plural = _('products')
@@ -150,6 +155,7 @@ class Product(models.Model):
             models.Index(fields=['manufacturer', 'model_number']),
             models.Index(fields=['category', '-created_at']),
             models.Index(fields=['is_approved', '-created_at']),
+            GinIndex(fields=['search_vector']),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -183,6 +189,16 @@ class Product(models.Model):
             self.slug = slug
 
         super().save(*args, **kwargs)
+
+        # Update search vector after save (uses SQL so needs pk)
+        Product.objects.filter(pk=self.pk).update(
+            search_vector=(
+                SearchVector('manufacturer', weight='A') +
+                SearchVector('model_number', weight='A') +
+                SearchVector('fcc_id', weight='B') +
+                SearchVector('description', weight='C')
+            )
+        )
 
     @property
     def primary_image(self):
