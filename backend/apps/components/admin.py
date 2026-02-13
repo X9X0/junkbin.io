@@ -5,8 +5,10 @@ import csv
 
 from django.contrib import admin
 from django.http import HttpResponse
+from import_export.admin import ImportExportActionModelAdmin
 
 from .models import Component, ProductComponent
+from .resources import ComponentResource, ProductComponentResource
 
 
 class ProductComponentInline(admin.TabularInline):
@@ -19,9 +21,10 @@ class ProductComponentInline(admin.TabularInline):
 
 
 @admin.register(Component)
-class ComponentAdmin(admin.ModelAdmin):
+class ComponentAdmin(ImportExportActionModelAdmin):
     """Admin for components."""
 
+    resource_classes = [ComponentResource]
     list_display = [
         'manufacturer', 'part_number', 'component_type', 'package_type',
         'typical_function', 'usage_count', 'is_verified', 'created_at'
@@ -71,7 +74,7 @@ class ComponentAdmin(admin.ModelAdmin):
         updated = queryset.update(is_verified=True)
         self.message_user(request, f'{updated} components verified.')
 
-    @admin.action(description='Export selected components as CSV')
+    @admin.action(description='Export selected as simple CSV')
     def export_as_csv(self, request, queryset):
         response = HttpResponse(content_type='text/csv')
         response['Content-Disposition'] = 'attachment; filename="components.csv"'
@@ -96,9 +99,10 @@ class ComponentAdmin(admin.ModelAdmin):
 
 
 @admin.register(ProductComponent)
-class ProductComponentAdmin(admin.ModelAdmin):
+class ProductComponentAdmin(ImportExportActionModelAdmin):
     """Admin for product-component relationships."""
 
+    resource_classes = [ProductComponentResource]
     list_display = [
         'product', 'component', 'reference_designator', 'quantity',
         'board_name', 'submission_level', 'is_verified', 'created_at'

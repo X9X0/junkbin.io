@@ -53,6 +53,7 @@ THIRD_PARTY_APPS = [
     'imagekit',
     'storages',
     'axes',
+    'import_export',
 ]
 
 LOCAL_APPS = [
@@ -229,6 +230,11 @@ SPECTACULAR_SETTINGS = {
         {'name': 'search', 'description': 'Search functionality'},
     ],
 }
+
+# =============================================================================
+# Django Import/Export
+# =============================================================================
+IMPORT_EXPORT_USE_TRANSACTIONS = True
 
 # =============================================================================
 # Django Allauth
