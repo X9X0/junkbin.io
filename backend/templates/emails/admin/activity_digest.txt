@@ -1,5 +1,13 @@
 Junkbin.io - DAILY DIGEST
 
+SYSTEM STATUS
+{% for name, check in services.items %}  [{{ check.status|upper }}] {{ name }}: {{ check.detail }}
+{% endfor %}
+{% if metrics %}  CPU: {{ metrics.cpu.percent }}%
+  Memory: {{ metrics.memory.percent }}% ({{ metrics.memory.used }} / {{ metrics.memory.total }})
+  Disk: {{ metrics.disk.percent }}% ({{ metrics.disk.used }} / {{ metrics.disk.total }})
+{% endif %}
+
 Activity Summary (last {{ period }})
 
 {% if summary.new_users %}New Users: {{ summary.new_users }}
@@ -11,7 +19,7 @@ Activity Summary (last {{ period }})
 {% endif %}{% if summary.pending_reviews %}Pending User Reviews: {{ summary.pending_reviews }}
 {% endif %}
 
-Dashboard: {{ site_url }}/admin/system-status/
+Dashboard: {{ dashboard_url }}
 
 ---
 Junkbin.io - Daily activity digest

@@ -8,10 +8,79 @@
         <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
         <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">DAILY DIGEST</div>
 
-        <h1 style="color: #00f0ff; font-size: 22px;">Activity Summary</h1>
-        <p style="color: #666b7a; font-size: 13px;">Last {{ period }}</p>
+        <!-- System Health -->
+        <h1 style="color: #00f0ff; font-size: 22px; margin-bottom: 15px;">System Status</h1>
+        <table style="width: 100%; border-collapse: collapse; margin: 0 0 25px 0;">
+            {% for name, check in services.items %}
+            <tr style="border-bottom: 1px solid #2a2e47;">
+                <td style="padding: 8px 0; font-size: 14px;">
+                    {% if check.status == 'ok' %}<span style="color: #00e676;">&#9679;</span>
+                    {% elif check.status == 'warn' %}<span style="color: #ffab00;">&#9679;</span>
+                    {% else %}<span style="color: #ff5252;">&#9679;</span>{% endif %}
+                    <span style="color: #e0e0e0; margin-left: 6px;">{{ name }}</span>
+                </td>
+                <td style="padding: 8px 0; text-align: right; font-size: 13px;
+                    {% if check.status == 'ok' %}color: #00e676;
+                    {% elif check.status == 'warn' %}color: #ffab00;
+                    {% else %}color: #ff5252;{% endif %}">
+                    {{ check.detail }}
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
 
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        {% if metrics %}
+        <table style="width: 100%; border-collapse: collapse; margin: 0 0 25px 0;">
+            <tr style="border-bottom: 1px solid #2a2e47;">
+                <td style="padding: 8px 0; font-size: 14px;">
+                    {% if metrics.cpu.percent > 80 %}<span style="color: #ff5252;">&#9679;</span>
+                    {% elif metrics.cpu.percent > 60 %}<span style="color: #ffab00;">&#9679;</span>
+                    {% else %}<span style="color: #00e676;">&#9679;</span>{% endif %}
+                    <span style="color: #e0e0e0; margin-left: 6px;">CPU</span>
+                </td>
+                <td style="padding: 8px 0; text-align: right; font-size: 13px;
+                    {% if metrics.cpu.percent > 80 %}color: #ff5252;
+                    {% elif metrics.cpu.percent > 60 %}color: #ffab00;
+                    {% else %}color: #00e676;{% endif %}">
+                    {{ metrics.cpu.percent }}%
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #2a2e47;">
+                <td style="padding: 8px 0; font-size: 14px;">
+                    {% if metrics.memory.percent > 80 %}<span style="color: #ff5252;">&#9679;</span>
+                    {% elif metrics.memory.percent > 60 %}<span style="color: #ffab00;">&#9679;</span>
+                    {% else %}<span style="color: #00e676;">&#9679;</span>{% endif %}
+                    <span style="color: #e0e0e0; margin-left: 6px;">Memory</span>
+                </td>
+                <td style="padding: 8px 0; text-align: right; font-size: 13px;
+                    {% if metrics.memory.percent > 80 %}color: #ff5252;
+                    {% elif metrics.memory.percent > 60 %}color: #ffab00;
+                    {% else %}color: #00e676;{% endif %}">
+                    {{ metrics.memory.percent }}% ({{ metrics.memory.used }} / {{ metrics.memory.total }})
+                </td>
+            </tr>
+            <tr style="border-bottom: 1px solid #2a2e47;">
+                <td style="padding: 8px 0; font-size: 14px;">
+                    {% if metrics.disk.percent > 80 %}<span style="color: #ff5252;">&#9679;</span>
+                    {% elif metrics.disk.percent > 60 %}<span style="color: #ffab00;">&#9679;</span>
+                    {% else %}<span style="color: #00e676;">&#9679;</span>{% endif %}
+                    <span style="color: #e0e0e0; margin-left: 6px;">Disk</span>
+                </td>
+                <td style="padding: 8px 0; text-align: right; font-size: 13px;
+                    {% if metrics.disk.percent > 80 %}color: #ff5252;
+                    {% elif metrics.disk.percent > 60 %}color: #ffab00;
+                    {% else %}color: #00e676;{% endif %}">
+                    {{ metrics.disk.percent }}% ({{ metrics.disk.used }} / {{ metrics.disk.total }})
+                </td>
+            </tr>
+        </table>
+        {% endif %}
+
+        <!-- Activity Summary -->
+        <h1 style="color: #00f0ff; font-size: 22px; margin-bottom: 15px;">Activity Summary</h1>
+        <p style="color: #666b7a; font-size: 13px; margin-top: 0;">Last {{ period }}</p>
+
+        <table style="width: 100%; border-collapse: collapse; margin: 0 0 20px 0;">
             {% if summary.new_users %}
             <tr style="border-bottom: 1px solid #2a2e47;">
                 <td style="padding: 10px 0; color: #e0e0e0; font-size: 14px;">New Users</td>
@@ -54,10 +123,15 @@
                 <td style="padding: 10px 0; color: #ff6b7a; font-size: 18px; font-weight: bold; text-align: right;">{{ summary.pending_reviews }}</td>
             </tr>
             {% endif %}
+            {% if not summary.new_users and not summary.new_subscribers and not summary.new_products and not summary.new_components and not summary.pending_submissions and not summary.pending_reports and not summary.pending_reviews %}
+            <tr>
+                <td colspan="2" style="padding: 10px 0; color: #666b7a; font-size: 14px;">No activity in the last {{ period }}</td>
+            </tr>
+            {% endif %}
         </table>
 
         <p style="color: #c0c0c0; font-size: 13px; margin-top: 20px;">
-            <a href="{{ site_url }}/admin/system-status/" style="color: #00f0ff;">View System Dashboard</a>
+            <a href="{{ dashboard_url }}" style="color: #00f0ff;">View System Dashboard</a>
         </p>
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
