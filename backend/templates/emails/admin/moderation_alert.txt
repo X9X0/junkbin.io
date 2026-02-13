@@ -1,0 +1,11 @@
+Junkbin.io - ADMIN NOTIFICATION
+
+{{ event }}
+
+{{ detail }}
+{% if created_at %}Time: {{ created_at }}{% endif %}
+
+{% if item_type == 'submission' %}Review: {{ site_url }}/admin/submissions/submission/{% elif item_type == 'report' %}Review: {{ site_url }}/admin/reports/report/{% elif item_type == 'user_review' %}Review: {{ site_url }}/admin/reports/userreview/{% elif item_type == 'user' %}View: {{ site_url }}/admin/users/user/{% elif item_type == 'subscriber' %}View: {{ site_url }}/admin/newsletter/subscriber/{% elif item_type == 'product' %}View: {{ site_url }}/admin/products/product/{% elif item_type == 'component' %}View: {{ site_url }}/admin/components/component/{% endif %}
+
+---
+Junkbin.io - Automated notification

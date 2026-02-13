@@ -35,6 +35,8 @@ SIDEBAR_GROUPS = {
         ('auth', 'group'),
     ],
     'System': [
+        ('api', 'notificationpreference'),
+        ('api', 'notificationlog'),
         ('django_celery_beat', 'periodictask'),
         ('django_celery_results', 'taskresult'),
         ('axes', 'accessattempt'),
