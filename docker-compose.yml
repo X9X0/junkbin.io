@@ -49,7 +49,7 @@ services:
     container_name: junkbin_backend
     restart: unless-stopped
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2
-    environment:
+    environment: &backend-env
       - DATABASE_URL=${DATABASE_URL}
       - REDIS_URL=${REDIS_URL}
       - SECRET_KEY=${SECRET_KEY}
@@ -91,17 +91,13 @@ services:
     networks:
       - junkbin_network
 
-  # Celery Worker (shares backend image)
+  # Celery Worker (shares backend image + env)
   celery:
     image: junkbinio-backend
     container_name: junkbin_celery
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - DJANGO_SETTINGS_MODULE=config.settings.production
+    environment: *backend-env
     volumes:
       - ./backend:/app
       - media_files:/app/media
@@ -112,17 +108,13 @@ services:
     networks:
       - junkbin_network
 
-  # Celery Beat (shares backend image)
+  # Celery Beat (shares backend image + env)
   celery-beat:
     image: junkbinio-backend
     container_name: junkbin_celery_beat
     restart: unless-stopped
     command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    environment:
-      - DATABASE_URL=${DATABASE_URL}
-      - REDIS_URL=${REDIS_URL}
-      - SECRET_KEY=${SECRET_KEY}
-      - DJANGO_SETTINGS_MODULE=config.settings.production
+    environment: *backend-env
     volumes:
       - ./backend:/app
     depends_on:
