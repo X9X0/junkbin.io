@@ -1,0 +1,17 @@
+Junkbin.io - DAILY DIGEST
+
+Activity Summary (last {{ period }})
+
+{% if summary.new_users %}New Users: {{ summary.new_users }}
+{% endif %}{% if summary.new_subscribers %}New Subscribers: {{ summary.new_subscribers }}
+{% endif %}{% if summary.new_products %}New Products: {{ summary.new_products }}
+{% endif %}{% if summary.new_components %}New Components: {{ summary.new_components }}
+{% endif %}{% if summary.pending_submissions %}Pending Submissions: {{ summary.pending_submissions }}
+{% endif %}{% if summary.pending_reports %}Pending Reports: {{ summary.pending_reports }}
+{% endif %}{% if summary.pending_reviews %}Pending User Reviews: {{ summary.pending_reviews }}
+{% endif %}
+
+Dashboard: {{ site_url }}/admin/system-status/
+
+---
+Junkbin.io - Daily activity digest

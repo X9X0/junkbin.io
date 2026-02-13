@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0e27; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #1a1e37; padding: 30px; border-radius: 8px; border: 1px solid #dc3545; box-sizing: border-box;">
+        <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">ADMIN ALERT</div>
+
+        <h1 style="color: #ff6b7a; font-size: 22px;">{{ subject }}</h1>
+
+        {% if failed_services %}
+        <div style="background-color: #2a1520; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;">
+            <strong style="color: #ff6b7a;">Service Failures</strong>
+            {% for name, detail in failed_services.items %}
+            <div style="color: #e0e0e0; font-size: 14px; margin-top: 10px; padding: 8px; background-color: #1a1e37; border-radius: 4px;">
+                <strong>{{ name }}</strong><br>
+                <span style="color: #c0c0c0; font-size: 13px;">{{ detail }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if exceeded_metrics %}
+        <div style="background-color: #2a2515; border-left: 4px solid #ffc107; padding: 15px; margin: 20px 0;">
+            <strong style="color: #ffdc00;">Resource Usage High</strong>
+            {% for name, value in exceeded_metrics.items %}
+            <div style="color: #e0e0e0; font-size: 14px; margin-top: 10px; padding: 8px; background-color: #1a1e37; border-radius: 4px;">
+                <strong>{{ name }}</strong>: {{ value }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if task_error %}
+        <div style="background-color: #2a1520; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0;">
+            <strong style="color: #ff6b7a;">Task Failure</strong>
+            <div style="color: #e0e0e0; font-size: 14px; margin-top: 10px;">
+                <strong>Task:</strong> {{ task_error.name }}<br>
+                <strong>Error:</strong> {{ task_error.exception }}
+            </div>
+            {% if task_error.traceback %}
+            <pre style="color: #c0c0c0; font-size: 11px; margin-top: 10px; padding: 8px; background-color: #0a0e27; border-radius: 4px; overflow-x: auto; white-space: pre-wrap;">{{ task_error.traceback }}</pre>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <p style="color: #c0c0c0; font-size: 13px; margin-top: 20px;">
+            Check the <a href="{{ site_url }}/admin/system-status/" style="color: #00f0ff;">System Status Dashboard</a> for full details.
+        </p>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
+            <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io &mdash; Automated system alert</p>
+        </div>
+    </div>
+</body>
+</html>

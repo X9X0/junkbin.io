@@ -1,0 +1,20 @@
+Junkbin.io - ADMIN ALERT
+
+{{ subject }}
+
+{% if failed_services %}SERVICE FAILURES:
+{% for name, detail in failed_services.items %}- {{ name }}: {{ detail }}
+{% endfor %}{% endif %}
+{% if exceeded_metrics %}RESOURCE USAGE HIGH:
+{% for name, value in exceeded_metrics.items %}- {{ name }}: {{ value }}
+{% endfor %}{% endif %}
+{% if task_error %}TASK FAILURE:
+Task: {{ task_error.name }}
+Error: {{ task_error.exception }}
+{% if task_error.traceback %}Traceback:
+{{ task_error.traceback }}{% endif %}{% endif %}
+
+View dashboard: {{ site_url }}/admin/system-status/
+
+---
+Junkbin.io - Automated system alert

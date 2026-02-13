@@ -197,6 +197,8 @@
   {% for link in links %}
   <a href="{{ link.url }}">{{ link.label }}</a>
   {% endfor %}
+  <a href="{% url 'admin:api_notificationpreference_changelist' %}">Notification Settings</a>
+  <a href="{% url 'admin:api_notificationlog_changelist' %}">Notification Logs</a>
 </div>
 
 <!-- Log Access Hints -->

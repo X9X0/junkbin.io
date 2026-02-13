@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0e27; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #1a1e37; padding: 30px; border-radius: 8px; border: 1px solid #00f0ff; box-sizing: border-box;">
+        <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">ADMIN NOTIFICATION</div>
+
+        <h1 style="color: #00f0ff; font-size: 22px;">{{ event }}</h1>
+
+        <div style="background-color: #17334b; border-left: 4px solid #00f0ff; padding: 15px; margin: 20px 0;">
+            <div style="color: #e0e0e0; font-size: 15px;">{{ detail }}</div>
+            {% if created_at %}
+            <div style="color: #666b7a; font-size: 12px; margin-top: 8px;">{{ created_at }}</div>
+            {% endif %}
+        </div>
+
+        <p style="color: #c0c0c0; font-size: 13px; margin-top: 20px;">
+            {% if item_type == 'submission' %}
+            <a href="{{ site_url }}/admin/submissions/submission/" style="color: #00f0ff;">Review submissions</a>
+            {% elif item_type == 'report' %}
+            <a href="{{ site_url }}/admin/reports/report/" style="color: #00f0ff;">Review reports</a>
+            {% elif item_type == 'user_review' %}
+            <a href="{{ site_url }}/admin/reports/userreview/" style="color: #00f0ff;">Review flagged users</a>
+            {% elif item_type == 'user' %}
+            <a href="{{ site_url }}/admin/users/user/" style="color: #00f0ff;">View users</a>
+            {% elif item_type == 'subscriber' %}
+            <a href="{{ site_url }}/admin/newsletter/subscriber/" style="color: #00f0ff;">View subscribers</a>
+            {% elif item_type == 'product' %}
+            <a href="{{ site_url }}/admin/products/product/" style="color: #00f0ff;">View products</a>
+            {% elif item_type == 'component' %}
+            <a href="{{ site_url }}/admin/components/component/" style="color: #00f0ff;">View components</a>
+            {% endif %}
+        </p>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
+            <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io &mdash; Automated notification</p>
+        </div>
+    </div>
+</body>
+</html>
