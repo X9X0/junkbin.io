@@ -2,6 +2,7 @@
 Report admin configuration for Junkbin.io
 """
 from django.contrib import admin
+from django.urls import reverse
 from django.utils.html import format_html
 
 from .models import Report, UserReview
@@ -101,14 +102,14 @@ class UserReviewAdmin(admin.ModelAdmin):
     ]
     readonly_fields = [
         'id', 'user', 'review_type', 'triggered_by',
-        'trigger_report_count', 'created_at'
+        'trigger_report_count', 'created_at', 'contribution_review_link'
     ]
     ordering = ['-created_at']
     date_hierarchy = 'created_at'
 
     fieldsets = (
         (None, {'fields': (
-            'id', 'user', 'review_type', 'triggered_by', 'trigger_report_count'
+            'id', 'user', 'contribution_review_link', 'review_type', 'triggered_by', 'trigger_report_count'
         )}),
         ('Status', {'fields': ('status',)}),
         ('Review', {'fields': (
@@ -116,6 +117,11 @@ class UserReviewAdmin(admin.ModelAdmin):
         )}),
         ('Timestamps', {'fields': ('created_at',)}),
     )
+
+    def contribution_review_link(self, obj):
+        url = reverse('admin-user-contributions', args=[obj.user_id])
+        return format_html('<a href="{}">Review All Contributions</a>', url)
+    contribution_review_link.short_description = 'Contribution Review'
 
     actions = ['clear_users', 'issue_warnings', 'suspend_users']
 

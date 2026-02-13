@@ -13,11 +13,16 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 from apps.api.admin_views import system_status, system_status_json
+from apps.users.admin_views import user_contributions, user_contributions_action
 
 urlpatterns = [
     # Admin system status dashboard (must be before admin.site.urls)
     path(settings.ADMIN_URL + 'system-status/', system_status, name='admin-system-status'),
     path(settings.ADMIN_URL + 'system-status/json/', system_status_json, name='admin-system-status-json'),
+
+    # Admin user contribution review (must be before admin.site.urls)
+    path(settings.ADMIN_URL + 'user-contributions/<uuid:user_id>/', user_contributions, name='admin-user-contributions'),
+    path(settings.ADMIN_URL + 'user-contributions/<uuid:user_id>/actions/', user_contributions_action, name='admin-user-contributions-action'),
 
     # Django Admin (configurable URL via ADMIN_URL setting for security)
     path(settings.ADMIN_URL, admin.site.urls),
