@@ -1,0 +1,28 @@
+/* Junkbin.io Admin Sidebar Customizations */
+
+/* Sticky sidebar that stays in place while content scrolls */
+#nav-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+/* Condensed app list */
+.module caption {
+  font-size: 12px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 8px 12px 4px;
+}
+
+/* Tighter model list spacing */
+.module th {
+  padding: 4px 12px;
+  font-size: 13px;
+}
+
+.module th a {
+  font-size: 13px;
+}
