@@ -27,7 +27,7 @@ SECRET_KEY = env('SECRET_KEY')
 
 # Application definition
 DJANGO_APPS = [
-    'django.contrib.admin',
+    'config.admin.JunkbinAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',

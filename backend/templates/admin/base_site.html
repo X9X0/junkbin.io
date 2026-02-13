@@ -1,4 +1,10 @@
 {% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'admin/css/sidebar.css' %}">
+{% endblock %}
 
 {% block branding %}
 {{ block.super }}
@@ -38,45 +44,10 @@
     50% { opacity: 0.4; }
   }
 </style>
-<a id="system-status-indicator" href="{% url 'admin-system-status' %}" class="ssi-loading" title="Loading status...">
+<a id="system-status-indicator" href="{% url 'admin-system-status' %}" class="ssi-loading"
+   data-status-url="{% url 'admin-system-status-json' %}" title="Loading status...">
   <span class="dot"></span>
   <span class="ssi-label">Loading...</span>
 </a>
-<script>
-(function() {
-  var el = document.getElementById('system-status-indicator');
-  if (!el) return;
-  var url = '{% url "admin-system-status-json" %}';
-  var labels = {ok: 'Operational', warn: 'Degraded', error: 'Critical'};
-
-  function applyStatus(status, title) {
-    el.className = 'ssi-' + status;
-    el.id = 'system-status-indicator';
-    el.querySelector('.ssi-label').textContent = labels[status] || 'Critical';
-    el.title = title;
-  }
-
-  function update() {
-    fetch(url, {credentials: 'same-origin', redirect: 'manual'}).then(function(r) {
-      if (r.type === 'opaqueredirect' || !r.ok) {
-        applyStatus('error', 'Could not fetch status (not authenticated)');
-        return null;
-      }
-      return r.json();
-    }).then(function(data) {
-      if (!data) return;
-      var s = data.overall || 'error';
-      var parts = [];
-      for (var name in data.services) {
-        if (data.services[name] !== 'ok') parts.push(name + ': ' + data.services[name]);
-      }
-      applyStatus(s, parts.length ? parts.join(', ') : 'All systems operational');
-    }).catch(function() {
-      applyStatus('error', 'Could not fetch status');
-    });
-  }
-  update();
-  setInterval(update, 30000);
-})();
-</script>
+<script src="{% static 'admin/js/system_status.js' %}"></script>
 {% endblock %}

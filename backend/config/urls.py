@@ -44,8 +44,3 @@ if settings.DEBUG:
     urlpatterns = [
         path('__debug__/', include(debug_toolbar.urls)),
     ] + urlpatterns
-
-# Customize admin site
-admin.site.site_header = 'Junkbin.io Administration'
-admin.site.site_title = 'Junkbin.io Admin'
-admin.site.index_title = 'Dashboard'
