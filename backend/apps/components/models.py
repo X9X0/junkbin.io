@@ -6,6 +6,8 @@ Models for electronic components and their relationships to products.
 import uuid
 from django.db import models
 from django.conf import settings
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector, SearchVectorField
 from django.utils.translation import gettext_lazy as _
 
 
@@ -115,6 +117,9 @@ class Component(models.Model):
         help_text=_('Number of products containing this component')
     )
 
+    # Full-text search vector (auto-updated on save)
+    search_vector = SearchVectorField(null=True, editable=False)
+
     class Meta:
         verbose_name = _('component')
         verbose_name_plural = _('components')
@@ -123,6 +128,7 @@ class Component(models.Model):
             models.Index(fields=['part_number']),
             models.Index(fields=['manufacturer', 'part_number']),
             models.Index(fields=['component_type', '-usage_count']),
+            GinIndex(fields=['search_vector']),
         ]
         constraints = [
             models.UniqueConstraint(
@@ -133,6 +139,18 @@ class Component(models.Model):
 
     def __str__(self):
         return f'{self.manufacturer} {self.part_number}'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Update search vector after save (uses SQL so needs pk)
+        Component.objects.filter(pk=self.pk).update(
+            search_vector=(
+                SearchVector('part_number', weight='A') +
+                SearchVector('manufacturer', weight='A') +
+                SearchVector('typical_function', weight='B') +
+                SearchVector('description', weight='C')
+            )
+        )
 
     @property
     def primary_value(self):

@@ -8,6 +8,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, status
 from rest_framework.reverse import reverse
 from django.db.models import Q
+from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -114,16 +115,33 @@ class SearchView(APIView):
 
         # Search products
         if search_type in ['all', 'products']:
-            products = Product.objects.filter(
-                Q(manufacturer__icontains=query) |
-                Q(model_number__icontains=query) |
-                Q(description__icontains=query) |
-                Q(fcc_id__icontains=query),
-                is_approved=True
-            ).order_by('-view_count')[:limit]
+            if len(query) > 2:
+                search_q = SearchQuery(query, search_type='plain')
+                products = Product.objects.filter(
+                    search_vector=search_q, is_approved=True
+                ).annotate(
+                    rank=SearchRank('search_vector', search_q)
+                ).order_by('-rank', '-view_count')[:limit]
+
+                # Fall back to icontains if FTS returns nothing
+                if not products.exists():
+                    products = Product.objects.filter(
+                        Q(manufacturer__icontains=query) |
+                        Q(model_number__icontains=query) |
+                        Q(description__icontains=query) |
+                        Q(fcc_id__icontains=query),
+                        is_approved=True
+                    ).order_by('-view_count')[:limit]
+            else:
+                products = Product.objects.filter(
+                    Q(manufacturer__icontains=query) |
+                    Q(model_number__icontains=query) |
+                    Q(fcc_id__icontains=query),
+                    is_approved=True
+                ).order_by('-view_count')[:limit]
 
             results['products'] = {
-                'count': products.count(),
+                'count': len(products),
                 'results': ProductListSerializer(
                     products,
                     many=True,
@@ -133,15 +151,30 @@ class SearchView(APIView):
 
         # Search components
         if search_type in ['all', 'components']:
-            components = Component.objects.filter(
-                Q(part_number__icontains=query) |
-                Q(manufacturer__icontains=query) |
-                Q(description__icontains=query) |
-                Q(typical_function__icontains=query)
-            ).order_by('-usage_count')[:limit]
+            if len(query) > 2:
+                search_q = SearchQuery(query, search_type='plain')
+                components = Component.objects.filter(
+                    search_vector=search_q
+                ).annotate(
+                    rank=SearchRank('search_vector', search_q)
+                ).order_by('-rank', '-usage_count')[:limit]
+
+                # Fall back to icontains if FTS returns nothing
+                if not components.exists():
+                    components = Component.objects.filter(
+                        Q(part_number__icontains=query) |
+                        Q(manufacturer__icontains=query) |
+                        Q(description__icontains=query) |
+                        Q(typical_function__icontains=query)
+                    ).order_by('-usage_count')[:limit]
+            else:
+                components = Component.objects.filter(
+                    Q(part_number__icontains=query) |
+                    Q(manufacturer__icontains=query)
+                ).order_by('-usage_count')[:limit]
 
             results['components'] = {
-                'count': components.count(),
+                'count': len(components),
                 'results': ComponentListSerializer(
                     components,
                     many=True,

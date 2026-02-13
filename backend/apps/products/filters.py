@@ -3,6 +3,7 @@ Product filters for Junkbin.io API
 """
 import django_filters
 from django.db.models import Q
+from django.contrib.postgres.search import SearchQuery, SearchRank
 
 from .models import Product
 
@@ -74,17 +75,34 @@ class ProductFilter(django_filters.FilterSet):
 
     def filter_search(self, queryset, name, value):
         """
-        Full-text search across multiple fields.
+        Full-text search using PostgreSQL search vectors with icontains fallback.
         """
         if not value:
             return queryset
 
+        # Short queries (1-2 chars) don't work well with FTS — use icontains
+        if len(value) <= 2:
+            return queryset.filter(
+                Q(manufacturer__icontains=value) |
+                Q(model_number__icontains=value) |
+                Q(fcc_id__icontains=value)
+            )
+
+        # Use full-text search with relevance ranking
+        query = SearchQuery(value, search_type='plain')
+        ranked = queryset.filter(search_vector=query).annotate(
+            rank=SearchRank('search_vector', query)
+        )
+
+        if ranked.exists():
+            return ranked.order_by('-rank')
+
+        # Fall back to icontains for partial matches FTS can't find
         return queryset.filter(
             Q(manufacturer__icontains=value) |
             Q(model_number__icontains=value) |
             Q(description__icontains=value) |
-            Q(fcc_id__icontains=value) |
-            Q(part_number__icontains=value)
+            Q(fcc_id__icontains=value)
         )
 
     def filter_has_component(self, queryset, name, value):
