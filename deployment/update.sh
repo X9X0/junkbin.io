@@ -53,7 +53,7 @@ fi
 
 # 2. Build images
 log_step "Building Docker images..."
-docker compose -f docker-compose.yml build backend frontend celery celery-beat
+docker compose -f docker-compose.yml build backend frontend
 
 # 3. Recreate containers (frontend needs volume reset for new build assets)
 log_step "Stopping frontend and nginx..."
