@@ -159,7 +159,12 @@ def check_system_health():
 @shared_task(name='apps.api.tasks.send_daily_digest')
 def send_daily_digest():
     """Send daily activity digest to admins who opted in."""
+    from django.conf import settings as django_settings
     from .models import NotificationPreference
+    from .admin_views import (
+        _check_database, _check_redis, _check_celery, _check_celery_beat,
+        _get_system_metrics,
+    )
     from apps.users.models import User
     from apps.newsletter.models import Subscriber
     from apps.products.models import Product
@@ -179,9 +184,18 @@ def send_daily_digest():
         'pending_reviews': UserReview.objects.filter(status='pending').count(),
     }
 
-    # Only send if there's something to report
-    if not any(summary.values()):
-        return
+    # Gather system health status
+    services = {
+        'PostgreSQL': _check_database(),
+        'Redis': _check_redis(),
+        'Celery Workers': _check_celery(),
+        'Celery Beat': _check_celery_beat(),
+    }
+
+    try:
+        metrics = _get_system_metrics()
+    except Exception:
+        metrics = None
 
     prefs = NotificationPreference.objects.filter(
         enabled=True, digest_mode=True,
@@ -190,12 +204,23 @@ def send_daily_digest():
     if not recipients:
         return
 
+    # Build dashboard URL from settings
+    frontend_url = getattr(django_settings, 'FRONTEND_URL', 'https://junkbin.io')
+    admin_url = getattr(django_settings, 'ADMIN_URL', 'admin/')
+    dashboard_url = f"{frontend_url}/{admin_url}system-status/"
+
     try:
         from utils.email import send_templated_email
         send_templated_email(
             subject='[Junkbin Admin] Daily Activity Digest',
             template_name='admin/activity_digest',
-            context={'summary': summary, 'period': '24 hours'},
+            context={
+                'summary': summary,
+                'period': '24 hours',
+                'services': services,
+                'metrics': metrics,
+                'dashboard_url': dashboard_url,
+            },
             recipient_list=recipients,
         )
         _log_notification('new_content', 'Daily Activity Digest', recipients)
