@@ -53,13 +53,13 @@ fi
 
 # 2. Build images
 log_step "Building Docker images..."
-docker compose build backend frontend
+docker compose -f docker-compose.yml build backend frontend
 
 # 3. Recreate containers (frontend needs volume reset for new build assets)
 log_step "Stopping frontend and nginx..."
-docker compose rm -sf frontend nginx
+docker compose -f docker-compose.yml rm -sf frontend nginx
 
-COMPOSE_PROJECT="$(docker compose config --format json | python3 -c 'import sys,json; print(json.load(sys.stdin)["name"])')"
+COMPOSE_PROJECT="$(docker compose -f docker-compose.yml config --format json | python3 -c 'import sys,json; print(json.load(sys.stdin)["name"])')"
 FRONTEND_VOL="${COMPOSE_PROJECT}_frontend_build"
 if docker volume ls -q | grep -q "^${FRONTEND_VOL}$"; then
     log_step "Removing frontend build volume ($FRONTEND_VOL)..."
@@ -69,25 +69,25 @@ else
 fi
 
 log_step "Starting all containers..."
-docker compose up -d
+docker compose -f docker-compose.yml up -d
 
 # 4. Run migrations
 log_step "Running database migrations..."
-docker compose exec backend python manage.py migrate --noinput
+docker compose -f docker-compose.yml exec backend python manage.py migrate --noinput
 
 # 5. Collect static files
 log_step "Collecting static files..."
-docker compose exec backend python manage.py collectstatic --noinput
+docker compose -f docker-compose.yml exec backend python manage.py collectstatic --noinput
 
 # 6. Seed data (optional)
 if [ "$RUN_SEED" = true ]; then
     log_step "Running seed_data..."
-    docker compose exec backend python manage.py seed_data
+    docker compose -f docker-compose.yml exec backend python manage.py seed_data
 fi
 
 # 7. Status summary
 echo ""
 log_step "Container status:"
-docker compose ps
+docker compose -f docker-compose.yml ps
 echo ""
 log_info "Update complete."
