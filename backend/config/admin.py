@@ -43,24 +43,8 @@ SIDEBAR_GROUPS = {
     ],
 }
 
-# Models to hide from sidebar entirely (noisy/rarely used)
-HIDDEN_MODELS = {
-    ('django_celery_beat', 'clockedschedule'),
-    ('django_celery_beat', 'crontabschedule'),
-    ('django_celery_beat', 'intervalschedule'),
-    ('django_celery_beat', 'solarschedule'),
-    ('axes', 'accesslog'),
-    ('axes', 'accessfailurelog'),
-    ('sites', 'site'),
-    ('account', 'emailaddress'),
-    ('socialaccount', 'socialaccount'),
-    ('socialaccount', 'socialapp'),
-    ('socialaccount', 'socialtoken'),
-    ('authtoken', 'token'),
-    ('authtoken', 'tokenproxy'),
-    ('token_blacklist', 'blacklistedtoken'),
-    ('token_blacklist', 'outstandingtoken'),
-}
+# No models are hidden — everything shows under "Other" if not in a group above
+HIDDEN_MODELS = set()
 
 
 class JunkbinAdminSite(AdminSite):
