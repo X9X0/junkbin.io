@@ -269,46 +269,8 @@ Other users can search this database to find which consumer products contain spe
 - ✅ **Flipper Zero BOM import command** - `manage.py import_flipper_bom` imports ~93 components with reference designators from Excel BOM (Feb 11, 2026)
 - ✅ Batch component addition — multi-row inline form with paste-from-clipboard support, auto-detect component type/package (Feb 13, 2026)
 
-##### CSV BOM Import — Implementation Notes
-
-**Overview:** Allow users to upload a CSV bill-of-materials and bulk-import components
-linked to a product. Available on both the frontend (product detail page) and Django admin.
-
-**Frontend upload flow (multi-step wizard):**
-1. User selects a product, then uploads a CSV file
-2. Site parses headers and shows a **column mapping UI** — each CSV header gets a
-   dropdown to select which site field it maps to
-3. **Auto-detect common aliases** so most CSVs work without manual mapping:
-   - `Mfr` / `MFG` / `Manufacturer` → `manufacturer`
-   - `P/N` / `Part Number` / `MPN` → `part_number`
-   - `Ref Des` / `RefDes` / `Designator` / `Reference` → `reference_designator`
-   - `Qty` / `Quantity` / `Count` → `quantity`
-   - `Type` / `Component Type` → `component_type`
-   - `Package` / `Footprint` / `Package Type` → `package_type`
-   - `Value` / `Nominal Value` → `primary_value`
-   - `Description` / `Desc` → `description`
-   - `Location` / `Board Location` → `location_description`
-   - `Notes` / `Comments` → `notes`
-4. User corrects any unmatched columns, previews parsed rows in a table
-5. Submit — backend creates/links components in bulk
-
-**Admin side:**
-- Use `django-import-export` library — provides import button in admin with column
-  mapping, preview, and dry-run mode out of the box. Much less custom code needed.
-- Add to both `ComponentAdmin` and `ProductComponentAdmin`
-
-**Key design decisions:**
-- **Component matching:** lookup-or-create by `(manufacturer, part_number)`. If a
-  component already exists, reuse it; otherwise create a new one.
-- **Product context:** BOM import is always in the context of a specific product
-  (launched from product detail page, or product selected first in a wizard).
-- **Row-level validation:** Bad rows should not kill the whole import. Show per-row
-  errors and let users fix or skip individual rows.
-- **Dry-run preview:** Show what will be created vs. matched before committing.
-- **Backend endpoint:** `POST /api/products/{id}/import_bom/` accepting multipart
-  form data (CSV file + column mapping JSON).
-
-**Estimated effort:** 3-5 days (backend endpoint + admin import + frontend wizard UI)
+##### Remaining: Admin-side BOM import
+- ⬜ Add `django-import-export` to `ComponentAdmin` and `ProductComponentAdmin` for admin CSV import with preview/dry-run (frontend wizard and API are complete)
 
 #### Week 12-13: Polish & UX Improvements
 - ✅ Mobile responsive design (tabs, tables, forms, search)
