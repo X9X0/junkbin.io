@@ -1,9 +1,16 @@
 """
 Admin registration for notification models.
 """
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from .models import NotificationPreference, NotificationLog
+
+
+@admin.action(description='Send daily digest now')
+def send_digest_now(modeladmin, request, queryset):
+    from .tasks import send_daily_digest
+    send_daily_digest.delay()
+    messages.success(request, 'Daily digest task queued.')
 
 
 @admin.register(NotificationPreference)
@@ -11,6 +18,7 @@ class NotificationPreferenceAdmin(admin.ModelAdmin):
     list_display = ('user', 'enabled', 'digest_mode', 'updated_at')
     list_filter = ('enabled', 'digest_mode')
     search_fields = ('user__username', 'user__email')
+    actions = [send_digest_now]
     fieldsets = (
         ('User', {'fields': ('user',)}),
         ('General', {'fields': ('enabled', 'digest_mode')}),
