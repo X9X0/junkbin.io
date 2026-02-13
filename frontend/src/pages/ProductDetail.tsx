@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import ImageUpload from '../components/ImageUpload';
 import SchematicUpload from '../components/SchematicUpload';
 import AddComponentForm from '../components/AddComponentForm';
+import BomImport from '../components/BomImport';
+import BatchAddComponents from '../components/BatchAddComponents';
 import ReportModal from '../components/ReportModal';
 import ProductComments from '../components/ProductComments';
 import {
@@ -31,6 +33,8 @@ export default function ProductDetail() {
   const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments'>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
+  const [showBomImport, setShowBomImport] = useState(false);
+  const [showBatchAdd, setShowBatchAdd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
 
   const { data: product, isLoading } = useQuery({
@@ -445,13 +449,27 @@ export default function ProductDetail() {
                   <h3 className="font-display text-lg font-semibold text-white">
                     DOCUMENTED COMPONENTS ({componentList.length})
                   </h3>
-                  {isAuthenticated && !showAddComponent && (
-                    <button
-                      onClick={() => setShowAddComponent(true)}
-                      className="btn-cyber text-sm py-1.5"
-                    >
-                      + ADD COMPONENT
-                    </button>
+                  {isAuthenticated && !showAddComponent && !showBomImport && !showBatchAdd && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setShowBomImport(true)}
+                        className="btn-cyber btn-cyber-green text-sm py-1.5"
+                      >
+                        IMPORT BOM
+                      </button>
+                      <button
+                        onClick={() => setShowBatchAdd(true)}
+                        className="btn-cyber text-sm py-1.5"
+                      >
+                        BATCH ADD
+                      </button>
+                      <button
+                        onClick={() => setShowAddComponent(true)}
+                        className="btn-cyber text-sm py-1.5"
+                      >
+                        + ADD
+                      </button>
+                    </div>
                   )}
                 </div>
                 {/* Desktop table view */}
@@ -559,18 +577,60 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* BOM Import */}
+            {isAuthenticated && showBomImport && (
+              <div className="card-cyber p-6">
+                <BomImport
+                  productId={id!}
+                  onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ['product', id, 'components'] });
+                    queryClient.invalidateQueries({ queryKey: ['product', id] });
+                  }}
+                  onClose={() => setShowBomImport(false)}
+                />
+              </div>
+            )}
+
+            {/* Batch Add Components */}
+            {isAuthenticated && showBatchAdd && (
+              <div className="card-cyber p-6">
+                <BatchAddComponents
+                  productId={id!}
+                  onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ['product', id, 'components'] });
+                    queryClient.invalidateQueries({ queryKey: ['product', id] });
+                  }}
+                  onClose={() => setShowBatchAdd(false)}
+                />
+              </div>
+            )}
+
             {/* Empty state / Add button for no components */}
-            {(!componentList || componentList.length === 0) && !showAddComponent && (
+            {(!componentList || componentList.length === 0) && !showAddComponent && !showBomImport && !showBatchAdd && (
               <div className="card-cyber p-8 text-center">
                 <Cpu className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 mb-4">No components documented yet.</p>
                 {isAuthenticated ? (
-                  <button
-                    onClick={() => setShowAddComponent(true)}
-                    className="btn-cyber"
-                  >
-                    ADD FIRST COMPONENT
-                  </button>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => setShowBomImport(true)}
+                      className="btn-cyber btn-cyber-green"
+                    >
+                      IMPORT BOM
+                    </button>
+                    <button
+                      onClick={() => setShowBatchAdd(true)}
+                      className="btn-cyber"
+                    >
+                      BATCH ADD
+                    </button>
+                    <button
+                      onClick={() => setShowAddComponent(true)}
+                      className="btn-cyber"
+                    >
+                      ADD COMPONENT
+                    </button>
+                  </div>
                 ) : (
                   <Link to="/login" className="btn-cyber">
                     LOGIN TO ADD COMPONENTS

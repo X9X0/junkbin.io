@@ -123,6 +123,25 @@ export const products = {
     return response.data;
   },
 
+  parseBom: async (id: string, formData: FormData): Promise<any> => {
+    const response = await api.post(`/products/${id}/parse_bom/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  importBom: async (id: string, formData: FormData): Promise<any> => {
+    const response = await api.post(`/products/${id}/import_bom/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  batchAddComponents: async (id: string, data: { components: any[] }): Promise<any> => {
+    const response = await api.post(`/products/${id}/batch_add_components/`, data);
+    return response.data;
+  },
+
   exportData: async (id: string): Promise<any> => {
     // Get product with all related data for export
     const [product, components, schematics] = await Promise.all([

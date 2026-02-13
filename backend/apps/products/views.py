@@ -1,7 +1,11 @@
 """
 Product views for Junkbin.io API
 """
-from django.db import models
+import csv
+import io
+import json
+
+from django.db import models, transaction
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -74,7 +78,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         return ProductDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'add_component', 'upload_image', 'upload_schematic', 'comments']:
+        if self.action in ['create', 'add_component', 'batch_add_components',
+                           'upload_image', 'upload_schematic',
+                           'comments', 'parse_bom', 'import_bom']:
             if self.request.method == 'POST':
                 return [permissions.IsAuthenticated(), IsVerifiedEmail()]
             return [permissions.AllowAny()]
@@ -149,6 +155,273 @@ class ProductViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'])
+    def batch_add_components(self, request, pk=None):
+        """Add multiple components to this product in one request."""
+        from django.conf import settings as django_settings
+        from apps.components.models import Component, ProductComponent
+        from .bom_utils import classify_component_type, extract_package
+
+        product = self.get_object()
+        valid_types = {ct[0] for ct in django_settings.COMPONENT_TYPES}
+        items = request.data.get('components', [])
+
+        if not isinstance(items, list) or not items:
+            return Response({'detail': 'A non-empty "components" array is required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        if len(items) > 50:
+            return Response({'detail': 'Maximum 50 components per batch.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        created = 0
+        reused = 0
+        linked = 0
+        skipped = 0
+        row_errors = []
+
+        with transaction.atomic():
+            for idx, item in enumerate(items, start=1):
+                part_number = (item.get('part_number') or '').strip()
+                manufacturer = (item.get('manufacturer') or '').strip()
+
+                if not part_number or not manufacturer:
+                    row_errors.append({'row': idx, 'errors': ['Part Number and Manufacturer are required.']})
+                    skipped += 1
+                    continue
+
+                comp_type = (item.get('component_type') or '').strip().lower()
+                if comp_type not in valid_types:
+                    desc = item.get('description', '')
+                    comp_type = classify_component_type(desc)
+
+                pkg = (item.get('package_type') or '').strip()
+                if not pkg and item.get('description'):
+                    pkg = extract_package(item['description'])
+
+                qty = item.get('quantity', 1)
+                try:
+                    qty = max(1, int(qty))
+                except (ValueError, TypeError):
+                    qty = 1
+
+                component, was_created = Component.objects.get_or_create(
+                    manufacturer=manufacturer,
+                    part_number=part_number,
+                    defaults={
+                        'component_type': comp_type,
+                        'package_type': pkg,
+                        'description': (item.get('description') or '').strip(),
+                        'created_by': request.user,
+                    }
+                )
+                if was_created:
+                    created += 1
+                else:
+                    reused += 1
+
+                _, pc_created = ProductComponent.objects.get_or_create(
+                    product=product,
+                    component=component,
+                    defaults={
+                        'reference_designator': (item.get('reference_designator') or '').strip(),
+                        'quantity': qty,
+                        'notes': (item.get('notes') or '').strip(),
+                        'submission_level': 'advanced',
+                        'created_by': request.user,
+                    }
+                )
+                if pc_created:
+                    linked += 1
+
+        return Response({
+            'created': created,
+            'reused': reused,
+            'linked': linked,
+            'skipped': skipped,
+            'errors': row_errors,
+            'total': created + reused + skipped,
+        }, status=status.HTTP_201_CREATED if linked > 0 else status.HTTP_200_OK)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        parser_classes=[MultiPartParser, FormParser]
+    )
+    def parse_bom(self, request, pk=None):
+        """Parse a CSV BOM and return headers, preview rows, and auto-detected column mapping."""
+        from .bom_utils import detect_column_mapping, BOM_FIELDS
+
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if file.size > 5 * 1024 * 1024:
+            return Response({'detail': 'File too large (max 5MB).'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            content = file.read().decode('utf-8-sig')
+        except UnicodeDecodeError:
+            try:
+                file.seek(0)
+                content = file.read().decode('latin-1')
+            except Exception:
+                return Response({'detail': 'Could not decode file. Please use UTF-8 or Latin-1 encoding.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        reader = csv.DictReader(io.StringIO(content))
+        headers = reader.fieldnames or []
+        if not headers:
+            return Response({'detail': 'CSV has no headers.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Collect preview rows (first 5)
+        preview_rows = []
+        for i, row in enumerate(reader):
+            if i >= 5:
+                break
+            preview_rows.append(dict(row))
+
+        # Count total rows
+        total_rows = len(preview_rows)
+        for _ in reader:
+            total_rows += 1
+
+        mapping = detect_column_mapping(headers)
+
+        return Response({
+            'headers': headers,
+            'preview_rows': preview_rows,
+            'detected_mapping': mapping,
+            'available_fields': BOM_FIELDS,
+            'total_rows': total_rows,
+        })
+
+    @action(
+        detail=True,
+        methods=['post'],
+        parser_classes=[MultiPartParser, FormParser]
+    )
+    def import_bom(self, request, pk=None):
+        """Import components from a CSV BOM file."""
+        from apps.components.models import Component, ProductComponent
+        from .bom_utils import (
+            validate_row, classify_component_type, extract_package,
+            extract_value_from_text,
+        )
+
+        product = self.get_object()
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        column_mapping_raw = request.data.get('column_mapping', '{}')
+        if isinstance(column_mapping_raw, str):
+            try:
+                column_mapping = json.loads(column_mapping_raw)
+            except json.JSONDecodeError:
+                return Response({'detail': 'Invalid column_mapping JSON.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+        else:
+            column_mapping = column_mapping_raw
+
+        dry_run = str(request.data.get('dry_run', 'false')).lower() in ('true', '1', 'yes')
+
+        try:
+            content = file.read().decode('utf-8-sig')
+        except UnicodeDecodeError:
+            try:
+                file.seek(0)
+                content = file.read().decode('latin-1')
+            except Exception:
+                return Response({'detail': 'Could not decode file.'},
+                                status=status.HTTP_400_BAD_REQUEST)
+
+        reader = csv.DictReader(io.StringIO(content))
+
+        created = 0
+        reused = 0
+        linked = 0
+        skipped = 0
+        row_errors = []
+
+        sid = transaction.savepoint()
+        try:
+            for row_num, row in enumerate(reader, start=2):  # row 1 = header
+                cleaned, errors = validate_row(row, column_mapping)
+
+                if errors:
+                    row_errors.append({'row': row_num, 'errors': errors, 'data': dict(row)})
+                    skipped += 1
+                    continue
+
+                # Auto-classify component type if not provided
+                comp_type = cleaned.get('component_type')
+                if not comp_type:
+                    desc = cleaned.get('description', '')
+                    comp_type = classify_component_type(desc)
+
+                # Auto-detect package from description if not provided
+                pkg = cleaned.get('package_type', '')
+                if not pkg and cleaned.get('description'):
+                    pkg = extract_package(cleaned['description'])
+
+                # Extract specifications from value column
+                specs = {}
+                if cleaned.get('value'):
+                    specs = extract_value_from_text(cleaned['value'], comp_type)
+
+                # Get or create the Component
+                component, was_created = Component.objects.get_or_create(
+                    manufacturer=cleaned['manufacturer'].strip(),
+                    part_number=cleaned['part_number'].strip(),
+                    defaults={
+                        'component_type': comp_type,
+                        'package_type': pkg,
+                        'description': cleaned.get('description', ''),
+                        'specifications': specs,
+                        'created_by': request.user,
+                    }
+                )
+
+                if was_created:
+                    created += 1
+                else:
+                    reused += 1
+
+                # Create the ProductComponent link (skip duplicates)
+                _, pc_created = ProductComponent.objects.get_or_create(
+                    product=product,
+                    component=component,
+                    defaults={
+                        'reference_designator': cleaned.get('reference_designator', ''),
+                        'quantity': cleaned.get('quantity', 1),
+                        'location_description': cleaned.get('location_description', ''),
+                        'notes': cleaned.get('notes', ''),
+                        'submission_level': 'advanced',
+                        'created_by': request.user,
+                    }
+                )
+                if pc_created:
+                    linked += 1
+
+            if dry_run:
+                transaction.savepoint_rollback(sid)
+            else:
+                transaction.savepoint_commit(sid)
+        except Exception as e:
+            transaction.savepoint_rollback(sid)
+            return Response({'detail': f'Import failed: {str(e)}'},
+                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        return Response({
+            'created': created,
+            'reused': reused,
+            'linked': linked,
+            'skipped': skipped,
+            'errors': row_errors[:50],  # Cap error details
+            'total': created + reused + skipped,
+            'dry_run': dry_run,
+        })
 
     @action(
         detail=True,

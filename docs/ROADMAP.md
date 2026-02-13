@@ -262,12 +262,12 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Trusted user status
 
 #### Week 10-11: Data Import/Export
-- ⬜ CSV BOM import with column mapping (see details below)
+- ✅ CSV BOM import with column mapping — 3-step wizard (upload, column mapping with auto-detect, preview/import), dry-run support, 61 header aliases, component type auto-classification (Feb 13, 2026)
 - ✅ BOM template downloads (CSV template + instructions)
 - ✅ API for programmatic access (REST API complete)
 - ✅ Export product data as CSV/JSON (JSON + BOM CSV export)
 - ✅ **Flipper Zero BOM import command** - `manage.py import_flipper_bom` imports ~93 components with reference designators from Excel BOM (Feb 11, 2026)
-- ⬜ Batch component addition
+- ✅ Batch component addition — multi-row inline form with paste-from-clipboard support, auto-detect component type/package (Feb 13, 2026)
 
 ##### CSV BOM Import — Implementation Notes
 
@@ -735,5 +735,5 @@ npm run test:coverage  # Coverage report
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
 **Last Updated**: February 13, 2026
-**Version**: 1.7
+**Version**: 1.8
 **Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Deployed & E2E Tested
