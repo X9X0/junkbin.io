@@ -3,6 +3,8 @@ User admin configuration for Junkbin.io
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.urls import reverse
+from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
 
 from .models import User, UserActivity, AdminAuditLog
@@ -25,7 +27,7 @@ class UserAdmin(BaseUserAdmin):
     ordering = ['-created_at']
     readonly_fields = [
         'id', 'created_at', 'updated_at', 'email_verified_at',
-        'last_contribution_at', 'last_login'
+        'last_contribution_at', 'last_login', 'contribution_review_link'
     ]
 
     fieldsets = (
@@ -39,7 +41,8 @@ class UserAdmin(BaseUserAdmin):
         )}),
         (_('Reputation'), {'fields': (
             'reputation_score', 'contribution_count',
-            'report_count', 'review_count', 'last_contribution_at'
+            'report_count', 'review_count', 'last_contribution_at',
+            'contribution_review_link'
         )}),
         (_('Permissions'), {'fields': (
             'is_active', 'is_staff', 'is_superuser',
@@ -60,6 +63,11 @@ class UserAdmin(BaseUserAdmin):
             ),
         }),
     )
+
+    def contribution_review_link(self, obj):
+        url = reverse('admin-user-contributions', args=[obj.pk])
+        return format_html('<a href="{}">Review All Contributions</a>', url)
+    contribution_review_link.short_description = 'Contribution Review'
 
     actions = ['make_trusted', 'revoke_trusted', 'make_moderator', 'revoke_moderator', 'resend_verification_email']
 

@@ -1,0 +1,459 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block title %}Contribution Review: {{ reviewed_user.username }} | {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:users_user_changelist' %}">Users</a>
+    &rsaquo; <a href="{% url 'admin:users_user_change' reviewed_user.pk %}">{{ reviewed_user.username }}</a>
+    &rsaquo; Contribution Review
+  </div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 16px; text-align: center; }
+  .stat-card .number { font-size: 28px; font-weight: bold; color: #417690; }
+  .stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+  .stat-card.alert .number { color: #dc3545; }
+  .section-title { font-size: 16px; font-weight: bold; color: #333; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #79aec8; }
+  .task-table { width: 100%; border-collapse: collapse; background: #fff; margin-bottom: 24px; }
+  .task-table th { background: #79aec8; color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }
+  .task-table td { padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .task-table tr:hover { background: #f8f9fa; }
+  .status-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #fff; }
+  .badge-ok { background: #28a745; }
+  .badge-warn { background: #ffc107; color: #333; }
+  .badge-error { background: #dc3545; }
+  .badge-info { background: #17a2b8; }
+  .badge-muted { background: #6c757d; }
+  .links-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .links-row a { display: inline-block; padding: 8px 16px; background: #79aec8; color: #fff; text-decoration: none; border-radius: 4px; font-size: 13px; font-weight: bold; }
+  .links-row a:hover { background: #417690; }
+
+  .user-header { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 24px; display: flex; gap: 24px; align-items: flex-start; flex-wrap: wrap; }
+  .user-header .user-info { flex: 1; min-width: 200px; }
+  .user-header .user-info h2 { margin: 0 0 8px; font-size: 20px; color: #333; }
+  .user-header .user-info .detail { font-size: 13px; color: #666; margin: 4px 0; }
+  .user-header .user-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .user-header .user-stats { display: flex; gap: 16px; flex-wrap: wrap; }
+  .user-header .user-stat { text-align: center; padding: 8px 12px; background: #f8f9fa; border-radius: 4px; min-width: 80px; }
+  .user-header .user-stat .number { font-size: 20px; font-weight: bold; color: #417690; }
+  .user-header .user-stat .label { font-size: 11px; color: #666; }
+
+  .action-bar { display: flex; gap: 8px; margin: 8px 0 16px; flex-wrap: wrap; align-items: center; }
+  .action-bar button { padding: 6px 14px; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; color: #fff; cursor: pointer; }
+  .action-bar .btn-approve { background: #28a745; }
+  .action-bar .btn-approve:hover { background: #218838; }
+  .action-bar .btn-reject { background: #dc3545; }
+  .action-bar .btn-reject:hover { background: #c82333; }
+  .action-bar .btn-verify { background: #17a2b8; }
+  .action-bar .btn-verify:hover { background: #138496; }
+  .action-bar .btn-delete { background: #dc3545; }
+  .action-bar .btn-delete:hover { background: #c82333; }
+
+  .select-all-label { font-size: 12px; color: #666; cursor: pointer; user-select: none; }
+
+  details { margin-bottom: 8px; }
+  details summary { cursor: pointer; font-size: 16px; font-weight: bold; color: #333; padding: 8px 0; border-bottom: 2px solid #79aec8; margin-bottom: 12px; }
+  details summary:hover { color: #417690; }
+
+  .empty-state { color: #999; font-style: italic; padding: 12px 0; }
+</style>
+
+<!-- User Profile Header -->
+<div class="user-header">
+  <div class="user-info">
+    <h2>{{ reviewed_user.username }}</h2>
+    <div class="detail">{{ reviewed_user.email }}</div>
+    <div class="detail">Joined {{ reviewed_user.created_at|date:"N j, Y" }}</div>
+    {% if reviewed_user.last_contribution_at %}
+    <div class="detail">Last contribution: {{ reviewed_user.last_contribution_at|timesince }} ago</div>
+    {% endif %}
+    <div class="user-badges">
+      {% if reviewed_user.is_active %}<span class="status-badge badge-ok">Active</span>{% else %}<span class="status-badge badge-error">Inactive</span>{% endif %}
+      {% if reviewed_user.is_trusted %}<span class="status-badge badge-info">Trusted</span>{% endif %}
+      {% if reviewed_user.is_moderator %}<span class="status-badge badge-info">Moderator</span>{% endif %}
+      {% if reviewed_user.is_staff %}<span class="status-badge badge-muted">Staff</span>{% endif %}
+    </div>
+  </div>
+  <div class="user-stats">
+    <div class="user-stat">
+      <div class="number">{{ reviewed_user.reputation_score }}</div>
+      <div class="label">Reputation</div>
+    </div>
+    <div class="user-stat">
+      <div class="number">{{ reviewed_user.contribution_count }}</div>
+      <div class="label">Contributions</div>
+    </div>
+    <div class="user-stat">
+      <div class="number">{{ reviewed_user.report_count }}</div>
+      <div class="label">Reports</div>
+    </div>
+  </div>
+</div>
+
+<div class="links-row">
+  <a href="{% url 'admin:users_user_change' reviewed_user.pk %}">Edit User</a>
+</div>
+
+<!-- Summary Stats -->
+<div class="section-title">Summary</div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="number">{{ summary.products }}</div>
+    <div class="label">Products</div>
+  </div>
+  <div class="stat-card {% if summary.product_components_unverified > 0 %}alert{% endif %}">
+    <div class="number">{{ summary.product_components }}</div>
+    <div class="label">Component Mappings ({{ summary.product_components_unverified }} unverified)</div>
+  </div>
+  <div class="stat-card {% if summary.submissions_pending > 0 %}alert{% endif %}">
+    <div class="number">{{ summary.submissions }}</div>
+    <div class="label">Submissions ({{ summary.submissions_pending }} pending)</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ summary.comments }}</div>
+    <div class="label">Comments</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ summary.images }}</div>
+    <div class="label">Images</div>
+  </div>
+  <div class="stat-card">
+    <div class="number">{{ summary.schematics }}</div>
+    <div class="label">Schematics</div>
+  </div>
+  <div class="stat-card {% if summary.reports_pending > 0 %}alert{% endif %}">
+    <div class="number">{{ summary.reports }}</div>
+    <div class="label">Reports Against ({{ summary.reports_pending }} pending)</div>
+  </div>
+  <div class="stat-card {% if summary.reviews_pending > 0 %}alert{% endif %}">
+    <div class="number">{{ summary.reviews }}</div>
+    <div class="label">Reviews ({{ summary.reviews_pending }} pending)</div>
+  </div>
+</div>
+
+<!-- Actionable Sections -->
+
+<!-- Submissions -->
+<details {% if summary.submissions_pending > 0 %}open{% endif %}>
+  <summary>Submissions ({{ summary.submissions }}{% if summary.submissions_pending > 0 %} &mdash; <span style="color: #dc3545;">{{ summary.submissions_pending }} pending</span>{% endif %})</summary>
+  {% if submissions %}
+  <form method="post" action="{{ action_url }}" id="form-submissions">
+    {% csrf_token %}
+    <div class="action-bar">
+      <label class="select-all-label"><input type="checkbox" class="select-all" data-section="submissions"> Select all</label>
+      <button type="submit" name="action" value="approve_submissions" class="btn-approve">Approve Selected</button>
+      <button type="submit" name="action" value="reject_submissions" class="btn-reject" onclick="return confirm('Reject selected submissions?')">Reject Selected</button>
+    </div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="width: 30px;"></th>
+          <th>Type</th>
+          <th>Product</th>
+          <th>Status</th>
+          <th>Auto-Approved</th>
+          <th>Submitted</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sub in submissions %}
+        <tr>
+          <td><input type="checkbox" name="selected_ids" value="{{ sub.id }}" class="row-check" data-section="submissions"></td>
+          <td>{{ sub.get_submission_type_display }}</td>
+          <td>
+            {% if sub.product %}
+              <a href="{% url 'admin:products_product_change' sub.product_id %}">{{ sub.product }}</a>
+            {% else %}
+              &mdash;
+            {% endif %}
+          </td>
+          <td>
+            <span class="status-badge {% if sub.status == 'approved' %}badge-ok{% elif sub.status == 'rejected' %}badge-error{% elif sub.status == 'pending' or sub.status == 'in_review' %}badge-warn{% else %}badge-muted{% endif %}">
+              {{ sub.get_status_display }}
+            </span>
+          </td>
+          <td>{% if sub.auto_approved %}Yes{% else %}No{% endif %}</td>
+          <td>{{ sub.submitted_at|date:"N j, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+  {% else %}
+  <p class="empty-state">No submissions.</p>
+  {% endif %}
+</details>
+
+<!-- Product Components -->
+<details {% if summary.product_components_unverified > 0 %}open{% endif %}>
+  <summary>Component Mappings ({{ summary.product_components }}{% if summary.product_components_unverified > 0 %} &mdash; <span style="color: #dc3545;">{{ summary.product_components_unverified }} unverified</span>{% endif %})</summary>
+  {% if product_components %}
+  <form method="post" action="{{ action_url }}" id="form-components">
+    {% csrf_token %}
+    <div class="action-bar">
+      <label class="select-all-label"><input type="checkbox" class="select-all" data-section="components"> Select all</label>
+      <button type="submit" name="action" value="verify_product_components" class="btn-verify">Verify Selected</button>
+    </div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="width: 30px;"></th>
+          <th>Product</th>
+          <th>Component</th>
+          <th>Ref Designator</th>
+          <th>Verified</th>
+          <th>Added</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for pc in product_components %}
+        <tr>
+          <td><input type="checkbox" name="selected_ids" value="{{ pc.id }}" class="row-check" data-section="components"></td>
+          <td><a href="{% url 'admin:products_product_change' pc.product_id %}">{{ pc.product }}</a></td>
+          <td><a href="{% url 'admin:components_component_change' pc.component_id %}">{{ pc.component }}</a></td>
+          <td>{{ pc.reference_designator|default:"&mdash;" }}</td>
+          <td>
+            {% if pc.is_verified %}
+              <span class="status-badge badge-ok">Verified</span>
+            {% else %}
+              <span class="status-badge badge-warn">Unverified</span>
+            {% endif %}
+          </td>
+          <td>{{ pc.created_at|date:"N j, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+  {% else %}
+  <p class="empty-state">No component mappings.</p>
+  {% endif %}
+</details>
+
+<!-- Comments -->
+<details>
+  <summary>Comments ({{ summary.comments }})</summary>
+  {% if comments %}
+  <form method="post" action="{{ action_url }}" id="form-comments">
+    {% csrf_token %}
+    <div class="action-bar">
+      <label class="select-all-label"><input type="checkbox" class="select-all" data-section="comments"> Select all</label>
+      <button type="submit" name="action" value="delete_comments" class="btn-delete" onclick="return confirm('Delete selected comments? This cannot be undone.')">Delete Selected</button>
+    </div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="width: 30px;"></th>
+          <th>Product</th>
+          <th>Content</th>
+          <th>Posted</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for comment in comments %}
+        <tr>
+          <td><input type="checkbox" name="selected_ids" value="{{ comment.id }}" class="row-check" data-section="comments"></td>
+          <td><a href="{% url 'admin:products_product_change' comment.product_id %}">{{ comment.product }}</a></td>
+          <td>{{ comment.content|truncatewords:20 }}</td>
+          <td>{{ comment.created_at|date:"N j, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+  {% else %}
+  <p class="empty-state">No comments.</p>
+  {% endif %}
+</details>
+
+<!-- Images -->
+<details>
+  <summary>Images ({{ summary.images }})</summary>
+  {% if images %}
+  <form method="post" action="{{ action_url }}" id="form-images">
+    {% csrf_token %}
+    <div class="action-bar">
+      <label class="select-all-label"><input type="checkbox" class="select-all" data-section="images"> Select all</label>
+      <button type="submit" name="action" value="delete_images" class="btn-delete" onclick="return confirm('Delete selected images? This cannot be undone.')">Delete Selected</button>
+    </div>
+    <table class="task-table">
+      <thead>
+        <tr>
+          <th style="width: 30px;"></th>
+          <th>Product</th>
+          <th>Type</th>
+          <th>Caption</th>
+          <th>Uploaded</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for image in images %}
+        <tr>
+          <td><input type="checkbox" name="selected_ids" value="{{ image.id }}" class="row-check" data-section="images"></td>
+          <td><a href="{% url 'admin:products_product_change' image.product_id %}">{{ image.product }}</a></td>
+          <td>{{ image.get_image_type_display }}</td>
+          <td>{{ image.caption|default:"&mdash;"|truncatewords:10 }}</td>
+          <td>{{ image.uploaded_at|date:"N j, Y H:i" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </form>
+  {% else %}
+  <p class="empty-state">No images.</p>
+  {% endif %}
+</details>
+
+<!-- Read-only Sections -->
+
+<!-- Products -->
+<details>
+  <summary>Products ({{ summary.products }})</summary>
+  {% if products %}
+  <table class="task-table">
+    <thead>
+      <tr>
+        <th>Manufacturer</th>
+        <th>Model</th>
+        <th>Category</th>
+        <th>Approved</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in products %}
+      <tr>
+        <td>{{ product.manufacturer }}</td>
+        <td><a href="{% url 'admin:products_product_change' product.pk %}">{{ product.model_number }}</a></td>
+        <td>{{ product.category|default:"&mdash;" }}</td>
+        <td>
+          {% if product.is_approved %}
+            <span class="status-badge badge-ok">Approved</span>
+          {% else %}
+            <span class="status-badge badge-warn">Pending</span>
+          {% endif %}
+        </td>
+        <td>{{ product.created_at|date:"N j, Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No products.</p>
+  {% endif %}
+</details>
+
+<!-- Schematics -->
+<details>
+  <summary>Schematics ({{ summary.schematics }})</summary>
+  {% if schematics %}
+  <table class="task-table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Title</th>
+        <th>Type</th>
+        <th>Uploaded</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for schematic in schematics %}
+      <tr>
+        <td><a href="{% url 'admin:products_product_change' schematic.product_id %}">{{ schematic.product }}</a></td>
+        <td><a href="{% url 'admin:products_schematic_change' schematic.pk %}">{{ schematic.title }}</a></td>
+        <td>{{ schematic.get_schematic_type_display }}</td>
+        <td>{{ schematic.uploaded_at|date:"N j, Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No schematics.</p>
+  {% endif %}
+</details>
+
+<!-- Reports Against User -->
+<details {% if summary.reports_pending > 0 %}open{% endif %}>
+  <summary>Reports Against User ({{ summary.reports }}{% if summary.reports_pending > 0 %} &mdash; <span style="color: #dc3545;">{{ summary.reports_pending }} pending</span>{% endif %})</summary>
+  {% if reports %}
+  <table class="task-table">
+    <thead>
+      <tr>
+        <th>Reason</th>
+        <th>Status</th>
+        <th>Strike</th>
+        <th>Reported</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td><a href="{% url 'admin:reports_report_change' report.pk %}">{{ report.get_reason_display }}</a></td>
+        <td>
+          <span class="status-badge {% if report.status == 'pending' %}badge-warn{% elif report.status == 'resolved_valid' %}badge-error{% elif report.status == 'resolved_invalid' or report.status == 'dismissed' %}badge-muted{% else %}badge-info{% endif %}">
+            {{ report.get_status_display }}
+          </span>
+        </td>
+        <td>{% if report.counted_as_strike %}Yes{% else %}No{% endif %}</td>
+        <td>{{ report.created_at|date:"N j, Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No reports against this user.</p>
+  {% endif %}
+</details>
+
+<!-- User Reviews -->
+<details {% if summary.reviews_pending > 0 %}open{% endif %}>
+  <summary>User Reviews ({{ summary.reviews }}{% if summary.reviews_pending > 0 %} &mdash; <span style="color: #dc3545;">{{ summary.reviews_pending }} pending</span>{% endif %})</summary>
+  {% if reviews %}
+  <table class="task-table">
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th>Status</th>
+        <th>Reviewer</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for review in reviews %}
+      <tr>
+        <td><a href="{% url 'admin:reports_userreview_change' review.pk %}">{{ review.get_review_type_display }}</a></td>
+        <td>
+          <span class="status-badge {% if review.status == 'pending' %}badge-warn{% elif review.status == 'cleared' %}badge-ok{% elif review.status == 'suspended' %}badge-error{% else %}badge-info{% endif %}">
+            {{ review.get_status_display }}
+          </span>
+        </td>
+        <td>{{ review.reviewer|default:"&mdash;" }}</td>
+        <td>{{ review.created_at|date:"N j, Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="empty-state">No user reviews.</p>
+  {% endif %}
+</details>
+
+<script>
+// Select-all checkbox toggle per section
+document.querySelectorAll('.select-all').forEach(function(selectAll) {
+  selectAll.addEventListener('change', function() {
+    var section = this.dataset.section;
+    document.querySelectorAll('.row-check[data-section="' + section + '"]').forEach(function(cb) {
+      cb.checked = selectAll.checked;
+    });
+  });
+});
+</script>
+{% endblock %}

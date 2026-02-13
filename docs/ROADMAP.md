@@ -238,7 +238,7 @@ Other users can search this database to find which consumer products contain spe
 
 #### Week 5-6: Admin & Moderation
 - ✅ Admin dashboard for content review (Django admin)
-- ⬜ Bulk user contribution review tools
+- ✅ Bulk user contribution review tools — single-page admin view per user with summary stats, bulk verify/approve/reject/delete actions, audit logging (Feb 13, 2026)
 - ✅ Basic moderation queue
 - ✅ User contribution statistics
 - ✅ Simple report system (3-strike moderation)
@@ -270,7 +270,7 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Batch component addition — multi-row inline form with paste-from-clipboard support, auto-detect component type/package (Feb 13, 2026)
 
 ##### Remaining: Admin-side BOM import
-- ⬜ Add `django-import-export` to `ComponentAdmin` and `ProductComponentAdmin` for admin CSV import with preview/dry-run (frontend wizard and API are complete)
+- ✅ Add `django-import-export` to `ComponentAdmin` and `ProductComponentAdmin` for admin CSV/Excel import/export with preview/dry-run, composite FK resolution, and update-on-import (Feb 13, 2026)
 
 #### Week 12-13: Polish & UX Improvements
 - ✅ Mobile responsive design (tabs, tables, forms, search)
