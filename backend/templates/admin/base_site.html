@@ -8,6 +8,7 @@
 
 {% block branding %}
 {{ block.super }}
+{% if user.is_staff %}
 <style>
   #system-status-indicator {
     display: inline-flex;
@@ -50,4 +51,5 @@
   <span class="ssi-label">Loading...</span>
 </a>
 <script src="{% static 'admin/js/system_status.js' %}"></script>
+{% endif %}
 {% endblock %}
