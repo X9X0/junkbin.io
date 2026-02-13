@@ -45,6 +45,7 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: junkbinio-backend
     container_name: junkbin_backend
     restart: unless-stopped
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4 --threads 2
@@ -90,11 +91,9 @@ services:
     networks:
       - junkbin_network
 
-  # Celery Worker
+  # Celery Worker (shares backend image)
   celery:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: junkbinio-backend
     container_name: junkbin_celery
     restart: unless-stopped
     command: celery -A config worker --loglevel=info --concurrency=2
@@ -113,11 +112,9 @@ services:
     networks:
       - junkbin_network
 
-  # Celery Beat (Periodic Tasks)
+  # Celery Beat (shares backend image)
   celery-beat:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: junkbinio-backend
     container_name: junkbin_celery_beat
     restart: unless-stopped
     command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
