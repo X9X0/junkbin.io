@@ -1,0 +1,27 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+Account Action: {{ action_label }}
+
+Hello {{ user.username }},
+
+Following a review of your account, the following action has been taken:
+
+Action: {{ action_label }}
+{% if notes %}
+Reason: {{ notes }}
+{% endif %}
+{% if status == "warning_issued" %}
+This is a formal warning. No restrictions have been applied to your account at this time. However, continued violations may result in account restrictions or suspension.
+{% elif status == "restricted" %}
+Your trusted contributor status has been revoked. Your future contributions will require moderator approval before being published.
+{% elif status == "suspended" %}
+Your account has been suspended. You will no longer be able to log in or access community features.
+{% endif %}
+
+Please review our community guidelines:
+{{ guidelines_url }}
+
+If you wish to appeal this decision, contact us at appeals@junkbin.io with your username and a description of the situation.
+
+---
+Junkbin.io

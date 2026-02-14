@@ -15,12 +15,15 @@ junkbin.io/
 │
 ├── backend/                           # Django backend
 │   ├── manage.py                      # Django management script
+│   ├── conftest.py                    # Pytest configuration
 │   ├── requirements.txt               # Python dependencies
 │   ├── Dockerfile                     # Backend container image
 │   ├── .dockerignore                  # Docker ignore rules
 │   │
 │   ├── config/                        # Django project configuration
 │   │   ├── __init__.py
+│   │   ├── admin.py                   # Custom admin site (sidebar grouping)
+│   │   ├── celery.py                  # Celery app configuration
 │   │   ├── settings/
 │   │   │   ├── __init__.py
 │   │   │   ├── base.py                # Common settings
@@ -34,23 +37,25 @@ junkbin.io/
 │   ├── apps/                          # Django applications
 │   │   │
 │   │   ├── users/                     # User management
-│   │   │   ├── models.py              # Custom User model
+│   │   │   ├── models.py              # Custom User model (UUID PK, reputation, trust levels, messaging_blocked)
 │   │   │   ├── views.py               # Authentication views
 │   │   │   ├── serializers.py         # API serializers
 │   │   │   ├── urls.py                # User-specific routes
-│   │   │   ├── admin.py               # Admin configuration
+│   │   │   ├── admin.py               # Admin config (trust/moderator/messaging block actions)
+│   │   │   ├── admin_views.py         # Bulk contribution review page
 │   │   │   ├── authentication.py      # JWT cookie auth backend
 │   │   │   ├── permissions.py         # IsOwnerOrReadOnly, IsModerator, IsTrustedUser
-│   │   │   ├── signals.py             # User-related signals
+│   │   │   ├── signals.py             # User-related signals (default preferences)
 │   │   │   └── tests/
 │   │   │
 │   │   ├── products/                  # Product management
-│   │   │   ├── models.py              # Product, ProductImage, Schematic
-│   │   │   ├── views.py               # Product CRUD views
-│   │   │   ├── serializers.py         # Product serializers
+│   │   │   ├── models.py              # Product, ProductImage, Schematic, ProductComment
+│   │   │   ├── views.py               # Product CRUD views + comments + BOM import
+│   │   │   ├── serializers.py         # Product serializers (with content filter)
 │   │   │   ├── urls.py                # Product routes
 │   │   │   ├── admin.py               # Product admin + CSV export
 │   │   │   ├── filters.py             # Search filters
+│   │   │   ├── bom_utils.py           # BOM CSV column auto-detection and validation
 │   │   │   ├── tests/
 │   │   │   └── management/
 │   │   │       └── commands/
@@ -59,31 +64,40 @@ junkbin.io/
 │   │   │           └── import_flipper_bom.py    # Flipper Zero BOM from Excel
 │   │   │
 │   │   ├── components/                # Component management
-│   │   │   ├── models.py              # Component, ProductComponent
-│   │   │   ├── views.py               # Component CRUD + cross-reference
-│   │   │   ├── serializers.py
+│   │   │   ├── models.py              # Component, ProductComponent, ComponentVote
+│   │   │   ├── views.py               # Component CRUD + cross-reference + voting
+│   │   │   ├── serializers.py         # Component serializers (vote fields)
 │   │   │   ├── urls.py
-│   │   │   ├── admin.py               # Component admin + CSV export
+│   │   │   ├── admin.py               # Component admin + CSV import/export
 │   │   │   ├── filters.py             # Component search filters
 │   │   │   └── tests/
 │   │   │
 │   │   ├── submissions/               # Content submission/moderation
 │   │   │   ├── models.py              # Submission model
-│   │   │   ├── views.py               # Submission workflow
+│   │   │   ├── views.py               # Submission workflow (with throttling)
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
 │   │   │   ├── admin.py
-│   │   │   ├── tasks.py               # Celery tasks
+│   │   │   ├── tasks.py               # Celery tasks (approval/rejection emails)
 │   │   │   └── tests/
 │   │   │
-│   │   ├── reports/                   # User reporting system
-│   │   │   ├── models.py              # Report, UserReview models
-│   │   │   ├── views.py               # Report handling
+│   │   ├── reports/                   # User reporting & moderation system
+│   │   │   ├── models.py              # Report, UserReview models (with notification triggers)
+│   │   │   ├── views.py               # Report handling (with throttling)
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
-│   │   │   ├── admin.py
-│   │   │   ├── signals.py             # Auto-trigger on 3 strikes
+│   │   │   ├── admin.py               # Report/UserReview admin (clear/warn/suspend actions)
+│   │   │   ├── signals.py             # Auto-trigger UserReview on 3 strikes
+│   │   │   ├── tasks.py               # Celery tasks (strike/account action notifications)
 │   │   │   └── tests/
+│   │   │
+│   │   ├── messaging/                 # User-to-user messaging
+│   │   │   ├── models.py              # Conversation, Message, UserBlock
+│   │   │   ├── views.py               # Inbox, thread, send, unread count, blocking
+│   │   │   ├── serializers.py         # Message serializers (with content filter)
+│   │   │   ├── urls.py
+│   │   │   ├── admin.py               # Conversation/Message/UserBlock admin
+│   │   │   └── tasks.py               # Celery task (new message email notification)
 │   │   │
 │   │   ├── newsletter/                # Newsletter / email collection
 │   │   │   ├── models.py              # Subscriber model
@@ -97,35 +111,59 @@ junkbin.io/
 │   │   │           └── send_launch_email.py  # Launch blast command
 │   │   │
 │   │   └── api/                       # API configuration
-│   │       ├── urls.py                # API root routing
-│   │       ├── routers.py             # DRF routers
+│   │       ├── models.py              # Admin notification models
+│   │       ├── urls.py                # API root routing + JWT cookie auth
+│   │       ├── views.py               # APIRoot, SearchView, HealthCheck, Stats
+│   │       ├── admin.py               # Admin notification admin
+│   │       ├── admin_views.py         # System status dashboard view
 │   │       ├── pagination.py          # Pagination classes
-│   │       ├── permissions.py         # API permissions
-│   │       └── throttling.py          # Rate limiting
+│   │       ├── permissions.py         # API permissions (IsVerifiedEmail, etc.)
+│   │       ├── throttling.py          # Rate limiting (auth, submission, report, search, messaging)
+│   │       ├── middleware.py          # Admin IP whitelist, Axes lockout handler
+│   │       ├── signals.py             # Signal handlers for admin notifications
+│   │       ├── tasks.py               # Admin notification tasks (health, digest, alerts)
+│   │       ├── tests/
+│   │       └── management/
+│   │           └── commands/
+│   │               ├── rebuild_search_vectors.py  # Rebuild full-text search indexes
+│   │               └── setup_notifications.py     # Configure admin notification schedule
 │   │
 │   ├── templates/                     # Django templates
+│   │   ├── admin/                     # Admin panel customization
+│   │   │   ├── base_site.html
+│   │   │   ├── index.html
+│   │   │   ├── system_status.html     # System health dashboard
+│   │   │   └── user_contributions.html # Bulk contribution review
 │   │   ├── emails/                    # Email templates (inline CSS for Gmail)
-│   │   │   ├── verification.html
-│   │   │   ├── email_verification.html
-│   │   │   ├── password_reset.html
-│   │   │   ├── newsletter_confirm.html  # Subscribe confirmation
-│   │   │   ├── newsletter_confirm.txt
-│   │   │   ├── launch_announcement.html # Launch blast email
-│   │   │   └── launch_announcement.txt
-│   │   └── errors/
-│   │       ├── 404.html
-│   │       └── 500.html
+│   │   │   ├── email_verification.html/.txt
+│   │   │   ├── password_reset.html/.txt
+│   │   │   ├── new_message.html/.txt        # New message notification
+│   │   │   ├── strike_warning.html/.txt     # Community strike notice
+│   │   │   ├── account_action.html/.txt     # Warning/restriction/suspension notice
+│   │   │   ├── newsletter_confirm.html/.txt
+│   │   │   ├── launch_announcement.html/.txt
+│   │   │   └── admin/
+│   │   │       ├── system_alert.html/.txt
+│   │   │       ├── moderation_alert.html/.txt
+│   │   │       └── activity_digest.html/.txt
+│   │   ├── errors/
+│   │   │   ├── 404.html
+│   │   │   └── 500.html
+│   │   └── base.html
 │   │
 │   └── utils/                         # Shared utilities
 │       ├── __init__.py
 │       ├── image_processing.py        # Image optimization
-│       ├── email.py                   # Email helpers (send_templated_email)
+│       ├── email.py                   # Email helpers (templated, verification, reset, messages, strikes)
+│       ├── content_filter.py          # Profanity/hate speech filter (regex + leet-speak normalization)
+│       ├── file_validation.py         # Magic byte file type verification for uploads
+│       ├── cache.py                   # Cache key helpers
 │       └── validators.py              # Custom validators
 │
 ├── frontend/                          # React frontend
 │   ├── package.json                   # NPM dependencies
 │   ├── package-lock.json
-│   ├── vite.config.js                 # Vite configuration
+│   ├── vite.config.ts                 # Vite configuration
 │   ├── tailwind.config.js             # Tailwind + cyberpunk theme
 │   ├── tsconfig.json                  # TypeScript configuration
 │   ├── .nvmrc                         # Node version (22)
@@ -138,28 +176,36 @@ junkbin.io/
 │       ├── index.css                  # Tailwind + cyberpunk CSS effects
 │       │
 │       ├── api/                       # API layer
-│       │   ├── client.ts              # Axios instance + token refresh
-│       │   └── endpoints.ts           # All API endpoint functions
+│       │   ├── client.ts              # Axios instance + JWT cookie refresh
+│       │   └── endpoints.ts           # All API endpoint functions (auth, products, components, messaging, reports, etc.)
 │       │
 │       ├── context/                   # React Context
 │       │   └── AuthContext.tsx         # Auth state + JWT token management
 │       │
 │       ├── components/                # Reusable components
 │       │   ├── layout/
-│       │   │   ├── Header.tsx         # Nav bar + search dropdown
-│       │   │   ├── Footer.tsx
+│       │   │   ├── Header.tsx         # Nav bar + search dropdown + unread badge
+│       │   │   ├── Footer.tsx         # Site footer + links
 │       │   │   └── Layout.tsx         # Page wrapper
+│       │   │
+│       │   ├── moderation/
+│       │   │   ├── ResolveReportModal.tsx  # Report resolution dialog
+│       │   │   └── UserReviewPanel.tsx     # User review action panel
 │       │   │
 │       │   ├── AddComponentForm.tsx   # Link components to products
 │       │   ├── BackToTop.tsx          # Floating scroll button
+│       │   ├── BatchAddComponents.tsx # Bulk component linking
+│       │   ├── BomImport.tsx          # BOM CSV file import
 │       │   ├── BomTemplateDownload.tsx # BOM CSV template download
+│       │   ├── ComponentVoteButtons.tsx # Confirm/dispute voting on cross-references
 │       │   ├── ErrorBoundary.tsx      # React error boundary
 │       │   ├── ImageUpload.tsx        # Drag & drop image upload
 │       │   ├── KeyboardShortcutsModal.tsx # ? key help modal
 │       │   ├── LazyImage.tsx          # Intersection observer lazy loading
 │       │   ├── OnboardingTips.tsx     # Dismissable tips for new users
 │       │   ├── Pagination.tsx         # Page navigation
-│       │   ├── ReportModal.tsx        # Content reporting modal
+│       │   ├── ProductComments.tsx    # Product comment thread + compose
+│       │   ├── ReportModal.tsx        # Content/message reporting modal
 │       │   ├── SchematicUpload.tsx    # Schematic file upload
 │       │   ├── ScrollToTop.tsx        # Scroll to top on route change
 │       │   └── Skeleton.tsx           # Loading placeholder
@@ -167,12 +213,17 @@ junkbin.io/
 │       ├── pages/                     # Page components
 │       │   ├── Home.tsx               # Landing page + newsletter signup
 │       │   ├── Products.tsx           # Product listing + search/filter
-│       │   ├── ProductDetail.tsx      # Product detail (images, components, schematics)
+│       │   ├── ProductDetail.tsx      # Product detail (images, components, schematics, voting)
 │       │   ├── Components.tsx         # Component catalog
 │       │   ├── ComponentDetail.tsx    # Cross-reference: products with component
 │       │   ├── Schematics.tsx         # Schematic listing
 │       │   ├── Search.tsx             # Global search with tabbed results
 │       │   ├── Submit.tsx             # Multi-step product/component wizard
+│       │   ├── Messages.tsx           # Inbox / conversation list
+│       │   ├── MessageThread.tsx      # Conversation thread + compose
+│       │   ├── Guidelines.tsx         # Community guidelines
+│       │   ├── Leaderboard.tsx        # User contribution rankings
+│       │   ├── Moderation.tsx         # Report/review moderation dashboard
 │       │   ├── Login.tsx              # Authentication
 │       │   ├── Register.tsx           # User registration
 │       │   ├── Profile.tsx            # User profile + stats
@@ -182,12 +233,14 @@ junkbin.io/
 │       │   └── NotFound.tsx           # 404 page
 │       │
 │       ├── hooks/                     # Custom React hooks
-│       │   └── useKeyboardShortcuts.ts
+│       │   ├── useKeyboardShortcuts.ts
+│       │   ├── usePageVisibility.ts   # Page Visibility API wrapper
+│       │   └── useUnreadCount.ts      # Adaptive polling for unread messages
 │       │
 │       ├── types/                     # TypeScript interfaces
-│       │   └── index.ts
+│       │   └── index.ts              # All shared types (Product, Component, Message, etc.)
 │       │
-│       ├── __tests__/                 # Test infrastructure
+│       ├── test/                      # Test infrastructure
 │       │   ├── setup.ts
 │       │   ├── utils.tsx
 │       │   └── mocks/
@@ -204,20 +257,14 @@ junkbin.io/
 │   ├── restore.sh                     # Restore from backup (interactive menu)
 │   │
 │   ├── nginx/                         # Nginx configurations
+│   │   ├── nginx.conf                 # Main nginx config
 │   │   └── sites-available/
 │   │       ├── junkbin.conf           # Production (with SSL)
 │   │       └── junkbin-local.conf     # Local dev (no SSL)
 │   │
-│   ├── docker/                        # Docker-related files
-│   │   └── postgres/
-│   │       └── init.sql               # Initial DB setup
-│   │
-│   └── systemd/                       # Systemd service files
-│       ├── junkbin.service
-│       └── junkbin-celery.service
-│
-└── tests/                             # Integration/E2E tests
-    └── conftest.py                    # Pytest configuration
+│   └── docker/                        # Docker-related files
+│       └── postgres/
+│           └── init.sql               # Initial DB setup
 ```
 
 ## File Naming Conventions
@@ -244,7 +291,7 @@ junkbin.io/
 - `requirements.txt` - Python package dependencies
 
 ### Frontend
-- `vite.config.js` - Build configuration
+- `vite.config.ts` - Build configuration
 - `package.json` - NPM dependencies and scripts
 - `tailwind.config.js` - Cyberpunk theme colors/fonts
 
@@ -266,4 +313,4 @@ See `.env.example` for required environment variables including:
 
 ---
 
-**Last Updated**: February 11, 2026
+**Last Updated**: February 14, 2026

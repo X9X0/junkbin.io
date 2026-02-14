@@ -34,6 +34,7 @@ from .serializers import (
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
+from apps.api.throttling import SubmissionRateThrottle
 
 
 @extend_schema_view(
@@ -89,6 +90,13 @@ class ProductViewSet(viewsets.ModelViewSet):
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         return [permissions.AllowAny()]
+
+    def get_throttles(self):
+        if self.action in ['create', 'add_component', 'batch_add_components',
+                           'comments', 'upload_image', 'upload_schematic']:
+            if self.request.method == 'POST':
+                return [SubmissionRateThrottle()]
+        return super().get_throttles()
 
     @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
     def list(self, request, *args, **kwargs):

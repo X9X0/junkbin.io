@@ -19,6 +19,7 @@ from .serializers import (
 )
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsVerifiedEmail
+from apps.api.throttling import SubmissionRateThrottle
 
 
 @extend_schema_view(
@@ -62,6 +63,11 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         elif self.action in ['review', 'pending']:
             return [IsModerator()]
         return [permissions.IsAuthenticated()]
+
+    def get_throttles(self):
+        if self.action == 'create':
+            return [SubmissionRateThrottle()]
+        return super().get_throttles()
 
     @action(detail=True, methods=['post'])
     def review(self, request, pk=None):

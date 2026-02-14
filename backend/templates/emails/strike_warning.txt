@@ -1,0 +1,19 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+Community Strike Notice
+
+Hello {{ user.username }},
+
+Your account has received a community strike following a validated report against your content.
+
+Your current strike count: {{ strike_count }}
+
+At 3 strikes, your account will be flagged for moderator review, which may result in a warning, account restrictions, or suspension.
+
+Please review our community guidelines to avoid further strikes:
+{{ guidelines_url }}
+
+If you believe this strike was issued in error, you can contact us at appeals@junkbin.io.
+
+---
+Junkbin.io

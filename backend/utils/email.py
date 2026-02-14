@@ -174,6 +174,49 @@ def send_new_message_email(message, recipient):
     )
 
 
+def send_strike_warning_email(user):
+    """Send email notifying a user they received a strike."""
+    from django.conf import settings
+
+    guidelines_url = f"{settings.FRONTEND_URL}/guidelines"
+
+    return send_templated_email(
+        subject='[Junkbin.io] You have received a community strike',
+        template_name='strike_warning',
+        context={
+            'user': user,
+            'strike_count': user.report_count,
+            'guidelines_url': guidelines_url,
+        },
+        recipient_list=[user.email]
+    )
+
+
+def send_account_action_email(review):
+    """Send email notifying a user about an account action."""
+    from django.conf import settings
+
+    guidelines_url = f"{settings.FRONTEND_URL}/guidelines"
+    action_labels = {
+        'warning_issued': 'Warning Issued',
+        'restricted': 'Account Restricted',
+        'suspended': 'Account Suspended',
+    }
+
+    return send_templated_email(
+        subject=f'[Junkbin.io] Account action: {action_labels.get(review.status, review.status)}',
+        template_name='account_action',
+        context={
+            'user': review.user,
+            'action_label': action_labels.get(review.status, review.status),
+            'status': review.status,
+            'notes': review.notes,
+            'guidelines_url': guidelines_url,
+        },
+        recipient_list=[review.user.email]
+    )
+
+
 def send_password_reset_email(user, token, uid):
     """
     Send password reset email with reset link.

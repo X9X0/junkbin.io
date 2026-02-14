@@ -90,6 +90,13 @@ class MessageCreateSerializer(serializers.Serializer):
         stripped = value.strip()
         if not stripped:
             raise serializers.ValidationError('Message content cannot be empty.')
+        from utils.content_filter import check_content
+        is_clean, _ = check_content(stripped)
+        if not is_clean:
+            raise serializers.ValidationError(
+                'Your message contains prohibited language. '
+                'Please review our community guidelines.'
+            )
         return stripped
 
 

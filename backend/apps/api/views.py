@@ -12,6 +12,7 @@ from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from .throttling import SearchRateThrottle
 
 from utils.cache import staff_key_prefix
 
@@ -73,6 +74,7 @@ class SearchView(APIView):
     """
 
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [SearchRateThrottle]
 
     @extend_schema(
         description='Search products and components',
