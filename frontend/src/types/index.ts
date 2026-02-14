@@ -273,6 +273,35 @@ export interface UserBlock {
   created_at: string;
 }
 
+// Junkbin types
+export interface JunkbinItem {
+  id: string;
+  user: { id: string; username: string };
+  content_type: 'product' | 'component';
+  object_id: string;
+  item_name: string;
+  item_manufacturer: string;
+  item_slug: string | null;
+  item_type: 'have' | 'want';
+  status: 'available' | 'not_for_trade';
+  condition: 'new' | 'working' | 'broken' | 'unknown';
+  visibility: 'public' | 'private';
+  notes: string;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface JunkbinSummary {
+  have_count: number;
+  want_count: number;
+  available_count: number;
+}
+
+export interface JunkbinCheckResponse {
+  items: JunkbinItem[];
+}
+
 // User preferences
 export interface UserPreferences {
   email_notifications: boolean;
@@ -280,6 +309,7 @@ export interface UserPreferences {
   notify_submissions: boolean;
   notify_reports: boolean;
   notify_account: boolean;
+  notify_junkbin: boolean;
   dark_mode: boolean;
   show_advanced_fields: boolean;
 }

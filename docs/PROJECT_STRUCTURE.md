@@ -99,6 +99,15 @@ junkbin.io/
 │   │   │   ├── admin.py               # Conversation/Message/UserBlock admin
 │   │   │   └── tasks.py               # Celery task (new message email notification)
 │   │   │
+│   │   ├── junkbin/                   # Personal junkbin (collection & trading)
+│   │   │   ├── models.py              # JunkbinItem (have/want, polymorphic product/component via ContentType)
+│   │   │   ├── views.py               # JunkbinItemViewSet (CRUD + my_items, my_summary, user_summary, check)
+│   │   │   ├── serializers.py         # List/Detail/Create/Update serializers
+│   │   │   ├── urls.py                # Router registration
+│   │   │   ├── admin.py               # Admin registration with filters
+│   │   │   ├── apps.py                # AppConfig
+│   │   │   └── tasks.py               # Celery task (want-list match notifications)
+│   │   │
 │   │   ├── newsletter/                # Newsletter / email collection
 │   │   │   ├── models.py              # Subscriber model
 │   │   │   ├── views.py               # SubscribeView API
@@ -192,6 +201,7 @@ junkbin.io/
 │       │   │   ├── ResolveReportModal.tsx  # Report resolution dialog
 │       │   │   └── UserReviewPanel.tsx     # User review action panel
 │       │   │
+│       │   ├── AddToJunkbinModal.tsx  # Modal for adding items to personal junkbin
 │       │   ├── AddComponentForm.tsx   # Link components to products
 │       │   ├── BackToTop.tsx          # Floating scroll button
 │       │   ├── BatchAddComponents.tsx # Bulk component linking
@@ -219,6 +229,7 @@ junkbin.io/
 │       │   ├── Schematics.tsx         # Schematic listing
 │       │   ├── Search.tsx             # Global search with tabbed results
 │       │   ├── Submit.tsx             # Multi-step product/component wizard
+│       │   ├── MyJunkbin.tsx          # Personal collection manager (have/want tabs)
 │       │   ├── Messages.tsx           # Inbox / conversation list
 │       │   ├── MessageThread.tsx      # Conversation thread + compose
 │       │   ├── NewConversation.tsx    # Start new conversation with user search

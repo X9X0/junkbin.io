@@ -137,6 +137,7 @@ class PreferencesSerializer(serializers.Serializer):
     notify_submissions = serializers.BooleanField(default=True)
     notify_reports = serializers.BooleanField(default=True)
     notify_account = serializers.BooleanField(default=True)
+    notify_junkbin = serializers.BooleanField(default=True)
     # UI preferences
     dark_mode = serializers.BooleanField(default=True)
     show_advanced_fields = serializers.BooleanField(default=False)

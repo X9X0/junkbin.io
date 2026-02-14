@@ -22,6 +22,7 @@ import MessageThread from './pages/MessageThread';
 import NewConversation from './pages/NewConversation';
 import UserProfile from './pages/UserProfile';
 import Guidelines from './pages/Guidelines';
+import MyJunkbin from './pages/MyJunkbin';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
 import ScrollToTop from './components/ScrollToTop';
@@ -59,6 +60,7 @@ function App() {
                 <Route path="messages" element={<Messages />} />
                 <Route path="messages/new" element={<NewConversation />} />
                 <Route path="messages/:conversationId" element={<MessageThread />} />
+                <Route path="my-junkbin" element={<MyJunkbin />} />
                 <Route path="guidelines" element={<Guidelines />} />
                 <Route path="moderation" element={<Moderation />} />
                 <Route path="profile" element={<Profile />} />

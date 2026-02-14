@@ -1,10 +1,15 @@
 import { Link, useParams } from 'react-router-dom';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { components } from '../api/endpoints';
-import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import AddToJunkbinModal from '../components/AddToJunkbinModal';
+import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive } from 'lucide-react';
 
 export default function ComponentDetail() {
   const { id } = useParams<{ id: string }>();
+  const { isAuthenticated } = useAuth();
+  const [showJunkbinModal, setShowJunkbinModal] = useState(false);
 
   const { data: component, isLoading: componentLoading } = useQuery({
     queryKey: ['component', id],
@@ -95,17 +100,28 @@ export default function ComponentDetail() {
                 <p className="text-gray-400 mb-4">{component.description}</p>
               )}
 
-              {component.datasheet_url && (
-                <a
-                  href={component.datasheet_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-cyber-cyan hover:text-white transition-colors"
-                >
-                  <ExternalLink className="h-4 w-4" />
-                  View Datasheet
-                </a>
-              )}
+              <div className="flex items-center gap-4 mt-2">
+                {component.datasheet_url && (
+                  <a
+                    href={component.datasheet_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-cyber-cyan hover:text-white transition-colors"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View Datasheet
+                  </a>
+                )}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setShowJunkbinModal(true)}
+                    className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
+                  >
+                    <Archive className="h-4 w-4" />
+                    Add to Junkbin
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -179,6 +195,15 @@ export default function ComponentDetail() {
           )}
         </div>
       </div>
+
+      {/* Add to Junkbin Modal */}
+      <AddToJunkbinModal
+        isOpen={showJunkbinModal}
+        onClose={() => setShowJunkbinModal(false)}
+        contentType="component"
+        objectId={id!}
+        itemName={`${component.manufacturer} ${component.part_number}`}
+      />
     </div>
   );
 }
