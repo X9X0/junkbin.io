@@ -178,10 +178,9 @@ class SendMessageView(APIView):
         from .tasks import notify_new_message
         notify_new_message.delay(str(message.pk))
 
-        return Response(
-            MessageSerializer(message).data,
-            status=status.HTTP_201_CREATED,
-        )
+        response_data = MessageSerializer(message).data
+        response_data['conversation_id'] = str(conversation.pk)
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class UnreadCountView(APIView):

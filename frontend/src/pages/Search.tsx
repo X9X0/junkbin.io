@@ -8,6 +8,9 @@ import {
   FileText,
   ExternalLink,
   Loader2,
+  User as UserIcon,
+  Shield,
+  Award,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState, useEffect } from 'react';
@@ -37,9 +40,17 @@ interface SearchResult {
     schematic_type_display?: string;
     product: { id: string; manufacturer: string; model_number: string };
   }>;
+  users: Array<{
+    id: string;
+    username: string;
+    display_name?: string;
+    avatar?: string;
+    reputation_score: number;
+    is_trusted: boolean;
+  }>;
 }
 
-type TabType = 'all' | 'products' | 'components' | 'schematics';
+type TabType = 'all' | 'products' | 'components' | 'schematics' | 'users';
 
 export default function Search() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -65,7 +76,7 @@ export default function Search() {
   };
 
   const totalResults = data
-    ? data.products.length + data.components.length + data.schematics.length
+    ? data.products.length + data.components.length + data.schematics.length + (data.users?.length || 0)
     : 0;
 
   const tabs = [
@@ -73,6 +84,7 @@ export default function Search() {
     { key: 'products', label: 'Products', count: data?.products.length || 0, icon: Package },
     { key: 'components', label: 'Components', count: data?.components.length || 0, icon: Cpu },
     { key: 'schematics', label: 'Schematics', count: data?.schematics.length || 0, icon: FileText },
+    { key: 'users', label: 'Users', count: data?.users?.length || 0, icon: UserIcon },
   ];
 
   return (
@@ -300,6 +312,58 @@ export default function Search() {
                             </span>
                           </div>
                           <ExternalLink className="h-4 w-4 text-gray-600 group-hover:text-cyber-green transition-colors" />
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* Users */}
+              {(activeTab === 'all' || activeTab === 'users') &&
+                data?.users &&
+                data.users.length > 0 && (
+                  <div>
+                    {activeTab === 'all' && (
+                      <h2 className="font-display text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <UserIcon className="h-5 w-5 text-cyber-yellow" />
+                        USERS ({data.users.length})
+                      </h2>
+                    )}
+                    <div className="grid gap-3">
+                      {data.users.map((user) => (
+                        <Link
+                          key={user.id}
+                          to={`/users/${user.id}`}
+                          className="card-cyber p-4 flex items-center gap-4 hover:border-cyber-yellow/50 transition-all group"
+                        >
+                          <div className="w-16 h-16 bg-cyber-black flex items-center justify-center flex-shrink-0 border border-cyber-yellow/30">
+                            {user.avatar ? (
+                              <img src={user.avatar} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <UserIcon className="h-8 w-8 text-cyber-yellow/50" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-mono font-semibold text-white group-hover:text-cyber-yellow transition-colors">
+                              {user.display_name || user.username}
+                            </h3>
+                            {user.display_name && user.display_name !== user.username && (
+                              <div className="text-gray-500 text-xs font-mono">@{user.username}</div>
+                            )}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="flex items-center gap-1 text-cyber-cyan font-mono text-xs">
+                                <Award className="h-3 w-3" />
+                                {user.reputation_score} rep
+                              </span>
+                              {user.is_trusted && (
+                                <span className="flex items-center gap-1 text-cyber-green font-mono text-xs">
+                                  <Shield className="h-3 w-3" />
+                                  TRUSTED
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <ExternalLink className="h-4 w-4 text-gray-600 group-hover:text-cyber-yellow transition-colors" />
                         </Link>
                       ))}
                     </div>

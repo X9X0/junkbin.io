@@ -19,6 +19,8 @@ import Moderation from './pages/Moderation';
 import Leaderboard from './pages/Leaderboard';
 import Messages from './pages/Messages';
 import MessageThread from './pages/MessageThread';
+import NewConversation from './pages/NewConversation';
+import UserProfile from './pages/UserProfile';
 import Guidelines from './pages/Guidelines';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
@@ -53,7 +55,9 @@ function App() {
                 <Route path="search" element={<Search />} />
                 <Route path="submit" element={<Submit />} />
                 <Route path="leaderboard" element={<Leaderboard />} />
+                <Route path="users/:id" element={<UserProfile />} />
                 <Route path="messages" element={<Messages />} />
+                <Route path="messages/new" element={<NewConversation />} />
                 <Route path="messages/:conversationId" element={<MessageThread />} />
                 <Route path="guidelines" element={<Guidelines />} />
                 <Route path="moderation" element={<Moderation />} />

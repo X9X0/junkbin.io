@@ -313,6 +313,7 @@ Other users can search this database to find which consumer products contain spe
 - ✅ User-to-user messaging — full inbox with conversation threads, adaptive polling (5s/30s), unread badges, user blocking, moderator messaging bans, email notifications, message reporting (Feb 13, 2026)
 - ✅ Contribution leaderboards
 - ✅ Community guidelines enforcement — guidelines page, rate limiting on submissions/reports/search/messages, content filter for slurs/hate speech, strike notification emails, account action emails with appeals info (Feb 14, 2026)
+- ✅ User discovery & public profiles — public user profile pages, user search in global search and header, clickable leaderboard, new conversation page with recipient autocomplete and ?to= prefill (Feb 14, 2026)
 
 #### Integration & Automation
 - ⬜ Octopart API integration (component cross-reference)

@@ -46,16 +46,16 @@ class UserViewSet(ModelViewSet):
 
     queryset = User.objects.filter(is_active=True)
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    search_fields = ['username', 'first_name', 'last_name']
+    ordering_fields = ['reputation_score', 'contribution_count', 'created_at']
+    ordering = ['-reputation_score']
 
     def get_serializer_class(self):
-        if self.action == 'retrieve' and self.request.user == self.get_object():
-            return UserDetailSerializer
+        if self.action == 'retrieve':
+            obj = self.get_object()
+            if self.request.user == obj:
+                return UserDetailSerializer
         return UserSerializer
-
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        # Order by reputation by default
-        return queryset.order_by('-reputation_score')
 
     @action(detail=True, methods=['get'])
     def stats(self, request, pk=None):
@@ -96,13 +96,25 @@ class UserViewSet(ModelViewSet):
 
         from apps.products.models import Product
         from apps.products.serializers import ProductListSerializer
+        from apps.components.models import Component
+        from apps.components.serializers import ComponentListSerializer
 
         products = Product.objects.filter(
             created_by=user
         ).order_by('-created_at')[:20]
 
-        serializer = ProductListSerializer(products, many=True)
-        return Response(serializer.data)
+        components = Component.objects.filter(
+            created_by=user
+        ).order_by('-created_at')[:20]
+
+        return Response({
+            'products': ProductListSerializer(
+                products, many=True, context={'request': request}
+            ).data,
+            'components': ComponentListSerializer(
+                components, many=True, context={'request': request}
+            ).data,
+        })
 
 
 class UserRegistrationView(generics.CreateAPIView):
