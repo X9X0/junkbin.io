@@ -273,6 +273,17 @@ export interface UserBlock {
   created_at: string;
 }
 
+// User preferences
+export interface UserPreferences {
+  email_notifications: boolean;
+  notify_messages: boolean;
+  notify_submissions: boolean;
+  notify_reports: boolean;
+  notify_account: boolean;
+  dark_mode: boolean;
+  show_advanced_fields: boolean;
+}
+
 // Search/filter types
 export interface ProductFilters {
   search?: string;

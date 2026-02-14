@@ -96,6 +96,13 @@ def send_report_resolved_email(report):
     if not report.reporter or not report.reporter.email:
         return
 
+    # Respect email notification preferences
+    prefs = getattr(report.reporter, 'preferences', None) or {}
+    if not prefs.get('email_notifications', True):
+        return
+    if not prefs.get('notify_reports', True):
+        return
+
     return send_templated_email(
         subject='Your Junkbin.io report has been resolved',
         template_name='report_resolved',

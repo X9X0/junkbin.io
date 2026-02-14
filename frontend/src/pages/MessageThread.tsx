@@ -98,7 +98,7 @@ export default function MessageThread() {
   const hasMore = !!messagesData?.next;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 flex flex-col" style={{ minHeight: 'calc(100vh - 12rem)' }}>
+    <div className="mx-auto max-w-3xl px-4 py-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)', overflow: 'hidden' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-cyber-light/30">
         <div className="flex items-center gap-3">

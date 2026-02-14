@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { auth } from '../api/endpoints';
 import api from '../api/client';
+import type { UserPreferences } from '../types';
 import {
   User,
   Shield,
@@ -12,10 +14,14 @@ import {
   Award,
   AlertCircle,
   ChevronRight,
+  Bell,
+  Loader2,
 } from 'lucide-react';
 
 export default function Profile() {
   const { user, isAuthenticated } = useAuth();
+
+  const queryClient = useQueryClient();
 
   // Fetch user's contributions
   const { data: contributions, isLoading: contributionsLoading } = useQuery({
@@ -26,6 +32,38 @@ export default function Profile() {
     },
     enabled: !!user?.id,
   });
+
+  // Fetch and manage notification preferences
+  const { data: preferences, isLoading: prefsLoading } = useQuery({
+    queryKey: ['preferences'],
+    queryFn: auth.getPreferences,
+    enabled: isAuthenticated,
+  });
+
+  const prefsMutation = useMutation({
+    mutationFn: (data: Partial<UserPreferences>) => auth.updatePreferences(data),
+    onMutate: async (newPrefs) => {
+      await queryClient.cancelQueries({ queryKey: ['preferences'] });
+      const previous = queryClient.getQueryData<UserPreferences>(['preferences']);
+      queryClient.setQueryData<UserPreferences>(['preferences'], (old) =>
+        old ? { ...old, ...newPrefs } : old
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['preferences'], context.previous);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['preferences'] });
+    },
+  });
+
+  const togglePref = (key: keyof UserPreferences) => {
+    if (!preferences) return;
+    prefsMutation.mutate({ [key]: !preferences[key] });
+  };
 
   if (!isAuthenticated || !user) {
     return (
@@ -140,6 +178,93 @@ export default function Profile() {
               COMPONENTS
             </div>
           </div>
+        </div>
+
+        {/* Notification Settings */}
+        <div className="card-cyber p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Bell className="h-5 w-5 text-cyber-cyan" />
+            <h2 className="font-display text-lg font-bold text-white">
+              NOTIFICATION <span className="text-cyber-cyan">SETTINGS</span>
+            </h2>
+          </div>
+
+          {prefsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-cyber-cyan" />
+            </div>
+          ) : preferences ? (
+            <div className="space-y-3">
+              {/* Master toggle */}
+              <div className="flex items-center justify-between py-2">
+                <div>
+                  <div className="text-sm text-white font-mono">Email Notifications</div>
+                  <div className="text-xs text-gray-500">
+                    Controls all notification emails
+                  </div>
+                </div>
+                <button
+                  onClick={() => togglePref('email_notifications')}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    preferences.email_notifications
+                      ? 'bg-cyber-cyan/30 border border-cyber-cyan'
+                      : 'bg-cyber-dark border border-cyber-light/30'
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${
+                      preferences.email_notifications
+                        ? 'translate-x-5 bg-cyber-cyan'
+                        : 'translate-x-0 bg-gray-500'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              <div className="border-t border-cyber-light/20" />
+
+              {/* Sub-toggles */}
+              {[
+                { key: 'notify_messages' as const, label: 'New Messages', desc: 'When someone sends you a message' },
+                { key: 'notify_submissions' as const, label: 'Submission Updates', desc: 'When your submissions are approved or rejected' },
+                { key: 'notify_reports' as const, label: 'Report Updates', desc: 'When reports you filed are resolved' },
+                { key: 'notify_account' as const, label: 'Account Actions', desc: 'Warnings, restrictions, or other account changes' },
+              ].map(({ key, label, desc }) => (
+                <div
+                  key={key}
+                  className={`flex items-center justify-between py-2 pl-4 ${
+                    !preferences.email_notifications ? 'opacity-40' : ''
+                  }`}
+                >
+                  <div>
+                    <div className="text-sm text-gray-300 font-mono">{label}</div>
+                    <div className="text-xs text-gray-600">{desc}</div>
+                  </div>
+                  <button
+                    onClick={() => togglePref(key)}
+                    disabled={!preferences.email_notifications}
+                    className={`relative w-11 h-6 rounded-full transition-colors disabled:cursor-not-allowed ${
+                      preferences[key]
+                        ? 'bg-cyber-cyan/30 border border-cyber-cyan'
+                        : 'bg-cyber-dark border border-cyber-light/30'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full transition-transform ${
+                        preferences[key]
+                          ? 'translate-x-5 bg-cyber-cyan'
+                          : 'translate-x-0 bg-gray-500'
+                      }`}
+                    />
+                  </button>
+                </div>
+              ))}
+
+              <div className="text-xs text-gray-600 pt-2 font-mono">
+                Security emails (password reset, email verification) are always sent.
+              </div>
+            </div>
+          ) : null}
         </div>
 
         {/* Recent Contributions */}
