@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0e27; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #1a1e37; padding: 30px; border-radius: 8px; border: 1px solid #ff2a6d; box-sizing: border-box;">
+        <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
+
+        <h1 style="color: #ff2a6d; font-size: 24px;">Account Action: {{ action_label }}</h1>
+
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Hello {{ user.username }},</p>
+
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Following a review of your account, the following action has been taken:</p>
+
+        <div style="background-color: #17334b; border-left: 4px solid #ff2a6d; padding: 15px; margin: 20px 0;">
+            <strong style="color: #ff2a6d;">{{ action_label }}</strong>
+            {% if notes %}<br><span style="color: #c0c0c0; margin-top: 8px; display: inline-block;">{{ notes }}</span>{% endif %}
+        </div>
+
+        {% if status == "warning_issued" %}
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">This is a formal warning. No restrictions have been applied to your account at this time. However, continued violations may result in account restrictions or suspension.</p>
+        {% elif status == "restricted" %}
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Your trusted contributor status has been revoked. Your future contributions will require moderator approval before being published.</p>
+        {% elif status == "suspended" %}
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Your account has been suspended. You will no longer be able to log in or access community features.</p>
+        {% endif %}
+
+        <a href="{{ guidelines_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Review Guidelines</a>
+
+        <p style="color: #c0c0c0; font-size: 13px; line-height: 1.5;">If you wish to appeal this decision, contact us at <a href="mailto:appeals@junkbin.io" style="color: #00f0ff;">appeals@junkbin.io</a> with your username and a description of the situation.</p>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
+            <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
+        </div>
+    </div>
+</body>
+</html>

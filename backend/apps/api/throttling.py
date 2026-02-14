@@ -62,3 +62,13 @@ class SearchRateThrottle(UserRateThrottle):
     """
 
     scope = 'search'
+
+
+class MessageRateThrottle(UserRateThrottle):
+    """
+    Throttle for sending messages.
+
+    Prevents message spam.
+    """
+
+    scope = 'messaging'

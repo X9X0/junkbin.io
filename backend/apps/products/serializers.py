@@ -296,6 +296,19 @@ class ProductCommentCreateSerializer(serializers.ModelSerializer):
         model = ProductComment
         fields = ['content']
 
+    def validate_content(self, value):
+        stripped = value.strip()
+        if not stripped:
+            raise serializers.ValidationError('Comment cannot be empty.')
+        from utils.content_filter import check_content
+        is_clean, _ = check_content(stripped)
+        if not is_clean:
+            raise serializers.ValidationError(
+                'Your comment contains prohibited language. '
+                'Please review our community guidelines.'
+            )
+        return stripped
+
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user
         validated_data['product'] = self.context['product']

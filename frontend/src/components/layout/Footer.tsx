@@ -98,19 +98,21 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  to="/about"
+                  to="/guidelines"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  About
+                  Guidelines
                 </Link>
               </li>
               <li>
-                <Link
-                  to="/api-docs"
+                <a
+                  href="/api/docs/"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
                   API Docs
-                </Link>
+                </a>
               </li>
             </ul>
           </div>

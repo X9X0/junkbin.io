@@ -212,6 +212,10 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'anon': '300/hour',
     'user': '1000/hour',
     'auth': '5/minute',
+    'submission': '10/hour',
+    'report': '10/hour',
+    'search': '60/minute',
+    'messaging': '30/minute',
 }
 
 # =============================================================================

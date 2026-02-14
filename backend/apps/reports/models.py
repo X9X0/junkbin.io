@@ -261,3 +261,8 @@ class UserReview(models.Model):
         elif status == self.Status.RESTRICTED:
             self.user.is_trusted = False
             self.user.save(update_fields=['is_trusted'])
+
+        # Notify user about the account action
+        if status in (self.Status.WARNING_ISSUED, self.Status.RESTRICTED, self.Status.SUSPENDED):
+            from .tasks import notify_account_action
+            notify_account_action.delay(str(self.pk))

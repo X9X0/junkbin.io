@@ -169,6 +169,10 @@ class User(AbstractUser):
 
         self.save(update_fields=['report_count', 'reputation_score', 'review_count'])
 
+        # Notify user about the strike via email
+        from apps.reports.tasks import notify_user_strike
+        notify_user_strike.delay(str(self.pk))
+
     def _check_trusted_status(self):
         """Check and update trusted user status."""
         from django.conf import settings

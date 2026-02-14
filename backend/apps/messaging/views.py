@@ -18,6 +18,7 @@ from .serializers import (
     UserBlockSerializer,
 )
 from apps.api.permissions import IsVerifiedEmail
+from apps.api.throttling import MessageRateThrottle
 
 User = get_user_model()
 
@@ -81,6 +82,7 @@ class SendMessageView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated, IsVerifiedEmail]
+    throttle_classes = [MessageRateThrottle]
 
     def post(self, request):
         serializer = MessageCreateSerializer(data=request.data)

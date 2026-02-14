@@ -20,6 +20,7 @@ from .serializers import (
 )
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsVerifiedEmail
+from apps.api.throttling import ReportRateThrottle
 
 
 @extend_schema_view(
@@ -65,6 +66,11 @@ class ReportViewSet(viewsets.ModelViewSet):
         elif self.action in ['destroy']:
             return [permissions.IsAdminUser()]
         return [permissions.IsAuthenticated()]
+
+    def get_throttles(self):
+        if self.action == 'create':
+            return [ReportRateThrottle()]
+        return super().get_throttles()
 
     @action(detail=True, methods=['post'])
     def resolve(self, request, pk=None):
