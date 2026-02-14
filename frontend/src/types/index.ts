@@ -87,6 +87,12 @@ export interface ProductComponent {
   notes?: string;
   location_description?: string;
   is_verified: boolean;
+  vote_score: number;
+  confirm_count: number;
+  dispute_count: number;
+  needs_review: boolean;
+  current_user_vote: 'confirm' | 'dispute' | null;
+  created_by?: CreatedBy;
 }
 
 // Schematic types
@@ -194,6 +200,44 @@ export interface UserReview {
   reviewer: UserMinimal | null;
   notes: string;
   action_taken: string;
+}
+
+// Messaging types
+export interface MessageParticipant {
+  id: string;
+  username: string;
+  avatar?: string;
+  is_trusted: boolean;
+  is_moderator: boolean;
+}
+
+export interface MessagePreview {
+  content: string;
+  sender_id: string | null;
+  created_at: string;
+  is_read: boolean;
+}
+
+export interface Conversation {
+  id: string;
+  other_participant: MessageParticipant;
+  last_message: MessagePreview | null;
+  unread_count: number;
+  updated_at: string;
+}
+
+export interface Message {
+  id: string;
+  sender: MessageParticipant;
+  content: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+export interface UserBlock {
+  id: string;
+  blocked_user: MessageParticipant;
+  created_at: string;
 }
 
 // Search/filter types

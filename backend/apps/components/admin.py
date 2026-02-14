@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from import_export.admin import ImportExportActionModelAdmin
 
-from .models import Component, ProductComponent
+from .models import Component, ProductComponent, ComponentVote
 from .resources import ComponentResource, ProductComponentResource
 
 
@@ -98,6 +98,15 @@ class ComponentAdmin(ImportExportActionModelAdmin):
         return response
 
 
+class ComponentVoteInline(admin.TabularInline):
+    """Inline admin for component votes."""
+
+    model = ComponentVote
+    extra = 0
+    readonly_fields = ['id', 'user', 'vote_type', 'weight', 'created_at', 'updated_at']
+    raw_id_fields = ['user']
+
+
 @admin.register(ProductComponent)
 class ProductComponentAdmin(ImportExportActionModelAdmin):
     """Admin for product-component relationships."""
@@ -105,10 +114,11 @@ class ProductComponentAdmin(ImportExportActionModelAdmin):
     resource_classes = [ProductComponentResource]
     list_display = [
         'product', 'component', 'reference_designator', 'quantity',
-        'board_name', 'submission_level', 'is_verified', 'created_at'
+        'board_name', 'submission_level', 'is_verified', 'vote_score',
+        'needs_review', 'created_at'
     ]
     list_filter = [
-        'submission_level', 'is_verified', 'created_at'
+        'submission_level', 'is_verified', 'needs_review', 'created_at'
     ]
     search_fields = [
         'product__manufacturer', 'product__model_number',
@@ -117,7 +127,8 @@ class ProductComponentAdmin(ImportExportActionModelAdmin):
     ]
     readonly_fields = [
         'id', 'created_by', 'created_at', 'updated_at',
-        'verified_by', 'verified_at'
+        'verified_by', 'verified_at',
+        'vote_score', 'confirm_count', 'dispute_count',
     ]
     ordering = ['-created_at']
     autocomplete_fields = ['product', 'component', 'image_reference']
@@ -136,10 +147,15 @@ class ProductComponentAdmin(ImportExportActionModelAdmin):
         ('Verification', {'fields': (
             'is_verified', 'verified_by', 'verified_at'
         )}),
+        ('Voting', {'fields': (
+            'vote_score', 'confirm_count', 'dispute_count', 'needs_review'
+        )}),
         ('Metadata', {'fields': (
             'created_by', 'created_at', 'updated_at'
         )}),
     )
+
+    inlines = [ComponentVoteInline]
 
     actions = ['verify_mappings']
 
@@ -152,3 +168,23 @@ class ProductComponentAdmin(ImportExportActionModelAdmin):
             verified_at=timezone.now()
         )
         self.message_user(request, f'{updated} mappings verified.')
+
+
+@admin.register(ComponentVote)
+class ComponentVoteAdmin(admin.ModelAdmin):
+    """Admin for component votes."""
+
+    list_display = [
+        'user', 'product_component', 'vote_type', 'weight', 'created_at'
+    ]
+    list_filter = ['vote_type', 'created_at']
+    search_fields = [
+        'user__username',
+        'product_component__component__part_number',
+        'product_component__product__model_number',
+    ]
+    readonly_fields = [
+        'id', 'product_component', 'user', 'vote_type',
+        'weight', 'created_at', 'updated_at'
+    ]
+    raw_id_fields = ['user', 'product_component']

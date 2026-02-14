@@ -12,7 +12,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
 
-from .models import Component, ProductComponent
+from .models import Component, ProductComponent, ComponentVote
 from .serializers import (
     ComponentListSerializer,
     ComponentDetailSerializer,
@@ -20,6 +20,8 @@ from .serializers import (
     ProductComponentSerializer,
     ProductComponentCreateSerializer,
     CrossReferenceResultSerializer,
+    ComponentVoteSerializer,
+    ComponentVoteDetailSerializer,
 )
 from .filters import ComponentFilter, ProductComponentFilter
 from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
@@ -249,16 +251,18 @@ class ProductComponentViewSet(viewsets.ModelViewSet):
         if self.action == 'create':
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update']:
-            # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         elif self.action == 'destroy':
             return [permissions.IsAdminUser()]
+        elif self.action in ['vote', 'remove_vote']:
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         return [permissions.AllowAny()]
 
     @action(detail=True, methods=['post'])
     def verify(self, request, pk=None):
-        """Mark this product-component mapping as verified."""
+        """Mark this product-component mapping as verified (moderator override)."""
         from django.utils import timezone
+        from apps.users.models import AdminAuditLog
 
         pc = self.get_object()
 
@@ -272,9 +276,94 @@ class ProductComponentViewSet(viewsets.ModelViewSet):
         pc.is_verified = True
         pc.verified_by = request.user
         pc.verified_at = timezone.now()
-        pc.save()
+        pc.needs_review = False
+        pc.save(update_fields=[
+            'is_verified', 'verified_by', 'verified_at', 'needs_review'
+        ])
+
+        AdminAuditLog.log_action(
+            request=request,
+            action_type='component_verified',
+            target=pc,
+            details={'method': 'moderator_override'},
+        )
 
         return Response({'detail': 'Mapping verified'})
+
+    @action(detail=True, methods=['post'], url_path='vote')
+    def vote(self, request, pk=None):
+        """Cast or change a vote on this product-component mapping."""
+        from django.conf import settings as app_settings
+
+        pc = self.get_object()
+
+        # Block voting on own mappings
+        if pc.created_by == request.user:
+            return Response(
+                {'detail': 'You cannot vote on your own mapping.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        serializer = ComponentVoteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        vote_type = serializer.validated_data['vote_type']
+        weight = 1
+        if request.user.is_trusted or request.user.is_moderator:
+            weight = app_settings.TRUSTED_USER_VOTE_WEIGHT
+
+        ComponentVote.objects.update_or_create(
+            product_component=pc,
+            user=request.user,
+            defaults={
+                'vote_type': vote_type,
+                'weight': weight,
+            }
+        )
+
+        pc.recalculate_votes()
+        pc.refresh_from_db()
+
+        return Response(ProductComponentSerializer(
+            pc, context={'request': request}
+        ).data)
+
+    @vote.mapping.delete
+    def remove_vote(self, request, pk=None):
+        """Remove own vote from this product-component mapping."""
+        pc = self.get_object()
+
+        deleted, _ = ComponentVote.objects.filter(
+            product_component=pc,
+            user=request.user
+        ).delete()
+
+        if not deleted:
+            return Response(
+                {'detail': 'No vote to remove.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        pc.recalculate_votes()
+        pc.refresh_from_db()
+
+        return Response(ProductComponentSerializer(
+            pc, context={'request': request}
+        ).data)
+
+    @action(detail=True, methods=['get'])
+    def votes(self, request, pk=None):
+        """List all votes for this product-component mapping."""
+        pc = self.get_object()
+        votes = pc.votes.select_related('user').order_by('-created_at')
+
+        page = self.paginate_queryset(votes)
+        if page is not None:
+            serializer = ComponentVoteDetailSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = ComponentVoteDetailSerializer(votes, many=True)
+        return Response(serializer.data)
 
 
 # Import models for cross_reference action

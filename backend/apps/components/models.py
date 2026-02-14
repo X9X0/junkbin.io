@@ -363,6 +363,24 @@ class ProductComponent(models.Model):
     )
     verified_at = models.DateTimeField(null=True, blank=True)
 
+    # Denormalized vote counts
+    vote_score = models.IntegerField(
+        default=0,
+        help_text=_('Net weighted score (confirms - disputes)')
+    )
+    confirm_count = models.PositiveIntegerField(
+        default=0,
+        help_text=_('Number of confirm votes')
+    )
+    dispute_count = models.PositiveIntegerField(
+        default=0,
+        help_text=_('Number of dispute votes')
+    )
+    needs_review = models.BooleanField(
+        default=False,
+        help_text=_('Flagged for moderator review due to disputes')
+    )
+
     class Meta:
         verbose_name = _('product component')
         verbose_name_plural = _('product components')
@@ -394,3 +412,116 @@ class ProductComponent(models.Model):
         # Update denormalized counts
         product.update_component_count()
         component.update_usage_count()
+
+    def recalculate_votes(self):
+        """Recalculate denormalized vote counts from the votes table."""
+        from django.db.models import Sum, Count, Q
+
+        aggregates = self.votes.aggregate(
+            total_score=Sum('weight', filter=Q(vote_type='confirm'), default=0)
+            - Sum('weight', filter=Q(vote_type='dispute'), default=0),
+            total_confirms=Count('id', filter=Q(vote_type='confirm')),
+            total_disputes=Count('id', filter=Q(vote_type='dispute')),
+        )
+
+        self.vote_score = aggregates['total_score']
+        self.confirm_count = aggregates['total_confirms']
+        self.dispute_count = aggregates['total_disputes']
+        self.save(update_fields=['vote_score', 'confirm_count', 'dispute_count'])
+
+        self._check_verification_threshold()
+        self._check_dispute_threshold()
+
+    def _check_verification_threshold(self):
+        """Auto-verify when vote_score reaches threshold."""
+        from django.conf import settings as app_settings
+        from django.utils import timezone
+
+        if self.is_verified:
+            return
+
+        if self.vote_score >= app_settings.VERIFICATION_VOTE_THRESHOLD:
+            self.is_verified = True
+            self.verified_by = None  # None = community-verified
+            self.verified_at = timezone.now()
+            self.needs_review = False
+            self.save(update_fields=[
+                'is_verified', 'verified_by', 'verified_at', 'needs_review'
+            ])
+
+            # Award reputation bonus to confirm voters
+            bonus = app_settings.VOTE_REPUTATION_BONUS
+            if bonus > 0:
+                from apps.users.models import User
+                confirm_user_ids = self.votes.filter(
+                    vote_type='confirm'
+                ).values_list('user_id', flat=True)
+                User.objects.filter(id__in=confirm_user_ids).update(
+                    reputation_score=models.F('reputation_score') + bonus
+                )
+
+    def _check_dispute_threshold(self):
+        """Flag for review when vote_score drops below threshold."""
+        from django.conf import settings as app_settings
+
+        if self.vote_score <= app_settings.DISPUTE_REVIEW_THRESHOLD:
+            if not self.needs_review:
+                self.needs_review = True
+                self.save(update_fields=['needs_review'])
+        elif self.needs_review and self.vote_score > app_settings.DISPUTE_REVIEW_THRESHOLD:
+            self.needs_review = False
+            self.save(update_fields=['needs_review'])
+
+
+class ComponentVote(models.Model):
+    """
+    A user's vote on a product-component mapping.
+    One vote per user per mapping.
+    """
+
+    class VoteType(models.TextChoices):
+        CONFIRM = 'confirm', _('Confirm')
+        DISPUTE = 'dispute', _('Dispute')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    product_component = models.ForeignKey(
+        ProductComponent,
+        on_delete=models.CASCADE,
+        related_name='votes'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='component_votes'
+    )
+    vote_type = models.CharField(
+        max_length=10,
+        choices=VoteType.choices,
+    )
+    weight = models.PositiveSmallIntegerField(
+        default=1,
+        help_text=_('Vote weight, set at vote time based on trust status')
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _('component vote')
+        verbose_name_plural = _('component votes')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['product_component', 'user'],
+                name='unique_vote_per_user'
+            )
+        ]
+        indexes = [
+            models.Index(fields=['product_component', 'vote_type']),
+            models.Index(fields=['user', '-created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.user} → {self.vote_type} on {self.product_component}'

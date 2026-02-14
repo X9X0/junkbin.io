@@ -9,6 +9,7 @@ import BomImport from '../components/BomImport';
 import BatchAddComponents from '../components/BatchAddComponents';
 import ReportModal from '../components/ReportModal';
 import ProductComments from '../components/ProductComments';
+import ComponentVoteButtons from '../components/ComponentVoteButtons';
 import {
   Cpu,
   FileText,
@@ -483,6 +484,7 @@ export default function ProductDetail() {
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">MANUFACTURER</th>
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">TYPE</th>
                         <th className="py-3 px-4 font-mono text-xs text-gray-500">QTY</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">STATUS</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -514,6 +516,9 @@ export default function ProductDetail() {
                             </span>
                           </td>
                           <td className="py-3 px-4 text-gray-400">{pc.quantity}</td>
+                          <td className="py-3 px-4">
+                            <ComponentVoteButtons pc={pc} productId={id!} />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -545,13 +550,16 @@ export default function ProductDetail() {
                           </span>
                         )}
                       </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="badge-cyber text-cyber-pink border-cyber-pink/50 text-[10px]">
-                          {pc.component.component_type_display || pc.component.component_type}
-                        </span>
-                        {pc.quantity > 1 && (
-                          <span className="text-xs text-gray-500">×{pc.quantity}</span>
-                        )}
+                      <div className="flex items-center justify-between gap-2 mt-2">
+                        <div className="flex items-center gap-2">
+                          <span className="badge-cyber text-cyber-pink border-cyber-pink/50 text-[10px]">
+                            {pc.component.component_type_display || pc.component.component_type}
+                          </span>
+                          {pc.quantity > 1 && (
+                            <span className="text-xs text-gray-500">×{pc.quantity}</span>
+                          )}
+                        </div>
+                        <ComponentVoteButtons pc={pc} productId={id!} compact />
                       </div>
                     </Link>
                   ))}
