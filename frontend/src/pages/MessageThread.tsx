@@ -24,7 +24,7 @@ export default function MessageThread() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const [content, setContent] = useState('');
@@ -50,10 +50,15 @@ export default function MessageThread() {
   // Determine the other participant from the conversation detail
   const otherParticipant = conversation?.other_participant;
 
-  // Scroll to bottom on initial load and new messages
+  // Scroll messages container to bottom on initial load and new messages
+  const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  };
+
   useEffect(() => {
     if (messagesData && page === 1) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      scrollToBottom('auto');
     }
   }, [messagesData, page]);
 
@@ -66,9 +71,7 @@ export default function MessageThread() {
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-      }, 100);
+      setTimeout(() => scrollToBottom(), 100);
     },
   });
 
@@ -144,7 +147,7 @@ export default function MessageThread() {
       </div>
 
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto space-y-3 mb-4">
+      <div ref={messagesContainerRef} className="flex-1 overflow-y-auto space-y-3 mb-4">
         {/* Load older button */}
         {hasMore && (
           <button
@@ -209,7 +212,6 @@ export default function MessageThread() {
             );
           })
         )}
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Compose area */}
