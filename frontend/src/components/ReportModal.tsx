@@ -7,7 +7,7 @@ import clsx from 'clsx';
 interface ReportModalProps {
   isOpen: boolean;
   onClose: () => void;
-  contentType: 'products.product' | 'components.component' | 'products.schematic';
+  contentType: 'products.product' | 'components.component' | 'products.schematic' | 'messaging.message';
   objectId: string;
   itemName?: string;
 }
@@ -63,6 +63,8 @@ export default function ReportModal({
     ? 'product'
     : contentType === 'components.component'
     ? 'component'
+    : contentType === 'messaging.message'
+    ? 'message'
     : 'schematic';
 
   return (

@@ -17,6 +17,8 @@ import PasswordResetConfirm from './pages/PasswordResetConfirm';
 import VerifyEmail from './pages/VerifyEmail';
 import Moderation from './pages/Moderation';
 import Leaderboard from './pages/Leaderboard';
+import Messages from './pages/Messages';
+import MessageThread from './pages/MessageThread';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
 import ScrollToTop from './components/ScrollToTop';
@@ -50,6 +52,8 @@ function App() {
                 <Route path="search" element={<Search />} />
                 <Route path="submit" element={<Submit />} />
                 <Route path="leaderboard" element={<Leaderboard />} />
+                <Route path="messages" element={<Messages />} />
+                <Route path="messages/:conversationId" element={<MessageThread />} />
                 <Route path="moderation" element={<Moderation />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="login" element={<Login />} />

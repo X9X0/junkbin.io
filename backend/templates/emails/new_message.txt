@@ -1,0 +1,15 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+New Message from {{ sender.username }}
+
+Hello {{ user.username }},
+
+You have a new message from {{ sender.username }}:
+
+"{{ message_preview }}"
+
+View the conversation here:
+{{ conversation_url }}
+
+---
+Junkbin.io

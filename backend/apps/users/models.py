@@ -90,6 +90,10 @@ class User(AbstractUser):
         default=False,
         help_text=_('Trusted users can submit without moderation queue')
     )
+    messaging_blocked = models.BooleanField(
+        default=False,
+        help_text=_('User is blocked from sending/receiving messages (set by moderators)')
+    )
     is_moderator = models.BooleanField(
         default=False,
         help_text=_('User can moderate submissions and reports')
@@ -242,6 +246,8 @@ class AdminAuditLog(models.Model):
         USER_UNMODERATOR = 'user_unmoderator', _('Revoked Moderator Status')
         USER_SUSPENDED = 'user_suspended', _('Suspended User')
         USER_UNSUSPENDED = 'user_unsuspended', _('Unsuspended User')
+        MESSAGING_BLOCKED = 'messaging_blocked', _('Blocked User Messaging')
+        MESSAGING_UNBLOCKED = 'messaging_unblocked', _('Unblocked User Messaging')
         PRODUCT_APPROVED = 'product_approved', _('Approved Product')
         PRODUCT_UNAPPROVED = 'product_unapproved', _('Unapproved Product')
         PRODUCT_FEATURED = 'product_featured', _('Featured Product')

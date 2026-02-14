@@ -17,11 +17,11 @@ class UserAdmin(BaseUserAdmin):
     list_display = [
         'username', 'email', 'is_trusted', 'is_moderator',
         'reputation_score', 'contribution_count', 'report_count',
-        'email_verified', 'is_active', 'created_at'
+        'email_verified', 'messaging_blocked', 'is_active', 'created_at'
     ]
     list_filter = [
         'is_trusted', 'is_moderator', 'is_staff', 'is_superuser',
-        'is_active', 'email_verified', 'oauth_provider'
+        'is_active', 'email_verified', 'messaging_blocked', 'oauth_provider'
     ]
     search_fields = ['username', 'email', 'first_name', 'last_name']
     ordering = ['-created_at']
@@ -46,7 +46,8 @@ class UserAdmin(BaseUserAdmin):
         )}),
         (_('Permissions'), {'fields': (
             'is_active', 'is_staff', 'is_superuser',
-            'is_trusted', 'is_moderator', 'groups', 'user_permissions'
+            'is_trusted', 'is_moderator', 'messaging_blocked',
+            'groups', 'user_permissions'
         )}),
         (_('Preferences'), {'fields': ('preferences',)}),
         (_('Important dates'), {'fields': (
@@ -69,7 +70,10 @@ class UserAdmin(BaseUserAdmin):
         return format_html('<a href="{}">Review All Contributions</a>', url)
     contribution_review_link.short_description = 'Contribution Review'
 
-    actions = ['make_trusted', 'revoke_trusted', 'make_moderator', 'revoke_moderator', 'resend_verification_email']
+    actions = [
+        'make_trusted', 'revoke_trusted', 'make_moderator', 'revoke_moderator',
+        'block_messaging', 'unblock_messaging', 'resend_verification_email',
+    ]
 
     @admin.action(description='Grant trusted status to selected users')
     def make_trusted(self, request, queryset):
@@ -126,6 +130,34 @@ class UserAdmin(BaseUserAdmin):
                     {'previous_value': True}
                 )
         self.message_user(request, f'Moderator status revoked from {queryset.count()} users.')
+
+    @admin.action(description='Block messaging for selected users')
+    def block_messaging(self, request, queryset):
+        for user in queryset:
+            if not user.messaging_blocked:
+                user.messaging_blocked = True
+                user.save(update_fields=['messaging_blocked'])
+                AdminAuditLog.log_action(
+                    request,
+                    AdminAuditLog.ActionType.MESSAGING_BLOCKED,
+                    user,
+                    {'previous_value': False}
+                )
+        self.message_user(request, f'Messaging blocked for {queryset.count()} user(s).')
+
+    @admin.action(description='Unblock messaging for selected users')
+    def unblock_messaging(self, request, queryset):
+        for user in queryset:
+            if user.messaging_blocked:
+                user.messaging_blocked = False
+                user.save(update_fields=['messaging_blocked'])
+                AdminAuditLog.log_action(
+                    request,
+                    AdminAuditLog.ActionType.MESSAGING_UNBLOCKED,
+                    user,
+                    {'previous_value': True}
+                )
+        self.message_user(request, f'Messaging unblocked for {queryset.count()} user(s).')
 
     @admin.action(description='Resend verification email to selected users')
     def resend_verification_email(self, request, queryset):

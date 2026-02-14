@@ -1,13 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
+import { useUnreadCount } from '../../hooks/useUnreadCount';
 import clsx from 'clsx';
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
+  const unreadCount = useUnreadCount();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -225,6 +227,17 @@ export default function Header() {
                   <Plus className="h-4 w-4" />
                   SUBMIT
                 </Link>
+                <Link
+                  to="/messages"
+                  className="relative text-gray-400 hover:text-cyber-cyan transition-colors p-1"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
                 <div className="relative group">
                   <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                     <User className="h-5 w-5" />
@@ -326,6 +339,21 @@ export default function Header() {
               <Trophy className="h-3.5 w-3.5" />
               LEADERBOARD
             </Link>
+            {isAuthenticated && (
+              <Link
+                to="/messages"
+                className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan flex items-center gap-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <MessageSquare className="h-3.5 w-3.5" />
+                MESSAGES
+                {unreadCount > 0 && (
+                  <span className="ml-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
             {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
               <Link
                 to="/moderation"

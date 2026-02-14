@@ -309,8 +309,8 @@ Other users can search this database to find which consumer products contain spe
 
 #### Community Features
 - ✅ User comments on products
-- ⬜ Component verification voting
-- ⬜ User-to-user messaging
+- ✅ Component verification voting
+- ✅ User-to-user messaging — full inbox with conversation threads, adaptive polling (5s/30s), unread badges, user blocking, moderator messaging bans, email notifications, message reporting (Feb 13, 2026)
 - ✅ Contribution leaderboards
 - ⬜ Community guidelines enforcement
 
@@ -326,6 +326,25 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Admin system status dashboard — PostgreSQL, Redis, Celery workers, Celery Beat health checks; CPU/memory/disk metrics; recent task history; app stats; quick links (Feb 12, 2026)
 - ✅ Nginx cache headers — `no-cache` on index.html, immutable caching on hashed assets, proper 404 for missing assets (Feb 12, 2026)
 - ✅ Docker healthcheck fix — IPv4 `127.0.0.1` instead of `localhost` (IPv6 resolution issue) (Feb 12, 2026)
+
+#### Personal Junkbin (Collection & Trading)
+- ⬜ `UserCollectionItem` model — links users to products/components with status (available, not for trade, wanted), visibility (public/private), condition, and notes
+- ⬜ `WantListItem` model — tracks components/products a user is looking for, with notification preferences
+- ⬜ "My Junkbin" management page — add/remove items, set availability and visibility per-item, bulk edit
+- ⬜ Public junkbin browsing — view another user's public collection, filterable by category/availability
+- ⬜ "Contact Owner" button — one-click message to item owner with item context pre-filled (requires user-to-user messaging)
+- ⬜ Want list notifications — Celery task matches new public "available" items against other users' want lists, sends alerts
+- ⬜ Junkbin profile widget — summary card on user profiles showing collection size and available item count
+
+*Note: All transactions are person-to-person between users. Junkbin.io does not facilitate payments or handle disputes — it simply connects people who have parts with people who need them.*
+
+#### Recipes (What Can I Build?)
+- ⬜ `Project` model — community-submitted electronics projects with a name, description, difficulty level, and a BOM (list of required components with quantities)
+- ⬜ Junkbin-to-BOM matching engine — compares a user's collection against project BOMs, calculates match percentage and lists missing parts
+- ⬜ "What Can I Build?" page — sorted by match percentage (highest first), shows which parts you have vs. what's missing per project
+- ⬜ Missing parts integration — link missing components to other users' public junkbins where they're available, or to want list with one click
+- ⬜ Project submission and curation — users submit project recipes (external link, BOM, tags), moderated like other contributions
+- ⬜ Project tags and filtering — filter by category (audio, power supply, IoT, repair, etc.), difficulty, and match percentage threshold
 
 #### Advanced Analytics
 - ⬜ Prometheus metrics
