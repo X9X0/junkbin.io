@@ -154,6 +154,26 @@ def send_verification_email(user):
     )
 
 
+def send_new_message_email(message, recipient):
+    """Send email notification for a new message."""
+    from django.conf import settings
+
+    conversation_url = f"{settings.FRONTEND_URL}/messages/{message.conversation_id}"
+    preview = message.content[:200]
+
+    return send_templated_email(
+        subject=f'[Junkbin.io] New message from {message.sender.username}',
+        template_name='new_message',
+        context={
+            'user': recipient,
+            'sender': message.sender,
+            'message_preview': preview,
+            'conversation_url': conversation_url,
+        },
+        recipient_list=[recipient.email]
+    )
+
+
 def send_password_reset_email(user, token, uid):
     """
     Send password reset email with reset link.
