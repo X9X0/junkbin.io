@@ -4,7 +4,7 @@ Component serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Component, ProductComponent
+from .models import Component, ProductComponent, ComponentVote
 
 User = get_user_model()
 
@@ -104,6 +104,7 @@ class ProductComponentSerializer(serializers.ModelSerializer):
         source='get_submission_level_display',
         read_only=True
     )
+    current_user_vote = serializers.SerializerMethodField()
 
     class Meta:
         model = ProductComponent
@@ -111,9 +112,28 @@ class ProductComponentSerializer(serializers.ModelSerializer):
             'id', 'component', 'component_id', 'reference_designator',
             'quantity', 'location_description', 'board_name', 'notes',
             'image_reference', 'submission_level', 'submission_level_display',
-            'is_verified', 'created_by', 'created_at'
+            'is_verified', 'vote_score', 'confirm_count', 'dispute_count',
+            'needs_review', 'current_user_vote', 'created_by', 'created_at'
         ]
-        read_only_fields = ['id', 'is_verified', 'created_by', 'created_at']
+        read_only_fields = [
+            'id', 'is_verified', 'vote_score', 'confirm_count',
+            'dispute_count', 'needs_review', 'created_by', 'created_at'
+        ]
+
+    def get_current_user_vote(self, obj):
+        # Use prefetched current_user_votes if available
+        if hasattr(obj, 'current_user_votes'):
+            votes = obj.current_user_votes
+            if votes:
+                return votes[0].vote_type
+            return None
+        # Fallback: check from request context
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            vote = obj.votes.filter(user=request.user).first()
+            if vote:
+                return vote.vote_type
+        return None
 
     def validate_component_id(self, value):
         try:
@@ -195,3 +215,21 @@ class CrossReferenceResultSerializer(serializers.Serializer):
     component = ComponentListSerializer()
     products = serializers.ListField(child=serializers.DictField())
     total_products = serializers.IntegerField()
+
+
+class ComponentVoteSerializer(serializers.ModelSerializer):
+    """Write serializer for casting a vote."""
+
+    class Meta:
+        model = ComponentVote
+        fields = ['vote_type']
+
+
+class ComponentVoteDetailSerializer(serializers.ModelSerializer):
+    """Read serializer for vote details."""
+
+    user = CreatedBySerializer(read_only=True)
+
+    class Meta:
+        model = ComponentVote
+        fields = ['id', 'user', 'vote_type', 'weight', 'created_at']

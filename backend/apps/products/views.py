@@ -123,14 +123,35 @@ class ProductViewSet(viewsets.ModelViewSet):
         """Get all components for this product."""
         product = self.get_object()
 
-        from apps.components.models import ProductComponent
+        from django.db.models import Prefetch
+        from apps.components.models import ProductComponent, ComponentVote
         from apps.components.serializers import ProductComponentSerializer
 
         components = ProductComponent.objects.filter(
             product=product
         ).select_related('component', 'created_by')
 
-        serializer = ProductComponentSerializer(components, many=True)
+        # Prefetch current user's vote for efficient serialization
+        if request.user.is_authenticated:
+            components = components.prefetch_related(
+                Prefetch(
+                    'votes',
+                    queryset=ComponentVote.objects.filter(user=request.user),
+                    to_attr='current_user_votes'
+                )
+            )
+        else:
+            components = components.prefetch_related(
+                Prefetch(
+                    'votes',
+                    queryset=ComponentVote.objects.none(),
+                    to_attr='current_user_votes'
+                )
+            )
+
+        serializer = ProductComponentSerializer(
+            components, many=True, context={'request': request}
+        )
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])

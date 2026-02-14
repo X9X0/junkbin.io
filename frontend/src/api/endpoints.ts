@@ -2,6 +2,7 @@ import api from './client';
 import type {
   Product,
   ProductComment,
+  ProductComponent,
   Component,
   Schematic,
   User,
@@ -13,6 +14,9 @@ import type {
   Report,
   ReportStats,
   UserReview,
+  Conversation,
+  Message,
+  UserBlock,
 } from '../types';
 
 // Auth endpoints
@@ -218,6 +222,19 @@ export const components = {
   },
 };
 
+// Product-component voting endpoints
+export const productComponents = {
+  vote: async (pcId: string, voteType: 'confirm' | 'dispute'): Promise<ProductComponent> => {
+    const response = await api.post(`/product-components/${pcId}/vote/`, { vote_type: voteType });
+    return response.data;
+  },
+
+  removeVote: async (pcId: string): Promise<ProductComponent> => {
+    const response = await api.delete(`/product-components/${pcId}/vote/`);
+    return response.data;
+  },
+};
+
 // Schematics endpoints
 export const schematics = {
   list: async (params?: any): Promise<PaginatedResponse<Schematic>> => {
@@ -331,6 +348,48 @@ export const users = {
   list: async (params?: Record<string, any>): Promise<PaginatedResponse<User>> => {
     const response = await api.get('/users/', { params });
     return response.data;
+  },
+};
+
+// Messaging endpoints
+export const messaging = {
+  conversations: async (params?: any): Promise<PaginatedResponse<Conversation>> => {
+    const response = await api.get('/conversations/', { params });
+    return response.data;
+  },
+
+  conversation: async (id: string): Promise<Conversation> => {
+    const response = await api.get(`/conversations/${id}/`);
+    return response.data;
+  },
+
+  messages: async (conversationId: string, params?: any): Promise<PaginatedResponse<Message>> => {
+    const response = await api.get(`/conversations/${conversationId}/messages/`, { params });
+    return response.data;
+  },
+
+  send: async (data: { conversation_id?: string; recipient_id?: string; content: string }): Promise<Message> => {
+    const response = await api.post('/messages/send/', data);
+    return response.data;
+  },
+
+  unreadCount: async (): Promise<{ unread_count: number }> => {
+    const response = await api.get('/messages/unread-count/');
+    return response.data;
+  },
+
+  blocks: async (): Promise<PaginatedResponse<UserBlock>> => {
+    const response = await api.get('/messages/blocks/');
+    return response.data;
+  },
+
+  blockUser: async (userId: string): Promise<UserBlock> => {
+    const response = await api.post('/messages/blocks/', { user_id: userId });
+    return response.data;
+  },
+
+  unblockUser: async (blockId: string): Promise<void> => {
+    await api.delete(`/messages/blocks/${blockId}/`);
   },
 };
 

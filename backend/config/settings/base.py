@@ -64,6 +64,7 @@ LOCAL_APPS = [
     'apps.reports',
     'apps.api',
     'apps.newsletter',
+    'apps.messaging',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -228,6 +229,7 @@ SPECTACULAR_SETTINGS = {
         {'name': 'submissions', 'description': 'Content submissions'},
         {'name': 'reports', 'description': 'User reports'},
         {'name': 'search', 'description': 'Search functionality'},
+        {'name': 'messaging', 'description': 'User-to-user messaging'},
     ],
 }
 
@@ -353,6 +355,15 @@ ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 REPORT_STRIKE_THRESHOLD = 3  # Number of reports before automatic review
 TRUSTED_USER_CONTRIBUTION_THRESHOLD = 50  # Contributions needed for trusted status
 TRUSTED_USER_MIN_REPUTATION = 100  # Minimum reputation for trusted status
+
+# Voting settings
+VERIFICATION_VOTE_THRESHOLD = 3   # Net vote score needed for auto-verification
+DISPUTE_REVIEW_THRESHOLD = -2     # Net vote score that triggers needs_review
+TRUSTED_USER_VOTE_WEIGHT = 2      # Vote weight for trusted users / moderators
+VOTE_REPUTATION_BONUS = 1         # Reputation bonus for confirm voters on auto-verify
+
+# Messaging settings
+MESSAGE_MAX_LENGTH = 5000  # Max characters per message
 
 # Submission settings
 SUBMISSION_LEVELS = [
