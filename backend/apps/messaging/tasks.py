@@ -35,5 +35,7 @@ def notify_new_message(message_id):
     prefs = getattr(recipient, 'preferences', None) or {}
     if not prefs.get('email_notifications', True):
         return
+    if not prefs.get('notify_messages', True):
+        return
 
     send_new_message_email(message, recipient)

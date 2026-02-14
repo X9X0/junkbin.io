@@ -29,7 +29,11 @@ def user_post_save(sender, instance, created, **kwargs):
         if not instance.preferences:
             instance.preferences = {
                 'email_notifications': True,
-                'dark_mode': True,  # Cyberpunk theme default
+                'notify_messages': True,
+                'notify_submissions': True,
+                'notify_reports': True,
+                'notify_account': True,
+                'dark_mode': True,
                 'show_advanced_fields': False,
             }
             instance.save(update_fields=['preferences'])

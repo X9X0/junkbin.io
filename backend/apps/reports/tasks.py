@@ -24,6 +24,8 @@ def notify_user_strike(user_id):
     prefs = getattr(user, 'preferences', None) or {}
     if not prefs.get('email_notifications', True):
         return
+    if not prefs.get('notify_reports', True):
+        return
 
     send_strike_warning_email(user)
 
@@ -40,6 +42,13 @@ def notify_account_action(review_id):
         return
 
     if not review.user.email:
+        return
+
+    # Respect email notification preferences
+    prefs = getattr(review.user, 'preferences', None) or {}
+    if not prefs.get('email_notifications', True):
+        return
+    if not prefs.get('notify_account', True):
         return
 
     # Only notify for actionable outcomes

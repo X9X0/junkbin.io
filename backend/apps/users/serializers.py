@@ -130,7 +130,14 @@ class PasswordChangeSerializer(serializers.Serializer):
 class PreferencesSerializer(serializers.Serializer):
     """Serializer for user preferences."""
 
+    # Master toggle — when off, all notification emails are suppressed
     email_notifications = serializers.BooleanField(default=True)
+    # Granular notification categories
+    notify_messages = serializers.BooleanField(default=True)
+    notify_submissions = serializers.BooleanField(default=True)
+    notify_reports = serializers.BooleanField(default=True)
+    notify_account = serializers.BooleanField(default=True)
+    # UI preferences
     dark_mode = serializers.BooleanField(default=True)
     show_advanced_fields = serializers.BooleanField(default=False)
 

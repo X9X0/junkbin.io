@@ -314,6 +314,7 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Contribution leaderboards
 - ✅ Community guidelines enforcement — guidelines page, rate limiting on submissions/reports/search/messages, content filter for slurs/hate speech, strike notification emails, account action emails with appeals info (Feb 14, 2026)
 - ✅ User discovery & public profiles — public user profile pages, user search in global search and header, clickable leaderboard, new conversation page with recipient autocomplete and ?to= prefill (Feb 14, 2026)
+- ✅ Email notification preferences — granular per-category toggles (messages, submissions, reports, account) with master switch, all notification tasks respect preferences, settings UI on Profile page (Feb 14, 2026)
 
 #### Integration & Automation
 - ⬜ Octopart API integration (component cross-reference)

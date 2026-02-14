@@ -21,6 +21,13 @@ def notify_submission_approved(submission_id):
     if not submission.submitted_by or not submission.submitted_by.email:
         return
 
+    # Respect user email notification preferences
+    prefs = getattr(submission.submitted_by, 'preferences', None) or {}
+    if not prefs.get('email_notifications', True):
+        return
+    if not prefs.get('notify_submissions', True):
+        return
+
     subject = f'[Junkbin.io] Your submission has been approved!'
     message = f'''
 Hello {submission.submitted_by.username},
@@ -58,6 +65,13 @@ def notify_submission_rejected(submission_id):
         return
 
     if not submission.submitted_by or not submission.submitted_by.email:
+        return
+
+    # Respect user email notification preferences
+    prefs = getattr(submission.submitted_by, 'preferences', None) or {}
+    if not prefs.get('email_notifications', True):
+        return
+    if not prefs.get('notify_submissions', True):
         return
 
     subject = f'[Junkbin.io] Submission needs attention'

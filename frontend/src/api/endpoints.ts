@@ -20,6 +20,7 @@ import type {
   Conversation,
   Message,
   UserBlock,
+  UserPreferences,
 } from '../types';
 
 // Auth endpoints
@@ -52,6 +53,16 @@ export const auth = {
 
   logout: async (): Promise<void> => {
     await api.post('/auth/logout/', {});
+  },
+
+  getPreferences: async (): Promise<UserPreferences> => {
+    const response = await api.get('/auth/preferences/');
+    return response.data;
+  },
+
+  updatePreferences: async (data: Partial<UserPreferences>): Promise<UserPreferences> => {
+    const response = await api.patch('/auth/preferences/', data);
+    return response.data;
   },
 };
 

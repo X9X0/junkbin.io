@@ -34,9 +34,9 @@ export default function Messages() {
   const conversations = data?.results ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-3xl px-4 py-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)', overflow: 'hidden' }}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-cyber-cyan/20 border border-cyber-cyan/50">
             <MessageSquare className="h-6 w-6 text-cyber-cyan" />
@@ -60,6 +60,7 @@ export default function Messages() {
       </div>
 
       {/* Conversation list */}
+      <div className="flex-1 overflow-y-auto min-h-0">
       {isLoading ? (
         <div className="space-y-3">
           {[...Array(4)].map((_, i) => (
@@ -142,6 +143,7 @@ export default function Messages() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

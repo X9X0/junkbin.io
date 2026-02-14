@@ -160,31 +160,31 @@ export default function Home() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 neon-border">
+            <Link to="/products" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 neon-border hover:border-cyber-cyan/50 transition-colors group block">
               <Cpu className="h-6 w-6 text-cyber-cyan mx-auto mb-3" />
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-cyan mb-1">
                 {siteStats?.products ?? '—'}
               </div>
-              <div className="text-gray-500 font-mono text-xs tracking-wider">PRODUCTS</div>
-            </div>
+              <div className="text-gray-500 group-hover:text-cyber-cyan font-mono text-xs tracking-wider transition-colors">PRODUCTS</div>
+            </Link>
 
-            <div className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50">
+            <Link to="/components" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-pink/50 transition-colors group block">
               <FileText className="h-6 w-6 text-cyber-pink mx-auto mb-3" />
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-pink mb-1">
                 {siteStats?.components ?? '—'}
               </div>
-              <div className="text-gray-500 font-mono text-xs tracking-wider">COMPONENTS</div>
-            </div>
+              <div className="text-gray-500 group-hover:text-cyber-pink font-mono text-xs tracking-wider transition-colors">COMPONENTS</div>
+            </Link>
 
-            <div className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50">
+            <Link to="/schematics" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-green/50 transition-colors group block">
               <FileText className="h-6 w-6 text-cyber-green mx-auto mb-3" />
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-green mb-1">
                 {siteStats?.schematics ?? '—'}
               </div>
-              <div className="text-gray-500 font-mono text-xs tracking-wider">SCHEMATICS</div>
-            </div>
+              <div className="text-gray-500 group-hover:text-cyber-green font-mono text-xs tracking-wider transition-colors">SCHEMATICS</div>
+            </Link>
 
-            <Link to="/leaderboard" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-yellow/50 transition-colors group cursor-pointer block">
+            <Link to="/leaderboard" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-yellow/50 transition-colors group block">
               <Users className="h-6 w-6 text-cyber-yellow mx-auto mb-3" />
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-yellow mb-1">
                 {siteStats?.contributors ?? '—'}
