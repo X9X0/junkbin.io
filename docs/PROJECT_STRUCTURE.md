@@ -221,8 +221,10 @@ junkbin.io/
 │       │   ├── Submit.tsx             # Multi-step product/component wizard
 │       │   ├── Messages.tsx           # Inbox / conversation list
 │       │   ├── MessageThread.tsx      # Conversation thread + compose
+│       │   ├── NewConversation.tsx    # Start new conversation with user search
+│       │   ├── UserProfile.tsx        # Public user profile page
 │       │   ├── Guidelines.tsx         # Community guidelines
-│       │   ├── Leaderboard.tsx        # User contribution rankings
+│       │   ├── Leaderboard.tsx        # User contribution rankings (clickable)
 │       │   ├── Moderation.tsx         # Report/review moderation dashboard
 │       │   ├── Login.tsx              # Authentication
 │       │   ├── Register.tsx           # User registration

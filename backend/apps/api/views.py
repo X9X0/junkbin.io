@@ -16,10 +16,12 @@ from .throttling import SearchRateThrottle
 
 from utils.cache import staff_key_prefix
 
+from django.contrib.auth import get_user_model
 from apps.products.models import Product
 from apps.components.models import Component
 from apps.products.serializers import ProductListSerializer
 from apps.components.serializers import ComponentListSerializer
+from apps.users.serializers import UserSerializer
 
 
 class APIRootView(APIView):
@@ -87,10 +89,10 @@ class SearchView(APIView):
             ),
             OpenApiParameter(
                 name='type',
-                description='Filter by type (products, components, or all)',
+                description='Filter by type (products, components, users, or all)',
                 required=False,
                 type=str,
-                enum=['products', 'components', 'all']
+                enum=['products', 'components', 'users', 'all']
             ),
             OpenApiParameter(
                 name='limit',
@@ -182,6 +184,21 @@ class SearchView(APIView):
                     many=True,
                     context={'request': request}
                 ).data
+            }
+
+        # Search users
+        if search_type in ['all', 'users']:
+            User = get_user_model()
+            user_results = User.objects.filter(
+                Q(username__icontains=query) |
+                Q(first_name__icontains=query) |
+                Q(last_name__icontains=query),
+                is_active=True,
+            ).order_by('-reputation_score')[:limit]
+
+            results['users'] = {
+                'count': len(user_results),
+                'results': UserSerializer(user_results, many=True).data,
             }
 
         return Response({

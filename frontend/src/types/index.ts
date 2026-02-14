@@ -3,13 +3,45 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  display_name?: string;
   avatar?: string;
   bio?: string;
+  location?: string;
+  website?: string;
   reputation_score: number;
   contribution_count: number;
   is_trusted: boolean;
   is_moderator: boolean;
   created_at: string;
+}
+
+export interface PublicUser {
+  id: string;
+  username: string;
+  display_name?: string;
+  avatar?: string;
+  bio?: string;
+  location?: string;
+  website?: string;
+  reputation_score: number;
+  contribution_count: number;
+  is_trusted: boolean;
+  created_at: string;
+}
+
+export interface UserStats {
+  total_contributions: number;
+  approved_products: number;
+  approved_components: number;
+  pending_submissions: number;
+  reports_submitted: number;
+  reports_received: number;
+  reputation_rank: number;
+}
+
+export interface UserContributions {
+  products: Product[];
+  components: Component[];
 }
 
 // Product types
@@ -232,6 +264,7 @@ export interface Message {
   content: string;
   is_read: boolean;
   created_at: string;
+  conversation_id?: string;
 }
 
 export interface UserBlock {

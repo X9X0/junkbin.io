@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -59,7 +59,7 @@ export default function Header() {
   };
 
   const totalResults = suggestions
-    ? (suggestions.products?.length || 0) + (suggestions.components?.length || 0) + (suggestions.schematics?.length || 0)
+    ? (suggestions.products?.length || 0) + (suggestions.components?.length || 0) + (suggestions.schematics?.length || 0) + (suggestions.users?.length || 0)
     : 0;
 
   return (
@@ -197,6 +197,28 @@ export default function Header() {
                           <div className="text-xs text-gray-500 truncate">{s.schematic_type_display}</div>
                         </div>
                         <span className="text-[10px] text-gray-600 uppercase">Schematic</span>
+                      </button>
+                    ))}
+
+                    {/* Users */}
+                    {suggestions?.users?.slice(0, 3).map((u: any) => (
+                      <button
+                        key={`user-${u.id}`}
+                        onClick={() => handleSuggestionClick(`/users/${u.id}`)}
+                        className="w-full px-3 py-2 flex items-center gap-3 hover:bg-cyber-light/20 text-left transition-colors"
+                      >
+                        <User className="h-4 w-4 text-cyber-yellow flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm text-white truncate flex items-center gap-1">
+                            {u.display_name || u.username}
+                            {u.is_trusted && <Shield className="h-3 w-3 text-cyber-green flex-shrink-0" />}
+                          </div>
+                          <div className="text-xs text-gray-500 flex items-center gap-1">
+                            <Award className="h-3 w-3" />
+                            {u.reputation_score} rep
+                          </div>
+                        </div>
+                        <span className="text-[10px] text-gray-600 uppercase">User</span>
                       </button>
                     ))}
 

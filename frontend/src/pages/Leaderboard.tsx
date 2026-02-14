@@ -1,4 +1,4 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { users } from '../api/endpoints';
 import { Trophy, Shield, Star, Crown } from 'lucide-react';
@@ -83,8 +83,9 @@ export default function Leaderboard() {
                 const isTopThree = rank <= 3 && page === 1;
 
                 return (
-                  <div
+                  <Link
                     key={user.id}
+                    to={`/users/${user.id}`}
                     className={clsx(
                       'grid grid-cols-[60px_1fr_120px_120px_100px_120px] gap-2 items-center px-4 border transition-colors',
                       isTopThree
@@ -152,7 +153,7 @@ export default function Leaderboard() {
                         {new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
                       </span>
                     </div>
-                  </div>
+                  </Link>
                 );
               })}
             </div>
@@ -165,10 +166,11 @@ export default function Leaderboard() {
               const isTopThree = rank <= 3 && page === 1;
 
               return (
-                <div
+                <Link
                   key={user.id}
+                  to={`/users/${user.id}`}
                   className={clsx(
-                    'p-4 border transition-colors',
+                    'block p-4 border transition-colors',
                     isTopThree
                       ? clsx('border-l-2', rankColors[rank - 1])
                       : 'border-cyber-light/10 bg-cyber-dark/30'
@@ -207,7 +209,7 @@ export default function Leaderboard() {
                       {user.contribution_count} contributions
                     </span>
                   </div>
-                </div>
+                </Link>
               );
             })}
           </div>

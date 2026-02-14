@@ -6,6 +6,9 @@ import type {
   Component,
   Schematic,
   User,
+  PublicUser,
+  UserStats,
+  UserContributions,
   PaginatedResponse,
   AuthTokens,
   LoginCredentials,
@@ -270,6 +273,7 @@ export const search = {
       products: r.products?.results || r.products || [],
       components: r.components?.results || r.components || [],
       schematics: r.schematics?.results || r.schematics || [],
+      users: r.users?.results || r.users || [],
     };
   },
 };
@@ -343,10 +347,30 @@ export const reviews = {
   },
 };
 
-// Users endpoints (leaderboard)
+// Users endpoints
 export const users = {
-  list: async (params?: Record<string, any>): Promise<PaginatedResponse<User>> => {
+  list: async (params?: Record<string, any>): Promise<PaginatedResponse<PublicUser>> => {
     const response = await api.get('/users/', { params });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<PublicUser> => {
+    const response = await api.get(`/users/${id}/`);
+    return response.data;
+  },
+
+  search: async (query: string): Promise<PaginatedResponse<PublicUser>> => {
+    const response = await api.get('/users/', { params: { search: query } });
+    return response.data;
+  },
+
+  stats: async (id: string): Promise<UserStats> => {
+    const response = await api.get(`/users/${id}/stats/`);
+    return response.data;
+  },
+
+  contributions: async (id: string): Promise<UserContributions> => {
+    const response = await api.get(`/users/${id}/contributions/`);
     return response.data;
   },
 };
