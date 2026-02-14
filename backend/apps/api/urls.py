@@ -162,6 +162,7 @@ urlpatterns = [
     path('', include('apps.submissions.urls')),
     path('', include('apps.reports.urls')),
     path('', include('apps.messaging.urls')),
+    path('', include('apps.junkbin.urls')),
     path('newsletter/', include('apps.newsletter.urls')),
 
     # Search endpoint

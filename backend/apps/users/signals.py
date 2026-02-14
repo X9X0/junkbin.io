@@ -33,6 +33,7 @@ def user_post_save(sender, instance, created, **kwargs):
                 'notify_submissions': True,
                 'notify_reports': True,
                 'notify_account': True,
+                'notify_junkbin': True,
                 'dark_mode': True,
                 'show_advanced_fields': False,
             }

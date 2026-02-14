@@ -193,6 +193,23 @@ Other users can search this database to find which consumer products contain spe
 - notes
 ```
 
+#### 9. JunkbinItems
+```
+- id (UUID)
+- user (User FK)
+- content_type (ContentType FK — Product or Component)
+- object_id (UUID — polymorphic reference)
+- item_type (have, want)
+- status (available, not_for_trade) — for "have" items
+- condition (new, working, broken, unknown) — for "have" items
+- visibility (public, private)
+- notes (text, max 500)
+- quantity (positive int)
+- created_at
+- updated_at
+UNIQUE(user, content_type, object_id, item_type)
+```
+
 ---
 
 ## Feature Breakdown
@@ -330,13 +347,13 @@ Other users can search this database to find which consumer products contain spe
 - ✅ Docker healthcheck fix — IPv4 `127.0.0.1` instead of `localhost` (IPv6 resolution issue) (Feb 12, 2026)
 
 #### Personal Junkbin (Collection & Trading)
-- ⬜ `UserCollectionItem` model — links users to products/components with status (available, not for trade, wanted), visibility (public/private), condition, and notes
-- ⬜ `WantListItem` model — tracks components/products a user is looking for, with notification preferences
-- ⬜ "My Junkbin" management page — add/remove items, set availability and visibility per-item, bulk edit
-- ⬜ Public junkbin browsing — view another user's public collection, filterable by category/availability
+- ✅ `JunkbinItem` model — single model covering both "have" and "want" items, polymorphic product/component via ContentType, with status (available/not_for_trade), visibility, condition, notes, quantity (Feb 14, 2026)
+- ✅ "My Junkbin" management page — tabbed have/want view, inline edit, filters by type/status/condition, add/remove items (Feb 14, 2026)
+- ✅ "Add to Junkbin" modal — accessible from ProductDetail and ComponentDetail pages, checks for existing entries, supports have/want (Feb 14, 2026)
+- ✅ Public junkbin browsing — view another user's public collection on their profile page (Feb 14, 2026)
 - ⬜ "Contact Owner" button — one-click message to item owner with item context pre-filled (requires user-to-user messaging)
-- ⬜ Want list notifications — Celery task matches new public "available" items against other users' want lists, sends alerts
-- ⬜ Junkbin profile widget — summary card on user profiles showing collection size and available item count
+- ✅ Want list notifications — Celery task matches new public "available" items against other users' want lists, sends email alerts respecting `notify_junkbin` preference (Feb 14, 2026)
+- ✅ Junkbin profile widget — summary card on user profiles showing collection size and available-for-trade count (Feb 14, 2026)
 
 *Note: All transactions are person-to-person between users. Junkbin.io does not facilitate payments or handle disputes — it simply connects people who have parts with people who need them.*
 
@@ -501,6 +518,16 @@ The `junkbin-deploy.sh` script will handle:
 - `GET /api/users/{id}` - Get user profile
 - `GET /api/users/{id}/contributions` - User's contributions
 - `GET /api/users/{id}/stats` - User statistics
+
+### Junkbin
+- `GET /api/junkbin/` - List public "have" items (filterable by user, content_type, status)
+- `POST /api/junkbin/` - Add item to junkbin (content_type, object_id, item_type, status, etc.)
+- `PATCH /api/junkbin/{id}/` - Update junkbin item (status, condition, visibility, notes, quantity)
+- `DELETE /api/junkbin/{id}/` - Remove item from junkbin
+- `GET /api/junkbin/my_items/` - Current user's items (all visibility, both types)
+- `GET /api/junkbin/my_summary/` - Counts: have_count, want_count, available_count
+- `GET /api/junkbin/user_summary/?user={id}` - Public counts for a user
+- `GET /api/junkbin/check/?content_type=product&object_id={uuid}` - Check if user has item in junkbin
 
 ### Search
 - `GET /api/search/products?q={query}` - Search products
@@ -717,6 +744,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: February 13, 2026
-**Version**: 1.8
+**Last Updated**: February 14, 2026
+**Version**: 1.9
 **Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Deployed & E2E Tested

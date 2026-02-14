@@ -229,6 +229,7 @@ export default function Profile() {
                 { key: 'notify_submissions' as const, label: 'Submission Updates', desc: 'When your submissions are approved or rejected' },
                 { key: 'notify_reports' as const, label: 'Report Updates', desc: 'When reports you filed are resolved' },
                 { key: 'notify_account' as const, label: 'Account Actions', desc: 'Warnings, restrictions, or other account changes' },
+                { key: 'notify_junkbin' as const, label: 'Junkbin Matches', desc: 'When someone lists an item on your want list' },
               ].map(({ key, label, desc }) => (
                 <div
                   key={key}

@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { users } from '../api/endpoints';
+import { users, junkbin } from '../api/endpoints';
 import {
   User as UserIcon,
   Shield,
@@ -16,6 +16,7 @@ import {
   Trophy,
   Loader2,
   AlertCircle,
+  Archive,
 } from 'lucide-react';
 
 export default function UserProfile() {
@@ -38,6 +39,18 @@ export default function UserProfile() {
     queryKey: ['user-contributions', id],
     queryFn: () => users.contributions(id!),
     enabled: !!id,
+  });
+
+  const { data: junkbinSummary } = useQuery({
+    queryKey: ['junkbin-user-summary', id],
+    queryFn: () => junkbin.userSummary(id!),
+    enabled: !!id,
+  });
+
+  const { data: junkbinItems } = useQuery({
+    queryKey: ['junkbin-user-items', id],
+    queryFn: () => junkbin.list({ user: id, item_type: 'have' }),
+    enabled: !!id && (junkbinSummary?.have_count ?? 0) > 0,
   });
 
   const isSelf = isAuthenticated && currentUser?.id === id;
@@ -196,6 +209,65 @@ export default function UserProfile() {
             <span className="text-gray-400 font-mono">
               Ranked <span className="text-cyber-yellow font-bold">#{stats.reputation_rank}</span> by reputation
             </span>
+          </div>
+        )}
+
+        {/* Junkbin Widget */}
+        {(junkbinSummary?.have_count ?? 0) > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                <Archive className="h-5 w-5 text-cyber-cyan" />
+                JUNKBIN
+              </h2>
+              <div className="text-xs font-mono text-gray-500">
+                {junkbinSummary?.have_count} items
+                {(junkbinSummary?.available_count ?? 0) > 0 && (
+                  <span className="text-cyber-green ml-2">
+                    {junkbinSummary?.available_count} for trade
+                  </span>
+                )}
+              </div>
+            </div>
+            {junkbinItems?.results && junkbinItems.results.length > 0 ? (
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {junkbinItems.results.slice(0, 6).map((item) => {
+                  const detailPath =
+                    item.content_type === 'product'
+                      ? `/products/${item.object_id}`
+                      : `/components/${item.object_id}/products`;
+                  return (
+                    <Link
+                      key={item.id}
+                      to={detailPath}
+                      className="card-cyber p-3 hover:border-cyber-cyan/50 transition-all group"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        {item.content_type === 'product' ? (
+                          <Package className="h-3.5 w-3.5 text-cyber-cyan" />
+                        ) : (
+                          <Cpu className="h-3.5 w-3.5 text-cyber-pink" />
+                        )}
+                        <span className="text-xs font-mono text-gray-500 uppercase">
+                          {item.content_type}
+                        </span>
+                        {item.status === 'available' && (
+                          <span className="badge-cyber text-[9px] text-cyber-green border-cyber-green ml-auto">
+                            TRADE
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-sm text-white group-hover:text-cyber-cyan transition-colors truncate">
+                        {item.item_name}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {item.item_manufacturer}
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : null}
           </div>
         )}
 

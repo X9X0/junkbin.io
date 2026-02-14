@@ -8,6 +8,7 @@ import AddComponentForm from '../components/AddComponentForm';
 import BomImport from '../components/BomImport';
 import BatchAddComponents from '../components/BatchAddComponents';
 import ReportModal from '../components/ReportModal';
+import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import ProductComments from '../components/ProductComments';
 import ComponentVoteButtons from '../components/ComponentVoteButtons';
 import {
@@ -22,6 +23,7 @@ import {
   Flag,
   Share2,
   MessageSquare,
+  Archive,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -37,6 +39,7 @@ export default function ProductDetail() {
   const [showBomImport, setShowBomImport] = useState(false);
   const [showBatchAdd, setShowBatchAdd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [showJunkbinModal, setShowJunkbinModal] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
@@ -290,6 +293,15 @@ export default function ProductDetail() {
                   <Download className="h-3 w-3" />
                   Export BOM
                 </button>
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setShowJunkbinModal(true)}
+                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
+                  >
+                    <Archive className="h-3 w-3" />
+                    Add to Junkbin
+                  </button>
+                )}
                 {isAuthenticated && (
                   <button
                     onClick={() => setShowReportModal(true)}
@@ -765,6 +777,15 @@ export default function ProductDetail() {
         isOpen={showReportModal}
         onClose={() => setShowReportModal(false)}
         contentType="products.product"
+        objectId={id!}
+        itemName={`${product?.manufacturer} ${product?.model_number}`}
+      />
+
+      {/* Add to Junkbin Modal */}
+      <AddToJunkbinModal
+        isOpen={showJunkbinModal}
+        onClose={() => setShowJunkbinModal(false)}
+        contentType="product"
         objectId={id!}
         itemName={`${product?.manufacturer} ${product?.model_number}`}
       />

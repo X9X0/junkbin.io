@@ -21,6 +21,9 @@ import type {
   Message,
   UserBlock,
   UserPreferences,
+  JunkbinItem,
+  JunkbinSummary,
+  JunkbinCheckResponse,
 } from '../types';
 
 // Auth endpoints
@@ -425,6 +428,59 @@ export const messaging = {
 
   unblockUser: async (blockId: string): Promise<void> => {
     await api.delete(`/messages/blocks/${blockId}/`);
+  },
+};
+
+// Junkbin endpoints
+export const junkbin = {
+  myItems: async (params?: Record<string, any>): Promise<PaginatedResponse<JunkbinItem>> => {
+    const response = await api.get('/junkbin/my_items/', { params });
+    return response.data;
+  },
+
+  mySummary: async (): Promise<JunkbinSummary> => {
+    const response = await api.get('/junkbin/my_summary/');
+    return response.data;
+  },
+
+  userSummary: async (userId: string): Promise<{ have_count: number; available_count: number }> => {
+    const response = await api.get('/junkbin/user_summary/', { params: { user: userId } });
+    return response.data;
+  },
+
+  check: async (contentType: string, objectId: string): Promise<JunkbinCheckResponse> => {
+    const response = await api.get('/junkbin/check/', {
+      params: { content_type: contentType, object_id: objectId },
+    });
+    return response.data;
+  },
+
+  create: async (data: {
+    content_type: string;
+    object_id: string;
+    item_type: string;
+    status?: string;
+    condition?: string;
+    visibility?: string;
+    notes?: string;
+    quantity?: number;
+  }): Promise<JunkbinItem> => {
+    const response = await api.post('/junkbin/', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<JunkbinItem>): Promise<JunkbinItem> => {
+    const response = await api.patch(`/junkbin/${id}/`, data);
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/junkbin/${id}/`);
+  },
+
+  list: async (params?: Record<string, any>): Promise<PaginatedResponse<JunkbinItem>> => {
+    const response = await api.get('/junkbin/', { params });
+    return response.data;
   },
 };
 

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -273,6 +273,13 @@ export default function Header() {
                       Profile
                     </Link>
                     <Link
+                      to="/my-junkbin"
+                      className="block px-4 py-2 text-sm text-gray-400 hover:text-cyber-cyan hover:bg-cyber-light/20 flex items-center gap-2"
+                    >
+                      <Archive className="h-3.5 w-3.5" />
+                      My Junkbin
+                    </Link>
+                    <Link
                       to="/my-submissions"
                       className="block px-4 py-2 text-sm text-gray-400 hover:text-cyber-cyan hover:bg-cyber-light/20"
                     >
@@ -389,6 +396,14 @@ export default function Header() {
             <div className="border-t border-cyber-light/30 pt-4 mt-2">
               {isAuthenticated ? (
                 <>
+                  <Link
+                    to="/my-junkbin"
+                    className="block py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan flex items-center gap-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Archive className="h-3.5 w-3.5" />
+                    MY JUNKBIN
+                  </Link>
                   <Link
                     to="/submit"
                     className="block py-2 font-mono text-sm text-cyber-cyan"
