@@ -1,9 +1,9 @@
 """
-Admin registration for notification models.
+Admin registration for notification and analytics models.
 """
 from django.contrib import admin, messages
 
-from .models import NotificationPreference, NotificationLog
+from .models import NotificationPreference, NotificationLog, SearchQuery
 
 
 @admin.action(description='Send daily digest now')
@@ -49,6 +49,25 @@ class NotificationLogAdmin(admin.ModelAdmin):
     def recipient_count(self, obj):
         return len(obj.recipients) if obj.recipients else 0
     recipient_count.short_description = 'Recipients'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(SearchQuery)
+class SearchQueryAdmin(admin.ModelAdmin):
+    list_display = ('query', 'result_count', 'search_type', 'user', 'created_at')
+    list_filter = ('search_type', 'created_at')
+    search_fields = ('query',)
+    readonly_fields = (
+        'id', 'query', 'user', 'result_count', 'search_type',
+        'ip_address', 'created_at',
+    )
+    ordering = ('-created_at',)
+    date_hierarchy = 'created_at'
 
     def has_add_permission(self, request):
         return False
