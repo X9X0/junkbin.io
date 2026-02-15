@@ -13,6 +13,7 @@ import {
   ArrowRight,
   AlertTriangle,
 } from 'lucide-react';
+import { parseApiError } from '../utils/formErrors';
 
 export default function Home() {
   const [email, setEmail] = useState('');
@@ -32,10 +33,7 @@ export default function Home() {
       setError('');
     },
     onError: (err: any) => {
-      const message = err.response?.data?.email?.[0]
-        || err.response?.data?.detail
-        || 'Failed to subscribe. Please try again.';
-      setError(message);
+      setError(parseApiError(err, 'Failed to subscribe. Please try again.'));
     },
   });
 

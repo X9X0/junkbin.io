@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Component } from '../types';
+import { parseApiError } from '../utils/formErrors';
 
 interface AddComponentFormProps {
   productId: string;
@@ -428,7 +429,7 @@ export default function AddComponentForm({
       {addMutation.isError && (
         <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
           <AlertCircle className="h-4 w-4" />
-          Failed to add component. Please try again.
+          {parseApiError(addMutation.error, 'Failed to add component. Please try again.')}
         </div>
       )}
     </div>

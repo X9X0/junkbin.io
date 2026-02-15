@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
+import { parseApiError } from '../utils/formErrors';
 
 const CATEGORIES = [
   { value: '', label: 'Select Category' },
@@ -136,17 +137,7 @@ export default function Submit() {
       navigate(`/products/${data.id}`);
     },
     onError: (err: any) => {
-      const data = err.response?.data;
-      if (data?.detail) {
-        setError(data.detail);
-      } else if (data && typeof data === 'object') {
-        const messages = Object.entries(data)
-          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
-          .join('; ');
-        setError(messages || 'Failed to create product');
-      } else {
-        setError('Failed to create product');
-      }
+      setError(parseApiError(err, 'Failed to create product. Please try again.'));
     },
   });
 
@@ -159,17 +150,7 @@ export default function Submit() {
       navigate(`/components/${data.id}/products`);
     },
     onError: (err: any) => {
-      const data = err.response?.data;
-      if (data?.detail) {
-        setError(data.detail);
-      } else if (data && typeof data === 'object') {
-        const messages = Object.entries(data)
-          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
-          .join('; ');
-        setError(messages || 'Failed to create component');
-      } else {
-        setError('Failed to create component');
-      }
+      setError(parseApiError(err, 'Failed to create component. Please try again.'));
     },
   });
 
