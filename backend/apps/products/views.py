@@ -473,13 +473,6 @@ class ProductViewSet(viewsets.ModelViewSet):
         """Upload an image for this product."""
         product = self.get_object()
 
-        # Check permission
-        if product.created_by != request.user and not request.user.is_staff:
-            return Response(
-                {'detail': 'You do not have permission to add images to this product.'},
-                status=status.HTTP_403_FORBIDDEN
-            )
-
         serializer = ProductImageUploadSerializer(data=request.data)
         if serializer.is_valid():
             image = serializer.save(
