@@ -233,6 +233,9 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Implement email/password registration
 - ✅ Email verification workflow
 - ✅ Google OAuth integration — Google Identity Services popup on frontend, backend ID token verification via `google-auth`, auto-creates or links accounts, issues JWT cookies (Feb 15, 2026)
+- ⬜ **SETUP: Google OAuth** — requires `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` in `.env` (get from Google Cloud Console → APIs & Services → Credentials)
+- ⬜ GitHub OAuth integration
+- ⬜ Microsoft OAuth integration
 - ✅ Basic user profile pages
 - ✅ Password reset functionality
 - ✅ Session management (JWT with refresh tokens)
@@ -337,6 +340,7 @@ UNIQUE(user, content_type, object_id, item_type)
 
 #### Integration & Automation
 - ✅ Nexar/Octopart API integration — GraphQL MPN search with OAuth2, component pricing/availability/datasheets from 100+ distributors (DigiKey, Mouser, etc.), cached in specifications JSONField, "Lookup Pricing" button on ComponentDetail, Celery task for bulk enrichment (Feb 15, 2026)
+- ⬜ **SETUP: Nexar API credentials** — requires `NEXAR_CLIENT_ID` and `NEXAR_CLIENT_SECRET` in `.env` (sign up at https://nexar.com/api, free tier: 100 matched parts lifetime)
 - ✅ DigiKey/Mouser API (availability/pricing) — covered by Nexar aggregation, no separate integrations needed (Feb 15, 2026)
 - ✅ Datasheet auto-linking — auto-populated from Nexar bestDatasheet URL when component.datasheet_url is empty (Feb 15, 2026)
 - ⬜ AI-assisted component recognition from images
