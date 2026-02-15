@@ -70,7 +70,7 @@ export default function Leaderboard() {
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-[60px_1fr_120px_120px_auto_120px] gap-2 px-4 py-2 text-gray-500 font-mono text-xs border-b border-cyber-light/30">
+            <div className="grid grid-cols-[60px_1fr_100px_100px_minmax(0,180px)_100px] gap-2 px-4 py-2 text-gray-500 font-mono text-xs border-b border-cyber-light/30">
               <span>RANK</span>
               <span>USER</span>
               <span className="text-right">REPUTATION</span>
@@ -89,7 +89,7 @@ export default function Leaderboard() {
                     key={user.id}
                     to={`/users/${user.id}`}
                     className={clsx(
-                      'grid grid-cols-[60px_1fr_120px_120px_auto_120px] gap-2 items-center px-4 border transition-colors',
+                      'grid grid-cols-[60px_1fr_100px_100px_minmax(0,180px)_100px] gap-2 items-center px-4 border transition-colors',
                       isTopThree
                         ? clsx('py-4 border-l-2', rankColors[rank - 1])
                         : 'py-3 border-cyber-light/10 hover:border-cyber-light/30 bg-cyber-dark/30'
@@ -138,7 +138,7 @@ export default function Leaderboard() {
                     </div>
 
                     {/* Badges */}
-                    <div className="flex items-center justify-center gap-1 flex-wrap">
+                    <div className="flex items-center justify-center gap-1 flex-wrap overflow-hidden">
                       {user.badges && user.badges.length > 0 ? (
                         <>
                           {user.badges.slice(0, 3).map((badge: Badge) => (
