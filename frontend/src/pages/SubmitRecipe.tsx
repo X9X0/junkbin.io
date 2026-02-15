@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Plus, Trash2, Search, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Component } from '../types';
+import { parseApiError } from '../utils/formErrors';
 
 interface BomEntry {
   component: Component;
@@ -45,15 +46,7 @@ export default function SubmitRecipe() {
       navigate(`/recipes/${data.id}`);
     },
     onError: (err: any) => {
-      const detail = err.response?.data;
-      if (typeof detail === 'object') {
-        const messages = Object.entries(detail)
-          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
-          .join('; ');
-        setError(messages);
-      } else {
-        setError('Failed to submit recipe. Please try again.');
-      }
+      setError(parseApiError(err, 'Failed to submit recipe. Please try again.'));
     },
   });
 

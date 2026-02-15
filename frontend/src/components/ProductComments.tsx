@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 import { Trash2, MessageSquare, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
+import { parseApiError } from '../utils/formErrors';
 
 function timeAgo(dateString: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateString).getTime()) / 1000);
@@ -42,7 +43,7 @@ export default function ProductComments({ productId }: { productId: string }) {
       queryClient.invalidateQueries({ queryKey: ['product', productId] });
     },
     onError: (err: any) => {
-      setError(err.response?.data?.content?.[0] || err.response?.data?.detail || 'Failed to post comment.');
+      setError(parseApiError(err, 'Failed to post comment. Please try again.'));
     },
   });
 

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserPlus, AlertCircle, Check } from 'lucide-react';
+import { parseApiError } from '../utils/formErrors';
 
 export default function Register() {
   const { register } = useAuth();
@@ -34,13 +35,7 @@ export default function Register() {
       await register(formData);
       navigate('/');
     } catch (err: any) {
-      const data = err.response?.data;
-      if (data) {
-        const messages = Object.values(data).flat();
-        setError(messages.join(' '));
-      } else {
-        setError('Registration failed. Please try again.');
-      }
+      setError(parseApiError(err, 'Registration failed. Please try again.'));
     } finally {
       setIsLoading(false);
     }
