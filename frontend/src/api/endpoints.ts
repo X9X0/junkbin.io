@@ -24,6 +24,8 @@ import type {
   JunkbinItem,
   JunkbinSummary,
   JunkbinCheckResponse,
+  Recipe,
+  RecipeMatchDetail,
 } from '../types';
 
 // Auth endpoints
@@ -480,6 +482,52 @@ export const junkbin = {
 
   list: async (params?: Record<string, any>): Promise<PaginatedResponse<JunkbinItem>> => {
     const response = await api.get('/junkbin/', { params });
+    return response.data;
+  },
+};
+
+// Recipes endpoints
+export const recipes = {
+  list: async (params?: Record<string, any>): Promise<PaginatedResponse<Recipe>> => {
+    const response = await api.get('/recipes/', { params });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<Recipe> => {
+    const response = await api.get(`/recipes/${id}/`);
+    return response.data;
+  },
+
+  create: async (formData: FormData): Promise<Recipe> => {
+    const response = await api.post('/recipes/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  update: async (id: string, formData: FormData): Promise<Recipe> => {
+    const response = await api.patch(`/recipes/${id}/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/recipes/${id}/`);
+  },
+
+  buildable: async (params?: Record<string, any>): Promise<PaginatedResponse<Recipe>> => {
+    const response = await api.get('/recipes/buildable/', { params });
+    return response.data;
+  },
+
+  match: async (id: string): Promise<RecipeMatchDetail> => {
+    const response = await api.get(`/recipes/${id}/match/`);
+    return response.data;
+  },
+
+  categories: async (): Promise<Array<{ value: string; label: string; count: number }>> => {
+    const response = await api.get('/recipes/categories/');
     return response.data;
   },
 };

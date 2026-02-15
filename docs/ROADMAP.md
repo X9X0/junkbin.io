@@ -358,12 +358,12 @@ UNIQUE(user, content_type, object_id, item_type)
 *Note: All transactions are person-to-person between users. Junkbin.io does not facilitate payments or handle disputes — it simply connects people who have parts with people who need them.*
 
 #### Recipes (What Can I Build?)
-- ⬜ `Project` model — community-submitted electronics projects with a name, description, difficulty level, and a BOM (list of required components with quantities)
-- ⬜ Junkbin-to-BOM matching engine — compares a user's collection against project BOMs, calculates match percentage and lists missing parts
-- ⬜ "What Can I Build?" page — sorted by match percentage (highest first), shows which parts you have vs. what's missing per project
-- ⬜ Missing parts integration — link missing components to other users' public junkbins where they're available, or to want list with one click
-- ⬜ Project submission and curation — users submit project recipes (external link, BOM, tags), moderated like other contributions
-- ⬜ Project tags and filtering — filter by category (audio, power supply, IoT, repair, etc.), difficulty, and match percentage threshold
+- ✅ `Recipe` model — community-submitted electronics projects with name, description, difficulty level, category, external URL, and a BOM (list of required components with quantities and optional flag) (Feb 14, 2026)
+- ✅ Junkbin-to-BOM matching engine — compares a user's collection against recipe BOMs, calculates match percentage and lists missing/matched parts (Feb 14, 2026)
+- ✅ "What Can I Build?" page — `/buildable` sorted by match percentage (highest first), shows which parts you have vs. what's missing per recipe (Feb 14, 2026)
+- ✅ Missing parts integration — links missing components to other users' public junkbins where they're available, "Add to Want List" one-click from recipe detail (Feb 14, 2026)
+- ✅ Recipe submission and curation — two-step wizard form (details + BOM builder with component search), moderated like other contributions, auto-approve for trusted users (Feb 14, 2026)
+- ✅ Recipe tags and filtering — filter by category (audio, power supply, IoT, repair, etc.), difficulty, ordering; full-text search with PostgreSQL SearchVector (Feb 14, 2026)
 
 #### Advanced Analytics
 - ⬜ Prometheus metrics
