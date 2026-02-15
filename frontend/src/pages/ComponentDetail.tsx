@@ -160,7 +160,7 @@ export default function ComponentDetail() {
                       <img
                         src={product.primary_image.thumbnail || product.primary_image.image}
                         alt={product.model_number}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover bg-cyber-black"
                       />
                     ) : (
                       <Cpu className="h-8 w-8 text-gray-600" />
