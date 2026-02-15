@@ -423,6 +423,8 @@ The `junkbin-deploy.sh` script will handle:
 - ~~Image file backups~~ — media backed up from Docker volume
 - ~~Retention policy (30 days)~~ — auto-cleanup of old backups
 - ~~Backup restoration testing~~ — `deployment/restore.sh` with interactive menu, selective restore (Feb 11, 2026)
+- ~~Automated daily backups~~ — cron on production runs `backup.sh` at 2 AM daily (Feb 15, 2026)
+- ~~Automated off-site retrieval~~ — cron on dev machine runs `Docs/autotransfer.sh` at 3 AM daily, pulls latest backup from production via SCP to `Docs/Prod_Backups/` (Feb 15, 2026)
 
 ### Monitoring Setup
 - ✅ Health check endpoints (`/api/health/`, nginx `/health`)
