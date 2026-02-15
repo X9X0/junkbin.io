@@ -314,6 +314,63 @@ export interface UserPreferences {
   show_advanced_fields: boolean;
 }
 
+// Recipe types
+export interface Recipe {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  difficulty: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  difficulty_display: string;
+  category: string;
+  category_display: string;
+  external_url?: string;
+  estimated_time?: string;
+  image?: string;
+  component_count: number;
+  view_count: number;
+  build_count?: number;
+  is_approved: boolean;
+  is_featured: boolean;
+  created_by?: CreatedBy;
+  created_at: string;
+  updated_at?: string;
+  bom?: RecipeBomItem[];
+  match_percentage?: number | null;
+}
+
+export interface RecipeBomItem {
+  id: string;
+  component_id: string;
+  part_number: string;
+  manufacturer: string;
+  component_type: string;
+  component_type_display: string;
+  primary_value: string;
+  quantity: number;
+  notes: string;
+  is_optional: boolean;
+}
+
+export interface BomMatchItem extends RecipeBomItem {
+  user_has: boolean;
+  available_from: Array<{
+    user_id: string;
+    username: string;
+    quantity: number;
+    condition: string;
+  }>;
+}
+
+export interface RecipeMatchDetail {
+  recipe_id: string;
+  recipe_name: string;
+  match_percentage: number;
+  total_required: number;
+  matched_count: number;
+  components: BomMatchItem[];
+}
+
 // Search/filter types
 export interface ProductFilters {
   search?: string;

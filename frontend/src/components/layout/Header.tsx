@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -101,6 +101,12 @@ export default function Header() {
               className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
             >
               SCHEMATICS
+            </Link>
+            <Link
+              to="/recipes"
+              className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+            >
+              RECIPES
             </Link>
             <Link
               to="/leaderboard"
@@ -243,6 +249,13 @@ export default function Header() {
             {isAuthenticated ? (
               <>
                 <Link
+                  to="/buildable"
+                  className="font-mono text-sm text-cyber-green hover:text-cyber-green/80 transition-colors flex items-center gap-1"
+                >
+                  <Hammer className="h-3.5 w-3.5" />
+                  BUILD
+                </Link>
+                <Link
                   to="/submit"
                   className="btn-cyber flex items-center gap-2 text-sm py-1.5"
                 >
@@ -361,6 +374,13 @@ export default function Header() {
               SCHEMATICS
             </Link>
             <Link
+              to="/recipes"
+              className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              RECIPES
+            </Link>
+            <Link
               to="/leaderboard"
               className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-yellow flex items-center gap-1"
               onClick={() => setIsMenuOpen(false)}
@@ -396,6 +416,14 @@ export default function Header() {
             <div className="border-t border-cyber-light/30 pt-4 mt-2">
               {isAuthenticated ? (
                 <>
+                  <Link
+                    to="/buildable"
+                    className="block py-2 font-mono text-sm text-cyber-green hover:text-cyber-green/80 flex items-center gap-1"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    <Hammer className="h-3.5 w-3.5" />
+                    BUILD
+                  </Link>
                   <Link
                     to="/my-junkbin"
                     className="block py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan flex items-center gap-1"

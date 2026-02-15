@@ -163,6 +163,7 @@ urlpatterns = [
     path('', include('apps.reports.urls')),
     path('', include('apps.messaging.urls')),
     path('', include('apps.junkbin.urls')),
+    path('', include('apps.recipes.urls')),
     path('newsletter/', include('apps.newsletter.urls')),
 
     # Search endpoint
