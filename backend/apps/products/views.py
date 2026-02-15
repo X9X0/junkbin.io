@@ -89,6 +89,8 @@ class ProductViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
+        elif self.action in ['approve', 'reject', 'pending_counts']:
+            return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
     def get_throttles(self):
@@ -686,6 +688,36 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a pending product (staff/moderator only)."""
+        product = self.get_object()
+        if product.is_approved:
+            return Response({'detail': 'Product is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        product.is_approved = True
+        product.save(update_fields=['is_approved'])
+        return Response({'detail': 'Product approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a pending product (staff/moderator only)."""
+        product = self.get_object()
+        if product.is_approved:
+            return Response({'detail': 'Cannot reject an already-approved product.'}, status=status.HTTP_400_BAD_REQUEST)
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=['get'])
+    def pending_counts(self, request):
+        """Get counts of pending (unapproved) content for moderation dashboard."""
+        from apps.recipes.models import Recipe
+
+        return Response({
+            'products': Product.objects.filter(is_approved=False).count(),
+            'schematics': Schematic.objects.filter(is_approved=False).count(),
+            'recipes': Recipe.objects.filter(is_approved=False).count(),
+        })
+
 
 class SchematicViewSet(viewsets.ModelViewSet):
     """
@@ -721,6 +753,8 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
+        elif self.action in ['approve', 'reject']:
+            return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
     @action(detail=True, methods=['get'])
@@ -749,3 +783,22 @@ class SchematicViewSet(viewsets.ModelViewSet):
             context={'request': request}
         )
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a pending schematic (staff/moderator only)."""
+        schematic = self.get_object()
+        if schematic.is_approved:
+            return Response({'detail': 'Schematic is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        schematic.is_approved = True
+        schematic.save(update_fields=['is_approved'])
+        return Response({'detail': 'Schematic approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a pending schematic (staff/moderator only)."""
+        schematic = self.get_object()
+        if schematic.is_approved:
+            return Response({'detail': 'Cannot reject an already-approved schematic.'}, status=status.HTTP_400_BAD_REQUEST)
+        schematic.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
