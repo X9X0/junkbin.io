@@ -1,3 +1,13 @@
+// Badge types
+export interface Badge {
+  slug: string;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  awarded_at: string;
+}
+
 // User types
 export interface User {
   id: string;
@@ -13,6 +23,7 @@ export interface User {
   is_trusted: boolean;
   is_moderator: boolean;
   created_at: string;
+  badges?: Badge[];
 }
 
 export interface PublicUser {
@@ -27,6 +38,7 @@ export interface PublicUser {
   contribution_count: number;
   is_trusted: boolean;
   created_at: string;
+  badges?: Badge[];
 }
 
 export interface UserStats {

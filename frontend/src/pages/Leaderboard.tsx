@@ -4,6 +4,8 @@ import { users } from '../api/endpoints';
 import { Trophy, Shield, Star, Crown } from 'lucide-react';
 import clsx from 'clsx';
 import Pagination from '../components/Pagination';
+import { BadgeChip } from '../components/BadgeDisplay';
+import type { Badge } from '../types';
 
 const PAGE_SIZE = 20;
 
@@ -68,12 +70,12 @@ export default function Leaderboard() {
         <>
           {/* Desktop table */}
           <div className="hidden md:block">
-            <div className="grid grid-cols-[60px_1fr_120px_120px_100px_120px] gap-2 px-4 py-2 text-gray-500 font-mono text-xs border-b border-cyber-light/30">
+            <div className="grid grid-cols-[60px_1fr_120px_120px_auto_120px] gap-2 px-4 py-2 text-gray-500 font-mono text-xs border-b border-cyber-light/30">
               <span>RANK</span>
               <span>USER</span>
               <span className="text-right">REPUTATION</span>
               <span className="text-right">CONTRIBUTIONS</span>
-              <span className="text-center">STATUS</span>
+              <span className="text-center">BADGES</span>
               <span className="text-right">JOINED</span>
             </div>
 
@@ -87,7 +89,7 @@ export default function Leaderboard() {
                     key={user.id}
                     to={`/users/${user.id}`}
                     className={clsx(
-                      'grid grid-cols-[60px_1fr_120px_120px_100px_120px] gap-2 items-center px-4 border transition-colors',
+                      'grid grid-cols-[60px_1fr_120px_120px_auto_120px] gap-2 items-center px-4 border transition-colors',
                       isTopThree
                         ? clsx('py-4 border-l-2', rankColors[rank - 1])
                         : 'py-3 border-cyber-light/10 hover:border-cyber-light/30 bg-cyber-dark/30'
@@ -135,15 +137,21 @@ export default function Leaderboard() {
                       </span>
                     </div>
 
-                    {/* Status */}
-                    <div className="flex justify-center">
-                      {user.is_trusted ? (
-                        <span className="flex items-center gap-1 text-cyber-green font-mono text-xs px-2 py-0.5 border border-cyber-green/30 bg-cyber-green/10">
-                          <Shield className="h-3 w-3" />
-                          TRUSTED
-                        </span>
+                    {/* Badges */}
+                    <div className="flex items-center justify-center gap-1 flex-wrap">
+                      {user.badges && user.badges.length > 0 ? (
+                        <>
+                          {user.badges.slice(0, 3).map((badge: Badge) => (
+                            <BadgeChip key={badge.slug} badge={badge} size="sm" />
+                          ))}
+                          {user.badges.length > 3 && (
+                            <span className="text-gray-500 font-mono text-[10px]">
+                              +{user.badges.length - 3}
+                            </span>
+                          )}
+                        </>
                       ) : (
-                        <span className="text-gray-600 font-mono text-xs">—</span>
+                        <span className="text-gray-600 font-mono text-xs">&mdash;</span>
                       )}
                     </div>
 
@@ -209,6 +217,18 @@ export default function Leaderboard() {
                       {user.contribution_count} contributions
                     </span>
                   </div>
+                  {user.badges && user.badges.length > 0 && (
+                    <div className="flex items-center gap-1 flex-wrap ml-11 mt-2">
+                      {user.badges.slice(0, 3).map((badge: Badge) => (
+                        <BadgeChip key={badge.slug} badge={badge} size="sm" />
+                      ))}
+                      {user.badges.length > 3 && (
+                        <span className="text-gray-500 font-mono text-[10px]">
+                          +{user.badges.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </Link>
               );
             })}

@@ -129,6 +129,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.user.can_submit_without_review:
             recipe.is_approved = True
             recipe.save(update_fields=['is_approved'])
+        # Check for new badges
+        from apps.users.badges import check_and_award_badges
+        check_and_award_badges(self.request.user)
 
     def perform_update(self, serializer):
         instance = serializer.save()

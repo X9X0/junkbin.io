@@ -125,6 +125,13 @@ class User(AbstractUser):
         help_text=_('User preferences and settings')
     )
 
+    # Badges/achievements stored as JSON list of {slug, awarded_at}
+    badges = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=_('Earned badges and achievements')
+    )
+
     class Meta:
         verbose_name = _('user')
         verbose_name_plural = _('users')
@@ -155,6 +162,8 @@ class User(AbstractUser):
             'contribution_count', 'reputation_score',
             'last_contribution_at', 'is_trusted'
         ])
+        from apps.users.badges import check_and_award_badges
+        check_and_award_badges(self)
 
     def increment_report_count(self):
         """Increment report count when content is reported."""

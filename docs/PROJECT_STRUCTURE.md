@@ -45,7 +45,11 @@ junkbin.io/
 │   │   │   ├── admin_views.py         # Bulk contribution review page
 │   │   │   ├── authentication.py      # JWT cookie auth backend
 │   │   │   ├── permissions.py         # IsOwnerOrReadOnly, IsModerator, IsTrustedUser
+│   │   │   ├── badges.py              # Badge registry, check_and_award_badges(), display helpers
 │   │   │   ├── signals.py             # User-related signals (default preferences)
+│   │   │   ├── management/
+│   │   │   │   └── commands/
+│   │   │   │       └── backfill_badges.py  # One-time badge backfill for existing users
 │   │   │   └── tests/
 │   │   │
 │   │   ├── products/                  # Product management
@@ -202,6 +206,7 @@ junkbin.io/
 │       │   │   └── UserReviewPanel.tsx     # User review action panel
 │       │   │
 │       │   ├── AddToJunkbinModal.tsx  # Modal for adding items to personal junkbin
+│       │   ├── BadgeDisplay.tsx      # BadgeChip + BadgeGrid components for achievements
 │       │   ├── AddComponentForm.tsx   # Link components to products
 │       │   ├── GoogleLoginButton.tsx # Google OAuth sign-in button (GSI)
 │       │   ├── BackToTop.tsx          # Floating scroll button

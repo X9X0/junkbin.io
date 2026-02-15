@@ -28,6 +28,8 @@ export default function NewConversation() {
   const [showDropdown, setShowDropdown] = useState(false);
 
   const prefillUserId = searchParams.get('to');
+  const aboutItem = searchParams.get('about');
+  const aboutPrefilled = useRef(false);
 
   // Debounce search input
   useEffect(() => {
@@ -49,6 +51,14 @@ export default function NewConversation() {
       setSelectedUser(prefillUser);
     }
   }, [prefillUser, selectedUser]);
+
+  // Prefill message content from ?about= param (one-shot)
+  useEffect(() => {
+    if (selectedUser && aboutItem && !aboutPrefilled.current) {
+      aboutPrefilled.current = true;
+      setContent(`Hi, I'm interested in your ${aboutItem} from your junkbin.`);
+    }
+  }, [selectedUser, aboutItem]);
 
   // Search users
   const { data: searchResults, isFetching: isSearching } = useQuery({
