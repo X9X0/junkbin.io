@@ -729,7 +729,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
 
     queryset = Schematic.objects.select_related('product', 'uploaded_by')
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_fields = ['schematic_type', 'source_type', 'is_approved', 'product']
+    filterset_fields = ['schematic_type', 'source_type', 'is_approved', 'product', 'uploaded_by']
     search_fields = ['title', 'description', 'product__manufacturer', 'product__model_number']
     ordering_fields = ['uploaded_at', 'download_count']
     ordering = ['-uploaded_at']
@@ -742,9 +742,15 @@ class SchematicViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Non-staff users only see approved schematics
+        # Non-staff users only see approved schematics (plus their own)
         if not self.request.user.is_staff:
-            queryset = queryset.filter(is_approved=True)
+            if self.request.user.is_authenticated:
+                queryset = queryset.filter(
+                    models.Q(is_approved=True) |
+                    models.Q(uploaded_by=self.request.user)
+                )
+            else:
+                queryset = queryset.filter(is_approved=True)
 
         return queryset
 

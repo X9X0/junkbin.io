@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -557,6 +557,12 @@ function PendingContentTab() {
     return (item.data as Product | Recipe).created_at;
   };
 
+  const getItemLink = (item: PendingItem): string => {
+    if (item.type === 'product') return `/products/${item.data.id}`;
+    if (item.type === 'recipe') return `/recipes/${item.data.id}`;
+    return `/products/${(item.data as Schematic).product}`;
+  };
+
   const handleApprove = (item: PendingItem) => {
     if (item.type === 'product') approveProduct.mutate(item.data.id);
     else if (item.type === 'schematic') approveSchematic.mutate(item.data.id);
@@ -636,11 +642,22 @@ function PendingContentTab() {
                           {item.type.toUpperCase()}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-white">{getItemTitle(item)}</td>
+                      <td className="px-4 py-3 text-sm">
+                        <Link to={getItemLink(item)} className="text-white hover:text-cyber-cyan transition-colors">
+                          {getItemTitle(item)}
+                        </Link>
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">{getItemUser(item)}</td>
                       <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden lg:table-cell">{formatDate(getItemDate(item))}</td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center gap-2 justify-end">
+                          <Link
+                            to={getItemLink(item)}
+                            className="text-cyber-cyan hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
+                          >
+                            <Eye className="h-4 w-4" />
+                            VIEW
+                          </Link>
                           <button
                             onClick={() => handleApprove(item)}
                             disabled={isMutating}
