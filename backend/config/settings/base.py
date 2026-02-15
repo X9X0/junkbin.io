@@ -323,7 +323,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send-daily-digest': {
         'task': 'apps.api.tasks.send_daily_digest',
-        'schedule': crontab(hour=8, minute=0),
+        'schedule': crontab(hour=12, minute=0),  # 8 AM EDT (UTC-4)
     },
     'cleanup-search-queries': {
         'task': 'apps.api.tasks.cleanup_old_search_queries',
