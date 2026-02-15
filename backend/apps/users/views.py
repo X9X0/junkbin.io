@@ -16,6 +16,10 @@ from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
+from django.conf import settings
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+
 from .serializers import (
     UserSerializer,
     UserDetailSerializer,
@@ -438,3 +442,114 @@ class PasswordResetConfirmView(APIView):
                 {'error': 'Invalid reset link.'},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+
+@method_decorator(csrf_exempt, name='dispatch')
+class GoogleAuthView(APIView):
+    """Authenticate or register a user via Google OAuth ID token."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request):
+        from google.oauth2 import id_token
+        from google.auth.transport import requests as google_requests
+
+        credential = request.data.get('credential')
+        if not credential:
+            return Response(
+                {'error': 'Missing credential'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client_id = getattr(settings, 'OAUTH_GOOGLE_CLIENT_ID', None)
+        if not client_id:
+            return Response(
+                {'error': 'Google OAuth is not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        # Verify the Google ID token
+        try:
+            idinfo = id_token.verify_oauth2_token(
+                credential,
+                google_requests.Request(),
+                client_id,
+            )
+        except ValueError:
+            return Response(
+                {'error': 'Invalid Google token'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Reject unverified emails
+        if not idinfo.get('email_verified'):
+            return Response(
+                {'error': 'Google email is not verified'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        email = idinfo['email'].lower()
+        created = False
+
+        try:
+            user = User.objects.get(email__iexact=email)
+
+            # Existing user from a different OAuth provider
+            if user.oauth_provider and user.oauth_provider != 'google':
+                return Response(
+                    {'error': f'This email is linked to a {user.oauth_provider} account.'},
+                    status=status.HTTP_409_CONFLICT
+                )
+
+            # Existing email/password user — link Google
+            if not user.oauth_provider:
+                user.oauth_provider = 'google'
+                user.email_verified = True
+                user.save(update_fields=['oauth_provider', 'email_verified'])
+
+        except User.DoesNotExist:
+            # Generate a unique username from email prefix
+            base_username = email.split('@')[0]
+            # Keep only alphanumeric and underscores
+            base_username = ''.join(
+                c if c.isalnum() or c == '_' else '' for c in base_username
+            )
+            if not base_username:
+                base_username = 'user'
+            base_username = base_username[:20]
+
+            username = base_username
+            suffix = 1
+            while User.objects.filter(username__iexact=username).exists():
+                username = f'{base_username}{suffix}'
+                suffix += 1
+
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=None,
+                oauth_provider='google',
+                email_verified=True,
+            )
+            created = True
+
+        # Issue JWT tokens
+        refresh = RefreshToken.for_user(user)
+        access_token = str(refresh.access_token)
+        refresh_token = str(refresh)
+
+        from apps.api.urls import set_token_cookies
+
+        response_data = {
+            'user': UserSerializer(user).data,
+            'created': created,
+        }
+        response = Response(
+            response_data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+        set_token_cookies(response, access_token, refresh_token)
+        return response

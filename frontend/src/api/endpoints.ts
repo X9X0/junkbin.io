@@ -60,6 +60,11 @@ export const auth = {
     await api.post('/auth/logout/', {});
   },
 
+  googleLogin: async (credential: string): Promise<{ user: User; created: boolean }> => {
+    const response = await api.post('/auth/google/', { credential });
+    return response.data;
+  },
+
   getPreferences: async (): Promise<UserPreferences> => {
     const response = await api.get('/auth/preferences/');
     return response.data;

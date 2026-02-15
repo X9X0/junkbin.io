@@ -8,6 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  googleLogin: (credential: string) => Promise<{ created: boolean }>;
   logout: () => Promise<void>;
 }
 
@@ -42,6 +43,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login({ username: data.username, password: data.password });
   };
 
+  const googleLogin = async (credential: string) => {
+    const result = await auth.googleLogin(credential);
+    // Cookies are set by the backend — fetch user profile
+    const userData = await auth.me();
+    setUser(userData);
+    return { created: result.created };
+  };
+
   const logout = async () => {
     try {
       // Call logout endpoint to clear cookies and blacklist token
@@ -60,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: !!user,
         login,
         register,
+        googleLogin,
         logout,
       }}
     >
