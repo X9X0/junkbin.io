@@ -103,7 +103,7 @@ export default function ProductDetail() {
                   <img
                     src={product.images[selectedImage].image}
                     alt={product.model_number}
-                    className="max-w-full max-h-full object-contain"
+                    className="max-w-full max-h-full object-contain bg-cyber-black"
                   />
                 ) : (
                   <div className="text-center text-gray-600">
@@ -130,7 +130,7 @@ export default function ProductDetail() {
                   <LazyImage
                     src={img.thumbnail || img.image}
                     alt=""
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover bg-cyber-black"
                   />
                 </button>
               ))}
@@ -394,7 +394,7 @@ export default function ProductDetail() {
                         <LazyImage
                           src={img.thumbnail || img.image}
                           alt={img.caption || `Image ${idx + 1}`}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover bg-cyber-black"
                         />
                       </div>
                       <div className="flex items-center justify-between text-xs">
