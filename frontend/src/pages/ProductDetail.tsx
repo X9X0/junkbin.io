@@ -299,7 +299,7 @@ export default function ProductDetail() {
                     className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
                   >
                     <Archive className="h-3 w-3" />
-                    Add to Junkbin
+                    Add to My Junkbin
                   </button>
                 )}
                 {isAuthenticated && (
@@ -781,7 +781,7 @@ export default function ProductDetail() {
         itemName={`${product?.manufacturer} ${product?.model_number}`}
       />
 
-      {/* Add to Junkbin Modal */}
+      {/* Add to My Junkbin Modal */}
       <AddToJunkbinModal
         isOpen={showJunkbinModal}
         onClose={() => setShowJunkbinModal(false)}
