@@ -25,6 +25,7 @@ export default function LazyImage({ src, alt, className, fallback }: LazyImagePr
       onLoad={() => setIsLoaded(true)}
       onError={() => setHasError(true)}
       className={clsx(
+        'bg-cyber-black',
         className,
         'transition-opacity duration-300',
         isLoaded ? 'opacity-100' : 'opacity-0'

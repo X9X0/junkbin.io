@@ -13,6 +13,20 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill, ResizeToFit
+from PIL import Image
+
+
+class AlphaToBlack:
+    """ImageKit processor that composites transparent images onto a black background."""
+
+    def process(self, image):
+        if image.mode in ('RGBA', 'P', 'LA'):
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background = Image.new('RGB', image.size, (0, 0, 0))
+            background.paste(image, mask=image.split()[-1])
+            return background
+        return image
 
 
 # Allowed file extensions for uploads
@@ -252,13 +266,13 @@ class ProductImage(models.Model):
     # Generated thumbnails
     thumbnail = ImageSpecField(
         source='image',
-        processors=[ResizeToFill(480, 270)],
+        processors=[AlphaToBlack(), ResizeToFill(480, 270)],
         format='JPEG',
         options={'quality': 85}
     )
     medium = ImageSpecField(
         source='image',
-        processors=[ResizeToFit(800, 800)],
+        processors=[AlphaToBlack(), ResizeToFit(800, 800)],
         format='JPEG',
         options={'quality': 90}
     )

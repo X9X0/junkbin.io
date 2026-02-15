@@ -45,8 +45,9 @@ def optimize_image(image_file, max_dimension=2000, quality=85):
         image = Image.open(image_file)
 
         # Convert to RGB if necessary (for PNG with alpha, etc.)
+        # Use black background to match the cyberpunk dark theme
         if image.mode in ('RGBA', 'P'):
-            background = Image.new('RGB', image.size, (255, 255, 255))
+            background = Image.new('RGB', image.size, (0, 0, 0))
             if image.mode == 'P':
                 image = image.convert('RGBA')
             background.paste(image, mask=image.split()[-1])
@@ -76,8 +77,14 @@ def create_thumbnail(image_file, size=(300, 300)):
     try:
         image = Image.open(image_file)
 
-        # Convert to RGB
-        if image.mode not in ('RGB', 'L'):
+        # Convert to RGB with black background for transparency
+        if image.mode in ('RGBA', 'P'):
+            background = Image.new('RGB', image.size, (0, 0, 0))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1])
+            image = background
+        elif image.mode not in ('RGB', 'L'):
             image = image.convert('RGB')
 
         # Create thumbnail (maintains aspect ratio)
