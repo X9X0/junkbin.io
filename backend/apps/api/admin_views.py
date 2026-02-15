@@ -179,6 +179,11 @@ def system_status(request):
     admin_prefix = reverse('admin:index')
 
     links = [
+        {'label': 'Analytics Dashboard', 'url': '/analytics'},
+        {'label': 'Grafana', 'url': '/grafana/'},
+        {'label': 'Prometheus', 'url': '/prometheus/'},
+        {'label': 'Search Queries', 'url': f'{admin_prefix}api/searchquery/'},
+        {'label': 'Component Views', 'url': f'{admin_prefix}components/componentviewstats/'},
         {'label': 'Reports', 'url': f'{admin_prefix}reports/report/'},
         {'label': 'User Reviews', 'url': f'{admin_prefix}reports/userreview/'},
         {'label': 'Periodic Tasks', 'url': f'{admin_prefix}django_celery_beat/periodictask/'},

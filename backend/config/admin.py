@@ -41,6 +41,10 @@ SIDEBAR_GROUPS = {
         ('django_celery_results', 'taskresult'),
         ('axes', 'accessattempt'),
     ],
+    'Analytics': [
+        ('api', 'searchquery'),
+        ('components', 'componentviewstats'),
+    ],
 }
 
 # No models are hidden — everything shows under "Other" if not in a group above

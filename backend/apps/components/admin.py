@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from import_export.admin import ImportExportActionModelAdmin
 
-from .models import Component, ProductComponent, ComponentVote
+from .models import Component, ProductComponent, ComponentVote, ComponentViewStats
 from .resources import ComponentResource, ProductComponentResource
 
 
@@ -188,3 +188,19 @@ class ComponentVoteAdmin(admin.ModelAdmin):
         'weight', 'created_at', 'updated_at'
     ]
     raw_id_fields = ['user', 'product_component']
+
+
+@admin.register(ComponentViewStats)
+class ComponentViewStatsAdmin(admin.ModelAdmin):
+    list_display = ('component', 'date', 'view_count')
+    list_filter = ('date',)
+    search_fields = ('component__part_number', 'component__manufacturer')
+    readonly_fields = ('component', 'date', 'view_count')
+    ordering = ('-date', '-view_count')
+    date_hierarchy = 'date'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
