@@ -50,6 +50,7 @@ THIRD_PARTY_APPS = [
     'allauth.socialaccount.providers.google',
     'django_celery_beat',
     'django_celery_results',
+    'django_prometheus',
     'imagekit',
     'storages',
     'axes',
@@ -67,11 +68,13 @@ LOCAL_APPS = [
     'apps.messaging',
     'apps.junkbin',
     'apps.recipes',
+    'apps.webhooks',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'csp.middleware.CSPMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -84,6 +87,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'allauth.account.middleware.AccountMiddleware',
+    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -191,6 +195,7 @@ REST_FRAMEWORK = {
         'report': '10/hour',
         'search': '60/minute',
         'messaging': '30/minute',
+        'lookup': '20/hour',
     },
 }
 
@@ -308,6 +313,27 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+
+from celery.schedules import crontab  # noqa: E402
+
+CELERY_BEAT_SCHEDULE = {
+    'check-system-health': {
+        'task': 'apps.api.tasks.check_system_health',
+        'schedule': 300.0,  # every 5 minutes
+    },
+    'send-daily-digest': {
+        'task': 'apps.api.tasks.send_daily_digest',
+        'schedule': crontab(hour=8, minute=0),
+    },
+    'cleanup-search-queries': {
+        'task': 'apps.api.tasks.cleanup_old_search_queries',
+        'schedule': crontab(hour=3, minute=0),
+    },
+    'cleanup-old-activity': {
+        'task': 'apps.api.tasks.cleanup_old_activity',
+        'schedule': crontab(hour=3, minute=30),
+    },
+}
 
 # =============================================================================
 # Caching
@@ -524,6 +550,17 @@ REGIONS = [
     ('global', 'Global/Universal'),
     ('other', 'Other'),
 ]
+
+# =============================================================================
+# External API Keys
+# =============================================================================
+
+# Nexar (Octopart) API — component pricing, availability, datasheets
+NEXAR_CLIENT_ID = env('NEXAR_CLIENT_ID', default='')
+NEXAR_CLIENT_SECRET = env('NEXAR_CLIENT_SECRET', default='')
+
+# Site URL for webhook embeds
+SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
 # Logging Configuration
 LOGGING = {

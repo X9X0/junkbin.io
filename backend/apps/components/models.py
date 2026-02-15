@@ -267,6 +267,26 @@ class Component(models.Model):
         self.save(update_fields=['usage_count'])
 
 
+class ComponentViewStats(models.Model):
+    """Daily aggregate view counts for component popularity tracking."""
+
+    component = models.ForeignKey(
+        Component,
+        on_delete=models.CASCADE,
+        related_name='view_stats',
+    )
+    date = models.DateField(db_index=True)
+    view_count = models.IntegerField(default=0)
+
+    class Meta:
+        verbose_name = _('component view stats')
+        verbose_name_plural = _('component view stats')
+        unique_together = ['component', 'date']
+
+    def __str__(self):
+        return f'{self.component} - {self.date}: {self.view_count} views'
+
+
 class ProductComponent(models.Model):
     """
     Junction table linking products to components.

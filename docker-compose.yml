@@ -138,6 +138,43 @@ services:
     networks:
       - junkbin_network
 
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: junkbin_prometheus
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --web.external-url=/prometheus/
+      - --web.route-prefix=/prometheus/
+      - --storage.tsdb.retention.time=30d
+    volumes:
+      - ./deployment/prometheus:/etc/prometheus:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+    networks:
+      - junkbin_network
+
+  # Grafana Dashboards
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: junkbin_grafana
+    restart: unless-stopped
+    environment:
+      - GF_SERVER_ROOT_URL=%(protocol)s://%(domain)s/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    networks:
+      - junkbin_network
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
@@ -178,6 +215,10 @@ volumes:
   frontend_build:
     driver: local
   nginx_logs:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
     driver: local
 
 networks:

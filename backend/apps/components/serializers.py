@@ -44,6 +44,7 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
     )
     created_by = CreatedBySerializer(read_only=True)
     cross_references = ComponentListSerializer(many=True, read_only=True)
+    pricing_data = serializers.SerializerMethodField()
 
     class Meta:
         model = Component
@@ -53,12 +54,17 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
             'description', 'typical_function', 'specifications',
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
-            'created_by', 'created_at', 'updated_at'
+            'created_by', 'created_at', 'updated_at', 'pricing_data'
         ]
         read_only_fields = [
             'id', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at'
         ]
+
+    def get_pricing_data(self, obj):
+        """Return cached Nexar data from specifications if available."""
+        specs = obj.specifications or {}
+        return specs.get('nexar_data')
 
 
 class ComponentCreateSerializer(serializers.ModelSerializer):

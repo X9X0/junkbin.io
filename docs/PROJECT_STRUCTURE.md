@@ -68,12 +68,14 @@ junkbin.io/
 │   │   │           └── import_flipper_bom.py    # Flipper Zero BOM from Excel
 │   │   │
 │   │   ├── components/                # Component management
-│   │   │   ├── models.py              # Component, ProductComponent, ComponentVote
-│   │   │   ├── views.py               # Component CRUD + cross-reference + voting
+│   │   │   ├── models.py              # Component, ComponentViewStats, ProductComponent, ComponentVote
+│   │   │   ├── views.py               # Component CRUD + cross-reference + voting + trending + view tracking
 │   │   │   ├── serializers.py         # Component serializers (vote fields)
 │   │   │   ├── urls.py
 │   │   │   ├── admin.py               # Component admin + CSV import/export
 │   │   │   ├── filters.py             # Component search filters
+│   │   │   ├── nexar.py               # Nexar/Octopart API client
+│   │   │   ├── tasks.py               # Celery tasks (Nexar bulk enrichment)
 │   │   │   └── tests/
 │   │   │
 │   │   ├── submissions/               # Content submission/moderation
@@ -123,10 +125,28 @@ junkbin.io/
 │   │   │       └── commands/
 │   │   │           └── send_launch_email.py  # Launch blast command
 │   │   │
+│   │   ├── recipes/                   # Recipes (What Can I Build?)
+│   │   │   ├── models.py              # Recipe, RecipeBomItem
+│   │   │   ├── views.py               # RecipeViewSet (CRUD + buildable + match)
+│   │   │   ├── serializers.py         # Recipe serializers
+│   │   │   ├── urls.py
+│   │   │   ├── admin.py
+│   │   │   └── filters.py
+│   │   │
+│   │   ├── webhooks/                  # Discord/Slack webhook notifications
+│   │   │   ├── models.py              # WebhookEndpoint, WebhookDelivery
+│   │   │   ├── views.py               # Webhook management views
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   ├── admin.py
+│   │   │   ├── formatters.py          # Discord embed + Slack Block Kit formatters
+│   │   │   └── tasks.py               # Celery delivery with retry/backoff
+│   │   │
 │   │   └── api/                       # API configuration
-│   │       ├── models.py              # Admin notification models
+│   │       ├── models.py              # Admin notification models, SearchQuery (analytics)
 │   │       ├── urls.py                # API root routing + JWT cookie auth
-│   │       ├── views.py               # APIRoot, SearchView, HealthCheck, Stats
+│   │       ├── views.py               # APIRoot, SearchView, AnalyticsView, HealthCheck, Stats
+│   │       ├── metrics.py             # Custom Prometheus counters/histograms (searches, views, submissions)
 │   │       ├── admin.py               # Admin notification admin
 │   │       ├── admin_views.py         # System status dashboard view
 │   │       ├── pagination.py          # Pagination classes
@@ -134,7 +154,7 @@ junkbin.io/
 │   │       ├── throttling.py          # Rate limiting (auth, submission, report, search, messaging)
 │   │       ├── middleware.py          # Admin IP whitelist, Axes lockout handler
 │   │       ├── signals.py             # Signal handlers for admin notifications
-│   │       ├── tasks.py               # Admin notification tasks (health, digest, alerts)
+│   │       ├── tasks.py               # Admin notifications + analytics cleanup tasks
 │   │       ├── tests/
 │   │       └── management/
 │   │           └── commands/
@@ -190,7 +210,7 @@ junkbin.io/
 │       │
 │       ├── api/                       # API layer
 │       │   ├── client.ts              # Axios instance + JWT cookie refresh
-│       │   └── endpoints.ts           # All API endpoint functions (auth, products, components, messaging, reports, etc.)
+│       │   └── endpoints.ts           # All API endpoint functions (auth, products, components, messaging, reports, analytics, etc.)
 │       │
 │       ├── context/                   # React Context
 │       │   └── AuthContext.tsx         # Auth state + JWT token management
@@ -205,6 +225,7 @@ junkbin.io/
 │       │   │   ├── ResolveReportModal.tsx  # Report resolution dialog
 │       │   │   └── UserReviewPanel.tsx     # User review action panel
 │       │   │
+│       │   ├── PricingPanel.tsx       # Nexar pricing/availability display
 │       │   ├── AddToJunkbinModal.tsx  # Modal for adding items to personal junkbin
 │       │   ├── BadgeDisplay.tsx      # BadgeChip + BadgeGrid components for achievements
 │       │   ├── AddComponentForm.tsx   # Link components to products
@@ -243,6 +264,11 @@ junkbin.io/
 │       │   ├── Guidelines.tsx         # Community guidelines
 │       │   ├── Leaderboard.tsx        # User contribution rankings (clickable)
 │       │   ├── Moderation.tsx         # Report/review moderation dashboard
+│       │   ├── AnalyticsDashboard.tsx # Staff-only analytics (DAU, search, trending, activity)
+│       │   ├── Recipes.tsx            # Recipe listing + search/filter
+│       │   ├── RecipeDetail.tsx       # Recipe detail + BOM matching
+│       │   ├── SubmitRecipe.tsx       # Recipe submission wizard
+│       │   ├── Buildable.tsx          # "What Can I Build?" page
 │       │   ├── Login.tsx              # Authentication
 │       │   ├── Register.tsx           # User registration
 │       │   ├── Profile.tsx            # User profile + stats
@@ -257,7 +283,7 @@ junkbin.io/
 │       │   └── useUnreadCount.ts      # Adaptive polling for unread messages
 │       │
 │       ├── types/                     # TypeScript interfaces
-│       │   ├── index.ts              # All shared types (Product, Component, Message, etc.)
+│       │   ├── index.ts              # All shared types (Product, Component, Message, Analytics, etc.)
 │       │   └── google.d.ts           # Google Identity Services type declarations
 │       │
 │       ├── test/                      # Test infrastructure
@@ -279,8 +305,20 @@ junkbin.io/
 │   ├── nginx/                         # Nginx configurations
 │   │   ├── nginx.conf                 # Main nginx config
 │   │   └── sites-available/
-│   │       ├── junkbin.conf           # Production (with SSL)
+│   │       ├── junkbin.conf           # Production (with SSL, Grafana/Prometheus proxy)
 │   │       └── junkbin-local.conf     # Local dev (no SSL)
+│   │
+│   ├── prometheus/                    # Prometheus monitoring
+│   │   └── prometheus.yml             # Scrape config (backend + nginx targets)
+│   │
+│   ├── grafana/                       # Grafana dashboards
+│   │   ├── provisioning/
+│   │   │   ├── datasources/
+│   │   │   │   └── prometheus.yml     # Auto-provision Prometheus datasource
+│   │   │   └── dashboards/
+│   │   │       └── dashboard.yml      # Dashboard file provider config
+│   │   └── dashboards/
+│   │       └── junkbin-overview.json  # Pre-built overview dashboard (8 panels)
 │   │
 │   └── docker/                        # Docker-related files
 │       └── postgres/
@@ -316,7 +354,7 @@ junkbin.io/
 - `tailwind.config.js` - Cyberpunk theme colors/fonts
 
 ### Infrastructure
-- `docker-compose.yml` - Multi-container definitions
+- `docker-compose.yml` - Multi-container definitions (9 services: backend, postgres, redis, celery, celery-beat, frontend, nginx, prometheus, grafana)
 - `docker-compose.override.yml` - Local dev overrides (no SSL)
 - `.env` - Environment variables (NOT committed to git)
 - `deployment/nginx/sites-available/junkbin.conf` - Production web server config
@@ -331,6 +369,7 @@ See `.env.example` for required environment variables including:
 - `EMAIL_HOST` / `EMAIL_PORT` - SMTP configuration
 - `OAUTH_GOOGLE_CLIENT_ID` / `OAUTH_GOOGLE_CLIENT_SECRET` - Google OAuth credentials (backend)
 - `VITE_GOOGLE_CLIENT_ID` - Google OAuth client ID (frontend, public)
+- `GRAFANA_ADMIN_PASSWORD` - Grafana admin password (default: admin)
 
 ---
 

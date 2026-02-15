@@ -117,6 +117,16 @@ class ProductViewSet(viewsets.ModelViewSet):
             product.is_approved = True
             product.save(update_fields=['is_approved'])
 
+        # Webhook notification
+        from apps.webhooks.tasks import dispatch_webhook_event
+        dispatch_webhook_event.delay('product.created', {
+            'name': str(product),
+            'manufacturer': product.manufacturer,
+            'model_number': product.model_number,
+            'slug': str(product.pk),
+            'created_by': self.request.user.username,
+        })
+
     def perform_update(self, serializer):
         # Save the update (permission already checked by IsOwnerOrReadOnly)
         instance = serializer.save()
@@ -659,6 +669,16 @@ class ProductViewSet(viewsets.ModelViewSet):
             # Check for new badges
             from apps.users.badges import check_and_award_badges
             check_and_award_badges(request.user)
+
+            # Webhook notification
+            from apps.webhooks.tasks import dispatch_webhook_event
+            dispatch_webhook_event.delay('schematic.uploaded', {
+                'title': schematic.title,
+                'product_name': str(product),
+                'product_slug': str(product.pk),
+                'schematic_type': schematic.get_schematic_type_display(),
+                'uploaded_by': request.user.username,
+            })
 
             return Response(
                 SchematicSerializer(schematic, context={'request': request}).data,

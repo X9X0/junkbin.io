@@ -16,6 +16,9 @@ from apps.api.admin_views import system_status, system_status_json
 from apps.users.admin_views import user_contributions, user_contributions_action
 
 urlpatterns = [
+    # Prometheus metrics
+    path('', include('django_prometheus.urls')),
+
     # Admin system status dashboard (must be before admin.site.urls)
     path(settings.ADMIN_URL + 'system-status/', system_status, name='admin-system-status'),
     path(settings.ADMIN_URL + 'system-status/json/', system_status_json, name='admin-system-status-json'),

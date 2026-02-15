@@ -26,6 +26,8 @@ import type {
   JunkbinCheckResponse,
   Recipe,
   RecipeMatchDetail,
+  NexarData,
+  AnalyticsDashboardData,
 } from '../types';
 
 // Auth endpoints
@@ -243,6 +245,11 @@ export const components = {
   crossReference: async (id: string): Promise<Product[]> => {
     const response = await api.get(`/components/${id}/products/`);
     return response.data.results || response.data;
+  },
+
+  lookup: async (id: string): Promise<NexarData> => {
+    const response = await api.post(`/components/${id}/lookup/`);
+    return response.data;
   },
 };
 
@@ -533,6 +540,14 @@ export const recipes = {
 
   categories: async (): Promise<Array<{ value: string; label: string; count: number }>> => {
     const response = await api.get('/recipes/categories/');
+    return response.data;
+  },
+};
+
+// Analytics endpoints (staff-only)
+export const analytics = {
+  dashboard: async (days: number = 30): Promise<AnalyticsDashboardData> => {
+    const response = await api.get('/analytics/', { params: { days } });
     return response.data;
   },
 };

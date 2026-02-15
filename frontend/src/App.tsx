@@ -16,6 +16,7 @@ import PasswordReset from './pages/PasswordReset';
 import PasswordResetConfirm from './pages/PasswordResetConfirm';
 import VerifyEmail from './pages/VerifyEmail';
 import Moderation from './pages/Moderation';
+import AnalyticsDashboard from './pages/AnalyticsDashboard';
 import Leaderboard from './pages/Leaderboard';
 import Messages from './pages/Messages';
 import MessageThread from './pages/MessageThread';
@@ -71,6 +72,7 @@ function App() {
                 <Route path="my-junkbin" element={<MyJunkbin />} />
                 <Route path="guidelines" element={<Guidelines />} />
                 <Route path="moderation" element={<Moderation />} />
+                <Route path="analytics" element={<AnalyticsDashboard />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />

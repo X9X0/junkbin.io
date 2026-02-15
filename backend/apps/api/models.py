@@ -123,3 +123,31 @@ class NotificationLog(models.Model):
 
     def __str__(self):
         return f'[{self.get_category_display()}] {self.subject}'
+
+
+class SearchQuery(models.Model):
+    """Track search queries for analytics."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    query = models.CharField(max_length=500, db_index=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+    )
+    result_count = models.IntegerField(default=0)
+    search_type = models.CharField(max_length=20, default='all')
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Search Query'
+        verbose_name_plural = 'Search Queries'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['query', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'"{self.query}" ({self.result_count} results)'

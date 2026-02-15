@@ -115,6 +115,21 @@ def check_and_award_badges(user):
         user.badges = user.badges + new_badges
         user.save(update_fields=['badges'])
 
+        # Webhook notification
+        try:
+            from apps.webhooks.tasks import dispatch_webhook_event
+            badge_names = [
+                BADGE_REGISTRY[b['slug']]['name']
+                for b in new_badges
+                if b['slug'] in BADGE_REGISTRY
+            ]
+            dispatch_webhook_event.delay('user.badge_earned', {
+                'username': user.username,
+                'badge_names': badge_names,
+            })
+        except Exception:
+            logger.exception('Failed to dispatch badge webhook for user %s', user.pk)
+
     return new_badges
 
 

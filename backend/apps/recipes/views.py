@@ -133,6 +133,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
         from apps.users.badges import check_and_award_badges
         check_and_award_badges(self.request.user)
 
+        # Webhook notification
+        from apps.webhooks.tasks import dispatch_webhook_event
+        dispatch_webhook_event.delay('recipe.created', {
+            'name': recipe.name,
+            'slug': recipe.slug,
+            'difficulty': recipe.get_difficulty_display(),
+            'category': recipe.get_category_display(),
+            'created_by': self.request.user.username,
+        })
+
     def perform_update(self, serializer):
         instance = serializer.save()
         if not self.request.user.is_staff and not self.request.user.is_moderator:

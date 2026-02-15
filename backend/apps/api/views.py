@@ -13,6 +13,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .throttling import SearchRateThrottle
+from .metrics import search_counter, search_latency
 
 from utils.cache import staff_key_prefix
 
@@ -201,9 +202,123 @@ class SearchView(APIView):
                 'results': UserSerializer(user_results, many=True).data,
             }
 
+        # Log search query for analytics
+        total_count = sum(
+            r.get('count', 0) for r in results.values()
+        )
+        try:
+            from .models import SearchQuery as SearchQueryLog
+            SearchQueryLog.objects.create(
+                query=query,
+                user=request.user if request.user.is_authenticated else None,
+                result_count=total_count,
+                search_type=search_type,
+                ip_address=request.META.get('REMOTE_ADDR'),
+            )
+        except Exception:
+            pass  # Don't let logging failures break search
+        search_counter.labels(has_results=str(total_count > 0)).inc()
+
         return Response({
             'query': query,
             'results': results
+        })
+
+
+class AnalyticsView(APIView):
+    """
+    Staff-only analytics dashboard endpoint.
+    Returns aggregated metrics for the admin analytics page.
+    """
+
+    permission_classes = [permissions.IsAdminUser]
+
+    @extend_schema(
+        description='Get analytics dashboard data (staff only)',
+        parameters=[
+            OpenApiParameter(
+                name='days',
+                description='Number of days to look back',
+                required=False,
+                type=int,
+            ),
+        ],
+        responses={200: dict},
+    )
+    def get(self, request):
+        from datetime import timedelta
+        from django.utils import timezone
+        from django.db.models import Count, Q
+        from django.db.models.functions import TruncDate
+        from apps.users.models import UserActivity
+        from apps.products.models import Product, Schematic
+        from apps.components.models import Component, ComponentViewStats
+        from apps.recipes.models import Recipe
+        from .models import SearchQuery as SearchQueryLog
+
+        days = int(request.query_params.get('days', 30))
+        since = timezone.now() - timedelta(days=days)
+
+        # Daily active users
+        dau = list(
+            UserActivity.objects.filter(created_at__gte=since)
+            .annotate(date=TruncDate('created_at'))
+            .values('date')
+            .annotate(count=Count('user', distinct=True))
+            .order_by('date')
+        )
+        for item in dau:
+            item['date'] = item['date'].isoformat()
+
+        # Search analytics
+        total_searches = SearchQueryLog.objects.filter(created_at__gte=since).count()
+        zero_result = SearchQueryLog.objects.filter(
+            created_at__gte=since, result_count=0,
+        ).count()
+        top_queries = list(
+            SearchQueryLog.objects.filter(created_at__gte=since)
+            .values('query')
+            .annotate(count=Count('id'))
+            .order_by('-count')[:20]
+        )
+
+        # Trending components
+        from django.db.models import Sum as DjSum
+        trending = list(
+            ComponentViewStats.objects.filter(date__gte=since.date())
+            .values('component_id', 'component__part_number', 'component__manufacturer')
+            .annotate(total_views=DjSum('view_count'))
+            .order_by('-total_views')[:10]
+        )
+
+        # Content stats
+        content_stats = {
+            'products': Product.objects.filter(is_approved=True).count(),
+            'components': Component.objects.count(),
+            'schematics': Schematic.objects.filter(is_approved=True).count(),
+            'recipes': Recipe.objects.filter(is_approved=True).count(),
+        }
+
+        # Activity breakdown by type
+        activity_breakdown = list(
+            UserActivity.objects.filter(created_at__gte=since)
+            .values('activity_type')
+            .annotate(count=Count('id'))
+            .order_by('-count')
+        )
+
+        return Response({
+            'dau': dau,
+            'search_analytics': {
+                'total': total_searches,
+                'zero_result_pct': round(
+                    (zero_result / total_searches * 100) if total_searches > 0 else 0, 1
+                ),
+                'top_queries': top_queries,
+            },
+            'trending_components': trending,
+            'content_stats': content_stats,
+            'activity_breakdown': activity_breakdown,
         })
 
 

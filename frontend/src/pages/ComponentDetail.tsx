@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
+import PricingPanel from '../components/PricingPanel';
 import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive } from 'lucide-react';
 
 export default function ComponentDetail() {
@@ -124,6 +125,15 @@ export default function ComponentDetail() {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Pricing & Availability */}
+        <div className="mb-8">
+          <PricingPanel
+            componentId={id!}
+            pricingData={component.pricing_data}
+            datasheetUrl={component.datasheet_url}
+          />
         </div>
 
         {/* Products containing this component */}

@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -116,13 +116,22 @@ export default function Header() {
               RANKS
             </Link>
             {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
-              <Link
-                to="/moderation"
-                className="font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
-              >
-                <Shield className="h-3.5 w-3.5" />
-                MOD
-              </Link>
+              <>
+                <Link
+                  to="/moderation"
+                  className="font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  MOD
+                </Link>
+                <Link
+                  to="/analytics"
+                  className="font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  ANALYTICS
+                </Link>
+              </>
             )}
           </nav>
 
@@ -404,14 +413,24 @@ export default function Header() {
               </Link>
             )}
             {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
-              <Link
-                to="/moderation"
-                className="py-2 font-mono text-sm text-cyber-yellow flex items-center gap-1"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                MODERATION
-              </Link>
+              <>
+                <Link
+                  to="/moderation"
+                  className="py-2 font-mono text-sm text-cyber-yellow flex items-center gap-1"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  MODERATION
+                </Link>
+                <Link
+                  to="/analytics"
+                  className="py-2 font-mono text-sm text-cyber-yellow flex items-center gap-1"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  ANALYTICS
+                </Link>
+              </>
             )}
             <div className="border-t border-cyber-light/30 pt-4 mt-2">
               {isAuthenticated ? (

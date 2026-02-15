@@ -72,6 +72,17 @@ class ReportViewSet(viewsets.ModelViewSet):
             return [ReportRateThrottle()]
         return super().get_throttles()
 
+    def perform_create(self, serializer):
+        report = serializer.save()
+
+        # Webhook notification
+        from apps.webhooks.tasks import dispatch_webhook_event
+        dispatch_webhook_event.delay('report.filed', {
+            'reason': report.get_reason_display(),
+            'content_type': report.content_type.model,
+            'reporter': report.reporter.username if report.reporter else 'Anonymous',
+        })
+
     @action(detail=True, methods=['post'])
     def resolve(self, request, pk=None):
         """Resolve a report."""
