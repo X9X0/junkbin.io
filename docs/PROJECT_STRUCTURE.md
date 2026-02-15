@@ -38,7 +38,7 @@ junkbin.io/
 │   │   │
 │   │   ├── users/                     # User management
 │   │   │   ├── models.py              # Custom User model (UUID PK, reputation, trust levels, messaging_blocked)
-│   │   │   ├── views.py               # Authentication views
+│   │   │   ├── views.py               # Authentication views (incl. GoogleAuthView)
 │   │   │   ├── serializers.py         # API serializers
 │   │   │   ├── urls.py                # User-specific routes
 │   │   │   ├── admin.py               # Admin config (trust/moderator/messaging block actions)
@@ -203,6 +203,7 @@ junkbin.io/
 │       │   │
 │       │   ├── AddToJunkbinModal.tsx  # Modal for adding items to personal junkbin
 │       │   ├── AddComponentForm.tsx   # Link components to products
+│       │   ├── GoogleLoginButton.tsx # Google OAuth sign-in button (GSI)
 │       │   ├── BackToTop.tsx          # Floating scroll button
 │       │   ├── BatchAddComponents.tsx # Bulk component linking
 │       │   ├── BomImport.tsx          # BOM CSV file import
@@ -251,7 +252,8 @@ junkbin.io/
 │       │   └── useUnreadCount.ts      # Adaptive polling for unread messages
 │       │
 │       ├── types/                     # TypeScript interfaces
-│       │   └── index.ts              # All shared types (Product, Component, Message, etc.)
+│       │   ├── index.ts              # All shared types (Product, Component, Message, etc.)
+│       │   └── google.d.ts           # Google Identity Services type declarations
 │       │
 │       ├── test/                      # Test infrastructure
 │       │   ├── setup.ts
@@ -322,8 +324,9 @@ See `.env.example` for required environment variables including:
 - `REDIS_URL` - Redis connection string
 - `ALLOWED_HOSTS` - Allowed domain names
 - `EMAIL_HOST` / `EMAIL_PORT` - SMTP configuration
-- `OAUTH_GOOGLE_CLIENT_ID` / `OAUTH_GOOGLE_CLIENT_SECRET` - OAuth credentials
+- `OAUTH_GOOGLE_CLIENT_ID` / `OAUTH_GOOGLE_CLIENT_SECRET` - Google OAuth credentials (backend)
+- `VITE_GOOGLE_CLIENT_ID` - Google OAuth client ID (frontend, public)
 
 ---
 
-**Last Updated**: February 14, 2026
+**Last Updated**: February 15, 2026

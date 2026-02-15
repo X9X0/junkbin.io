@@ -266,6 +266,9 @@ ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/api/auth/login/'
 
+# Google OAuth Client ID (used by GoogleAuthView for ID token verification)
+OAUTH_GOOGLE_CLIENT_ID = env('OAUTH_GOOGLE_CLIENT_ID', default='')
+
 # Social Account Providers
 SOCIALACCOUNT_PROVIDERS = {
     'google': {

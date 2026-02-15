@@ -230,7 +230,7 @@ UNIQUE(user, content_type, object_id, item_type)
 #### Week 2-3: Authentication & User Management
 - ✅ Implement email/password registration
 - ✅ Email verification workflow
-- ✅ Google OAuth integration (django-allauth configured)
+- ✅ Google OAuth integration — Google Identity Services popup on frontend, backend ID token verification via `google-auth`, auto-creates or links accounts, issues JWT cookies (Feb 15, 2026)
 - ✅ Basic user profile pages
 - ✅ Password reset functionality
 - ✅ Session management (JWT with refresh tokens)
@@ -485,7 +485,7 @@ The `junkbin-deploy.sh` script will handle:
 - `POST /api/auth/logout` - User logout
 - `POST /api/auth/verify-email` - Email verification
 - `POST /api/auth/reset-password` - Password reset
-- `GET /api/auth/oauth/google` - Google OAuth
+- `POST /api/auth/google/` - Google OAuth (ID token verification, account creation/linking)
 
 ### Products
 - `GET /api/products` - List products (paginated, filterable)
@@ -744,6 +744,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: February 14, 2026
-**Version**: 1.9
+**Last Updated**: February 15, 2026
+**Version**: 2.0
 **Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Deployed & E2E Tested

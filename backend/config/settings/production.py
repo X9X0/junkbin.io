@@ -46,12 +46,12 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = 'same-origin'
 CONTENT_SECURITY_POLICY = {
     "DIRECTIVES": {
         "default-src": ["'self'"],
-        "script-src": ["'self'"],
-        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        "script-src": ["'self'", "https://accounts.google.com/gsi/client"],
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://accounts.google.com/gsi/style"],
         "font-src": ["'self'", "https://fonts.gstatic.com"],
         "img-src": ["'self'", "data:", "https:"],
-        "connect-src": ["'self'"],
-        "frame-src": ["'none'"],
+        "connect-src": ["'self'", "https://accounts.google.com"],
+        "frame-src": ["https://accounts.google.com"],
         "object-src": ["'none'"],
         "base-uri": ["'self'"],
         "form-action": ["'self'"],

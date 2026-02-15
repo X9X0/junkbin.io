@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import { LogIn, AlertCircle } from 'lucide-react';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -95,6 +96,33 @@ export default function Login() {
               )}
             </button>
           </form>
+
+          {/* OR divider + Google login */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-cyber-dark px-4 text-sm font-mono text-gray-500">OR</span>
+            </div>
+          </div>
+
+          <GoogleLoginButton
+            text="signin_with"
+            onSuccess={async (credential) => {
+              setError('');
+              setIsLoading(true);
+              try {
+                await googleLogin(credential);
+                navigate('/');
+              } catch (err: any) {
+                setError(err.response?.data?.error || 'Google sign-in failed');
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            onError={(msg) => setError(msg)}
+          />
 
           <div className="divider-circuit" />
 

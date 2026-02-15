@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import GoogleLoginButton from '../components/GoogleLoginButton';
 import { UserPlus, AlertCircle, Check } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
 
 export default function Register() {
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -54,6 +55,33 @@ export default function Register() {
         </div>
 
         <div className="card-cyber p-8">
+          {/* Quick signup via Google */}
+          <GoogleLoginButton
+            text="signup_with"
+            onSuccess={async (credential) => {
+              setError('');
+              setIsLoading(true);
+              try {
+                await googleLogin(credential);
+                navigate('/');
+              } catch (err: any) {
+                setError(err.response?.data?.error || 'Google sign-up failed');
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            onError={(msg) => setError(msg)}
+          />
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-700" />
+            </div>
+            <div className="relative flex justify-center">
+              <span className="bg-cyber-dark px-4 text-sm font-mono text-gray-500">OR</span>
+            </div>
+          </div>
+
           {error && (
             <div className="flex items-center gap-2 p-4 mb-6 bg-cyber-pink/10 border border-cyber-pink/30 text-cyber-pink">
               <AlertCircle className="h-5 w-5 flex-shrink-0" />
