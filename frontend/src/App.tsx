@@ -24,6 +24,7 @@ import NewConversation from './pages/NewConversation';
 import UserProfile from './pages/UserProfile';
 import Guidelines from './pages/Guidelines';
 import MyJunkbin from './pages/MyJunkbin';
+import MySubmissions from './pages/MySubmissions';
 import Recipes from './pages/Recipes';
 import RecipeDetail from './pages/RecipeDetail';
 import SubmitRecipe from './pages/SubmitRecipe';
@@ -70,6 +71,7 @@ function App() {
                 <Route path="recipes" element={<Recipes />} />
                 <Route path="buildable" element={<Buildable />} />
                 <Route path="my-junkbin" element={<MyJunkbin />} />
+                <Route path="my-submissions" element={<MySubmissions />} />
                 <Route path="guidelines" element={<Guidelines />} />
                 <Route path="moderation" element={<Moderation />} />
                 <Route path="analytics" element={<AnalyticsDashboard />} />
