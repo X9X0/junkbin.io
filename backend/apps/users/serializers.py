@@ -12,24 +12,30 @@ class UserSerializer(serializers.ModelSerializer):
     """Public user profile serializer."""
 
     display_name = serializers.CharField(read_only=True)
+    badges = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
             'id', 'username', 'display_name', 'bio', 'avatar',
             'location', 'website', 'reputation_score',
-            'contribution_count', 'is_trusted', 'created_at'
+            'contribution_count', 'is_trusted', 'created_at', 'badges'
         ]
         read_only_fields = [
             'id', 'reputation_score', 'contribution_count',
             'is_trusted', 'created_at'
         ]
 
+    def get_badges(self, obj):
+        from apps.users.badges import get_user_badges_display
+        return get_user_badges_display(obj)
+
 
 class UserDetailSerializer(serializers.ModelSerializer):
     """Detailed user serializer for profile owner."""
 
     display_name = serializers.CharField(read_only=True)
+    badges = serializers.SerializerMethodField()
 
     class Meta:
         model = User
@@ -39,13 +45,17 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'reputation_score', 'contribution_count', 'report_count',
             'is_trusted', 'is_moderator', 'email_verified',
             'oauth_provider', 'preferences', 'created_at', 'updated_at',
-            'last_contribution_at'
+            'last_contribution_at', 'badges'
         ]
         read_only_fields = [
             'id', 'email', 'reputation_score', 'contribution_count',
             'report_count', 'is_trusted', 'is_moderator', 'email_verified',
             'oauth_provider', 'created_at', 'updated_at', 'last_contribution_at'
         ]
+
+    def get_badges(self, obj):
+        from apps.users.badges import get_user_badges_display
+        return get_user_badges_display(obj)
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

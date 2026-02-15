@@ -88,6 +88,7 @@ Other users can search this database to find which consumer products contain spe
 - report_count (times user's content was reported)
 - review_count (times user's content triggered review)
 - is_trusted (boolean, earned status)
+- badges (JSONField, list of {slug, awarded_at})
 - created_at
 - last_login
 ```
@@ -275,7 +276,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Report review workflow (frontend moderation dashboard at /moderation)
 - ✅ 3-strike automatic review trigger
 - ✅ User reputation system (contribution_count, is_trusted)
-- ⬜ Badge/achievement system
+- ✅ Badge/achievement system — 9 data-driven badges (First Contribution, Prolific/Master Contributor, Trusted, Moderator, Early Adopter, Schematic Uploader, Salvager, Recipe Master) with JSONField storage, auto-award on trigger points, backfill command, displayed on Profile, UserProfile, and Leaderboard (Feb 15, 2026)
 - ✅ Trusted user status
 
 #### Week 10-11: Data Import/Export
@@ -351,7 +352,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ "My Junkbin" management page — tabbed have/want view, inline edit, filters by type/status/condition, add/remove items (Feb 14, 2026)
 - ✅ "Add to Junkbin" modal — accessible from ProductDetail and ComponentDetail pages, checks for existing entries, supports have/want (Feb 14, 2026)
 - ✅ Public junkbin browsing — view another user's public collection on their profile page (Feb 14, 2026)
-- ⬜ "Contact Owner" button — one-click message to item owner with item context pre-filled (requires user-to-user messaging)
+- ✅ "Contact Owner" button — one-click message to item owner with item context pre-filled, navigates to new conversation with ?about= param for auto-prefilled message (Feb 15, 2026)
 - ✅ Want list notifications — Celery task matches new public "available" items against other users' want lists, sends email alerts respecting `notify_junkbin` preference (Feb 14, 2026)
 - ✅ Junkbin profile widget — summary card on user profiles showing collection size and available-for-trade count (Feb 14, 2026)
 

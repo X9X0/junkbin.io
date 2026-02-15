@@ -103,6 +103,9 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
         ):
             from .tasks import match_want_lists
             match_want_lists.delay(str(instance.id))
+        # Check for new badges
+        from apps.users.badges import check_and_award_badges
+        check_and_award_badges(self.request.user)
 
     def perform_update(self, serializer):
         instance = serializer.save()

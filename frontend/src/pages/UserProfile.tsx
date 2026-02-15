@@ -1,7 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { users, junkbin } from '../api/endpoints';
+import { BadgeGrid } from '../components/BadgeDisplay';
 import {
   User as UserIcon,
   Shield,
@@ -21,6 +22,7 @@ import {
 
 export default function UserProfile() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { user: currentUser, isAuthenticated } = useAuth();
 
   const { data: profileUser, isLoading, error } = useQuery({
@@ -212,6 +214,14 @@ export default function UserProfile() {
           </div>
         )}
 
+        {/* Badges/Achievements */}
+        {profileUser.badges && profileUser.badges.length > 0 && (
+          <div className="mb-8 p-4 border border-cyber-light/20 bg-cyber-dark/50">
+            <h3 className="font-mono text-sm text-gray-500 mb-3">ACHIEVEMENTS</h3>
+            <BadgeGrid badges={profileUser.badges} size="md" />
+          </div>
+        )}
+
         {/* Junkbin Widget */}
         {(junkbinSummary?.have_count ?? 0) > 0 && (
           <div className="mb-8">
@@ -263,6 +273,19 @@ export default function UserProfile() {
                       <div className="text-xs text-gray-500 truncate">
                         {item.item_manufacturer}
                       </div>
+                      {isAuthenticated && !isSelf && item.status === 'available' && (
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigate(`/messages/new?to=${profileUser.id}&about=${encodeURIComponent(item.item_name)}`);
+                          }}
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 text-[10px] font-mono py-1.5 border border-cyber-cyan/30 text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
+                        >
+                          <MessageSquare className="h-3 w-3" />
+                          CONTACT OWNER
+                        </button>
+                      )}
                     </Link>
                   );
                 })}

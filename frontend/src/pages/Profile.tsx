@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { auth } from '../api/endpoints';
 import api from '../api/client';
 import type { UserPreferences } from '../types';
+import { BadgeGrid } from '../components/BadgeDisplay';
 import {
   User,
   Shield,
@@ -386,31 +387,14 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* Badges/Achievements placeholder */}
+        {/* Badges/Achievements */}
         <div className="mt-8 p-4 border border-cyber-light/20 bg-cyber-dark/50">
-          <h3 className="font-mono text-sm text-gray-500 mb-2">ACHIEVEMENTS</h3>
-          <div className="flex flex-wrap gap-2">
-            {user.contribution_count >= 1 && (
-              <span className="px-3 py-1 text-xs font-mono bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30">
-                FIRST CONTRIBUTION
-              </span>
-            )}
-            {user.contribution_count >= 10 && (
-              <span className="px-3 py-1 text-xs font-mono bg-cyber-pink/10 text-cyber-pink border border-cyber-pink/30">
-                10 CONTRIBUTIONS
-              </span>
-            )}
-            {user.is_trusted && (
-              <span className="px-3 py-1 text-xs font-mono bg-cyber-green/10 text-cyber-green border border-cyber-green/30">
-                TRUSTED CONTRIBUTOR
-              </span>
-            )}
-            {user.contribution_count < 1 && (
-              <span className="text-xs text-gray-600">
-                Start contributing to earn achievements!
-              </span>
-            )}
-          </div>
+          <h3 className="font-mono text-sm text-gray-500 mb-3">ACHIEVEMENTS</h3>
+          <BadgeGrid
+            badges={user.badges || []}
+            size="md"
+            emptyMessage="Start contributing to earn achievements!"
+          />
         </div>
       </div>
     </div>

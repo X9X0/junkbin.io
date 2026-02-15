@@ -656,6 +656,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                 schematic.is_approved = True
                 schematic.save(update_fields=['is_approved'])
 
+            # Check for new badges
+            from apps.users.badges import check_and_award_badges
+            check_and_award_badges(request.user)
+
             return Response(
                 SchematicSerializer(schematic, context={'request': request}).data,
                 status=status.HTTP_201_CREATED
