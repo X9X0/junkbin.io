@@ -98,9 +98,9 @@ class NexarClient:
             raise RuntimeError("Nexar API credentials not configured")
 
         token = self._get_token()
+        # Search by MPN only — prefixing with manufacturer name
+        # causes Nexar's supSearchMpn to return zero results.
         query_str = part_number
-        if manufacturer:
-            query_str = f"{manufacturer} {part_number}"
 
         resp = requests.post(
             self.GRAPHQL_URL,
