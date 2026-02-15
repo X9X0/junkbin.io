@@ -25,7 +25,7 @@ from .matching import (
     get_buildable_recipes,
     get_missing_part_availability,
 )
-from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
+from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
 from apps.api.throttling import SubmissionRateThrottle
 
 
@@ -70,6 +70,8 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         elif self.action in ['buildable', 'match']:
             return [permissions.IsAuthenticated()]
+        elif self.action in ['approve', 'reject']:
+            return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
     def get_throttles(self):
@@ -263,3 +265,22 @@ class RecipeViewSet(viewsets.ModelViewSet):
         ]
 
         return Response(result)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a pending recipe (staff/moderator only)."""
+        recipe = self.get_object()
+        if recipe.is_approved:
+            return Response({'detail': 'Recipe is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        recipe.is_approved = True
+        recipe.save(update_fields=['is_approved'])
+        return Response({'detail': 'Recipe approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a pending recipe (staff/moderator only)."""
+        recipe = self.get_object()
+        if recipe.is_approved:
+            return Response({'detail': 'Cannot reject an already-approved recipe.'}, status=status.HTTP_400_BAD_REQUEST)
+        recipe.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

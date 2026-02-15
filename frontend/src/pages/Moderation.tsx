@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { reports, reviews } from '../api/endpoints';
-import type { Report, UserReview } from '../types';
+import { reports, reviews, products, schematics, recipes } from '../api/endpoints';
+import type { Report, UserReview, Product, Schematic, Recipe } from '../types';
 import Pagination from '../components/Pagination';
 import ResolveReportModal from '../components/moderation/ResolveReportModal';
 import UserReviewPanel from '../components/moderation/UserReviewPanel';
@@ -118,6 +118,18 @@ export default function Moderation() {
             <Users className="h-4 w-4" />
             USER REVIEWS
           </button>
+          <button
+            onClick={() => updateFilter('tab', 'pending')}
+            className={clsx(
+              'px-4 py-3 font-mono text-sm border-b-2 transition-colors flex items-center gap-2',
+              tab === 'pending'
+                ? 'border-cyber-yellow text-cyber-yellow'
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            )}
+          >
+            <Package className="h-4 w-4" />
+            PENDING CONTENT
+          </button>
         </div>
 
         {tab === 'reports' ? (
@@ -129,7 +141,7 @@ export default function Moderation() {
             goToPage={goToPage}
             onReview={setSelectedReport}
           />
-        ) : (
+        ) : tab === 'reviews' ? (
           <ReviewsTab
             status={status}
             page={page}
@@ -137,7 +149,9 @@ export default function Moderation() {
             goToPage={goToPage}
             onReview={setSelectedReviewId}
           />
-        )}
+        ) : tab === 'pending' ? (
+          <PendingContentTab />
+        ) : null}
       </div>
 
       {/* Modals */}
@@ -418,6 +432,245 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
           <Shield className="h-16 w-16 text-cyber-green/30 mx-auto mb-4" />
           <h3 className="font-display text-xl text-white mb-2">NO REVIEWS</h3>
           <p className="text-gray-500">No user reviews match the current filters.</p>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Pending Content Tab                                                */
+/* ------------------------------------------------------------------ */
+
+type ContentFilter = 'all' | 'products' | 'schematics' | 'recipes';
+
+type PendingItem =
+  | { type: 'product'; data: Product }
+  | { type: 'schematic'; data: Schematic }
+  | { type: 'recipe'; data: Recipe };
+
+const typeBadgeColors: Record<string, string> = {
+  product: 'border-cyber-cyan/50 text-cyber-cyan',
+  schematic: 'border-cyber-yellow/50 text-cyber-yellow',
+  recipe: 'border-cyber-green/50 text-cyber-green',
+};
+
+const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
+  product: Package,
+  schematic: FileText,
+  recipe: Wrench,
+};
+
+function PendingContentTab() {
+  const queryClient = useQueryClient();
+  const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
+
+  const { data: counts } = useQuery({
+    queryKey: ['pendingCounts'],
+    queryFn: products.pendingCounts,
+  });
+
+  const { data: pendingProducts, isLoading: loadingProducts } = useQuery({
+    queryKey: ['pendingProducts'],
+    queryFn: () => products.list({ is_approved: 'false' as any, page_size: 100 }),
+    enabled: contentFilter === 'all' || contentFilter === 'products',
+  });
+
+  const { data: pendingSchematics, isLoading: loadingSchematics } = useQuery({
+    queryKey: ['pendingSchematics'],
+    queryFn: () => schematics.list({ is_approved: 'false', page_size: 100 }),
+    enabled: contentFilter === 'all' || contentFilter === 'schematics',
+  });
+
+  const { data: pendingRecipes, isLoading: loadingRecipes } = useQuery({
+    queryKey: ['pendingRecipes'],
+    queryFn: () => recipes.list({ is_approved: 'false', page_size: 100 }),
+    enabled: contentFilter === 'all' || contentFilter === 'recipes',
+  });
+
+  const invalidateAll = () => {
+    queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingProducts'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingSchematics'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingRecipes'] });
+  };
+
+  const approveProduct = useMutation({
+    mutationFn: (id: string) => products.approve(id),
+    onSuccess: invalidateAll,
+  });
+  const rejectProduct = useMutation({
+    mutationFn: (id: string) => products.reject(id),
+    onSuccess: invalidateAll,
+  });
+  const approveSchematic = useMutation({
+    mutationFn: (id: string) => schematics.approve(id),
+    onSuccess: invalidateAll,
+  });
+  const rejectSchematic = useMutation({
+    mutationFn: (id: string) => schematics.reject(id),
+    onSuccess: invalidateAll,
+  });
+  const approveRecipe = useMutation({
+    mutationFn: (id: string) => recipes.approve(id),
+    onSuccess: invalidateAll,
+  });
+  const rejectRecipe = useMutation({
+    mutationFn: (id: string) => recipes.reject(id),
+    onSuccess: invalidateAll,
+  });
+
+  // Merge items into a unified list
+  const items: PendingItem[] = [];
+  if (contentFilter === 'all' || contentFilter === 'products') {
+    (pendingProducts?.results || []).forEach((p) => items.push({ type: 'product', data: p }));
+  }
+  if (contentFilter === 'all' || contentFilter === 'schematics') {
+    (pendingSchematics?.results || []).forEach((s) => items.push({ type: 'schematic', data: s }));
+  }
+  if (contentFilter === 'all' || contentFilter === 'recipes') {
+    (pendingRecipes?.results || []).forEach((r) => items.push({ type: 'recipe', data: r }));
+  }
+
+  // Sort by date descending
+  items.sort((a, b) => {
+    const dateA = 'created_at' in a.data ? a.data.created_at : (a.data as Schematic).uploaded_at;
+    const dateB = 'created_at' in b.data ? b.data.created_at : (b.data as Schematic).uploaded_at;
+    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  });
+
+  const isLoading = loadingProducts || loadingSchematics || loadingRecipes;
+
+  const getItemTitle = (item: PendingItem): string => {
+    if (item.type === 'product') return `${item.data.manufacturer} ${item.data.model_number}`;
+    if (item.type === 'schematic') return (item.data as Schematic).title;
+    return (item.data as Recipe).name;
+  };
+
+  const getItemUser = (item: PendingItem): string => {
+    if (item.type === 'schematic') return (item.data as Schematic).uploaded_by?.username || 'Unknown';
+    return (item.data as Product | Recipe).created_by?.username || 'Unknown';
+  };
+
+  const getItemDate = (item: PendingItem): string => {
+    if (item.type === 'schematic') return (item.data as Schematic).uploaded_at;
+    return (item.data as Product | Recipe).created_at;
+  };
+
+  const handleApprove = (item: PendingItem) => {
+    if (item.type === 'product') approveProduct.mutate(item.data.id);
+    else if (item.type === 'schematic') approveSchematic.mutate(item.data.id);
+    else approveRecipe.mutate(item.data.id);
+  };
+
+  const handleReject = (item: PendingItem) => {
+    if (item.type === 'product') rejectProduct.mutate(item.data.id);
+    else if (item.type === 'schematic') rejectSchematic.mutate(item.data.id);
+    else rejectRecipe.mutate(item.data.id);
+  };
+
+  const isMutating = approveProduct.isPending || rejectProduct.isPending
+    || approveSchematic.isPending || rejectSchematic.isPending
+    || approveRecipe.isPending || rejectRecipe.isPending;
+
+  return (
+    <>
+      {/* Stat cards */}
+      {counts && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+          <StatCard label="PRODUCTS" value={counts.products} color="text-cyber-cyan" icon={Package} />
+          <StatCard label="SCHEMATICS" value={counts.schematics} color="text-cyber-yellow" icon={FileText} />
+          <StatCard label="RECIPES" value={counts.recipes} color="text-cyber-green" icon={Wrench} />
+        </div>
+      )}
+
+      {/* Sub-filter */}
+      <div className="card-cyber p-4 mb-6">
+        <div className="flex gap-2 flex-wrap">
+          {(['all', 'products', 'schematics', 'recipes'] as ContentFilter[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setContentFilter(f)}
+              className={clsx(
+                'px-3 py-1.5 font-mono text-xs border transition-colors',
+                contentFilter === f
+                  ? 'border-cyber-yellow text-cyber-yellow bg-cyber-yellow/10'
+                  : 'border-cyber-light/30 text-gray-500 hover:text-gray-300'
+              )}
+            >
+              {f.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Results */}
+      {isLoading ? (
+        <div className="text-center py-12 text-gray-500">Loading pending content...</div>
+      ) : items.length > 0 ? (
+        <>
+          <div className="text-sm text-gray-500 font-mono mb-4">{items.length} pending items</div>
+
+          <div className="overflow-x-auto card-cyber">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-cyber-light/30">
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">TYPE</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">TITLE</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden md:table-cell">SUBMITTED BY</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden lg:table-cell">DATE</th>
+                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const TypeIcon = typeIcons[item.type];
+                  return (
+                    <tr key={`${item.type}-${item.data.id}`} className="border-b border-cyber-light/10 hover:bg-cyber-light/5 transition-colors">
+                      <td className="px-4 py-3">
+                        <span className={clsx(
+                          'px-2 py-0.5 text-xs font-mono border inline-flex items-center gap-1',
+                          typeBadgeColors[item.type]
+                        )}>
+                          <TypeIcon className="h-3 w-3" />
+                          {item.type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-white">{getItemTitle(item)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">{getItemUser(item)}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden lg:table-cell">{formatDate(getItemDate(item))}</td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            onClick={() => handleApprove(item)}
+                            disabled={isMutating}
+                            className="text-cyber-green hover:text-white text-sm font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
+                          >
+                            <Check className="h-4 w-4" />
+                            APPROVE
+                          </button>
+                          <button
+                            onClick={() => handleReject(item)}
+                            disabled={isMutating}
+                            className="text-cyber-pink hover:text-white text-sm font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
+                          >
+                            <X className="h-4 w-4" />
+                            REJECT
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <div className="text-center py-20">
+          <CheckCircle className="h-16 w-16 text-cyber-green/30 mx-auto mb-4" />
+          <h3 className="font-display text-xl text-white mb-2">ALL CLEAR</h3>
+          <p className="text-gray-500">No pending content to review.</p>
         </div>
       )}
     </>

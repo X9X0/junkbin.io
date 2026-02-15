@@ -172,6 +172,20 @@ export const products = {
     return response.data;
   },
 
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/products/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/products/${id}/reject/`);
+  },
+
+  pendingCounts: async (): Promise<{ products: number; schematics: number; recipes: number }> => {
+    const response = await api.get('/products/pending_counts/');
+    return response.data;
+  },
+
   exportData: async (id: string): Promise<any> => {
     // Get product with all related data for export
     const [product, components, schematics] = await Promise.all([
@@ -286,6 +300,15 @@ export const schematics = {
   recent: async (): Promise<Schematic[]> => {
     const response = await api.get('/schematics/recent/');
     return response.data;
+  },
+
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/schematics/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/schematics/${id}/reject/`);
   },
 };
 
@@ -541,6 +564,15 @@ export const recipes = {
   categories: async (): Promise<Array<{ value: string; label: string; count: number }>> => {
     const response = await api.get('/recipes/categories/');
     return response.data;
+  },
+
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/recipes/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/recipes/${id}/reject/`);
   },
 };
 
