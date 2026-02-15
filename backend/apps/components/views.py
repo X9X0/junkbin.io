@@ -1,9 +1,13 @@
 """
 Component views for Junkbin.io API
 """
+from datetime import timedelta
+
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db.models import Sum, F
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django_filters.rest_framework import DjangoFilterBackend
@@ -11,8 +15,9 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
+from apps.api.metrics import component_view_counter
 
-from .models import Component, ProductComponent, ComponentVote
+from .models import Component, ComponentViewStats, ProductComponent, ComponentVote
 from .serializers import (
     ComponentListSerializer,
     ComponentDetailSerializer,
@@ -25,6 +30,7 @@ from .serializers import (
 )
 from .filters import ComponentFilter, ProductComponentFilter
 from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
+from apps.api.throttling import LookupRateThrottle
 
 
 @extend_schema_view(
@@ -54,6 +60,8 @@ class ComponentViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'add_cross_reference']:
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
+        elif self.action == 'lookup':
+            return [permissions.IsAuthenticated()]
         elif self.action in ['update', 'partial_update']:
             # Require authentication AND ownership (or staff/moderator)
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
@@ -64,6 +72,57 @@ class ComponentViewSet(viewsets.ModelViewSet):
     @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        today = timezone.now().date()
+        ComponentViewStats.objects.update_or_create(
+            component=instance, date=today,
+            defaults={},
+        )
+        ComponentViewStats.objects.filter(
+            component=instance, date=today,
+        ).update(view_count=F('view_count') + 1)
+
+        if request.user.is_authenticated:
+            from apps.users.models import UserActivity
+            UserActivity.objects.create(
+                user=request.user,
+                activity_type='component_view',
+                details={
+                    'component_id': str(instance.id),
+                    'part_number': instance.part_number,
+                },
+            )
+        component_view_counter.inc()
+        return super().retrieve(request, *args, **kwargs)
+
+    @method_decorator(cache_page(60 * 15))
+    @action(detail=False, methods=['get'])
+    def trending(self, request):
+        """Top 20 most-viewed components in the last 30 days."""
+        since = timezone.now().date() - timedelta(days=30)
+        trending_ids = (
+            ComponentViewStats.objects.filter(date__gte=since)
+            .values('component_id')
+            .annotate(total_views=Sum('view_count'))
+            .order_by('-total_views')[:20]
+        )
+        component_ids = [t['component_id'] for t in trending_ids]
+        views_map = {t['component_id']: t['total_views'] for t in trending_ids}
+
+        components = Component.objects.filter(id__in=component_ids)
+        # Preserve ordering by views
+        components_by_id = {c.id: c for c in components}
+        ordered = [components_by_id[cid] for cid in component_ids if cid in components_by_id]
+
+        serializer = ComponentListSerializer(ordered, many=True)
+        data = serializer.data
+        for item in data:
+            item['total_views'] = views_map.get(
+                next((c.id for c in ordered if str(c.id) == item['id']), None), 0
+            )
+        return Response(data)
 
     @action(detail=True, methods=['get'])
     def products(self, request, pk=None):
@@ -123,6 +182,65 @@ class ComponentViewSet(viewsets.ModelViewSet):
 
         component.cross_references.add(other_component)
         return Response({'detail': 'Cross-reference added'})
+
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[permissions.IsAuthenticated],
+        throttle_classes=[LookupRateThrottle],
+    )
+    def lookup(self, request, pk=None):
+        """
+        Trigger a Nexar API lookup for this component.
+
+        Fetches pricing, availability, and datasheet data from Nexar
+        (aggregating DigiKey, Mouser, and 100+ distributors).
+        Result is cached in the component's specifications field.
+        """
+        from django.utils import timezone
+        from .nexar import get_client
+
+        component = self.get_object()
+        client = get_client()
+
+        if not client.is_configured:
+            return Response(
+                {'detail': 'Nexar API credentials not configured. Contact an admin.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        try:
+            result = client.search_mpn(component.part_number, component.manufacturer)
+        except Exception:
+            return Response(
+                {'detail': 'Nexar API request failed. Try again later.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        if not result:
+            return Response(
+                {'detail': 'No results found for this part number.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Cache in specifications
+        specs = component.specifications or {}
+        specs['nexar_data'] = {
+            **result,
+            'last_updated': timezone.now().isoformat(),
+        }
+        component.specifications = specs
+
+        # Auto-fill datasheet if empty
+        if not component.datasheet_url and result.get('datasheet_url'):
+            component.datasheet_url = result['datasheet_url']
+
+        if not component.octopart_url and result.get('mpn'):
+            component.octopart_url = f"https://octopart.com/search?q={result['mpn']}"
+
+        component.save(update_fields=['specifications', 'datasheet_url', 'octopart_url'])
+
+        return Response(specs['nexar_data'])
 
     @method_decorator(cache_page(60 * 60))
     @action(detail=False, methods=['get'])

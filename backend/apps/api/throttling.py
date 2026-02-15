@@ -72,3 +72,13 @@ class MessageRateThrottle(UserRateThrottle):
     """
 
     scope = 'messaging'
+
+
+class LookupRateThrottle(UserRateThrottle):
+    """
+    Throttle for external API lookups (Nexar/Octopart).
+
+    External APIs have strict rate limits, so we limit lookups.
+    """
+
+    scope = 'lookup'

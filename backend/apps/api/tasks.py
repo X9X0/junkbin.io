@@ -380,3 +380,27 @@ def notify_task_failure(task_name, exception, traceback_str=''):
                         'traceback': traceback_str[:1000]}},
         identifier=f'task_{task_name}',
     )
+
+
+# ---------------------------------------------------------------------------
+# Analytics cleanup tasks
+# ---------------------------------------------------------------------------
+
+@shared_task(name='apps.api.tasks.cleanup_old_search_queries')
+def cleanup_old_search_queries():
+    """Delete search query logs older than 90 days."""
+    from .models import SearchQuery as SearchQueryLog
+    cutoff = timezone.now() - timedelta(days=90)
+    deleted, _ = SearchQueryLog.objects.filter(created_at__lt=cutoff).delete()
+    logger.info('Cleaned up %d old search queries', deleted)
+    return deleted
+
+
+@shared_task(name='apps.api.tasks.cleanup_old_activity')
+def cleanup_old_activity():
+    """Delete user activity logs older than 180 days."""
+    from apps.users.models import UserActivity
+    cutoff = timezone.now() - timedelta(days=180)
+    deleted, _ = UserActivity.objects.filter(created_at__lt=cutoff).delete()
+    logger.info('Cleaned up %d old activity records', deleted)
+    return deleted

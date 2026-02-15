@@ -120,6 +120,7 @@ export interface Component {
   datasheet_url?: string;
   usage_count: number;
   is_verified: boolean;
+  pricing_data?: NexarData | null;
 }
 
 export interface ProductComponent {
@@ -381,6 +382,75 @@ export interface RecipeMatchDetail {
   total_required: number;
   matched_count: number;
   components: BomMatchItem[];
+}
+
+// Nexar/Pricing types
+export interface SellerOffer {
+  stock: number;
+  price: number;
+  currency: string;
+  qty_min: number;
+  buy_url: string;
+}
+
+export interface Seller {
+  name: string;
+  url: string;
+  offers: SellerOffer[];
+}
+
+export interface NexarSpec {
+  name: string;
+  value: string;
+}
+
+export interface NexarData {
+  mpn: string;
+  manufacturer: string;
+  description: string;
+  datasheet_url: string | null;
+  specs: NexarSpec[];
+  sellers: Seller[];
+  last_updated: string;
+}
+
+// Analytics types
+export interface DailyActiveUsers {
+  date: string;
+  count: number;
+}
+
+export interface SearchAnalytics {
+  total: number;
+  zero_result_pct: number;
+  top_queries: Array<{ query: string; count: number }>;
+}
+
+export interface TrendingComponent {
+  component_id: string;
+  component__part_number: string;
+  component__manufacturer: string;
+  total_views: number;
+}
+
+export interface ContentStats {
+  products: number;
+  components: number;
+  schematics: number;
+  recipes: number;
+}
+
+export interface ActivityBreakdown {
+  activity_type: string;
+  count: number;
+}
+
+export interface AnalyticsDashboardData {
+  dau: DailyActiveUsers[];
+  search_analytics: SearchAnalytics;
+  trending_components: TrendingComponent[];
+  content_stats: ContentStats;
+  activity_breakdown: ActivityBreakdown[];
 }
 
 // Search/filter types

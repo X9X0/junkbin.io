@@ -59,9 +59,10 @@ Other users can search this database to find which consumer products contain spe
   - MinIO or AWS S3 (production)
 - **Backup**: Automated PostgreSQL dumps + file storage sync
 - **Monitoring**:
-  - Prometheus + Grafana (future)
+  - Prometheus + Grafana (deployed — `/grafana/`, `/prometheus/`)
   - Health check endpoints (`/api/health/`, nginx `/health`)
   - Admin system status dashboard (service health, metrics, Celery tasks)
+  - Frontend analytics dashboard (`/analytics` — staff-only)
 
 ### Deployment Targets
 - Ubuntu 22.04/24.04 LTS
@@ -335,12 +336,12 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Email notification preferences — granular per-category toggles (messages, submissions, reports, account) with master switch, all notification tasks respect preferences, settings UI on Profile page (Feb 14, 2026)
 
 #### Integration & Automation
-- ⬜ Octopart API integration (component cross-reference)
-- ⬜ DigiKey/Mouser API (availability/pricing)
-- ⬜ Datasheet auto-linking
+- ✅ Nexar/Octopart API integration — GraphQL MPN search with OAuth2, component pricing/availability/datasheets from 100+ distributors (DigiKey, Mouser, etc.), cached in specifications JSONField, "Lookup Pricing" button on ComponentDetail, Celery task for bulk enrichment (Feb 15, 2026)
+- ✅ DigiKey/Mouser API (availability/pricing) — covered by Nexar aggregation, no separate integrations needed (Feb 15, 2026)
+- ✅ Datasheet auto-linking — auto-populated from Nexar bestDatasheet URL when component.datasheet_url is empty (Feb 15, 2026)
 - ⬜ AI-assisted component recognition from images
 - ⬜ iFixit integration for repair guides
-- ⬜ Discord/Slack webhooks for notifications
+- ✅ Discord/Slack webhooks for notifications — webhooks app with WebhookEndpoint/WebhookDelivery models, Discord embed + Slack Block Kit formatters, Celery delivery with retry/backoff/429 handling, admin-configurable per-event subscriptions, 5 event types (product.created, schematic.uploaded, report.filed, user.badge_earned, recipe.created) (Feb 15, 2026)
 
 #### Infrastructure & Operations
 - ✅ Admin system status dashboard — PostgreSQL, Redis, Celery workers, Celery Beat health checks; CPU/memory/disk metrics; recent task history; app stats; quick links (Feb 12, 2026)
@@ -367,11 +368,11 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Recipe tags and filtering — filter by category (audio, power supply, IoT, repair, etc.), difficulty, ordering; full-text search with PostgreSQL SearchVector (Feb 14, 2026)
 
 #### Advanced Analytics
-- ⬜ Prometheus metrics
-- ⬜ Grafana dashboards
-- ⬜ Component popularity tracking
-- ⬜ Search analytics
-- ⬜ User engagement metrics
+- ✅ Prometheus metrics — django-prometheus middleware + custom counters (searches, component views, submissions), /metrics endpoint, multiprocess-safe (Feb 15, 2026)
+- ✅ Grafana dashboards — pre-provisioned overview dashboard (request rate, latency percentiles, error rate, search volume, component views, submissions, DB connections), auto-configured Prometheus datasource (Feb 15, 2026)
+- ✅ Component popularity tracking — ComponentViewStats daily aggregates, trending endpoint (top 20 by views in 30 days), UserActivity logging on authenticated views (Feb 15, 2026)
+- ✅ Search analytics — SearchQuery model logging every search (query, user, result_count, ip), zero-result tracking, top queries aggregation, 90-day auto-cleanup via Celery beat (Feb 15, 2026)
+- ✅ User engagement metrics — staff-only /api/analytics/ endpoint (DAU, search analytics, trending components, content stats, activity breakdown), frontend AnalyticsDashboard page at /analytics with sparklines, 7d/30d/90d range selector (Feb 15, 2026)
 
 ---
 
