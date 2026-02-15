@@ -6,8 +6,12 @@
 # Pulls latest code, rebuilds containers, and runs migrations.
 # For use on an already-deployed instance — not a fresh install.
 #
+# Default:  production mode (uses only docker-compose.yml, requires SSL certs)
+# --dev:    local dev mode  (auto-merges docker-compose.override.yml, no SSL)
+#
 # Usage: ./deployment/update.sh [options]
 # Options:
+#   --dev         Use local dev config (no SSL, merges override file)
 #   --skip-pull   Skip git pull (if you already pulled manually)
 #   --seed        Run seed_data after migrations
 ################################################################################
@@ -29,13 +33,24 @@ log_step()  { echo -e "${BLUE}[STEP]${NC} $1"; }
 # Parse flags
 SKIP_PULL=false
 RUN_SEED=false
+DEV_MODE=false
 for arg in "$@"; do
     case $arg in
+        --dev)       DEV_MODE=true ;;
         --skip-pull) SKIP_PULL=true ;;
         --seed)      RUN_SEED=true ;;
         *)           log_error "Unknown option: $arg"; exit 1 ;;
     esac
 done
+
+# Set compose command — production uses explicit file to avoid override merge
+if [ "$DEV_MODE" = true ]; then
+    DC="docker compose"
+    log_info "Mode: LOCAL DEV (merging docker-compose.override.yml)"
+else
+    DC="docker compose -f docker-compose.yml"
+    log_info "Mode: PRODUCTION (docker-compose.yml only)"
+fi
 
 # Navigate to project root (parent of deployment/)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,13 +68,13 @@ fi
 
 # 2. Build images
 log_step "Building Docker images..."
-docker compose -f docker-compose.yml build backend frontend
+$DC build backend frontend
 
 # 3. Recreate containers (frontend needs volume reset for new build assets)
 log_step "Stopping frontend and nginx..."
-docker compose -f docker-compose.yml rm -sf frontend nginx
+$DC rm -sf frontend nginx
 
-COMPOSE_PROJECT="$(docker compose -f docker-compose.yml config --format json | python3 -c 'import sys,json; print(json.load(sys.stdin)["name"])')"
+COMPOSE_PROJECT="$($DC config --format json | python3 -c 'import sys,json; print(json.load(sys.stdin)["name"])')"
 FRONTEND_VOL="${COMPOSE_PROJECT}_frontend_build"
 if docker volume ls -q | grep -q "^${FRONTEND_VOL}$"; then
     log_step "Removing frontend build volume ($FRONTEND_VOL)..."
@@ -69,25 +84,25 @@ else
 fi
 
 log_step "Starting all containers..."
-docker compose -f docker-compose.yml up -d
+$DC up -d
 
 # 4. Run migrations
 log_step "Running database migrations..."
-docker compose -f docker-compose.yml exec backend python manage.py migrate --noinput
+$DC exec backend python manage.py migrate --noinput
 
 # 5. Collect static files
 log_step "Collecting static files..."
-docker compose -f docker-compose.yml exec backend python manage.py collectstatic --noinput
+$DC exec backend python manage.py collectstatic --noinput
 
 # 6. Seed data (optional)
 if [ "$RUN_SEED" = true ]; then
     log_step "Running seed_data..."
-    docker compose -f docker-compose.yml exec backend python manage.py seed_data
+    $DC exec backend python manage.py seed_data
 fi
 
 # 7. Status summary
 echo ""
 log_step "Container status:"
-docker compose -f docker-compose.yml ps
+$DC ps
 echo ""
 log_info "Update complete."
