@@ -119,7 +119,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
                   >
                     <Archive className="h-4 w-4" />
-                    Add to Junkbin
+                    Add to My Junkbin
                   </button>
                 )}
               </div>
@@ -206,7 +206,7 @@ export default function ComponentDetail() {
         </div>
       </div>
 
-      {/* Add to Junkbin Modal */}
+      {/* Add to My Junkbin Modal */}
       <AddToJunkbinModal
         isOpen={showJunkbinModal}
         onClose={() => setShowJunkbinModal(false)}
