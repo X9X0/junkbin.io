@@ -42,7 +42,7 @@ export default function AnalyticsDashboard() {
   const { user, isAuthenticated } = useAuth();
   const [days, setDays] = useState(30);
 
-  const isStaff = isAuthenticated && ((user as any)?.is_staff || user?.is_moderator);
+  const isStaff = isAuthenticated && (user?.is_staff || user?.is_moderator);
 
   const { data, isLoading, error } = useQuery<AnalyticsDashboardData>({
     queryKey: ['analytics', days],

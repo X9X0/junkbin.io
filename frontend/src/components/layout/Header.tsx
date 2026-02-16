@@ -115,7 +115,7 @@ export default function Header() {
               <Trophy className="h-3.5 w-3.5" />
               RANKS
             </Link>
-            {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
+            {isAuthenticated && (user?.is_moderator || user?.is_staff) && (
               <>
                 <Link
                   to="/moderation"
@@ -412,7 +412,7 @@ export default function Header() {
                 )}
               </Link>
             )}
-            {isAuthenticated && (user?.is_moderator || (user as any)?.is_staff) && (
+            {isAuthenticated && (user?.is_moderator || user?.is_staff) && (
               <>
                 <Link
                   to="/moderation"

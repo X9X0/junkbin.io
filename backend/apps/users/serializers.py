@@ -43,14 +43,15 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'display_name', 'bio', 'avatar', 'location', 'website',
             'reputation_score', 'contribution_count', 'report_count',
-            'is_trusted', 'is_moderator', 'email_verified',
+            'is_staff', 'is_trusted', 'is_moderator', 'email_verified',
             'oauth_provider', 'preferences', 'created_at', 'updated_at',
             'last_contribution_at', 'badges'
         ]
         read_only_fields = [
             'id', 'email', 'reputation_score', 'contribution_count',
-            'report_count', 'is_trusted', 'is_moderator', 'email_verified',
-            'oauth_provider', 'created_at', 'updated_at', 'last_contribution_at'
+            'report_count', 'is_staff', 'is_trusted', 'is_moderator',
+            'email_verified', 'oauth_provider', 'created_at', 'updated_at',
+            'last_contribution_at'
         ]
 
     def get_badges(self, obj):

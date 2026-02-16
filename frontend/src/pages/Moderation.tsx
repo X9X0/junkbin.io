@@ -49,7 +49,7 @@ export default function Moderation() {
   const page = parseInt(searchParams.get('page') || '1', 10);
 
   // Access control
-  if (!user?.is_moderator && !(user as any)?.is_staff) {
+  if (!user?.is_moderator && !user?.is_staff) {
     return (
       <div className="py-20 text-center">
         <Shield className="h-16 w-16 text-gray-600 mx-auto mb-4" />
