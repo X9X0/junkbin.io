@@ -118,6 +118,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         if self.request.user.can_submit_without_review:
             product.is_approved = True
             product.save(update_fields=['is_approved'])
+            self.request.user.increment_contribution()
 
         # Webhook notification
         from apps.webhooks.tasks import dispatch_webhook_event
@@ -479,6 +480,13 @@ class ProductViewSet(viewsets.ModelViewSet):
                 product=product,
                 uploaded_by=request.user
             )
+
+            # Auto-approve for trusted users
+            if request.user.can_submit_without_review:
+                image.is_approved = True
+                image.save(update_fields=['is_approved'])
+                request.user.increment_contribution()
+
             return Response(
                 ProductImageSerializer(image, context={'request': request}).data,
                 status=status.HTTP_201_CREATED
@@ -490,6 +498,17 @@ class ProductViewSet(viewsets.ModelViewSet):
         """Get all images for this product."""
         product = self.get_object()
         images = product.images.all()
+
+        # Non-staff users only see approved images (plus their own)
+        if not request.user.is_staff:
+            if request.user.is_authenticated:
+                images = images.filter(
+                    models.Q(is_approved=True) |
+                    models.Q(uploaded_by=request.user)
+                )
+            else:
+                images = images.filter(is_approved=True)
+
         serializer = ProductImageSerializer(
             images,
             many=True,
@@ -660,10 +679,8 @@ class ProductViewSet(viewsets.ModelViewSet):
             if request.user.can_submit_without_review:
                 schematic.is_approved = True
                 schematic.save(update_fields=['is_approved'])
+                request.user.increment_contribution()
 
-            # Check for new badges
-            from apps.users.badges import check_and_award_badges
-            check_and_award_badges(request.user)
 
             # Webhook notification
             from apps.webhooks.tasks import dispatch_webhook_event
@@ -689,6 +706,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Product is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
         product.is_approved = True
         product.save(update_fields=['is_approved'])
+
+        if product.created_by:
+            product.created_by.increment_contribution()
+
         return Response({'detail': 'Product approved.'})
 
     @action(detail=True, methods=['post'])
@@ -709,6 +730,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             'products': Product.objects.filter(is_approved=False).count(),
             'schematics': Schematic.objects.filter(is_approved=False).count(),
             'recipes': Recipe.objects.filter(is_approved=False).count(),
+            'images': ProductImage.objects.filter(is_approved=False).count(),
         })
 
 
@@ -791,6 +813,10 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Schematic is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
         schematic.is_approved = True
         schematic.save(update_fields=['is_approved'])
+
+        if schematic.uploaded_by:
+            schematic.uploaded_by.increment_contribution()
+
         return Response({'detail': 'Schematic approved.'})
 
     @action(detail=True, methods=['post'])
@@ -800,4 +826,44 @@ class SchematicViewSet(viewsets.ModelViewSet):
         if schematic.is_approved:
             return Response({'detail': 'Cannot reject an already-approved schematic.'}, status=status.HTTP_400_BAD_REQUEST)
         schematic.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    ViewSet for product image moderation.
+    Staff-only list with approve/reject actions.
+    """
+
+    queryset = ProductImage.objects.select_related('product', 'uploaded_by')
+    serializer_class = ProductImageSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['is_approved', 'product', 'uploaded_by']
+    ordering_fields = ['uploaded_at']
+    ordering = ['-uploaded_at']
+
+    def get_permissions(self):
+        return [IsModeratorOrAdmin()]
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a pending image (staff/moderator only)."""
+        image = self.get_object()
+        if image.is_approved:
+            return Response({'detail': 'Image is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        image.is_approved = True
+        image.save(update_fields=['is_approved'])
+
+        if image.uploaded_by:
+            image.uploaded_by.increment_contribution()
+
+        return Response({'detail': 'Image approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a pending image (staff/moderator only)."""
+        image = self.get_object()
+        if image.is_approved:
+            return Response({'detail': 'Cannot reject an already-approved image.'}, status=status.HTTP_400_BAD_REQUEST)
+        image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

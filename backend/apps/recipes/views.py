@@ -131,9 +131,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if self.request.user.can_submit_without_review:
             recipe.is_approved = True
             recipe.save(update_fields=['is_approved'])
-        # Check for new badges
-        from apps.users.badges import check_and_award_badges
-        check_and_award_badges(self.request.user)
+            self.request.user.increment_contribution()
 
         # Webhook notification
         from apps.webhooks.tasks import dispatch_webhook_event
@@ -274,6 +272,10 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Recipe is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
         recipe.is_approved = True
         recipe.save(update_fields=['is_approved'])
+
+        if recipe.created_by:
+            recipe.created_by.increment_contribution()
+
         return Response({'detail': 'Recipe approved.'})
 
     @action(detail=True, methods=['post'])

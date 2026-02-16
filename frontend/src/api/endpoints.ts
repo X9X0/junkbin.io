@@ -1,6 +1,7 @@
 import api from './client';
 import type {
   Product,
+  ProductImage,
   ProductComment,
   ProductComponent,
   Component,
@@ -181,7 +182,7 @@ export const products = {
     await api.post(`/products/${id}/reject/`);
   },
 
-  pendingCounts: async (): Promise<{ products: number; schematics: number; recipes: number }> => {
+  pendingCounts: async (): Promise<{ products: number; schematics: number; recipes: number; images: number }> => {
     const response = await api.get('/products/pending_counts/');
     return response.data;
   },
@@ -309,6 +310,23 @@ export const schematics = {
 
   reject: async (id: string): Promise<void> => {
     await api.post(`/schematics/${id}/reject/`);
+  },
+};
+
+// Product images endpoints (moderation)
+export const productImages = {
+  list: async (params?: any): Promise<PaginatedResponse<ProductImage>> => {
+    const response = await api.get('/product-images/', { params });
+    return response.data;
+  },
+
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/product-images/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/product-images/${id}/reject/`);
   },
 };
 

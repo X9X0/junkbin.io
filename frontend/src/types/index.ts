@@ -85,12 +85,16 @@ export interface Product {
 
 export interface ProductImage {
   id: string;
+  product?: string;
   image: string;
   thumbnail?: string;
   medium?: string;
   caption?: string;
   image_type: string;
   display_order?: number;
+  uploaded_by?: { id: string; username: string };
+  uploaded_at?: string;
+  is_approved: boolean;
 }
 
 export interface CreatedBy {
