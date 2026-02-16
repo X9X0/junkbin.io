@@ -10,9 +10,11 @@
     {
       "title": "Request Rate",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(django_http_requests_total_by_method_total[5m])",
           "legendFormat": "{{method}}",
           "refId": "A"
@@ -29,19 +31,23 @@
     {
       "title": "Response Time (p50 / p95 / p99)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.50, rate(django_http_requests_latency_seconds_by_view_method_bucket[5m]))",
           "legendFormat": "p50",
           "refId": "A"
         },
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.95, rate(django_http_requests_latency_seconds_by_view_method_bucket[5m]))",
           "legendFormat": "p95",
           "refId": "B"
         },
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "histogram_quantile(0.99, rate(django_http_requests_latency_seconds_by_view_method_bucket[5m]))",
           "legendFormat": "p99",
           "refId": "C"
@@ -58,14 +64,17 @@
     {
       "title": "Error Rate (4xx + 5xx)",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(django_http_responses_total_by_status_total{status=~\"4..\"}[5m])",
           "legendFormat": "4xx",
           "refId": "A"
         },
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(django_http_responses_total_by_status_total{status=~\"5..\"}[5m])",
           "legendFormat": "5xx",
           "refId": "B"
@@ -82,9 +91,11 @@
     {
       "title": "Search Volume",
       "type": "timeseries",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "rate(junkbin_searches_total[5m])",
           "legendFormat": "has_results={{has_results}}",
           "refId": "A"
@@ -101,9 +112,11 @@
     {
       "title": "Component Views",
       "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 16 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "increase(junkbin_component_views_total[24h])",
           "legendFormat": "Views (24h)",
           "refId": "A"
@@ -117,9 +130,11 @@
     {
       "title": "Total Searches",
       "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 6, "y": 16 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "increase(junkbin_searches_total[24h])",
           "legendFormat": "Searches (24h)",
           "refId": "A"
@@ -133,9 +148,11 @@
     {
       "title": "Submissions",
       "type": "stat",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 12, "y": 16 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "increase(junkbin_submissions_total[24h])",
           "legendFormat": "{{content_type}}",
           "refId": "A"
@@ -149,9 +166,11 @@
     {
       "title": "Active DB Connections",
       "type": "gauge",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
       "gridPos": { "h": 4, "w": 6, "x": 18, "y": 16 },
       "targets": [
         {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
           "expr": "django_db_backends_used_database_connections",
           "legendFormat": "connections",
           "refId": "A"
