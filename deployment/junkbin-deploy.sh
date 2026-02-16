@@ -185,8 +185,20 @@ install_dependencies() {
                 certbot \
                 python3-certbot-nginx
             ;;
-        fedora|centos|rhel|almalinux|rocky)
+        fedora)
             dnf update -y
+            dnf install -y \
+                curl \
+                git \
+                wget \
+                firewalld \
+                fail2ban \
+                certbot \
+                python3-certbot-nginx
+            ;;
+        centos|rhel|almalinux|rocky)
+            dnf update -y
+            dnf install -y epel-release
             dnf install -y \
                 curl \
                 git \
@@ -405,12 +417,15 @@ create_env_file() {
 
     read -p "Enter domain name (e.g., junkbin.io): " DOMAIN
     read -p "Enter admin email: " ADMIN_EMAIL
-    read -p "Enter database password: " -s DB_PASSWORD
-    echo
 
     # Export for use in other functions
     export DOMAIN
     export ADMIN_EMAIL
+
+    # Auto-generate a URL-safe database password (alphanumeric only)
+    # This avoids URL-parsing issues in DATABASE_URL when passwords
+    # contain special characters like @ : / ? #
+    DB_PASSWORD=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 48)
 
     # Get server IP for ALLOWED_HOSTS
     SERVER_IP=$(curl -s ifconfig.me || hostname -I | awk '{print $1}')
@@ -424,7 +439,8 @@ create_env_file() {
 # Django Settings
 SECRET_KEY='${SECRET_KEY}'
 DEBUG=False
-ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},${SERVER_IP}
+DJANGO_SETTINGS_MODULE=config.settings.production
+ALLOWED_HOSTS=${DOMAIN},www.${DOMAIN},${SERVER_IP},localhost,127.0.0.1,backend
 
 # Database
 DATABASE_URL=postgresql://junkbin:${DB_PASSWORD}@postgres:5432/junkbin
@@ -434,6 +450,10 @@ POSTGRES_PASSWORD=${DB_PASSWORD}
 
 # Redis
 REDIS_URL=redis://redis:6379/0
+
+# CORS & CSRF (must match the live domain with HTTPS)
+CORS_ALLOWED_ORIGINS=https://${DOMAIN},https://www.${DOMAIN}
+CSRF_TRUSTED_ORIGINS=https://${DOMAIN},https://www.${DOMAIN}
 
 # Email
 EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend
@@ -453,13 +473,16 @@ MEDIA_ROOT=/app/media
 
 # Site Settings
 SITE_URL=https://${DOMAIN}
+FRONTEND_URL=https://${DOMAIN}
 ADMIN_EMAIL=${ADMIN_EMAIL}
 
 # Security
 CSRF_COOKIE_SECURE=True
 SESSION_COOKIE_SECURE=True
+AUTH_COOKIE_SECURE=True
 SECURE_SSL_REDIRECT=True
 SECURE_HSTS_SECONDS=31536000
+CSP_UPGRADE_INSECURE=True
 EOF
     
     chmod 600 .env
