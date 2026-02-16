@@ -179,17 +179,17 @@ def system_status(request):
     admin_prefix = reverse('admin:index')
 
     links = [
-        {'label': 'Analytics Dashboard', 'url': '/analytics'},
-        {'label': 'Grafana', 'url': '/grafana/'},
-        {'label': 'Prometheus', 'url': '/prometheus/'},
+        {'label': 'Analytics (frontend login required)', 'url': '/analytics', 'external': True},
+        {'label': 'Grafana (admin / GRAFANA_ADMIN_PASSWORD)', 'url': '/grafana/', 'external': True},
+        {'label': 'Prometheus', 'url': '/prometheus/', 'external': True},
         {'label': 'Search Queries', 'url': f'{admin_prefix}api/searchquery/'},
         {'label': 'Component Views', 'url': f'{admin_prefix}components/componentviewstats/'},
         {'label': 'Reports', 'url': f'{admin_prefix}reports/report/'},
         {'label': 'User Reviews', 'url': f'{admin_prefix}reports/userreview/'},
         {'label': 'Periodic Tasks', 'url': f'{admin_prefix}django_celery_beat/periodictask/'},
         {'label': 'Task Results', 'url': f'{admin_prefix}django_celery_results/taskresult/'},
-        {'label': 'API Health', 'url': '/api/health/'},
-        {'label': 'API Docs', 'url': '/api/docs/'},
+        {'label': 'API Health', 'url': '/api/health/', 'external': True},
+        {'label': 'API Docs', 'url': '/api/docs/', 'external': True},
     ]
 
     from django.contrib import admin
