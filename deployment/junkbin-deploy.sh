@@ -493,6 +493,20 @@ EOF
 init_database() {
     log_step "Initializing database..."
 
+    # On fresh deploys, remove existing postgres volume so it re-initializes
+    # with the new password. PostgreSQL only reads POSTGRES_PASSWORD on first
+    # init — if a volume exists from a previous (failed) deploy, the password
+    # in .env won't match. Skip this on --update to preserve production data.
+    if [ "$UPDATE_MODE" = false ]; then
+        PROJECT_NAME=$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]//g')
+        PG_VOLUME="${PROJECT_NAME}_postgres_data"
+        if docker volume ls -q | grep -q "^${PG_VOLUME}$"; then
+            log_warn "Removing existing postgres data volume to re-initialize with new credentials..."
+            docker compose down postgres 2>/dev/null || true
+            docker volume rm "$PG_VOLUME" 2>/dev/null || true
+        fi
+    fi
+
     # Build backend image first
     log_info "Building backend container..."
     docker compose build backend
