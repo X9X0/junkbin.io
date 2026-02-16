@@ -307,10 +307,19 @@ class ProductImage(models.Model):
     height = models.PositiveIntegerField(null=True, blank=True)
     file_size = models.PositiveIntegerField(null=True, blank=True)
 
+    # Moderation
+    is_approved = models.BooleanField(
+        default=False,
+        help_text=_('Whether image has been approved by moderator')
+    )
+
     class Meta:
         verbose_name = _('product image')
         verbose_name_plural = _('product images')
         ordering = ['display_order', 'uploaded_at']
+        indexes = [
+            models.Index(fields=['is_approved', '-uploaded_at']),
+        ]
 
     def __str__(self):
         return f'{self.product} - {self.get_image_type_display()}'

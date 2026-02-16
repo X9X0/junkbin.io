@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, Check, X } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { reports, reviews, products, schematics, recipes } from '../api/endpoints';
-import type { Report, UserReview, Product, Schematic, Recipe } from '../types';
+import { reports, reviews, products, schematics, recipes, productImages } from '../api/endpoints';
+import type { Report, UserReview, Product, ProductImage, Schematic, Recipe } from '../types';
 import Pagination from '../components/Pagination';
 import ResolveReportModal from '../components/moderation/ResolveReportModal';
 import UserReviewPanel from '../components/moderation/UserReviewPanel';
@@ -43,7 +43,7 @@ export default function Moderation() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedReviewId, setSelectedReviewId] = useState<string | null>(null);
 
-  const tab = searchParams.get('tab') || 'reports';
+  const tab = searchParams.get('tab') || 'pending';
   const status = searchParams.get('status') || '';
   const reason = searchParams.get('reason') || '';
   const page = parseInt(searchParams.get('page') || '1', 10);
@@ -95,16 +95,16 @@ export default function Moderation() {
         {/* Tabs */}
         <div className="flex gap-1 mb-6 border-b border-cyber-light/30">
           <button
-            onClick={() => updateFilter('tab', 'reports')}
+            onClick={() => updateFilter('tab', 'pending')}
             className={clsx(
               'px-4 py-3 font-mono text-sm border-b-2 transition-colors flex items-center gap-2',
-              tab === 'reports'
+              tab === 'pending'
                 ? 'border-cyber-yellow text-cyber-yellow'
                 : 'border-transparent text-gray-500 hover:text-gray-300'
             )}
           >
-            <AlertTriangle className="h-4 w-4" />
-            REPORTS
+            <Package className="h-4 w-4" />
+            PENDING CONTENT
           </button>
           <button
             onClick={() => updateFilter('tab', 'reviews')}
@@ -119,28 +119,21 @@ export default function Moderation() {
             USER REVIEWS
           </button>
           <button
-            onClick={() => updateFilter('tab', 'pending')}
+            onClick={() => updateFilter('tab', 'reports')}
             className={clsx(
               'px-4 py-3 font-mono text-sm border-b-2 transition-colors flex items-center gap-2',
-              tab === 'pending'
+              tab === 'reports'
                 ? 'border-cyber-yellow text-cyber-yellow'
                 : 'border-transparent text-gray-500 hover:text-gray-300'
             )}
           >
-            <Package className="h-4 w-4" />
-            PENDING CONTENT
+            <AlertTriangle className="h-4 w-4" />
+            REPORTS
           </button>
         </div>
 
-        {tab === 'reports' ? (
-          <ReportsTab
-            status={status}
-            reason={reason}
-            page={page}
-            updateFilter={updateFilter}
-            goToPage={goToPage}
-            onReview={setSelectedReport}
-          />
+        {tab === 'pending' ? (
+          <PendingContentTab />
         ) : tab === 'reviews' ? (
           <ReviewsTab
             status={status}
@@ -149,8 +142,15 @@ export default function Moderation() {
             goToPage={goToPage}
             onReview={setSelectedReviewId}
           />
-        ) : tab === 'pending' ? (
-          <PendingContentTab />
+        ) : tab === 'reports' ? (
+          <ReportsTab
+            status={status}
+            reason={reason}
+            page={page}
+            updateFilter={updateFilter}
+            goToPage={goToPage}
+            onReview={setSelectedReport}
+          />
         ) : null}
       </div>
 
@@ -442,23 +442,26 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
 /* Pending Content Tab                                                */
 /* ------------------------------------------------------------------ */
 
-type ContentFilter = 'all' | 'products' | 'schematics' | 'recipes';
+type ContentFilter = 'all' | 'products' | 'schematics' | 'recipes' | 'images';
 
 type PendingItem =
   | { type: 'product'; data: Product }
   | { type: 'schematic'; data: Schematic }
-  | { type: 'recipe'; data: Recipe };
+  | { type: 'recipe'; data: Recipe }
+  | { type: 'image'; data: ProductImage };
 
 const typeBadgeColors: Record<string, string> = {
   product: 'border-cyber-cyan/50 text-cyber-cyan',
   schematic: 'border-cyber-yellow/50 text-cyber-yellow',
   recipe: 'border-cyber-green/50 text-cyber-green',
+  image: 'border-cyber-pink/50 text-cyber-pink',
 };
 
 const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   product: Package,
   schematic: FileText,
   recipe: Wrench,
+  image: ImageIcon,
 };
 
 function PendingContentTab() {
@@ -488,11 +491,18 @@ function PendingContentTab() {
     enabled: contentFilter === 'all' || contentFilter === 'recipes',
   });
 
+  const { data: pendingImages, isLoading: loadingImages } = useQuery({
+    queryKey: ['pendingImages'],
+    queryFn: () => productImages.list({ is_approved: 'false', page_size: 100 }),
+    enabled: contentFilter === 'all' || contentFilter === 'images',
+  });
+
   const invalidateAll = () => {
     queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
     queryClient.invalidateQueries({ queryKey: ['pendingProducts'] });
     queryClient.invalidateQueries({ queryKey: ['pendingSchematics'] });
     queryClient.invalidateQueries({ queryKey: ['pendingRecipes'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingImages'] });
   };
 
   const approveProduct = useMutation({
@@ -519,6 +529,14 @@ function PendingContentTab() {
     mutationFn: (id: string) => recipes.reject(id),
     onSuccess: invalidateAll,
   });
+  const approveImage = useMutation({
+    mutationFn: (id: string) => productImages.approve(id),
+    onSuccess: invalidateAll,
+  });
+  const rejectImage = useMutation({
+    mutationFn: (id: string) => productImages.reject(id),
+    onSuccess: invalidateAll,
+  });
 
   // Merge items into a unified list
   const items: PendingItem[] = [];
@@ -531,69 +549,83 @@ function PendingContentTab() {
   if (contentFilter === 'all' || contentFilter === 'recipes') {
     (pendingRecipes?.results || []).forEach((r) => items.push({ type: 'recipe', data: r }));
   }
+  if (contentFilter === 'all' || contentFilter === 'images') {
+    (pendingImages?.results || []).forEach((i) => items.push({ type: 'image', data: i }));
+  }
 
   // Sort by date descending
   items.sort((a, b) => {
-    const dateA = 'created_at' in a.data ? a.data.created_at : (a.data as Schematic).uploaded_at;
-    const dateB = 'created_at' in b.data ? b.data.created_at : (b.data as Schematic).uploaded_at;
+    const dateA = 'created_at' in a.data ? a.data.created_at : ((a.data as Schematic | ProductImage).uploaded_at || '');
+    const dateB = 'created_at' in b.data ? b.data.created_at : ((b.data as Schematic | ProductImage).uploaded_at || '');
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
-  const isLoading = loadingProducts || loadingSchematics || loadingRecipes;
+  const isLoading = loadingProducts || loadingSchematics || loadingRecipes || loadingImages;
 
   const getItemTitle = (item: PendingItem): string => {
     if (item.type === 'product') return `${item.data.manufacturer} ${item.data.model_number}`;
     if (item.type === 'schematic') return (item.data as Schematic).title;
+    if (item.type === 'image') {
+      const img = item.data as ProductImage;
+      return img.caption || `${img.image_type} image`;
+    }
     return (item.data as Recipe).name;
   };
 
   const getItemUser = (item: PendingItem): string => {
     if (item.type === 'schematic') return (item.data as Schematic).uploaded_by?.username || 'Unknown';
+    if (item.type === 'image') return (item.data as ProductImage).uploaded_by?.username || 'Unknown';
     return (item.data as Product | Recipe).created_by?.username || 'Unknown';
   };
 
   const getItemDate = (item: PendingItem): string => {
     if (item.type === 'schematic') return (item.data as Schematic).uploaded_at;
+    if (item.type === 'image') return (item.data as ProductImage).uploaded_at || '';
     return (item.data as Product | Recipe).created_at;
   };
 
   const getItemLink = (item: PendingItem): string => {
     if (item.type === 'product') return `/products/${item.data.id}`;
     if (item.type === 'recipe') return `/recipes/${item.data.id}`;
+    if (item.type === 'image') return `/products/${(item.data as ProductImage).product}`;
     return `/products/${(item.data as Schematic).product}`;
   };
 
   const handleApprove = (item: PendingItem) => {
     if (item.type === 'product') approveProduct.mutate(item.data.id);
     else if (item.type === 'schematic') approveSchematic.mutate(item.data.id);
+    else if (item.type === 'image') approveImage.mutate(item.data.id);
     else approveRecipe.mutate(item.data.id);
   };
 
   const handleReject = (item: PendingItem) => {
     if (item.type === 'product') rejectProduct.mutate(item.data.id);
     else if (item.type === 'schematic') rejectSchematic.mutate(item.data.id);
+    else if (item.type === 'image') rejectImage.mutate(item.data.id);
     else rejectRecipe.mutate(item.data.id);
   };
 
   const isMutating = approveProduct.isPending || rejectProduct.isPending
     || approveSchematic.isPending || rejectSchematic.isPending
-    || approveRecipe.isPending || rejectRecipe.isPending;
+    || approveRecipe.isPending || rejectRecipe.isPending
+    || approveImage.isPending || rejectImage.isPending;
 
   return (
     <>
       {/* Stat cards */}
       {counts && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           <StatCard label="PRODUCTS" value={counts.products} color="text-cyber-cyan" icon={Package} />
           <StatCard label="SCHEMATICS" value={counts.schematics} color="text-cyber-yellow" icon={FileText} />
           <StatCard label="RECIPES" value={counts.recipes} color="text-cyber-green" icon={Wrench} />
+          <StatCard label="IMAGES" value={counts.images} color="text-cyber-pink" icon={ImageIcon} />
         </div>
       )}
 
       {/* Sub-filter */}
       <div className="card-cyber p-4 mb-6">
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'products', 'schematics', 'recipes'] as ContentFilter[]).map((f) => (
+          {(['all', 'products', 'schematics', 'recipes', 'images'] as ContentFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setContentFilter(f)}

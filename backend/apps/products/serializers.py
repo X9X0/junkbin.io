@@ -16,15 +16,22 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     thumbnail = serializers.SerializerMethodField()
     medium = serializers.SerializerMethodField()
+    uploaded_by = serializers.SerializerMethodField()
+    product = serializers.PrimaryKeyRelatedField(read_only=True)
 
     class Meta:
         model = ProductImage
         fields = [
-            'id', 'image', 'thumbnail', 'medium',
+            'id', 'product', 'image', 'thumbnail', 'medium',
             'image_type', 'caption', 'display_order',
-            'width', 'height', 'uploaded_at'
+            'width', 'height', 'uploaded_by', 'uploaded_at', 'is_approved'
         ]
-        read_only_fields = ['id', 'width', 'height', 'uploaded_at']
+        read_only_fields = ['id', 'width', 'height', 'uploaded_at', 'is_approved']
+
+    def get_uploaded_by(self, obj):
+        if obj.uploaded_by:
+            return {'id': str(obj.uploaded_by.id), 'username': obj.uploaded_by.username}
+        return None
 
     def get_thumbnail(self, obj):
         if obj.thumbnail:
@@ -102,13 +109,21 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_primary_image(self, obj):
-        image = obj.primary_image
+        images = self._visible_images(obj)
+        image = images.filter(image_type='overview').first()
         if image:
             return ProductImageSerializer(image, context=self.context).data
         return None
 
+    def _visible_images(self, obj):
+        request = self.context.get('request')
+        qs = obj.images.all()
+        if request and hasattr(request, 'user') and request.user.is_staff:
+            return qs
+        return qs.filter(is_approved=True)
+
     def get_image_count(self, obj):
-        return obj.images.count()
+        return self._visible_images(obj).count()
 
     def get_schematic_count(self, obj):
         return obj.schematics.filter(is_approved=True).count()
@@ -121,7 +136,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     """Detailed serializer for single product view."""
 
     created_by = CreatedBySerializer(read_only=True)
-    images = ProductImageSerializer(many=True, read_only=True)
+    images = serializers.SerializerMethodField()
     image_count = serializers.SerializerMethodField()
     schematic_count = serializers.SerializerMethodField()
     category_display = serializers.CharField(
@@ -153,8 +168,20 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'is_approved', 'is_featured'
         ]
 
+    def _visible_images(self, obj):
+        request = self.context.get('request')
+        qs = obj.images.all()
+        if request and hasattr(request, 'user') and request.user.is_staff:
+            return qs
+        return qs.filter(is_approved=True)
+
+    def get_images(self, obj):
+        return ProductImageSerializer(
+            self._visible_images(obj), many=True, context=self.context
+        ).data
+
     def get_image_count(self, obj):
-        return obj.images.count()
+        return self._visible_images(obj).count()
 
     def get_schematic_count(self, obj):
         return obj.schematics.filter(is_approved=True).count()
