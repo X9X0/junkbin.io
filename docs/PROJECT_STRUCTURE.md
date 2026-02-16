@@ -53,10 +53,10 @@ junkbin.io/
 │   │   │   └── tests/
 │   │   │
 │   │   ├── products/                  # Product management
-│   │   │   ├── models.py              # Product, ProductImage, Schematic, ProductComment
-│   │   │   ├── views.py               # Product CRUD views + comments + BOM import
+│   │   │   ├── models.py              # Product, ProductImage (is_approved), Schematic, ProductComment
+│   │   │   ├── views.py               # Product CRUD + comments + BOM import + ProductImageViewSet (moderation)
 │   │   │   ├── serializers.py         # Product serializers (with content filter)
-│   │   │   ├── urls.py                # Product routes
+│   │   │   ├── urls.py                # Product routes (products, schematics, product-images)
 │   │   │   ├── admin.py               # Product admin + CSV export
 │   │   │   ├── filters.py             # Search filters
 │   │   │   ├── bom_utils.py           # BOM CSV column auto-detection and validation
@@ -263,7 +263,7 @@ junkbin.io/
 │       │   ├── UserProfile.tsx        # Public user profile page
 │       │   ├── Guidelines.tsx         # Community guidelines
 │       │   ├── Leaderboard.tsx        # User contribution rankings (clickable)
-│       │   ├── Moderation.tsx         # Report/review moderation dashboard
+│       │   ├── Moderation.tsx         # Moderation dashboard (pending content, user reviews, reports)
 │       │   ├── AnalyticsDashboard.tsx # Staff-only analytics (DAU, search, trending, activity)
 │       │   ├── Recipes.tsx            # Recipe listing + search/filter
 │       │   ├── RecipeDetail.tsx       # Recipe detail + BOM matching
@@ -369,6 +369,7 @@ See `.env.example` for required environment variables including:
 - `EMAIL_HOST` / `EMAIL_PORT` - SMTP configuration
 - `OAUTH_GOOGLE_CLIENT_ID` / `OAUTH_GOOGLE_CLIENT_SECRET` - Google OAuth credentials (backend)
 - `VITE_GOOGLE_CLIENT_ID` - Google OAuth client ID (frontend, public)
+- `NEXAR_CLIENT_ID` / `NEXAR_CLIENT_SECRET` - Nexar/Octopart API credentials (component pricing/datasheets)
 - `GRAFANA_ADMIN_PASSWORD` - Grafana admin password (default: admin)
 
 ---
