@@ -340,7 +340,7 @@ UNIQUE(user, content_type, object_id, item_type)
 
 #### Integration & Automation
 - ✅ Nexar/Octopart API integration — GraphQL MPN search with OAuth2, component pricing/availability/datasheets from 100+ distributors (DigiKey, Mouser, etc.), cached in specifications JSONField, "Lookup Pricing" button on ComponentDetail, Celery task for bulk enrichment (Feb 15, 2026)
-- ⬜ **SETUP: Nexar API credentials** — requires `NEXAR_CLIENT_ID` and `NEXAR_CLIENT_SECRET` in `.env` (sign up at https://nexar.com/api, free tier: 100 matched parts lifetime)
+- ✅ **SETUP: Nexar API credentials** — `NEXAR_CLIENT_ID` and `NEXAR_CLIENT_SECRET` configured in `.env` (sign up at https://nexar.com/api, free tier: 100 matched parts lifetime) (Feb 15, 2026)
 - ✅ DigiKey/Mouser API (availability/pricing) — covered by Nexar aggregation, no separate integrations needed (Feb 15, 2026)
 - ✅ Datasheet auto-linking — auto-populated from Nexar bestDatasheet URL when component.datasheet_url is empty (Feb 15, 2026)
 - ⬜ AI-assisted component recognition from images
