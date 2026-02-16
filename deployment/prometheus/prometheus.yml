@@ -11,10 +11,3 @@ scrape_configs:
         labels:
           service: 'junkbin-backend'
 
-  - job_name: 'nginx'
-    metrics_path: /stub_status
-    scrape_interval: 10s
-    static_configs:
-      - targets: ['nginx:80']
-        labels:
-          service: 'junkbin-nginx'

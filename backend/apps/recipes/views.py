@@ -27,6 +27,7 @@ from .matching import (
 )
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
 from apps.api.throttling import SubmissionRateThrottle
+from apps.api.metrics import submission_counter
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -128,6 +129,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         recipe = serializer.save()
+        submission_counter.labels(content_type='recipe').inc()
         if self.request.user.can_submit_without_review:
             recipe.is_approved = True
             recipe.save(update_fields=['is_approved'])

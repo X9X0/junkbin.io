@@ -35,6 +35,7 @@ from .filters import ProductFilter
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
 from apps.api.throttling import SubmissionRateThrottle
+from apps.api.metrics import submission_counter
 
 
 @extend_schema_view(
@@ -113,6 +114,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         product = serializer.save(created_by=self.request.user)
+        submission_counter.labels(content_type='product').inc()
 
         # Auto-approve for trusted users
         if self.request.user.can_submit_without_review:
@@ -480,6 +482,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 product=product,
                 uploaded_by=request.user
             )
+            submission_counter.labels(content_type='image').inc()
 
             # Auto-approve for trusted users
             if request.user.can_submit_without_review:
@@ -674,6 +677,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 product=product,
                 uploaded_by=request.user
             )
+            submission_counter.labels(content_type='schematic').inc()
 
             # Auto-approve for trusted users
             if request.user.can_submit_without_review:

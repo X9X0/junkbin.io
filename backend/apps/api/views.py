@@ -3,6 +3,8 @@ API views for Junkbin.io
 
 Root API view and global search functionality.
 """
+import time
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions, status
@@ -116,6 +118,7 @@ class SearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        start = time.monotonic()
         results = {}
 
         # Search products
@@ -217,6 +220,7 @@ class SearchView(APIView):
             )
         except Exception:
             pass  # Don't let logging failures break search
+        search_latency.observe(time.monotonic() - start)
         search_counter.labels(has_results=str(total_count > 0)).inc()
 
         return Response({
