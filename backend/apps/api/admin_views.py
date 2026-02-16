@@ -179,7 +179,6 @@ def system_status(request):
     admin_prefix = reverse('admin:index')
 
     links = [
-        {'label': 'Analytics (frontend login required)', 'url': '/analytics', 'external': True},
         {'label': 'Grafana (admin / GRAFANA_ADMIN_PASSWORD)', 'url': '/grafana/', 'external': True},
         {'label': 'Prometheus', 'url': '/prometheus/', 'external': True},
         {'label': 'Search Queries', 'url': f'{admin_prefix}api/searchquery/'},

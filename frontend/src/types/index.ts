@@ -20,6 +20,7 @@ export interface User {
   website?: string;
   reputation_score: number;
   contribution_count: number;
+  is_staff: boolean;
   is_trusted: boolean;
   is_moderator: boolean;
   created_at: string;
