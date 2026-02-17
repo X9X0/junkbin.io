@@ -4,7 +4,7 @@ Component serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Component, ComponentImage, ProductComponent, ComponentVote
+from .models import Component, ComponentImage, ComponentTypeImage, ProductComponent, ComponentVote
 from utils.file_validation import validate_image_file
 from utils.image_processing import strip_exif
 
@@ -82,14 +82,55 @@ class ComponentListSerializer(serializers.ModelSerializer):
         read_only=True
     )
     primary_value = serializers.CharField(read_only=True)
+    primary_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Component
         fields = [
             'id', 'part_number', 'manufacturer', 'component_type',
             'component_type_display', 'package_type', 'typical_function',
-            'primary_value', 'datasheet_url', 'usage_count', 'is_verified'
+            'primary_value', 'primary_image', 'datasheet_url',
+            'usage_count', 'is_verified'
         ]
+
+    def _get_type_image_cache(self):
+        """Load all ComponentTypeImage records once per serializer context."""
+        if '_type_images' not in self.context:
+            cache = {}
+            for ti in ComponentTypeImage.objects.all():
+                cache[(ti.component_type, ti.package_type)] = ti
+            self.context['_type_images'] = cache
+        return self.context['_type_images']
+
+    def get_primary_image(self, obj):
+        """
+        Resolve component image with fallback:
+        1. Component's own approved image (prefetched)
+        2. ComponentTypeImage for (type, package)
+        3. ComponentTypeImage for (type, '')
+        4. None
+        """
+        # Own image (uses prefetched data)
+        for image in obj.images.all():
+            if image.is_approved:
+                return ComponentImageSerializer(image, context=self.context).data
+
+        # Type+package default, then type-only default (in-memory lookup)
+        cache = self._get_type_image_cache()
+        type_img = cache.get((obj.component_type, obj.package_type))
+        if not type_img and obj.package_type:
+            type_img = cache.get((obj.component_type, ''))
+        if type_img:
+            request = self.context.get('request')
+            data = {'image': type_img.image.url, 'is_default': True}
+            if type_img.thumbnail:
+                url = type_img.thumbnail.url
+                data['thumbnail'] = request.build_absolute_uri(url) if request else url
+            if request:
+                data['image'] = request.build_absolute_uri(data['image'])
+            return data
+
+        return None
 
 
 class ComponentDetailSerializer(serializers.ModelSerializer):

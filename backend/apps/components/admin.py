@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from django.utils.html import format_html
 from import_export.admin import ImportExportActionModelAdmin
 
-from .models import Component, ComponentImage, ProductComponent, ComponentVote, ComponentViewStats
+from .models import Component, ComponentImage, ComponentTypeImage, ProductComponent, ComponentVote, ComponentViewStats
 from .resources import ComponentResource, ProductComponentResource
 
 
@@ -273,3 +273,31 @@ class ComponentImageAdmin(admin.ModelAdmin):
     def approve_images(self, request, queryset):
         updated = queryset.update(is_approved=True)
         self.message_user(request, f'{updated} images approved.')
+
+
+@admin.register(ComponentTypeImage)
+class ComponentTypeImageAdmin(admin.ModelAdmin):
+    """
+    Admin for default component type images.
+
+    Upload one image per component_type + package_type combo.
+    Leave package_type blank for a type-wide default.
+    """
+
+    list_display = ['component_type', 'package_type', 'image_preview']
+    list_filter = ['component_type']
+    search_fields = ['component_type', 'package_type']
+    readonly_fields = ['id', 'image_preview']
+
+    fieldsets = (
+        (None, {'fields': ('id', 'component_type', 'package_type', 'image', 'image_preview')}),
+    )
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.image.url
+            )
+        return '-'
+    image_preview.short_description = 'Preview'

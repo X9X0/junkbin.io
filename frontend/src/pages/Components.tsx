@@ -216,14 +216,22 @@ export default function Components() {
                   viewMode === 'grid' ? 'p-4' : 'p-4 flex gap-4'
                 )}
               >
-                {/* Icon */}
+                {/* Image / Icon */}
                 <div
                   className={clsx(
-                    'bg-cyber-black flex items-center justify-center border border-cyber-light/20',
+                    'bg-cyber-black flex items-center justify-center border border-cyber-light/20 overflow-hidden',
                     viewMode === 'grid' ? 'aspect-square mb-4' : 'w-16 h-16 flex-shrink-0'
                   )}
                 >
-                  <Package className="h-8 w-8 text-cyber-pink/60" />
+                  {component.primary_image ? (
+                    <img
+                      src={component.primary_image.thumbnail || component.primary_image.image}
+                      alt={component.part_number}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <Package className="h-8 w-8 text-cyber-pink/60" />
+                  )}
                 </div>
 
                 {/* Info */}
