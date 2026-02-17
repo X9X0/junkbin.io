@@ -46,7 +46,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
     ViewSet for component CRUD operations.
     """
 
-    queryset = Component.objects.select_related('created_by')
+    queryset = Component.objects.select_related('created_by').prefetch_related('images')
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ComponentFilter
     search_fields = ['part_number', 'manufacturer', 'description', 'typical_function']

@@ -374,6 +374,70 @@ class ComponentImage(models.Model):
         super().save(*args, **kwargs)
 
 
+def type_image_path(instance, filename):
+    """Generate upload path for component type default images."""
+    ext = filename.split('.')[-1]
+    new_filename = f'{uuid.uuid4().hex}.{ext}'
+    return f'component_types/{new_filename}'
+
+
+class ComponentTypeImage(models.Model):
+    """
+    Default images for component type + package combinations.
+
+    When a component has no images of its own, the system falls back to the
+    best-matching type image. Resolution order:
+      1. Exact match on (component_type, package_type)
+      2. Type-only match (package_type blank)
+      3. No image
+    """
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    component_type = models.CharField(
+        max_length=50,
+        choices=settings.COMPONENT_TYPES,
+        db_index=True,
+        help_text=_('Component type this image represents')
+    )
+    package_type = models.CharField(
+        max_length=50,
+        blank=True,
+        db_index=True,
+        help_text=_('Package type (e.g., 0603, SOT-23). Leave blank for a type-wide default.')
+    )
+    image = models.ImageField(
+        upload_to=type_image_path,
+        help_text=_('Default image for this type/package combination'),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)]
+    )
+    thumbnail = ImageSpecField(
+        source='image',
+        processors=[AlphaToBlack(), ResizeToFill(480, 270)],
+        format='JPEG',
+        options={'quality': 85}
+    )
+
+    class Meta:
+        verbose_name = _('component type image')
+        verbose_name_plural = _('component type images')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['component_type', 'package_type'],
+                name='unique_type_package_image'
+            )
+        ]
+        ordering = ['component_type', 'package_type']
+
+    def __str__(self):
+        if self.package_type:
+            return f'{self.get_component_type_display()} ({self.package_type})'
+        return f'{self.get_component_type_display()} (default)'
+
+
 class ComponentViewStats(models.Model):
     """Daily aggregate view counts for component popularity tracking."""
 
