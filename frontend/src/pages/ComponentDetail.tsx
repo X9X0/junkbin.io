@@ -5,12 +5,14 @@ import { components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import PricingPanel from '../components/PricingPanel';
-import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive } from 'lucide-react';
+import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
+import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus } from 'lucide-react';
 
 export default function ComponentDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated } = useAuth();
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
+  const [showUpload, setShowUpload] = useState(false);
 
   const { data: component, isLoading: componentLoading } = useQuery({
     queryKey: ['component', id],
@@ -63,9 +65,17 @@ export default function ComponentDetail() {
         {/* Component Info Card */}
         <div className="card-cyber p-6 mb-8">
           <div className="flex flex-col md:flex-row gap-6">
-            {/* Icon */}
-            <div className="w-24 h-24 bg-cyber-black flex items-center justify-center border border-cyber-light/20 flex-shrink-0">
-              <Package className="h-12 w-12 text-cyber-pink/60" />
+            {/* Image / Icon */}
+            <div className="w-24 h-24 bg-cyber-black flex items-center justify-center border border-cyber-light/20 flex-shrink-0 overflow-hidden">
+              {component.images && component.images.length > 0 ? (
+                <img
+                  src={component.images[0].thumbnail || component.images[0].image}
+                  alt={component.part_number}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <Package className="h-12 w-12 text-cyber-pink/60" />
+              )}
             </div>
 
             {/* Info */}
@@ -101,7 +111,7 @@ export default function ComponentDetail() {
                 <p className="text-gray-400 mb-4">{component.description}</p>
               )}
 
-              <div className="flex items-center gap-4 mt-2">
+              <div className="flex flex-wrap items-center gap-4 mt-2">
                 {component.datasheet_url && (
                   <a
                     href={component.datasheet_url}
@@ -122,9 +132,45 @@ export default function ComponentDetail() {
                     Add to My Junkbin
                   </button>
                 )}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setShowUpload(!showUpload)}
+                    className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
+                  >
+                    <ImagePlus className="h-4 w-4" />
+                    {showUpload ? 'Hide Upload' : 'Upload Image'}
+                  </button>
+                )}
               </div>
             </div>
           </div>
+
+          {/* Image gallery */}
+          {component.images && component.images.length > 0 && (
+            <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {component.images.map((img: any) => (
+                <div key={img.id} className="aspect-video bg-cyber-black border border-cyber-light/20 overflow-hidden">
+                  <img
+                    src={img.medium || img.image}
+                    alt={img.caption || component.part_number}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Image upload section */}
+          {showUpload && isAuthenticated && (
+            <div className="mt-6">
+              <ImageUpload
+                uploadFn={(formData) => components.uploadImage(id!, formData)}
+                invalidateKey={['component', id!]}
+                imageTypes={COMPONENT_IMAGE_TYPES}
+                onSuccess={() => setShowUpload(false)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Pricing & Availability */}

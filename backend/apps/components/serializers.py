@@ -4,7 +4,9 @@ Component serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Component, ProductComponent, ComponentVote
+from .models import Component, ComponentImage, ProductComponent, ComponentVote
+from utils.file_validation import validate_image_file
+from utils.image_processing import strip_exif
 
 User = get_user_model()
 
@@ -15,6 +17,61 @@ class CreatedBySerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'is_trusted']
+
+
+class ComponentImageSerializer(serializers.ModelSerializer):
+    """Serializer for component images."""
+
+    thumbnail = serializers.SerializerMethodField()
+    medium = serializers.SerializerMethodField()
+    uploaded_by = serializers.SerializerMethodField()
+    component = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    class Meta:
+        model = ComponentImage
+        fields = [
+            'id', 'component', 'image', 'thumbnail', 'medium',
+            'image_type', 'caption', 'display_order',
+            'width', 'height', 'uploaded_by', 'uploaded_at', 'is_approved'
+        ]
+        read_only_fields = ['id', 'width', 'height', 'uploaded_at', 'is_approved']
+
+    def get_uploaded_by(self, obj):
+        if obj.uploaded_by:
+            return {'id': str(obj.uploaded_by.id), 'username': obj.uploaded_by.username}
+        return None
+
+    def get_thumbnail(self, obj):
+        if obj.thumbnail:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.thumbnail.url)
+            return obj.thumbnail.url
+        return None
+
+    def get_medium(self, obj):
+        if obj.medium:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.medium.url)
+            return obj.medium.url
+        return None
+
+
+class ComponentImageUploadSerializer(serializers.ModelSerializer):
+    """Serializer for uploading component images."""
+
+    class Meta:
+        model = ComponentImage
+        fields = ['image', 'image_type', 'caption', 'display_order']
+
+    def validate_image(self, value):
+        validate_image_file(value)
+        stripped = strip_exif(value)
+        if stripped != value:
+            value.file = stripped
+            value.seek(0)
+        return value
 
 
 class ComponentListSerializer(serializers.ModelSerializer):
@@ -45,6 +102,7 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
     created_by = CreatedBySerializer(read_only=True)
     cross_references = ComponentListSerializer(many=True, read_only=True)
     pricing_data = serializers.SerializerMethodField()
+    images = serializers.SerializerMethodField()
 
     class Meta:
         model = Component
@@ -54,7 +112,8 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
             'description', 'typical_function', 'specifications',
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
-            'created_by', 'created_at', 'updated_at', 'pricing_data'
+            'created_by', 'created_at', 'updated_at', 'pricing_data',
+            'images'
         ]
         read_only_fields = [
             'id', 'usage_count', 'is_verified',
@@ -65,6 +124,13 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
         """Return cached Nexar data from specifications if available."""
         specs = obj.specifications or {}
         return specs.get('nexar_data')
+
+    def get_images(self, obj):
+        request = self.context.get('request')
+        qs = obj.images.all()
+        if not (request and hasattr(request, 'user') and request.user.is_staff):
+            qs = qs.filter(is_approved=True)
+        return ComponentImageSerializer(qs, many=True, context=self.context).data
 
 
 class ComponentCreateSerializer(serializers.ModelSerializer):

@@ -5,10 +5,32 @@ import csv
 
 from django.contrib import admin
 from django.http import HttpResponse
+from django.utils.html import format_html
 from import_export.admin import ImportExportActionModelAdmin
 
-from .models import Component, ProductComponent, ComponentVote, ComponentViewStats
+from .models import Component, ComponentImage, ProductComponent, ComponentVote, ComponentViewStats
 from .resources import ComponentResource, ProductComponentResource
+
+
+class ComponentImageInline(admin.TabularInline):
+    """Inline admin for component images."""
+
+    model = ComponentImage
+    extra = 1
+    readonly_fields = ['thumbnail_preview', 'uploaded_at', 'uploaded_by']
+    fields = [
+        'thumbnail_preview', 'image', 'image_type',
+        'caption', 'display_order', 'is_approved', 'uploaded_by', 'uploaded_at'
+    ]
+
+    def thumbnail_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 100px; max-width: 100px;" />',
+                obj.image.url
+            )
+        return '-'
+    thumbnail_preview.short_description = 'Preview'
 
 
 class ProductComponentInline(admin.TabularInline):
@@ -65,7 +87,7 @@ class ComponentAdmin(ImportExportActionModelAdmin):
         )}),
     )
 
-    inlines = [ProductComponentInline]
+    inlines = [ComponentImageInline, ProductComponentInline]
 
     actions = ['verify_components', 'export_as_csv']
 
@@ -204,3 +226,50 @@ class ComponentViewStatsAdmin(admin.ModelAdmin):
 
     def has_change_permission(self, request, obj=None):
         return False
+
+
+@admin.register(ComponentImage)
+class ComponentImageAdmin(admin.ModelAdmin):
+    """Admin for component images."""
+
+    list_display = [
+        'component', 'image_type', 'caption', 'is_approved',
+        'uploaded_by', 'uploaded_at'
+    ]
+    list_filter = ['image_type', 'is_approved', 'uploaded_at']
+    search_fields = ['component__part_number', 'component__manufacturer', 'caption']
+    readonly_fields = [
+        'id', 'image_preview', 'width', 'height',
+        'file_size', 'uploaded_by', 'uploaded_at'
+    ]
+    ordering = ['-uploaded_at']
+
+    fieldsets = (
+        (None, {'fields': ('id', 'component', 'image', 'image_preview')}),
+        ('Details', {'fields': (
+            'image_type', 'caption', 'display_order'
+        )}),
+        ('Technical', {'fields': (
+            'width', 'height', 'file_size'
+        )}),
+        ('Status', {'fields': ('is_approved',)}),
+        ('Metadata', {'fields': (
+            'uploaded_by', 'uploaded_at'
+        )}),
+    )
+
+    actions = ['approve_images']
+
+    def image_preview(self, obj):
+        if obj.image:
+            return format_html(
+                '<img src="{}" style="max-height: 300px; max-width: 300px;" />',
+                obj.image.url
+            )
+        return '-'
+    image_preview.short_description = 'Preview'
+
+    @admin.action(description='Approve selected images')
+    def approve_images(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} images approved.')

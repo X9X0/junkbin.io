@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from django.db.models import Sum, F
 from django.utils import timezone
@@ -17,11 +18,13 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from utils.cache import staff_key_prefix
 from apps.api.metrics import component_view_counter
 
-from .models import Component, ComponentViewStats, ProductComponent, ComponentVote
+from .models import Component, ComponentImage, ComponentViewStats, ProductComponent, ComponentVote
 from .serializers import (
     ComponentListSerializer,
     ComponentDetailSerializer,
     ComponentCreateSerializer,
+    ComponentImageSerializer,
+    ComponentImageUploadSerializer,
     ProductComponentSerializer,
     ProductComponentCreateSerializer,
     CrossReferenceResultSerializer,
@@ -58,7 +61,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         return ComponentDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'add_cross_reference']:
+        if self.action in ['create', 'add_cross_reference', 'upload_image']:
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action == 'lookup':
             return [permissions.IsAuthenticated()]
@@ -96,6 +99,55 @@ class ComponentViewSet(viewsets.ModelViewSet):
             )
         component_view_counter.inc()
         return super().retrieve(request, *args, **kwargs)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        parser_classes=[MultiPartParser, FormParser]
+    )
+    def upload_image(self, request, pk=None):
+        """Upload an image for this component."""
+        from apps.api.metrics import submission_counter
+
+        component = self.get_object()
+        serializer = ComponentImageUploadSerializer(data=request.data)
+        if serializer.is_valid():
+            image = serializer.save(
+                component=component,
+                uploaded_by=request.user
+            )
+            submission_counter.labels(content_type='component_image').inc()
+
+            if request.user.can_submit_without_review:
+                image.is_approved = True
+                image.save(update_fields=['is_approved'])
+                request.user.increment_contribution()
+
+            return Response(
+                ComponentImageSerializer(image, context={'request': request}).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['get'])
+    def images(self, request, pk=None):
+        """Get all images for this component."""
+        component = self.get_object()
+        images = component.images.all()
+
+        if not request.user.is_staff:
+            if request.user.is_authenticated:
+                images = images.filter(
+                    models.Q(is_approved=True) |
+                    models.Q(uploaded_by=request.user)
+                )
+            else:
+                images = images.filter(is_approved=True)
+
+        serializer = ComponentImageSerializer(
+            images, many=True, context={'request': request}
+        )
+        return Response(serializer.data)
 
     @method_decorator(cache_page(60 * 15))
     @action(detail=False, methods=['get'])

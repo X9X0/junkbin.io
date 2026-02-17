@@ -1,11 +1,20 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
-import { Upload, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Camera, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 
+interface ImageTypeOption {
+  value: string;
+  label: string;
+}
+
 interface ImageUploadProps {
-  productId: string;
+  productId?: string;
+  uploadFn?: (formData: FormData) => Promise<any>;
+  invalidateKey?: string[];
+  imageTypes?: ImageTypeOption[];
+  defaultImageType?: string;
   onSuccess?: () => void;
 }
 
@@ -16,7 +25,7 @@ interface PreviewFile {
   imageType: string;
 }
 
-const IMAGE_TYPES = [
+const PRODUCT_IMAGE_TYPES: ImageTypeOption[] = [
   { value: 'overview', label: 'Overview' },
   { value: 'pcb_front', label: 'PCB Front' },
   { value: 'pcb_back', label: 'PCB Back' },
@@ -28,25 +37,53 @@ const IMAGE_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-export default function ImageUpload({ productId, onSuccess }: ImageUploadProps) {
+export const COMPONENT_IMAGE_TYPES: ImageTypeOption[] = [
+  { value: 'package', label: 'Package Photo' },
+  { value: 'markings', label: 'Markings/Labels' },
+  { value: 'closeup', label: 'Close-up Detail' },
+  { value: 'pinout', label: 'Pinout Reference' },
+  { value: 'application', label: 'Application/In-Circuit' },
+  { value: 'other', label: 'Other' },
+];
+
+export default function ImageUpload({
+  productId,
+  uploadFn,
+  invalidateKey,
+  imageTypes,
+  defaultImageType,
+  onSuccess,
+}: ImageUploadProps) {
+  const types = imageTypes || PRODUCT_IMAGE_TYPES;
+  const defaultType = defaultImageType || types[0].value;
+  const queryKey = invalidateKey || (productId ? ['product', productId] : []);
+
   const [files, setFiles] = useState<PreviewFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const doUpload = uploadFn || (productId
+    ? (formData: FormData) => products.uploadImage(productId, formData)
+    : undefined);
 
   const uploadMutation = useMutation({
     mutationFn: async (previewFile: PreviewFile) => {
+      if (!doUpload) throw new Error('No upload function configured');
       const formData = new FormData();
       formData.append('image', previewFile.file);
       formData.append('image_type', previewFile.imageType);
       if (previewFile.caption) {
         formData.append('caption', previewFile.caption);
       }
-      return products.uploadImage(productId, formData);
+      return doUpload(formData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['product', productId] });
+      if (queryKey.length > 0) {
+        queryClient.invalidateQueries({ queryKey });
+      }
     },
   });
 
@@ -54,14 +91,8 @@ export default function ImageUpload({ productId, onSuccess }: ImageUploadProps) 
     if (!newFiles) return;
 
     const validFiles = Array.from(newFiles).filter((file) => {
-      // Check file type
-      if (!file.type.startsWith('image/')) {
-        return false;
-      }
-      // Check file size (max 10MB)
-      if (file.size > 10 * 1024 * 1024) {
-        return false;
-      }
+      if (!file.type.startsWith('image/')) return false;
+      if (file.size > 10 * 1024 * 1024) return false;
       return true;
     });
 
@@ -69,7 +100,7 @@ export default function ImageUpload({ productId, onSuccess }: ImageUploadProps) 
       file,
       preview: URL.createObjectURL(file),
       caption: '',
-      imageType: 'overview',
+      imageType: defaultType,
     }));
 
     setFiles((prev) => [...prev, ...previews]);
@@ -121,7 +152,6 @@ export default function ImageUpload({ productId, onSuccess }: ImageUploadProps) 
       }
     }
 
-    // Clean up
     files.forEach((f) => URL.revokeObjectURL(f.preview));
     setFiles([]);
     setUploadProgress(null);
@@ -130,39 +160,66 @@ export default function ImageUpload({ productId, onSuccess }: ImageUploadProps) 
 
   return (
     <div className="space-y-4">
-      {/* Drop zone */}
-      <div
-        onDrop={handleDrop}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onClick={() => fileInputRef.current?.click()}
-        className={clsx(
-          'border-2 border-dashed p-8 text-center cursor-pointer transition-all',
-          isDragging
-            ? 'border-cyber-cyan bg-cyber-cyan/10'
-            : 'border-cyber-light/50 hover:border-cyber-cyan/50 hover:bg-cyber-dark/50'
-        )}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) => handleFiles(e.target.files)}
-          className="hidden"
-        />
-        <Upload
+      {/* Drop zone + camera */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onClick={() => fileInputRef.current?.click()}
           className={clsx(
-            'h-10 w-10 mx-auto mb-3',
-            isDragging ? 'text-cyber-cyan' : 'text-gray-500'
+            'border-2 border-dashed p-8 text-center cursor-pointer transition-all flex-1',
+            isDragging
+              ? 'border-cyber-cyan bg-cyber-cyan/10'
+              : 'border-cyber-light/50 hover:border-cyber-cyan/50 hover:bg-cyber-dark/50'
           )}
-        />
-        <p className="text-gray-400 mb-1">
-          <span className="text-cyber-cyan">Click to upload</span> or drag and drop
-        </p>
-        <p className="text-xs text-gray-600 font-mono">
-          PNG, JPG, GIF up to 10MB
-        </p>
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => handleFiles(e.target.files)}
+            className="hidden"
+          />
+          <Upload
+            className={clsx(
+              'h-10 w-10 mx-auto mb-3',
+              isDragging ? 'text-cyber-cyan' : 'text-gray-500'
+            )}
+          />
+          <p className="text-gray-400 mb-1">
+            <span className="text-cyber-cyan">Click to upload</span> or drag and drop
+          </p>
+          <p className="text-xs text-gray-600 font-mono">
+            PNG, JPG, GIF up to 10MB
+          </p>
+        </div>
+
+        {/* Camera capture button */}
+        <div
+          onClick={() => cameraInputRef.current?.click()}
+          className="border-2 border-dashed border-cyber-light/50 hover:border-cyber-cyan/50 hover:bg-cyber-dark/50 p-8 text-center cursor-pointer transition-all sm:w-48"
+        >
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.target.value = '';
+            }}
+            className="hidden"
+          />
+          <Camera className="h-10 w-10 mx-auto mb-3 text-gray-500" />
+          <p className="text-gray-400 mb-1">
+            <span className="text-cyber-cyan">Take Photo</span>
+          </p>
+          <p className="text-xs text-gray-600 font-mono">
+            Use camera
+          </p>
+        </div>
       </div>
 
       {/* Preview grid */}
@@ -202,7 +259,7 @@ export default function ImageUpload({ productId, onSuccess }: ImageUploadProps) 
                   onChange={(e) => updateFile(index, { imageType: e.target.value })}
                   className="input-cyber text-sm py-1 mb-2"
                 >
-                  {IMAGE_TYPES.map((type) => (
+                  {types.map((type) => (
                     <option key={type.value} value={type.value}>
                       {type.label}
                     </option>

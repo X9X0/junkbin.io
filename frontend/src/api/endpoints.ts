@@ -266,6 +266,13 @@ export const components = {
     const response = await api.post(`/components/${id}/lookup/`);
     return response.data;
   },
+
+  uploadImage: async (id: string, formData: FormData): Promise<any> => {
+    const response = await api.post(`/components/${id}/upload_image/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };
 
 // Product-component voting endpoints

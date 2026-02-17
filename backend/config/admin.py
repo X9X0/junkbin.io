@@ -17,6 +17,7 @@ SIDEBAR_GROUPS = {
         ('components', 'productcomponent'),
         ('products', 'schematic'),
         ('products', 'productimage'),
+        ('components', 'componentimage'),
     ],
     'Community': [
         ('products', 'productcomment'),
@@ -40,6 +41,8 @@ SIDEBAR_GROUPS = {
         ('django_celery_beat', 'periodictask'),
         ('django_celery_results', 'taskresult'),
         ('axes', 'accessattempt'),
+        ('axes', 'accesslog'),
+        ('axes', 'accessfailurelog'),
     ],
     'Analytics': [
         ('api', 'searchquery'),
