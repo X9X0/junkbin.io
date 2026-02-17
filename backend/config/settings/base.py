@@ -294,6 +294,7 @@ AXES_COOLOFF_TIME = 1  # Lock out for 1 hour (in hours)
 AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # Lock by username + IP combo
 AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
 AXES_LOCKOUT_CALLABLE = 'apps.api.middleware.axes_lockout_response'  # Custom lockout message
+AXES_ENABLE_ACCESS_FAILURE_LOG = True  # Persist failed login attempts in AccessFailureLog
 AXES_IPWARE_PROXY_COUNT = 1  # Trust 1 proxy (nginx)
 AXES_IPWARE_META_PRECEDENCE_ORDER = [
     'HTTP_X_FORWARDED_FOR',

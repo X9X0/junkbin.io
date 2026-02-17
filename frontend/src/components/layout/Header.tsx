@@ -332,13 +332,35 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="md:hidden p-2 text-gray-400 hover:text-white"
-          >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
+          {/* Mobile controls */}
+          <div className="md:hidden flex items-center gap-1">
+            {isAuthenticated ? (
+              <Link
+                to="/profile"
+                className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors relative"
+              >
+                <User className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-cyber-pink text-[9px] font-mono font-bold text-white px-0.5">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <Link
+                to="/login"
+                className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
+              >
+                <User className="h-5 w-5" />
+              </Link>
+            )}
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="p-2 text-gray-400 hover:text-white"
+            >
+              {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile menu */}

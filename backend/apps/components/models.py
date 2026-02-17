@@ -8,7 +8,12 @@ from django.db import models
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector, SearchVectorField
+from django.core.validators import FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
+from imagekit.models import ImageSpecField
+from imagekit.processors import ResizeToFill, ResizeToFit
+
+from apps.products.models import AlphaToBlack, ALLOWED_IMAGE_EXTENSIONS
 
 
 class Component(models.Model):
@@ -265,6 +270,108 @@ class Component(models.Model):
         """Update the denormalized usage count."""
         self.usage_count = self.product_components.count()
         self.save(update_fields=['usage_count'])
+
+
+def component_image_path(instance, filename):
+    """Generate upload path for component images."""
+    ext = filename.split('.')[-1]
+    new_filename = f'{uuid.uuid4().hex}.{ext}'
+    return f'components/{instance.component.id}/{new_filename}'
+
+
+class ComponentImage(models.Model):
+    """Images associated with a component (photos, markings, etc.)"""
+
+    class ImageType(models.TextChoices):
+        PACKAGE = 'package', _('Package Photo')
+        MARKINGS = 'markings', _('Markings/Labels')
+        CLOSEUP = 'closeup', _('Close-up Detail')
+        PINOUT = 'pinout', _('Pinout Reference')
+        APPLICATION = 'application', _('Application/In-Circuit')
+        OTHER = 'other', _('Other')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    component = models.ForeignKey(
+        Component,
+        on_delete=models.CASCADE,
+        related_name='images'
+    )
+
+    image = models.ImageField(
+        upload_to=component_image_path,
+        help_text=_('Component image'),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)]
+    )
+
+    thumbnail = ImageSpecField(
+        source='image',
+        processors=[AlphaToBlack(), ResizeToFill(480, 270)],
+        format='JPEG',
+        options={'quality': 85}
+    )
+    medium = ImageSpecField(
+        source='image',
+        processors=[AlphaToBlack(), ResizeToFit(800, 800)],
+        format='JPEG',
+        options={'quality': 90}
+    )
+
+    image_type = models.CharField(
+        max_length=20,
+        choices=ImageType.choices,
+        default=ImageType.PACKAGE
+    )
+    caption = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text=_('Image caption or description')
+    )
+    display_order = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_('Order in image gallery')
+    )
+
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_component_images'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    width = models.PositiveIntegerField(null=True, blank=True)
+    height = models.PositiveIntegerField(null=True, blank=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
+
+    is_approved = models.BooleanField(
+        default=False,
+        help_text=_('Whether image has been approved by moderator')
+    )
+
+    class Meta:
+        verbose_name = _('component image')
+        verbose_name_plural = _('component images')
+        ordering = ['display_order', 'uploaded_at']
+        indexes = [
+            models.Index(fields=['is_approved', '-uploaded_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.component} - {self.get_image_type_display()}'
+
+    def save(self, *args, **kwargs):
+        if self.image and not self.width:
+            try:
+                self.width = self.image.width
+                self.height = self.image.height
+                self.file_size = self.image.size
+            except Exception:
+                pass
+        super().save(*args, **kwargs)
 
 
 class ComponentViewStats(models.Model):
