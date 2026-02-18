@@ -1,0 +1,16 @@
+# Junkbin.io - Nginx log rotation
+# Rotates logs inside the Docker nginx_logs volume
+# Install: cp deployment/logrotate/junkbin /etc/logrotate.d/junkbin
+
+/var/lib/docker/volumes/*_nginx_logs/_data/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    sharedscripts
+    postrotate
+        docker exec junkbin_nginx nginx -s reopen 2>/dev/null || true
+    endscript
+}

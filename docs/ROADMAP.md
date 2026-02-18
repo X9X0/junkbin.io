@@ -429,9 +429,9 @@ The `junkbin-deploy.sh` script will handle:
 ### Monitoring Setup
 - ✅ Health check endpoints (`/api/health/`, nginx `/health`)
 - ✅ Admin system status dashboard (`/admin/system-status/`) — service health, system metrics, Celery task history, app stats, quick links (Feb 12, 2026)
-- Log rotation (logrotate)
-- Disk space monitoring
-- Service restart on failure (systemd)
+- ✅ Log rotation — Docker JSON file driver (10MB x 5 per container), logrotate config for nginx volume logs with daily rotation/30d retention (Feb 17, 2026)
+- ✅ Disk space monitoring — `disk-monitor.sh` with warning (80%) and critical (90%) email alerts, systemd timer running hourly (Feb 17, 2026)
+- ✅ Service restart on failure — systemd unit (`junkbin.service`) starts Docker Compose on boot with `Restart=on-failure` and 10s backoff (Feb 17, 2026)
 
 ### Update & Maintenance
 - Pull latest code
@@ -581,8 +581,8 @@ The `junkbin-deploy.sh` script will handle:
 - ✅ Proper indexing on search fields — GIN trigram indexes (pg_trgm) on 8 text fields, GIN indexes on SearchVectorFields
 - ✅ Query optimization with select_related/prefetch_related — N+1 fix in cross_reference endpoint
 - ✅ Full-text search with relevance ranking — PostgreSQL SearchVector/SearchQuery/SearchRank with weighted fields
-- Database connection pooling
-- Read replicas for scaling (future)
+- ✅ Database connection pooling — `CONN_MAX_AGE=60` + `CONN_HEALTH_CHECKS=True` in production settings (already configured)
+- ~~Read replicas for scaling~~ — deferred; not needed at current scale
 
 ### Caching
 - Redis for session data

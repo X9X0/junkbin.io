@@ -24,6 +24,9 @@
 - [Backup & Restore](#backup--restore)
 - [Updating](#updating)
 - [Monitoring](#monitoring)
+  - [Log Rotation](#log-rotation)
+  - [Disk Space Monitoring](#disk-space-monitoring)
+  - [Systemd Service](#systemd-service)
 - [Troubleshooting](#troubleshooting)
 - [Contributing Code](#contributing-code)
 
@@ -71,7 +74,9 @@ sudo bash deployment/junkbin-deploy.sh
 7. **Runs migrations** — Database schema setup.
 8. **Creates superuser** — Admin account for Django admin.
 9. **Sets up SSL** — Let's Encrypt certificate with auto-renewal.
-10. **Seeds data** (optional) — Sample products and components.
+10. **Configures logrotate** — Daily nginx log rotation with 30-day retention.
+11. **Installs systemd services** — Auto-start on boot with failure restart, hourly disk space monitor.
+12. **Seeds data** (optional) — Sample products and components.
 
 ---
 
@@ -558,6 +563,58 @@ Staff users can access `/analytics` for:
 - Content statistics
 - Activity breakdown with date range selector (7d/30d/90d)
 
+### Log Rotation
+
+Container logs are capped by Docker's JSON file driver (`max-size: 10m`, `max-file: 5` per service) to prevent unbounded disk growth.
+
+Nginx access/error logs inside the `nginx_logs` Docker volume are rotated by logrotate:
+
+- **Config**: `deployment/logrotate/junkbin` (installed to `/etc/logrotate.d/junkbin`).
+- **Schedule**: Daily rotation, 30-day retention, compressed.
+- **Post-rotate**: Sends `nginx -s reopen` to the container so nginx writes to the new log file.
+
+### Disk Space Monitoring
+
+`deployment/disk-monitor.sh` checks root filesystem usage and sends email alerts:
+
+| Threshold | Level | Action |
+|-----------|-------|--------|
+| 80% | Warning | Email with `df -h` output and cleanup suggestion |
+| 90% | Critical | Email with Docker disk usage details and largest directories |
+
+The script runs hourly via a systemd timer:
+
+```bash
+# Check timer status
+systemctl status junkbin-disk-monitor.timer
+
+# Run manually
+sudo /opt/junkbin.io/deployment/disk-monitor.sh
+```
+
+Set `JUNKBIN_ADMIN_EMAIL` in the environment to route alerts to a specific address (defaults to `root`).
+
+### Systemd Service
+
+The `junkbin.service` systemd unit manages the Docker Compose stack:
+
+```bash
+# Service management
+sudo systemctl start junkbin      # Start all containers
+sudo systemctl stop junkbin       # Stop all containers
+sudo systemctl restart junkbin    # Restart all containers
+sudo systemctl status junkbin     # Check status
+
+# Enable auto-start on boot
+sudo systemctl enable junkbin
+```
+
+- **Auto-start**: Starts after `docker.service` on boot.
+- **Failure restart**: Restarts on failure with 10-second backoff.
+- **Working directory**: `/opt/junkbin.io` (production install path).
+
+Files: `deployment/systemd/junkbin.service`, `deployment/systemd/junkbin-disk-monitor.service`, `deployment/systemd/junkbin-disk-monitor.timer`.
+
 ---
 
 ## Troubleshooting
@@ -625,6 +682,8 @@ docker compose logs -f nginx
 # Last 100 lines
 docker compose logs --tail=100 backend
 ```
+
+Container logs are automatically rotated (10MB x 5 files per service). Nginx volume logs are rotated daily by logrotate — see [Log Rotation](#log-rotation) above.
 
 ---
 
