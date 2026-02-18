@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import {
-  BookOpen, Users, Search, Upload, MessageSquare, Package, Code,
-  Server, Terminal, ChevronRight, Menu, X, ExternalLink, Keyboard,
-  Shield, Star, Heart, Send, Bell, Cpu, Wrench,
+  BookOpen, Users, Search, Upload, MessageSquare, Package,
+  ChevronRight, Menu, X,
+  Shield, Star, Heart, Send, Bell,
 } from 'lucide-react';
 
 interface Section {
@@ -21,20 +21,13 @@ const userSections: Section[] = [
   { id: 'messaging', label: 'Messaging', icon: <MessageSquare className="h-4 w-4" />, color: 'text-cyber-yellow' },
 ];
 
-const devSections: Section[] = [
-  { id: 'api', label: 'API Overview', icon: <Code className="h-4 w-4" />, color: 'text-cyber-pink' },
-  { id: 'self-hosting', label: 'Self-Hosting', icon: <Server className="h-4 w-4" />, color: 'text-cyber-pink' },
-  { id: 'commands', label: 'Management Commands', icon: <Terminal className="h-4 w-4" />, color: 'text-cyber-cyan' },
-  { id: 'contributing-code', label: 'Contributing Code', icon: <Wrench className="h-4 w-4" />, color: 'text-cyber-cyan' },
-];
-
 export default function Docs() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('getting-started');
 
   useEffect(() => {
     const handleScroll = () => {
-      const sections = [...userSections, ...devSections];
+      const sections = userSections;
       for (const section of sections) {
         const el = document.getElementById(section.id);
         if (el) {
@@ -70,7 +63,7 @@ export default function Docs() {
         </h1>
       </div>
       <p className="text-gray-500 text-sm font-mono mb-8">
-        Everything you need to use, contribute to, and self-host Junkbin.io
+        Everything you need to use and contribute to Junkbin.io
       </p>
 
       {/* Mobile sidebar toggle */}
@@ -96,31 +89,6 @@ export default function Docs() {
               </h3>
               <ul className="space-y-1">
                 {userSections.map((s) => (
-                  <li key={s.id}>
-                    <button
-                      onClick={() => scrollTo(s.id)}
-                      className={`flex items-center gap-2 w-full text-left px-2 py-1.5 text-sm transition-colors ${
-                        activeSection === s.id
-                          ? `${s.color} bg-white/5`
-                          : 'text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      {s.icon}
-                      {s.label}
-                      {activeSection === s.id && (
-                        <ChevronRight className="h-3 w-3 ml-auto" />
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-mono text-xs font-semibold text-gray-500 tracking-wider mb-2">
-                DEVELOPER GUIDE
-              </h3>
-              <ul className="space-y-1">
-                {devSections.map((s) => (
                   <li key={s.id}>
                     <button
                       onClick={() => scrollTo(s.id)}
@@ -459,276 +427,6 @@ export default function Docs() {
                   Blocked users can't start new conversations with you or reply to existing ones. You can
                   also report messages that violate the community guidelines.
                 </p>
-              </div>
-            </div>
-          </section>
-
-          {/* ─── DEVELOPER GUIDE ─── */}
-
-          <div className="border-t border-cyber-light/30 pt-8">
-            <p className="font-mono text-xs text-gray-500 tracking-wider mb-4">DEVELOPER GUIDE</p>
-          </div>
-
-          {/* API Overview */}
-          <section id="api" className="card-cyber p-6 scroll-mt-20">
-            <div className="flex items-center gap-2 mb-4">
-              <Code className="h-5 w-5 text-cyber-pink" />
-              <h2 className="font-display text-lg font-bold text-cyber-pink tracking-wider">
-                API OVERVIEW
-              </h2>
-            </div>
-
-            <div className="space-y-4 text-sm text-gray-300">
-              <p className="leading-relaxed">
-                Junkbin.io exposes a full REST API built with Django REST Framework. Interactive documentation
-                is available at{' '}
-                <a href="/api/docs/" target="_blank" rel="noopener noreferrer" className="text-cyber-cyan hover:underline inline-flex items-center gap-1">
-                  /api/docs/ <ExternalLink className="h-3 w-3" />
-                </a>{' '}
-                (Swagger/OpenAPI via drf-spectacular).
-              </p>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Authentication</h3>
-                <p className="leading-relaxed">
-                  The API uses JWT (JSON Web Tokens) with short-lived access tokens and refresh token rotation.
-                  Obtain tokens via <code className="text-cyber-pink bg-cyber-dark px-1">POST /api/auth/login/</code>.
-                  Include the access token in requests as{' '}
-                  <code className="text-cyber-pink bg-cyber-dark px-1">Authorization: Bearer &lt;token&gt;</code>.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Rate Limits</h3>
-                <p className="leading-relaxed">
-                  API endpoints are rate-limited to prevent abuse. Default limits are configurable via environment
-                  variables. Auth endpoints have stricter limits. Rate limit headers are included in every response.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-2">Key Endpoints</h3>
-                <div className="font-mono text-xs space-y-1">
-                  {[
-                    ['GET', '/api/products/', 'List / search products'],
-                    ['GET', '/api/components/', 'List / search components'],
-                    ['GET', '/api/components/{id}/products/', 'Cross-reference'],
-                    ['GET', '/api/schematics/', 'List schematics'],
-                    ['GET', '/api/search/', 'Global search'],
-                    ['POST', '/api/submissions/', 'Submit content'],
-                    ['GET', '/api/junkbin/', 'Public junkbin items'],
-                    ['GET', '/api/recipes/', 'Community recipes'],
-                  ].map(([method, path, desc]) => (
-                    <div key={path} className="flex gap-3">
-                      <span className={method === 'GET' ? 'text-cyber-green' : 'text-cyber-yellow'}>
-                        {method}
-                      </span>
-                      <span className="text-gray-400">{path}</span>
-                      <span className="text-gray-600">— {desc}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Self-Hosting */}
-          <section id="self-hosting" className="card-cyber p-6 scroll-mt-20">
-            <div className="flex items-center gap-2 mb-4">
-              <Server className="h-5 w-5 text-cyber-pink" />
-              <h2 className="font-display text-lg font-bold text-cyber-pink tracking-wider">
-                SELF-HOSTING
-              </h2>
-            </div>
-
-            <div className="space-y-4 text-sm text-gray-300">
-              <div>
-                <h3 className="text-white font-semibold mb-1">Prerequisites</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-400">
-                  <li>Linux server (Ubuntu 22.04+, Debian 12+, Fedora 39+, Arch, CentOS/RHEL 9+)</li>
-                  <li>2 GB RAM minimum, 4 GB recommended</li>
-                  <li>10 GB disk space</li>
-                  <li>Domain name (for SSL)</li>
-                  <li>Ports 80 and 443 available</li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Quick Deploy</h3>
-                <p className="leading-relaxed mb-2">
-                  The automated deploy script handles everything — dependencies, Docker, SSL, firewall, and fail2ban:
-                </p>
-                <pre className="bg-cyber-dark border border-cyber-light/30 p-3 overflow-x-auto text-xs font-mono">
-                  <code>{`git clone https://github.com/junkbin/junkbin.io.git
-cd junkbin.io
-sudo bash deployment/junkbin-deploy.sh`}</code>
-                </pre>
-                <p className="text-gray-500 mt-2">
-                  The script auto-detects your Linux distribution and walks you through configuration interactively.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Docker Compose (Manual)</h3>
-                <p className="leading-relaxed mb-2">
-                  For manual setup, copy <code className="text-cyber-pink bg-cyber-dark px-1">.env.example</code> to{' '}
-                  <code className="text-cyber-pink bg-cyber-dark px-1">.env</code>, configure your settings, then:
-                </p>
-                <pre className="bg-cyber-dark border border-cyber-light/30 p-3 overflow-x-auto text-xs font-mono">
-                  <code>{`cp .env.example .env
-# Edit .env with your settings
-docker compose up -d
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py createsuperuser
-docker compose exec backend python manage.py collectstatic --noinput`}</code>
-                </pre>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Essential Environment Variables</h3>
-                <div className="font-mono text-xs space-y-1">
-                  {[
-                    ['SECRET_KEY', 'Django secret key (generate a unique one)'],
-                    ['POSTGRES_PASSWORD', 'PostgreSQL password'],
-                    ['ALLOWED_HOSTS', 'Your domain name(s)'],
-                    ['SITE_URL', 'Full URL (https://yourdomain.com)'],
-                    ['EMAIL_HOST / EMAIL_HOST_PASSWORD', 'SMTP for email delivery'],
-                    ['REDIS_PASSWORD', 'Redis password'],
-                  ].map(([key, desc]) => (
-                    <div key={key} className="flex gap-3">
-                      <span className="text-cyber-green whitespace-nowrap">{key}</span>
-                      <span className="text-gray-500">— {desc}</span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-gray-500 mt-2">
-                  See <code className="text-cyber-pink bg-cyber-dark px-1">.env.example</code> for the full reference with
-                  all ~50 configurable variables.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Maintenance Scripts</h3>
-                <div className="font-mono text-xs space-y-1 text-gray-400">
-                  <div><span className="text-cyber-cyan">deployment/update.sh</span> — Pull, rebuild, migrate, restart</div>
-                  <div><span className="text-cyber-cyan">deployment/backup.sh</span> — Backup database + media</div>
-                  <div><span className="text-cyber-cyan">deployment/restore.sh</span> — Interactive restore menu</div>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* Management Commands */}
-          <section id="commands" className="card-cyber p-6 scroll-mt-20">
-            <div className="flex items-center gap-2 mb-4">
-              <Terminal className="h-5 w-5 text-cyber-cyan" />
-              <h2 className="font-display text-lg font-bold text-cyber-cyan tracking-wider">
-                MANAGEMENT COMMANDS
-              </h2>
-            </div>
-
-            <div className="text-sm text-gray-300">
-              <p className="leading-relaxed mb-4">
-                Run via <code className="text-cyber-pink bg-cyber-dark px-1">docker compose exec backend python manage.py &lt;command&gt;</code>
-              </p>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs font-mono">
-                  <thead>
-                    <tr className="text-left text-gray-500 border-b border-cyber-light/30">
-                      <th className="pb-2 pr-4">Command</th>
-                      <th className="pb-2 pr-4">App</th>
-                      <th className="pb-2">Description</th>
-                    </tr>
-                  </thead>
-                  <tbody className="text-gray-400">
-                    {[
-                      ['seed_data [--flush]', 'products', '10 products, ~93 components, ~101 cross-references'],
-                      ['import_flipper_schematics [--flush]', 'products', 'Import 15 Flipper Zero schematic PDFs'],
-                      ['import_flipper_bom', 'products', 'Import Flipper Zero BOM from Excel'],
-                      ['backfill_badges', 'users', 'Backfill badges for existing users'],
-                      ['rebuild_search_vectors', 'api', 'Rebuild PostgreSQL full-text search indexes'],
-                      ['setup_notifications', 'api', 'Configure admin notification schedule'],
-                      ['send_launch_email', 'newsletter', 'Send launch announcement email'],
-                    ].map(([cmd, app, desc]) => (
-                      <tr key={cmd} className="border-b border-cyber-light/10">
-                        <td className="py-2 pr-4 text-cyber-green whitespace-nowrap">{cmd}</td>
-                        <td className="py-2 pr-4 text-gray-500">{app}</td>
-                        <td className="py-2 text-gray-400">{desc}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          {/* Contributing Code */}
-          <section id="contributing-code" className="card-cyber p-6 scroll-mt-20">
-            <div className="flex items-center gap-2 mb-4">
-              <Wrench className="h-5 w-5 text-cyber-cyan" />
-              <h2 className="font-display text-lg font-bold text-cyber-cyan tracking-wider">
-                CONTRIBUTING CODE
-              </h2>
-            </div>
-
-            <div className="space-y-4 text-sm text-gray-300">
-              <div>
-                <h3 className="text-white font-semibold mb-1">Repository Structure</h3>
-                <p className="leading-relaxed">
-                  The monorepo contains <code className="text-cyber-pink bg-cyber-dark px-1">backend/</code> (Django),{' '}
-                  <code className="text-cyber-pink bg-cyber-dark px-1">frontend/</code> (React/Vite),{' '}
-                  <code className="text-cyber-pink bg-cyber-dark px-1">deployment/</code> (scripts, nginx, monitoring), and{' '}
-                  <code className="text-cyber-pink bg-cyber-dark px-1">docs/</code>. See{' '}
-                  <code className="text-cyber-pink bg-cyber-dark px-1">docs/PROJECT_STRUCTURE.md</code> for the
-                  complete directory tree with annotations.
-                </p>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Tech Stack</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="h-3 w-3 text-cyber-pink" />
-                    <span className="text-gray-400">Django 5.x + DRF + PostgreSQL 15</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Cpu className="h-3 w-3 text-cyber-cyan" />
-                    <span className="text-gray-400">React 19 + Vite 7.3 + TypeScript</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Cpu className="h-3 w-3 text-cyber-green" />
-                    <span className="text-gray-400">Redis 7 + Celery task queue</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Keyboard className="h-3 w-3 text-cyber-yellow" />
-                    <span className="text-gray-400">Tailwind CSS + custom cyberpunk theme</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Running Tests</h3>
-                <pre className="bg-cyber-dark border border-cyber-light/30 p-3 overflow-x-auto text-xs font-mono">
-                  <code>{`# Backend
-cd backend
-DJANGO_SETTINGS_MODULE=config.settings.test pytest -v
-
-# Frontend
-cd frontend
-npm run test`}</code>
-                </pre>
-              </div>
-
-              <div>
-                <h3 className="text-white font-semibold mb-1">Workflow</h3>
-                <ol className="list-decimal list-inside space-y-1 text-gray-400">
-                  <li>Fork the repository</li>
-                  <li>Create a feature branch</li>
-                  <li>Write tests for new functionality</li>
-                  <li>Ensure all existing tests pass</li>
-                  <li>Submit a pull request with a clear description</li>
-                </ol>
               </div>
             </div>
           </section>
