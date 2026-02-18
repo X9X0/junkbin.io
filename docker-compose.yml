@@ -74,6 +74,8 @@ services:
       - CSP_UPGRADE_INSECURE=${CSP_UPGRADE_INSECURE:-True}
       - NEXAR_CLIENT_ID=${NEXAR_CLIENT_ID:-}
       - NEXAR_CLIENT_SECRET=${NEXAR_CLIENT_SECRET:-}
+      - OAUTH_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
+      - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
     volumes:
       - ./backend:/app
       - media_files:/app/media
@@ -133,6 +135,7 @@ services:
       dockerfile: Dockerfile
       args:
         - NODE_ENV=production
+        - VITE_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
     container_name: junkbin_frontend
     restart: unless-stopped
     volumes:
