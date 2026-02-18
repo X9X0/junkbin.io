@@ -10,6 +10,7 @@ interface AuthContextType {
   register: (data: RegisterData) => Promise<void>;
   googleLogin: (credential: string) => Promise<{ created: boolean }>;
   logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -51,6 +52,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { created: result.created };
   };
 
+  const refreshUser = async () => {
+    const userData = await auth.me();
+    setUser(userData);
+  };
+
   const logout = async () => {
     try {
       // Call logout endpoint to clear cookies and blacklist token
@@ -71,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         register,
         googleLogin,
         logout,
+        refreshUser,
       }}
     >
       {children}

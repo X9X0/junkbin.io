@@ -1,6 +1,6 @@
-import { useParams, Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { products } from '../api/endpoints';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { products, schematics } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import ImageUpload from '../components/ImageUpload';
 import SchematicUpload from '../components/SchematicUpload';
@@ -9,6 +9,7 @@ import BomImport from '../components/BomImport';
 import BatchAddComponents from '../components/BatchAddComponents';
 import ReportModal from '../components/ReportModal';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
+import EditProductModal from '../components/EditProductModal';
 import ProductComments from '../components/ProductComments';
 import ComponentVoteButtons from '../components/ComponentVoteButtons';
 import {
@@ -24,6 +25,8 @@ import {
   Share2,
   MessageSquare,
   Archive,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -31,8 +34,9 @@ import LazyImage from '../components/LazyImage';
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments'>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
@@ -40,6 +44,8 @@ export default function ProductDetail() {
   const [showBatchAdd, setShowBatchAdd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
@@ -57,6 +63,14 @@ export default function ProductDetail() {
     queryKey: ['product', id, 'schematics'],
     queryFn: () => products.schematics(id!),
     enabled: !!id && activeTab === 'schematics',
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => products.delete(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      navigate('/products');
+    },
   });
 
   if (isLoading) {
@@ -251,6 +265,43 @@ export default function ProductDetail() {
 
               {/* Actions */}
               <div className="border-t border-cyber-light/30 pt-4 mt-4 flex flex-wrap items-center gap-3 sm:gap-4">
+                {isAuthenticated && (user?.is_staff || product.created_by?.id === user?.id) && (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
+                  >
+                    <Pencil className="h-3 w-3" />
+                    Edit
+                  </button>
+                )}
+                {isAuthenticated && (user?.is_staff || product.created_by?.id === user?.id) && (
+                  !confirmDelete ? (
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-pink transition-colors"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                      Delete
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-xs">
+                      <span className="text-cyber-pink">Are you sure?</span>
+                      <button
+                        onClick={() => deleteMutation.mutate()}
+                        disabled={deleteMutation.isPending}
+                        className="text-cyber-pink hover:text-white font-mono text-xs border border-cyber-pink/50 px-2 py-0.5"
+                      >
+                        {deleteMutation.isPending ? 'DELETING...' : 'YES'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(false)}
+                        className="text-gray-500 hover:text-white font-mono text-xs"
+                      >
+                        CANCEL
+                      </button>
+                    </span>
+                  )
+                )}
                 <button
                   onClick={() => {
                     // Export product data as JSON
@@ -705,14 +756,20 @@ export default function ProductDetail() {
                             <span>{schematic.download_count} downloads</span>
                           </div>
                         </div>
-                        <a
-                          href={schematic.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={async () => {
+                            try {
+                              const { download_url } = await schematics.download(schematic.id);
+                              window.open(download_url, '_blank', 'noopener,noreferrer');
+                            } catch {
+                              // Fallback to direct URL if tracking endpoint fails
+                              window.open(schematic.file_url, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
                           className="btn-cyber btn-cyber-green py-2 px-3"
                         >
                           <Download className="h-4 w-4" />
-                        </a>
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -789,6 +846,16 @@ export default function ProductDetail() {
         objectId={id!}
         itemName={`${product?.manufacturer} ${product?.model_number}`}
       />
+
+      {/* Edit Product Modal */}
+      {product && (
+        <EditProductModal
+          product={product}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          isStaff={user?.is_staff || false}
+        />
+      )}
     </div>
   );
 }

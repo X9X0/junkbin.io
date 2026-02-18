@@ -4,15 +4,17 @@ import { useQuery } from '@tanstack/react-query';
 import { components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
+import EditComponentModal from '../components/EditComponentModal';
 import PricingPanel from '../components/PricingPanel';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
-import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus } from 'lucide-react';
+import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil } from 'lucide-react';
 
 export default function ComponentDetail() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const { data: component, isLoading: componentLoading } = useQuery({
     queryKey: ['component', id],
@@ -141,6 +143,15 @@ export default function ComponentDetail() {
                     {showUpload ? 'Hide Upload' : 'Upload Image'}
                   </button>
                 )}
+                {isAuthenticated && (user?.is_staff || component.created_by?.id === user?.id) && (
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -259,6 +270,13 @@ export default function ComponentDetail() {
         contentType="component"
         objectId={id!}
         itemName={`${component.manufacturer} ${component.part_number}`}
+      />
+
+      {/* Edit Component Modal */}
+      <EditComponentModal
+        component={component}
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
       />
     </div>
   );

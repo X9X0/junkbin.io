@@ -77,6 +77,17 @@ export const auth = {
     const response = await api.patch('/auth/preferences/', data);
     return response.data;
   },
+
+  updateProfile: async (data: FormData): Promise<User> => {
+    const response = await api.patch('/auth/me/', data, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  changePassword: async (data: { current_password: string; new_password: string; new_password_confirm: string }): Promise<void> => {
+    await api.post('/auth/password/change/', data);
+  },
 };
 
 // Products endpoints
@@ -99,6 +110,10 @@ export const products = {
   update: async (id: string, data: Partial<Product>): Promise<Product> => {
     const response = await api.patch(`/products/${id}/`, data);
     return response.data;
+  },
+
+  delete: async (id: string): Promise<void> => {
+    await api.delete(`/products/${id}/`);
   },
 
   featured: async (): Promise<Product[]> => {
@@ -252,6 +267,21 @@ export const components = {
     return response.data;
   },
 
+  create: async (data: Partial<Component>): Promise<Component> => {
+    const response = await api.post('/components/', data);
+    return response.data;
+  },
+
+  update: async (id: string, data: Partial<Component>): Promise<Component> => {
+    const response = await api.patch(`/components/${id}/`, data);
+    return response.data;
+  },
+
+  addCrossReference: async (id: string, componentId: string): Promise<any> => {
+    const response = await api.post(`/components/${id}/add_cross_reference/`, { component_id: componentId });
+    return response.data;
+  },
+
   search: async (query: string): Promise<Component[]> => {
     const response = await api.get('/components/', { params: { search: query } });
     return response.data.results;
@@ -391,6 +421,11 @@ export const reports = {
 
   stats: async (): Promise<ReportStats> => {
     const response = await api.get('/reports/stats/');
+    return response.data;
+  },
+
+  myReports: async (params?: any): Promise<PaginatedResponse<Report>> => {
+    const response = await api.get('/reports/my_reports/', { params });
     return response.data;
   },
 };

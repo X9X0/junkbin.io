@@ -8,69 +8,9 @@ import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle } f
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
 import { parseApiError } from '../utils/formErrors';
+import { PRODUCT_CATEGORIES, REGIONS, COMPONENT_TYPES } from '../utils/constants';
 
-const CATEGORIES = [
-  { value: '', label: 'Select Category' },
-  { value: 'desktop', label: 'Desktop Computer' },
-  { value: 'laptop', label: 'Laptop/Notebook' },
-  { value: 'tablet', label: 'Tablet' },
-  { value: 'phone', label: 'Smartphone' },
-  { value: 'tv', label: 'Television' },
-  { value: 'monitor', label: 'Monitor' },
-  { value: 'router', label: 'Router' },
-  { value: 'modem', label: 'Modem' },
-  { value: 'switch', label: 'Network Switch' },
-  { value: 'access_point', label: 'Access Point' },
-  { value: 'audio', label: 'Audio Equipment' },
-  { value: 'speaker', label: 'Speaker/Soundbar' },
-  { value: 'gaming', label: 'Gaming Console' },
-  { value: 'handheld', label: 'Handheld Gaming' },
-  { value: 'remote', label: 'Remote Control' },
-  { value: 'power_supply', label: 'Power Supply' },
-  { value: 'charger', label: 'Charger' },
-  { value: 'iot', label: 'IoT Device' },
-  { value: 'smart_home', label: 'Smart Home Hub' },
-  { value: 'camera', label: 'Camera' },
-  { value: 'printer', label: 'Printer' },
-  { value: 'other', label: 'Other' },
-];
-
-const REGIONS = [
-  { value: 'global', label: 'Global/Universal' },
-  { value: 'us', label: 'United States' },
-  { value: 'eu', label: 'European Union' },
-  { value: 'uk', label: 'United Kingdom' },
-  { value: 'jp', label: 'Japan' },
-  { value: 'cn', label: 'China' },
-  { value: 'kr', label: 'South Korea' },
-  { value: 'au', label: 'Australia' },
-  { value: 'ca', label: 'Canada' },
-  { value: 'other', label: 'Other' },
-];
-
-const COMPONENT_TYPES = [
-  { value: '', label: 'Select Type' },
-  { value: 'ic', label: 'Integrated Circuit' },
-  { value: 'mcu', label: 'Microcontroller' },
-  { value: 'transistor', label: 'Transistor' },
-  { value: 'mosfet', label: 'MOSFET' },
-  { value: 'diode', label: 'Diode' },
-  { value: 'regulator', label: 'Voltage Regulator' },
-  { value: 'opamp', label: 'Op-Amp' },
-  { value: 'resistor', label: 'Resistor' },
-  { value: 'capacitor', label: 'Capacitor' },
-  { value: 'inductor', label: 'Inductor' },
-  { value: 'transformer', label: 'Transformer' },
-  { value: 'crystal', label: 'Crystal/Oscillator' },
-  { value: 'relay', label: 'Relay' },
-  { value: 'switch', label: 'Switch' },
-  { value: 'connector', label: 'Connector' },
-  { value: 'led', label: 'LED' },
-  { value: 'display', label: 'Display/LCD' },
-  { value: 'sensor', label: 'Sensor' },
-  { value: 'module', label: 'Module' },
-  { value: 'other', label: 'Other' },
-];
+const CATEGORIES = PRODUCT_CATEGORIES;
 
 type SubmitType = 'product' | 'component';
 
