@@ -1,0 +1,7 @@
+[Unit]
+Description=Junkbin.io Disk Space Monitor
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/junkbin.io/deployment/disk-monitor.sh

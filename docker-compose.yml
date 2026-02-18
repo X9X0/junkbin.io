@@ -19,6 +19,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -37,6 +42,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -92,6 +102,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -109,6 +124,11 @@ services:
       - postgres
       - redis
       - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -125,6 +145,11 @@ services:
       - postgres
       - redis
       - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -140,6 +165,11 @@ services:
     restart: unless-stopped
     volumes:
       - frontend_build:/app/dist
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -158,6 +188,11 @@ services:
       - prometheus_data:/prometheus
     depends_on:
       - backend
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -177,6 +212,11 @@ services:
       - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - prometheus
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 
@@ -205,6 +245,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
     networks:
       - junkbin_network
 

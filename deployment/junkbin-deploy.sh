@@ -629,6 +629,62 @@ deploy_app() {
     log_info "Application deployed successfully"
 }
 
+# Setup logrotate for nginx logs
+setup_logrotate() {
+    log_step "Setting up log rotation..."
+
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    LOGROTATE_SRC="$SCRIPT_DIR/logrotate/junkbin"
+
+    if [ ! -f "$LOGROTATE_SRC" ]; then
+        # Fallback: look relative to project root
+        LOGROTATE_SRC="$(pwd)/deployment/logrotate/junkbin"
+    fi
+
+    if [ -f "$LOGROTATE_SRC" ]; then
+        cp "$LOGROTATE_SRC" /etc/logrotate.d/junkbin
+        chmod 644 /etc/logrotate.d/junkbin
+        log_info "Logrotate config installed to /etc/logrotate.d/junkbin"
+    else
+        log_warn "Logrotate config not found at $LOGROTATE_SRC — skipping"
+    fi
+}
+
+# Setup systemd service and disk monitor
+setup_systemd() {
+    log_step "Setting up systemd services..."
+
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    SYSTEMD_SRC="$SCRIPT_DIR/systemd"
+
+    if [ ! -d "$SYSTEMD_SRC" ]; then
+        SYSTEMD_SRC="$(pwd)/deployment/systemd"
+    fi
+
+    # Install main service
+    if [ -f "$SYSTEMD_SRC/junkbin.service" ]; then
+        cp "$SYSTEMD_SRC/junkbin.service" /etc/systemd/system/junkbin.service
+        log_info "Installed junkbin.service"
+    else
+        log_warn "junkbin.service not found — skipping"
+    fi
+
+    # Install disk monitor service and timer
+    if [ -f "$SYSTEMD_SRC/junkbin-disk-monitor.service" ]; then
+        cp "$SYSTEMD_SRC/junkbin-disk-monitor.service" /etc/systemd/system/
+        cp "$SYSTEMD_SRC/junkbin-disk-monitor.timer" /etc/systemd/system/
+        log_info "Installed disk monitor service and timer"
+    fi
+
+    systemctl daemon-reload
+
+    # Enable services
+    systemctl enable junkbin.service 2>/dev/null || true
+    systemctl enable --now junkbin-disk-monitor.timer 2>/dev/null || true
+
+    log_info "Systemd services configured"
+}
+
 # Setup backup cron job
 setup_backups() {
     log_step "Setting up automated backups..."
@@ -728,6 +784,8 @@ main() {
     init_database
     setup_ssl
     deploy_app
+    setup_logrotate
+    setup_systemd
     setup_backups
     print_success
 }
