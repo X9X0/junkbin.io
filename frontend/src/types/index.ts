@@ -25,6 +25,14 @@ export interface User {
   is_moderator: boolean;
   created_at: string;
   badges?: Badge[];
+  first_name?: string;
+  last_name?: string;
+  report_count?: number;
+  email_verified?: boolean;
+  oauth_provider?: string;
+  preferences?: UserPreferences;
+  updated_at?: string;
+  last_contribution_at?: string;
 }
 
 export interface PublicUser {
@@ -82,6 +90,11 @@ export interface Product {
   created_at: string;
   images?: ProductImage[];
   primary_image?: ProductImage;
+  slug?: string;
+  subcategory?: string;
+  region_display?: string;
+  view_count?: number;
+  updated_at?: string;
 }
 
 export interface ProductImage {
@@ -93,6 +106,8 @@ export interface ProductImage {
   caption?: string;
   image_type: string;
   display_order?: number;
+  width?: number;
+  height?: number;
   uploaded_by?: { id: string; username: string };
   uploaded_at?: string;
   is_approved: boolean;
@@ -101,7 +116,7 @@ export interface ProductImage {
 export interface CreatedBy {
   id: string;
   username: string;
-  avatar?: string;
+  is_trusted: boolean;
 }
 
 export interface ProductComment {
@@ -128,14 +143,22 @@ export interface Component {
   is_verified: boolean;
   pricing_data?: NexarData | null;
   created_by?: CreatedBy;
+  primary_image?: string | null;
+  manufacturer_aliases?: string[];
+  specifications?: Record<string, string>;
+  octopart_url?: string;
+  alternative_part_numbers?: string[];
+  cross_references?: Component[];
+  images?: any[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ProductComponent {
   id: string;
-  product: string;
   component: Component;
   quantity: number;
-  designators?: string;
+  reference_designator?: string;
   notes?: string;
   location_description?: string;
   is_verified: boolean;
@@ -145,12 +168,18 @@ export interface ProductComponent {
   needs_review: boolean;
   current_user_vote: 'confirm' | 'dispute' | null;
   created_by?: CreatedBy;
+  component_id?: string;
+  board_name?: string;
+  image_reference?: string;
+  submission_level?: string;
+  submission_level_display?: string;
+  created_at?: string;
 }
 
 // Schematic types
 export interface Schematic {
   id: string;
-  product: string;
+  product?: string;
   schematic_type: string;
   schematic_type_display?: string;
   title: string;
@@ -162,6 +191,9 @@ export interface Schematic {
   source_type: string;
   source_type_display?: string;
   source_url?: string;
+  source_notes?: string;
+  page_count?: number;
+  repair_relevance?: string;
   download_count: number;
   is_approved: boolean;
   uploaded_by?: CreatedBy;
@@ -213,7 +245,7 @@ export interface ReportedItemData {
 export interface Report {
   id: string;
   content_type: string;
-  content_type_name: string;
+  content_type_name?: string;
   object_id: string;
   reason: string;
   reason_display: string;
@@ -245,13 +277,13 @@ export interface UserReview {
   status: string;
   status_display: string;
   trigger_report_count: number;
-  triggered_by: Report | null;
-  related_reports: Report[];
+  triggered_by?: Report | null;
+  related_reports?: Report[];
   created_at: string;
   reviewed_at: string | null;
   reviewer: UserMinimal | null;
-  notes: string;
-  action_taken: string;
+  notes?: string;
+  action_taken?: string;
 }
 
 // Messaging types
@@ -272,9 +304,12 @@ export interface MessagePreview {
 
 export interface Conversation {
   id: string;
-  other_participant: MessageParticipant;
-  last_message: MessagePreview | null;
-  unread_count: number;
+  other_participant?: MessageParticipant;
+  participant_1?: MessageParticipant;
+  participant_2?: MessageParticipant;
+  last_message?: MessagePreview | null;
+  unread_count?: number;
+  created_at?: string;
   updated_at: string;
 }
 

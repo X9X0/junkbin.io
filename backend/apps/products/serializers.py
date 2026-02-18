@@ -263,7 +263,7 @@ class SchematicSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schematic
         fields = [
-            'id', 'schematic_type', 'schematic_type_display',
+            'id', 'product', 'schematic_type', 'schematic_type_display',
             'title', 'description', 'version', 'page_count',
             'file', 'file_url', 'file_type', 'file_size',
             'source_type', 'source_type_display', 'source_url', 'source_notes',
@@ -271,7 +271,7 @@ class SchematicSerializer(serializers.ModelSerializer):
             'uploaded_by', 'uploaded_at', 'is_approved'
         ]
         read_only_fields = [
-            'id', 'file_type', 'file_size', 'download_count',
+            'id', 'product', 'file_type', 'file_size', 'download_count',
             'uploaded_by', 'uploaded_at', 'is_approved'
         ]
 
