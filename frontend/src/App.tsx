@@ -23,6 +23,7 @@ import MessageThread from './pages/MessageThread';
 import NewConversation from './pages/NewConversation';
 import UserProfile from './pages/UserProfile';
 import Guidelines from './pages/Guidelines';
+import Docs from './pages/Docs';
 import MyJunkbin from './pages/MyJunkbin';
 import MySubmissions from './pages/MySubmissions';
 import Recipes from './pages/Recipes';
@@ -73,6 +74,7 @@ function App() {
                 <Route path="my-junkbin" element={<MyJunkbin />} />
                 <Route path="my-submissions" element={<MySubmissions />} />
                 <Route path="guidelines" element={<Guidelines />} />
+                <Route path="docs" element={<Docs />} />
                 <Route path="moderation" element={<Moderation />} />
                 <Route path="analytics" element={<AnalyticsDashboard />} />
                 <Route path="profile" element={<Profile />} />
