@@ -105,6 +105,14 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
+                <Link
+                  to="/docs"
+                  className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  Documentation
+                </Link>
+              </li>
+              <li>
                 <a
                   href="/api/docs/"
                   target="_blank"
