@@ -48,8 +48,14 @@ export default function MessageThread() {
     refetchInterval: 5000,
   });
 
-  // Determine the other participant from the conversation detail
-  const otherParticipant = conversation?.other_participant;
+  // Determine the other participant from the conversation detail.
+  // The detail endpoint returns participant_1/participant_2 (not other_participant).
+  const otherParticipant = conversation
+    ? conversation.other_participant
+      ?? (conversation.participant_1?.id === user?.id
+        ? conversation.participant_2
+        : conversation.participant_1)
+    : undefined;
 
   // Scroll messages container to bottom on initial load and new messages
   const scrollToBottom = (behavior: ScrollBehavior = 'smooth') => {
