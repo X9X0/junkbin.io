@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messaging } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, Loader2, Flag, Ban, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Flag, Ban, ShieldOff, ChevronUp } from 'lucide-react';
 import ReportModal from '../components/ReportModal';
 import clsx from 'clsx';
 
@@ -30,6 +30,7 @@ export default function MessageThread() {
   const [content, setContent] = useState('');
   const [page, setPage] = useState(1);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
+  const [showReportUser, setShowReportUser] = useState(false);
 
   // Fetch conversation detail (also marks messages as read)
   const { data: conversation } = useQuery({
@@ -75,11 +76,30 @@ export default function MessageThread() {
     },
   });
 
+  // Fetch blocked users to determine if this user is already blocked
+  const { data: blockedData } = useQuery({
+    queryKey: ['blocked-users'],
+    queryFn: messaging.blocks,
+    enabled: !!otherParticipant,
+  });
+
+  const existingBlock = blockedData?.results.find(
+    (b) => b.blocked_user.id === otherParticipant?.id
+  );
+
   // Block user mutation
   const blockMutation = useMutation({
     mutationFn: () => messaging.blockUser(otherParticipant!.id),
     onSuccess: () => {
-      navigate('/messages');
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
+    },
+  });
+
+  // Unblock user mutation
+  const unblockMutation = useMutation({
+    mutationFn: (blockId: string) => messaging.unblockUser(blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
     },
   });
 
@@ -131,18 +151,41 @@ export default function MessageThread() {
           )}
         </div>
         {otherParticipant && (
-          <button
-            onClick={() => {
-              if (window.confirm(`Block ${otherParticipant.username}? You will no longer be able to message each other.`)) {
-                blockMutation.mutate();
-              }
-            }}
-            className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-cyber-pink transition-colors"
-            title="Block user"
-          >
-            <Ban className="h-3.5 w-3.5" />
-            BLOCK
-          </button>
+          <div className="flex items-center gap-3">
+            {existingBlock ? (
+              <button
+                onClick={() => unblockMutation.mutate(existingBlock.id)}
+                disabled={unblockMutation.isPending}
+                className="flex items-center gap-1 text-xs font-mono text-cyber-green hover:text-white transition-colors disabled:opacity-50"
+                title="Unblock user"
+              >
+                <ShieldOff className="h-3.5 w-3.5" />
+                UNBLOCK
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  if (window.confirm(`Block ${otherParticipant.username}? You will no longer be able to message each other.`)) {
+                    blockMutation.mutate();
+                  }
+                }}
+                disabled={blockMutation.isPending}
+                className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-cyber-pink transition-colors disabled:opacity-50"
+                title="Block user"
+              >
+                <Ban className="h-3.5 w-3.5" />
+                BLOCK
+              </button>
+            )}
+            <button
+              onClick={() => setShowReportUser(true)}
+              className="flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-cyber-yellow transition-colors"
+              title="Report user"
+            >
+              <Flag className="h-3.5 w-3.5" />
+              REPORT
+            </button>
+          </div>
         )}
       </div>
 
@@ -257,7 +300,7 @@ export default function MessageThread() {
         </div>
       </div>
 
-      {/* Report modal */}
+      {/* Report message modal */}
       {reportMessageId && (
         <ReportModal
           isOpen={!!reportMessageId}
@@ -265,6 +308,17 @@ export default function MessageThread() {
           contentType="messaging.message"
           objectId={reportMessageId}
           itemName="Message"
+        />
+      )}
+
+      {/* Report user modal */}
+      {otherParticipant && (
+        <ReportModal
+          isOpen={showReportUser}
+          onClose={() => setShowReportUser(false)}
+          contentType="users.customuser"
+          objectId={otherParticipant.id}
+          itemName={otherParticipant.username}
         />
       )}
     </div>
