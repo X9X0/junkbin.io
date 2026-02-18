@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { auth } from '../api/endpoints';
+import { auth, messaging, reports } from '../api/endpoints';
 import api from '../api/client';
 import type { UserPreferences } from '../types';
 import { BadgeGrid } from '../components/BadgeDisplay';
+import EditProfileModal from '../components/EditProfileModal';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import {
   User,
   Shield,
@@ -17,10 +20,16 @@ import {
   ChevronRight,
   Bell,
   Loader2,
+  Ban,
+  Pencil,
+  Lock,
+  FileText,
 } from 'lucide-react';
 
 export default function Profile() {
   const { user, isAuthenticated } = useAuth();
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -65,6 +74,27 @@ export default function Profile() {
     if (!preferences) return;
     prefsMutation.mutate({ [key]: !preferences[key] });
   };
+
+  // Blocked users
+  const { data: blockedData, isLoading: blockedLoading } = useQuery({
+    queryKey: ['blocked-users'],
+    queryFn: messaging.blocks,
+    enabled: isAuthenticated,
+  });
+
+  const unblockMutation = useMutation({
+    mutationFn: (blockId: string) => messaging.unblockUser(blockId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['blocked-users'] });
+    },
+  });
+
+  // My reports
+  const { data: myReports, isLoading: reportsLoading } = useQuery({
+    queryKey: ['my-reports'],
+    queryFn: () => reports.myReports(),
+    enabled: isAuthenticated,
+  });
 
   if (!isAuthenticated || !user) {
     return (
@@ -134,6 +164,14 @@ export default function Profile() {
                   Joined {new Date(user.created_at).toLocaleDateString()}
                 </span>
               </div>
+
+              <button
+                onClick={() => setShowEditProfile(true)}
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-mono text-gray-400 hover:text-cyber-cyan border border-cyber-light/30 hover:border-cyber-cyan/50 px-3 py-1.5 transition-colors"
+              >
+                <Pencil className="h-3 w-3" />
+                EDIT PROFILE
+              </button>
             </div>
           </div>
         </div>
@@ -269,6 +307,143 @@ export default function Profile() {
           ) : null}
         </div>
 
+        {/* Blocked Users */}
+        <div className="card-cyber p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Ban className="h-5 w-5 text-cyber-pink" />
+            <h2 className="font-display text-lg font-bold text-white">
+              BLOCKED <span className="text-cyber-pink">USERS</span>
+            </h2>
+          </div>
+
+          {blockedLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-cyber-pink" />
+            </div>
+          ) : blockedData && blockedData.results.length > 0 ? (
+            <div className="space-y-2">
+              {blockedData.results.map((block) => (
+                <div
+                  key={block.id}
+                  className="flex items-center justify-between p-3 border border-cyber-light/20 bg-cyber-dark"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-cyber-dark border border-cyber-light/30 flex items-center justify-center">
+                      {block.blocked_user.avatar ? (
+                        <img
+                          src={block.blocked_user.avatar}
+                          alt={block.blocked_user.username}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User className="h-4 w-4 text-gray-500" />
+                      )}
+                    </div>
+                    <div>
+                      <div className="text-sm text-white font-mono">
+                        {block.blocked_user.username}
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        Blocked {new Date(block.created_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => unblockMutation.mutate(block.id)}
+                    disabled={unblockMutation.isPending}
+                    className="text-xs font-mono text-cyber-pink hover:text-white border border-cyber-pink/50 px-3 py-1 hover:bg-cyber-pink/10 transition-colors disabled:opacity-50"
+                  >
+                    UNBLOCK
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 py-2">
+              You haven't blocked any users.
+            </p>
+          )}
+        </div>
+
+        {/* Security */}
+        <div className="card-cyber p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Lock className="h-5 w-5 text-cyber-green" />
+            <h2 className="font-display text-lg font-bold text-white">
+              SECURITY <span className="text-cyber-green">SETTINGS</span>
+            </h2>
+          </div>
+
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <div className="text-sm text-white font-mono">Password</div>
+              <div className="text-xs text-gray-500">
+                Change your account password
+              </div>
+            </div>
+            <button
+              onClick={() => setShowChangePassword(true)}
+              className="text-xs font-mono text-cyber-green hover:text-white border border-cyber-green/50 px-3 py-1.5 hover:bg-cyber-green/10 transition-colors"
+            >
+              CHANGE PASSWORD
+            </button>
+          </div>
+        </div>
+
+        {/* My Reports */}
+        <div className="card-cyber p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <FileText className="h-5 w-5 text-cyber-yellow" />
+            <h2 className="font-display text-lg font-bold text-white">
+              MY <span className="text-cyber-yellow">REPORTS</span>
+            </h2>
+          </div>
+
+          {reportsLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-cyber-yellow" />
+            </div>
+          ) : myReports && myReports.results.length > 0 ? (
+            <div className="space-y-2">
+              {myReports.results.map((report) => (
+                <div
+                  key={report.id}
+                  className="flex items-center justify-between p-3 border border-cyber-light/20 bg-cyber-dark"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span
+                        className={`badge-cyber text-[10px] ${
+                          report.status === 'pending'
+                            ? 'text-cyber-yellow border-cyber-yellow'
+                            : report.status === 'resolved_valid'
+                              ? 'text-cyber-green border-cyber-green'
+                              : 'text-gray-400 border-gray-500'
+                        }`}
+                      >
+                        {report.status_display || report.status.toUpperCase()}
+                      </span>
+                      <span className="text-xs text-gray-500 font-mono">
+                        {report.reason_display || report.reason}
+                      </span>
+                    </div>
+                    <div className="text-sm text-gray-400 truncate">
+                      {report.reported_item_data?.display || `${report.content_type_name} #${report.object_id}`}
+                    </div>
+                    <div className="text-xs text-gray-600 mt-1">
+                      {new Date(report.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500 py-2">
+              You haven't filed any reports.
+            </p>
+          )}
+        </div>
+
         {/* Recent Contributions */}
         <div className="space-y-6">
           {/* Products */}
@@ -397,6 +572,16 @@ export default function Profile() {
           />
         </div>
       </div>
+
+      {/* Modals */}
+      <EditProfileModal
+        isOpen={showEditProfile}
+        onClose={() => setShowEditProfile(false)}
+      />
+      <ChangePasswordModal
+        isOpen={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </div>
   );
 }

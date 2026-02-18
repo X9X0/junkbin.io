@@ -5,28 +5,16 @@ import { useAuth } from '../context/AuthContext';
 import { ChevronDown, Hammer, Archive } from 'lucide-react';
 import Pagination from '../components/Pagination';
 import RecipeCard from '../components/RecipeCard';
+import { RECIPE_CATEGORIES, DIFFICULTIES } from '../utils/constants';
 
-const CATEGORIES = [
+const FALLBACK_CATEGORIES = [
   { value: '', label: 'All Categories' },
-  { value: 'audio', label: 'Audio' },
-  { value: 'power_supply', label: 'Power Supply' },
-  { value: 'iot', label: 'IoT' },
-  { value: 'repair', label: 'Repair' },
-  { value: 'lighting', label: 'Lighting' },
-  { value: 'test_equipment', label: 'Test Equipment' },
-  { value: 'radio', label: 'Radio' },
-  { value: 'computing', label: 'Computing' },
-  { value: 'robotics', label: 'Robotics' },
-  { value: 'wearable', label: 'Wearable' },
-  { value: 'other', label: 'Other' },
+  ...RECIPE_CATEGORIES,
 ];
 
-const DIFFICULTIES = [
+const FILTER_DIFFICULTIES = [
   { value: '', label: 'All Difficulties' },
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-  { value: 'expert', label: 'Expert' },
+  ...DIFFICULTIES,
 ];
 
 export default function Buildable() {
@@ -41,6 +29,16 @@ export default function Buildable() {
   const difficulty = searchParams.get('difficulty') || '';
   const minMatch = searchParams.get('min_match') || '0';
   const page = parseInt(searchParams.get('page') || '1', 10);
+
+  const { data: apiCategories } = useQuery({
+    queryKey: ['recipe-categories'],
+    queryFn: recipes.categories,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categoryOptions = apiCategories
+    ? [{ value: '', label: 'All Categories' }, ...apiCategories.map((c) => ({ value: c.value, label: c.label }))]
+    : FALLBACK_CATEGORIES;
 
   const { data, isLoading } = useQuery({
     queryKey: ['buildable', { category, difficulty, min_match: minMatch, page }],
@@ -99,7 +97,7 @@ export default function Buildable() {
                 onChange={(e) => updateFilter('category', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full"
               >
-                {CATEGORIES.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
@@ -115,7 +113,7 @@ export default function Buildable() {
                 onChange={(e) => updateFilter('difficulty', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full"
               >
-                {DIFFICULTIES.map((d) => (
+                {FILTER_DIFFICULTIES.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
                   </option>

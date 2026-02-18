@@ -122,10 +122,12 @@ export interface Component {
   description?: string;
   package_type?: string;
   primary_value?: string;
+  typical_function?: string;
   datasheet_url?: string;
   usage_count: number;
   is_verified: boolean;
   pricing_data?: NexarData | null;
+  created_by?: CreatedBy;
 }
 
 export interface ProductComponent {

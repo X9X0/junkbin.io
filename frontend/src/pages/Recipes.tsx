@@ -6,28 +6,16 @@ import { Search, ChevronDown, Cpu } from 'lucide-react';
 import Pagination from '../components/Pagination';
 import RecipeCard from '../components/RecipeCard';
 import { Link } from 'react-router-dom';
+import { RECIPE_CATEGORIES, DIFFICULTIES } from '../utils/constants';
 
-const CATEGORIES = [
+const FALLBACK_CATEGORIES = [
   { value: '', label: 'All Categories' },
-  { value: 'audio', label: 'Audio' },
-  { value: 'power_supply', label: 'Power Supply' },
-  { value: 'iot', label: 'IoT' },
-  { value: 'repair', label: 'Repair' },
-  { value: 'lighting', label: 'Lighting' },
-  { value: 'test_equipment', label: 'Test Equipment' },
-  { value: 'radio', label: 'Radio' },
-  { value: 'computing', label: 'Computing' },
-  { value: 'robotics', label: 'Robotics' },
-  { value: 'wearable', label: 'Wearable' },
-  { value: 'other', label: 'Other' },
+  ...RECIPE_CATEGORIES,
 ];
 
-const DIFFICULTIES = [
+const FILTER_DIFFICULTIES = [
   { value: '', label: 'All Difficulties' },
-  { value: 'beginner', label: 'Beginner' },
-  { value: 'intermediate', label: 'Intermediate' },
-  { value: 'advanced', label: 'Advanced' },
-  { value: 'expert', label: 'Expert' },
+  ...DIFFICULTIES,
 ];
 
 export default function Recipes() {
@@ -39,6 +27,16 @@ export default function Recipes() {
   const difficulty = searchParams.get('difficulty') || '';
   const ordering = searchParams.get('ordering') || '-created_at';
   const page = parseInt(searchParams.get('page') || '1', 10);
+
+  const { data: apiCategories } = useQuery({
+    queryKey: ['recipe-categories'],
+    queryFn: recipes.categories,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const categoryOptions = apiCategories
+    ? [{ value: '', label: 'All Categories' }, ...apiCategories.map((c) => ({ value: c.value, label: c.label }))]
+    : FALLBACK_CATEGORIES;
 
   const { data, isLoading } = useQuery({
     queryKey: ['recipes', { q, category, difficulty, ordering, page }],
@@ -114,7 +112,7 @@ export default function Recipes() {
                 onChange={(e) => updateFilter('category', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
-                {CATEGORIES.map((cat) => (
+                {categoryOptions.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
                   </option>
@@ -130,7 +128,7 @@ export default function Recipes() {
                 onChange={(e) => updateFilter('difficulty', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
-                {DIFFICULTIES.map((d) => (
+                {FILTER_DIFFICULTIES.map((d) => (
                   <option key={d.value} value={d.value}>
                     {d.label}
                   </option>

@@ -1,7 +1,8 @@
-import { useParams, Link } from 'react-router-dom';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recipes, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import EditRecipeModal from '../components/EditRecipeModal';
 import MatchPercentageBar from '../components/MatchPercentageBar';
 import {
   Cpu,
@@ -12,6 +13,8 @@ import {
   Plus,
   Eye,
   ArrowLeft,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState } from 'react';
@@ -26,8 +29,12 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 
 export default function RecipeDetail() {
   const { id } = useParams<{ id: string }>();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [addingToWantList, setAddingToWantList] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const { data: recipe, isLoading } = useQuery({
     queryKey: ['recipe', id],
@@ -50,6 +57,14 @@ export default function RecipeDetail() {
       }),
     onSuccess: () => {
       setAddingToWantList(null);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => recipes.delete(id!),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipes'] });
+      navigate('/recipes');
     },
   });
 
@@ -174,6 +189,44 @@ export default function RecipeDetail() {
                   <ExternalLink className="h-4 w-4" />
                   View Tutorial / Instructions
                 </a>
+              )}
+
+              {isAuthenticated && (user?.is_staff || recipe.created_by?.id === user?.id) && (
+                <div className="flex items-center gap-3 mt-4">
+                  <button
+                    onClick={() => setShowEditModal(true)}
+                    className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit
+                  </button>
+                  {!confirmDelete ? (
+                    <button
+                      onClick={() => setConfirmDelete(true)}
+                      className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-cyber-pink transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                      Delete
+                    </button>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-sm">
+                      <span className="text-cyber-pink">Are you sure?</span>
+                      <button
+                        onClick={() => deleteMutation.mutate()}
+                        disabled={deleteMutation.isPending}
+                        className="text-cyber-pink hover:text-white font-mono text-xs border border-cyber-pink/50 px-2 py-0.5"
+                      >
+                        {deleteMutation.isPending ? 'DELETING...' : 'YES'}
+                      </button>
+                      <button
+                        onClick={() => setConfirmDelete(false)}
+                        className="text-gray-500 hover:text-white font-mono text-xs"
+                      >
+                        CANCEL
+                      </button>
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -365,6 +418,16 @@ export default function RecipeDetail() {
           )}
         </div>
       </div>
+
+      {/* Edit Recipe Modal */}
+      {recipe && (
+        <EditRecipeModal
+          recipe={recipe}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          isStaff={user?.is_staff || false}
+        />
+      )}
     </div>
   );
 }

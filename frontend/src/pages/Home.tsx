@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { stats, newsletter } from '../api/endpoints';
+import { stats, newsletter, products } from '../api/endpoints';
 import {
   Terminal,
   Cpu,
@@ -12,6 +12,7 @@ import {
   Github,
   ArrowRight,
   AlertTriangle,
+  ChevronRight,
 } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
 
@@ -23,6 +24,12 @@ export default function Home() {
   const { data: siteStats } = useQuery({
     queryKey: ['stats'],
     queryFn: stats.get,
+  });
+
+  const { data: featuredProducts } = useQuery({
+    queryKey: ['featured-products'],
+    queryFn: products.featured,
+    staleTime: 5 * 60 * 1000,
   });
 
   const subscribeMutation = useMutation({
@@ -192,6 +199,56 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Featured Products */}
+      {featuredProducts && featuredProducts.length > 0 && (
+        <section className="py-12">
+          <div className="mx-auto max-w-5xl px-4">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-display text-xl font-bold text-white">
+                FEATURED <span className="text-cyber-cyan">PRODUCTS</span>
+              </h2>
+              <Link
+                to="/products"
+                className="text-xs text-cyber-cyan hover:text-white transition-colors flex items-center gap-1 font-mono"
+              >
+                VIEW ALL <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
+              {featuredProducts.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/products/${product.id}`}
+                  className="card-cyber p-4 min-w-[220px] max-w-[220px] flex-shrink-0 hover:border-cyber-cyan/50 transition-all group"
+                >
+                  <div className="aspect-video mb-3 bg-cyber-black flex items-center justify-center border border-cyber-light/20 overflow-hidden">
+                    {product.primary_image ? (
+                      <img
+                        src={product.primary_image.thumbnail || product.primary_image.image}
+                        alt={product.model_number}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Cpu className="h-8 w-8 text-gray-600" />
+                    )}
+                  </div>
+                  <div className="text-xs font-mono text-cyber-cyan mb-1 truncate">
+                    {product.manufacturer}
+                  </div>
+                  <div className="text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors truncate">
+                    {product.model_number}
+                  </div>
+                  <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500 font-mono">
+                    <span>{product.component_count} parts</span>
+                    <span>{product.schematic_count} docs</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* What We're Building Section */}
       <section className="py-16">

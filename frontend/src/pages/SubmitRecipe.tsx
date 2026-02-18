@@ -7,6 +7,7 @@ import { Plus, Trash2, Search, ArrowLeft, ArrowRight, Loader2 } from 'lucide-rea
 import clsx from 'clsx';
 import type { Component } from '../types';
 import { parseApiError } from '../utils/formErrors';
+import { RECIPE_CATEGORIES, DIFFICULTIES } from '../utils/constants';
 
 interface BomEntry {
   component: Component;
@@ -205,10 +206,11 @@ export default function SubmitRecipe() {
                   onChange={(e) => setDifficulty(e.target.value)}
                   className="input-cyber"
                 >
-                  <option value="beginner">Beginner</option>
-                  <option value="intermediate">Intermediate</option>
-                  <option value="advanced">Advanced</option>
-                  <option value="expert">Expert</option>
+                  {DIFFICULTIES.map((d) => (
+                    <option key={d.value} value={d.value}>
+                      {d.label}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -221,17 +223,11 @@ export default function SubmitRecipe() {
                   onChange={(e) => setCategory(e.target.value)}
                   className="input-cyber"
                 >
-                  <option value="audio">Audio</option>
-                  <option value="power_supply">Power Supply</option>
-                  <option value="iot">IoT</option>
-                  <option value="repair">Repair</option>
-                  <option value="lighting">Lighting</option>
-                  <option value="test_equipment">Test Equipment</option>
-                  <option value="radio">Radio</option>
-                  <option value="computing">Computing</option>
-                  <option value="robotics">Robotics</option>
-                  <option value="wearable">Wearable</option>
-                  <option value="other">Other</option>
+                  {RECIPE_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
