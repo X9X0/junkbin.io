@@ -306,7 +306,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Unit tests for critical paths (pytest + vitest)
 - ✅ Integration tests (backend workflow tests)
 - ✅ API documentation (Swagger/OpenAPI via drf-spectacular)
-- ✅ User documentation — in-app `/docs` page, `docs/USER_GUIDE.md`, `docs/DEVELOPER_GUIDE.md` (Feb 17, 2026)
+- ✅ User documentation — in-app `/docs` page (user guide only), `docs/USER_GUIDE.md`, `Docs/DEVELOPER_GUIDE.md` (Feb 17, 2026)
 - ✅ Deployment documentation (junkbin-deploy.sh, update.sh, backup.sh, restore.sh)
 - ✅ Security audit (Feb 3, 2026 — see `Docs/SECURITY_AUDIT.md`)
 
@@ -744,7 +744,7 @@ npm run test:coverage  # Coverage report
 4. ~~**Add pagination**~~ ✅ - Products, components, and schematics list pages
 5. ~~**Run tests and fix issues**~~ ✅ - All tests passing
 6. ~~**Mobile responsive polish**~~ ✅ - Tested via Chrome DevTools mobile emulation (Feb 10)
-7. ~~**User documentation**~~ ✅ - In-app docs page (`/docs`), `docs/USER_GUIDE.md`, `docs/DEVELOPER_GUIDE.md` (Feb 17, 2026)
+7. ~~**User documentation**~~ ✅ - In-app docs page (`/docs`), `docs/USER_GUIDE.md`, `Docs/DEVELOPER_GUIDE.md` (Feb 17, 2026)
 8. ~~**Security audit**~~ ✅ - Completed Feb 3 (see `Docs/SECURITY_AUDIT.md`)
 9. ~~**Production deployment**~~ ✅ - Live at https://junkbin.io with TLS 1.3, HSTS, auto-renewal
 
