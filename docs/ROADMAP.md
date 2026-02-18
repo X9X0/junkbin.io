@@ -233,7 +233,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Implement email/password registration
 - ✅ Email verification workflow
 - ✅ Google OAuth integration — Google Identity Services popup on frontend, backend ID token verification via `google-auth`, auto-creates or links accounts, issues JWT cookies (Feb 15, 2026)
-- ⬜ **SETUP: Google OAuth** — requires `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` in `.env` (get from Google Cloud Console → APIs & Services → Credentials)
+- ✅ **SETUP: Google OAuth** — `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` configured in `.env`, Docker env vars wired up, frontend build arg injected (Feb 17, 2026)
 - ⬜ GitHub OAuth integration
 - ⬜ Microsoft OAuth integration
 - ✅ Basic user profile pages
