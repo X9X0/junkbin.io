@@ -335,17 +335,31 @@ export default function Header() {
           {/* Mobile controls */}
           <div className="md:hidden flex items-center gap-1">
             {isAuthenticated ? (
-              <Link
-                to="/profile"
-                className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors relative"
-              >
-                <User className="h-5 w-5" />
-                {unreadCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-cyber-pink text-[9px] font-mono font-bold text-white px-0.5">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </span>
-                )}
-              </Link>
+              <>
+                <Link
+                  to="/submit"
+                  className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  <Plus className="h-5 w-5" />
+                </Link>
+                <Link
+                  to="/messages"
+                  className="relative p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                  {unreadCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-cyber-pink text-[9px] font-mono font-bold text-white px-0.5">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+                <Link
+                  to="/profile"
+                  className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  <User className="h-5 w-5" />
+                </Link>
+              </>
             ) : (
               <Link
                 to="/login"
