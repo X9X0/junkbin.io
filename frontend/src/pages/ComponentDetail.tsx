@@ -69,9 +69,9 @@ export default function ComponentDetail() {
           <div className="flex flex-col md:flex-row gap-6">
             {/* Image / Icon */}
             <div className="w-24 h-24 bg-cyber-black flex items-center justify-center border border-cyber-light/20 flex-shrink-0 overflow-hidden">
-              {component.images && component.images.length > 0 ? (
+              {component.primary_image ? (
                 <img
-                  src={component.images[0].thumbnail || component.images[0].image}
+                  src={component.primary_image.thumbnail || component.primary_image.image}
                   alt={component.part_number}
                   className="w-full h-full object-cover"
                 />
@@ -159,7 +159,7 @@ export default function ComponentDetail() {
           {/* Image gallery */}
           {component.images && component.images.length > 0 && (
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {component.images.map((img: any) => (
+              {component.images.map((img) => (
                 <div key={img.id} className="aspect-video bg-cyber-black border border-cyber-light/20 overflow-hidden">
                   <img
                     src={img.medium || img.image}
@@ -212,7 +212,7 @@ export default function ComponentDetail() {
                   className="card-cyber p-4 hover:border-cyber-cyan/50 transition-all group"
                 >
                   {/* Image */}
-                  <div className="aspect-video mb-4 bg-cyber-black flex items-center justify-center border border-cyber-light/20">
+                  <div className="aspect-[4/3] mb-4 bg-cyber-black flex items-center justify-center border border-cyber-light/20">
                     {product.primary_image ? (
                       <img
                         src={product.primary_image.thumbnail || product.primary_image.image}

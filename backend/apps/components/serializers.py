@@ -74,24 +74,11 @@ class ComponentImageUploadSerializer(serializers.ModelSerializer):
         return value
 
 
-class ComponentListSerializer(serializers.ModelSerializer):
-    """Serializer for component list view."""
-
-    component_type_display = serializers.CharField(
-        source='get_component_type_display',
-        read_only=True
-    )
-    primary_value = serializers.CharField(read_only=True)
-    primary_image = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Component
-        fields = [
-            'id', 'part_number', 'manufacturer', 'component_type',
-            'component_type_display', 'package_type', 'typical_function',
-            'primary_value', 'primary_image', 'datasheet_url',
-            'usage_count', 'is_verified'
-        ]
+class PrimaryImageMixin:
+    """
+    Mixin providing primary_image resolution with ComponentTypeImage fallback.
+    Shared by ComponentListSerializer and ComponentDetailSerializer.
+    """
 
     def _get_type_image_cache(self):
         """Load all ComponentTypeImage records once per serializer context."""
@@ -133,7 +120,27 @@ class ComponentListSerializer(serializers.ModelSerializer):
         return None
 
 
-class ComponentDetailSerializer(serializers.ModelSerializer):
+class ComponentListSerializer(PrimaryImageMixin, serializers.ModelSerializer):
+    """Serializer for component list view."""
+
+    component_type_display = serializers.CharField(
+        source='get_component_type_display',
+        read_only=True
+    )
+    primary_value = serializers.CharField(read_only=True)
+    primary_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Component
+        fields = [
+            'id', 'part_number', 'manufacturer', 'component_type',
+            'component_type_display', 'package_type', 'typical_function',
+            'primary_value', 'primary_image', 'datasheet_url',
+            'usage_count', 'is_verified'
+        ]
+
+
+class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     """Detailed serializer for single component view."""
 
     component_type_display = serializers.CharField(
@@ -143,6 +150,7 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
     created_by = CreatedBySerializer(read_only=True)
     cross_references = ComponentListSerializer(many=True, read_only=True)
     pricing_data = serializers.SerializerMethodField()
+    primary_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
 
     class Meta:
@@ -154,7 +162,7 @@ class ComponentDetailSerializer(serializers.ModelSerializer):
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at', 'pricing_data',
-            'images'
+            'primary_image', 'images'
         ]
         read_only_fields = [
             'id', 'usage_count', 'is_verified',
