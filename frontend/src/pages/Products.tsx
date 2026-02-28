@@ -182,7 +182,7 @@ export default function Products() {
                 <div
                   className={clsx(
                     'bg-cyber-black flex items-center justify-center border border-cyber-light/20',
-                    viewMode === 'grid' ? 'aspect-video mb-4' : 'w-24 h-24 flex-shrink-0'
+                    viewMode === 'grid' ? 'aspect-[4/3] mb-4' : 'w-24 h-24 flex-shrink-0'
                   )}
                 >
                   {product.primary_image ? (

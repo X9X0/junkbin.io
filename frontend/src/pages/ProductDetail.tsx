@@ -112,7 +112,7 @@ export default function ProductDetail() {
           {/* Image Gallery */}
           <div>
             <div className="card-cyber p-4 mb-4">
-              <div className="aspect-video bg-cyber-black flex items-center justify-center">
+              <div className="aspect-[4/3] bg-cyber-black flex items-center justify-center">
                 {product.images && product.images[selectedImage] ? (
                   <img
                     src={product.images[selectedImage].image}
@@ -441,7 +441,7 @@ export default function ProductDetail() {
                         setActiveTab('overview');
                       }}
                     >
-                      <div className="aspect-video bg-cyber-black mb-2">
+                      <div className="aspect-[4/3] bg-cyber-black mb-2">
                         <LazyImage
                           src={img.thumbnail || img.image}
                           alt={img.caption || `Image ${idx + 1}`}

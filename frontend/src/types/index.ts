@@ -127,6 +127,18 @@ export interface ProductComment {
   updated_at: string;
 }
 
+// Component image type (own image or type-default fallback)
+export interface ComponentImage {
+  id?: string;
+  image: string;
+  thumbnail?: string;
+  medium?: string;
+  image_type?: string;
+  caption?: string;
+  is_default?: boolean;
+  is_approved?: boolean;
+}
+
 // Component types
 export interface Component {
   id: string;
@@ -143,13 +155,13 @@ export interface Component {
   is_verified: boolean;
   pricing_data?: NexarData | null;
   created_by?: CreatedBy;
-  primary_image?: string | null;
+  primary_image?: ComponentImage | null;
   manufacturer_aliases?: string[];
   specifications?: Record<string, string>;
   octopart_url?: string;
   alternative_part_numbers?: string[];
   cross_references?: Component[];
-  images?: any[];
+  images?: ComponentImage[];
   created_at?: string;
   updated_at?: string;
 }

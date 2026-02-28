@@ -309,7 +309,7 @@ class ComponentImage(models.Model):
 
     thumbnail = ImageSpecField(
         source='image',
-        processors=[AlphaToBlack(), ResizeToFill(480, 270)],
+        processors=[AlphaToBlack(), ResizeToFill(300, 300)],
         format='JPEG',
         options={'quality': 85}
     )
@@ -416,7 +416,7 @@ class ComponentTypeImage(models.Model):
     )
     thumbnail = ImageSpecField(
         source='image',
-        processors=[AlphaToBlack(), ResizeToFill(480, 270)],
+        processors=[AlphaToBlack(), ResizeToFill(300, 300)],
         format='JPEG',
         options={'quality': 85}
     )

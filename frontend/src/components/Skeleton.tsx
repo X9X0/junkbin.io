@@ -57,7 +57,7 @@ export function Skeleton({
 export function ProductCardSkeleton() {
   return (
     <div className="card-cyber p-4">
-      <Skeleton variant="rectangular" className="aspect-video mb-4" />
+      <Skeleton variant="rectangular" className="aspect-[4/3] mb-4" />
       <Skeleton width="40%" className="mb-2" />
       <Skeleton width="70%" height={20} className="mb-2" />
       <div className="flex gap-2 mt-2">
