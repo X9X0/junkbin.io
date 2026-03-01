@@ -8,8 +8,21 @@ from django.http import HttpResponse
 from django.utils.html import format_html
 from import_export.admin import ImportExportActionModelAdmin
 
-from .models import Component, ComponentImage, ComponentTypeImage, ProductComponent, ComponentVote, ComponentViewStats
+from .models import Component, ComponentImage, ComponentTypeImage, ComponentDatasheet, ProductComponent, ComponentVote, ComponentViewStats
 from .resources import ComponentResource, ProductComponentResource
+
+
+class ComponentDatasheetInline(admin.TabularInline):
+    """Inline admin for component datasheets."""
+
+    model = ComponentDatasheet
+    extra = 0
+    readonly_fields = ['file_type', 'file_size', 'download_count', 'uploaded_by', 'uploaded_at']
+    fields = [
+        'title', 'version', 'file', 'source_type', 'source_url',
+        'is_approved', 'file_type', 'file_size', 'download_count',
+        'uploaded_by', 'uploaded_at',
+    ]
 
 
 class ComponentImageInline(admin.TabularInline):
@@ -87,7 +100,7 @@ class ComponentAdmin(ImportExportActionModelAdmin):
         )}),
     )
 
-    inlines = [ComponentImageInline, ProductComponentInline]
+    inlines = [ComponentDatasheetInline, ComponentImageInline, ProductComponentInline]
 
     actions = ['verify_components', 'export_as_csv']
 
@@ -273,6 +286,52 @@ class ComponentImageAdmin(admin.ModelAdmin):
     def approve_images(self, request, queryset):
         updated = queryset.update(is_approved=True)
         self.message_user(request, f'{updated} images approved.')
+
+
+@admin.register(ComponentDatasheet)
+class ComponentDatasheetAdmin(admin.ModelAdmin):
+    """Admin for component datasheets."""
+
+    list_display = [
+        'title', 'component', 'version', 'source_type', 'file_type',
+        'file_size_display', 'is_approved', 'download_count',
+        'uploaded_by', 'uploaded_at',
+    ]
+    list_filter = ['source_type', 'file_type', 'is_approved', 'uploaded_at']
+    search_fields = [
+        'title', 'component__part_number', 'component__manufacturer',
+        'source_url', 'source_notes',
+    ]
+    readonly_fields = [
+        'file_type', 'file_size', 'download_count', 'uploaded_by', 'uploaded_at',
+    ]
+    ordering = ['-uploaded_at']
+    autocomplete_fields = ['component']
+    raw_id_fields = ['uploaded_by']
+
+    fieldsets = (
+        (None, {'fields': ('component', 'file', 'title', 'version')}),
+        ('Source', {'fields': ('source_type', 'source_url', 'source_notes')}),
+        ('Technical', {'fields': ('file_type', 'file_size')}),
+        ('Status', {'fields': ('is_approved', 'download_count')}),
+        ('Metadata', {'fields': ('uploaded_by', 'uploaded_at')}),
+    )
+
+    actions = ['approve_datasheets']
+
+    @admin.action(description='Approve selected datasheets')
+    def approve_datasheets(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} datasheets approved.')
+
+    def file_size_display(self, obj):
+        if obj.file_size:
+            if obj.file_size >= 1024 * 1024:
+                return f'{obj.file_size / (1024 * 1024):.1f} MB'
+            return f'{obj.file_size / 1024:.0f} KB'
+        return '-'
+    file_size_display.short_description = 'Size'
+    file_size_display.admin_order_field = 'file_size'
 
 
 @admin.register(ComponentTypeImage)
