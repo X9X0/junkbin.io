@@ -27,6 +27,7 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        navigateFallbackDenylist: [/^\/media\//, /^\/static\//, /^\/api\//],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {
