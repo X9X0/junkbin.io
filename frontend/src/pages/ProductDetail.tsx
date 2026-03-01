@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import { products, schematics } from '../api/endpoints';
+import { products, schematics, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import ImageUpload from '../components/ImageUpload';
 import SchematicUpload from '../components/SchematicUpload';
@@ -27,17 +27,81 @@ import {
   Archive,
   Pencil,
   Trash2,
+  ArrowLeftRight,
 } from 'lucide-react';
+import type { JunkbinItem } from '../types';
 import clsx from 'clsx';
 import { useState } from 'react';
 import LazyImage from '../components/LazyImage';
+
+function SwapItemCard({ item, currentUserId, isAuthenticated }: {
+  item: JunkbinItem;
+  currentUserId?: string;
+  isAuthenticated: boolean;
+}) {
+  const canContact =
+    isAuthenticated && currentUserId !== item.user.id && item.item_type === 'have' && item.status === 'available';
+  return (
+    <div className="card-cyber p-4 flex flex-col gap-2">
+      <div className="flex items-center justify-between gap-2">
+        {item.item_type === 'have' && (
+          <span className={item.status === 'available'
+            ? 'badge-cyber text-[10px] text-cyber-green border-cyber-green'
+            : 'badge-cyber text-[10px] text-gray-500 border-gray-600'
+          }>
+            {item.status === 'available' ? 'AVAILABLE' : 'NOT FOR TRADE'}
+          </span>
+        )}
+        {item.item_type === 'have' && (
+          <span className="badge-cyber text-[10px] text-gray-400 border-gray-600">
+            {{ new: 'New', working: 'Working', broken: 'Broken', unknown: 'Unknown' }[item.condition] || item.condition}
+          </span>
+        )}
+        {item.quantity > 1 && (
+          <span className="text-xs text-gray-500 font-mono ml-auto">×{item.quantity}</span>
+        )}
+      </div>
+      {item.notes && (
+        <p className="text-sm text-gray-400 line-clamp-2">{item.notes}</p>
+      )}
+      <div className="flex items-center justify-between pt-2 border-t border-cyber-light/20 mt-auto">
+        <Link
+          to={`/users/${item.user.id}`}
+          className="flex items-center gap-2 group min-w-0"
+        >
+          <div className="w-6 h-6 rounded-full bg-cyber-gray border border-cyber-light/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {item.user.avatar ? (
+              <img src={item.user.avatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-gray-500 font-mono text-[10px]">
+                {item.user.username.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-gray-400 group-hover:text-cyber-cyan transition-colors font-mono truncate">
+            {item.user.display_name || item.user.username}
+          </span>
+        </Link>
+        {canContact && (
+          <Link
+            to={`/messages/new?user=${item.user.id}`}
+            className="flex items-center gap-1 text-xs text-cyber-cyan hover:text-white transition-colors font-mono flex-shrink-0 ml-2"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+            CONTACT
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments' | 'swap'>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [showBomImport, setShowBomImport] = useState(false);
@@ -63,6 +127,24 @@ export default function ProductDetail() {
     queryKey: ['product', id, 'schematics'],
     queryFn: () => products.schematics(id!),
     enabled: !!id && activeTab === 'schematics',
+  });
+
+  const { data: swapCount } = useQuery({
+    queryKey: ['junkbin', 'product', id, 'count'],
+    queryFn: () => junkbin.list({ content_type: 'product', object_id: id }),
+    enabled: !!id,
+  });
+
+  const { data: swapHave } = useQuery({
+    queryKey: ['junkbin', 'product', id, 'have'],
+    queryFn: () => junkbin.list({ content_type: 'product', object_id: id, item_type: 'have' }),
+    enabled: !!id && activeTab === 'swap',
+  });
+
+  const { data: swapWant } = useQuery({
+    queryKey: ['junkbin', 'product', id, 'want'],
+    queryFn: () => junkbin.list({ content_type: 'product', object_id: id, item_type: 'want' }),
+    enabled: !!id && activeTab === 'swap',
   });
 
   const deleteMutation = useMutation({
@@ -376,6 +458,7 @@ export default function ProductDetail() {
               { key: 'components', label: 'Parts', icon: Cpu },
               { key: 'schematics', label: 'Docs', icon: FileText },
               { key: 'comments', label: 'Comments', icon: MessageSquare, count: product.comment_count },
+              { key: 'swap', label: 'Swap', icon: ArrowLeftRight, count: swapCount?.count },
             ].map(({ key, label, icon: Icon, count }) => (
               <button
                 key={key}
@@ -826,6 +909,64 @@ export default function ProductDetail() {
         )}
         {activeTab === 'comments' && (
           <ProductComments productId={id!} />
+        )}
+
+        {activeTab === 'swap' && (
+          <div className="space-y-8">
+            {/* HAVE section */}
+            <div>
+              <h3 className="font-display text-lg font-semibold text-white mb-4">
+                HAVE <span className="text-cyber-cyan text-sm font-mono">({swapHave?.count ?? 0})</span>
+              </h3>
+              {swapHave?.results?.length ? (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {swapHave.results.map((item) => (
+                    <SwapItemCard
+                      key={item.id}
+                      item={item}
+                      currentUserId={user?.id}
+                      isAuthenticated={isAuthenticated}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="card-cyber p-8 text-center">
+                  <p className="text-gray-500 font-mono text-sm">No one has listed this yet.</p>
+                  {isAuthenticated && (
+                    <button
+                      onClick={() => setShowJunkbinModal(true)}
+                      className="text-cyber-cyan hover:underline text-sm mt-2 font-mono"
+                    >
+                      Add to your junkbin
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* WANT section */}
+            <div>
+              <h3 className="font-display text-lg font-semibold text-white mb-4">
+                WANT <span className="text-cyber-yellow text-sm font-mono">({swapWant?.count ?? 0})</span>
+              </h3>
+              {swapWant?.results?.length ? (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {swapWant.results.map((item) => (
+                    <SwapItemCard
+                      key={item.id}
+                      item={item}
+                      currentUserId={user?.id}
+                      isAuthenticated={isAuthenticated}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="card-cyber p-8 text-center">
+                  <p className="text-gray-500 font-mono text-sm">Nobody is looking for this.</p>
+                </div>
+              )}
+            </div>
+          </div>
         )}
       </div>
 

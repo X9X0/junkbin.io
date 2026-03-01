@@ -1,6 +1,6 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3 } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3, Store } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
@@ -109,11 +109,11 @@ export default function Header() {
               RECIPES
             </Link>
             <Link
-              to="/leaderboard"
+              to="/community"
               className="font-mono text-sm text-gray-400 hover:text-cyber-yellow transition-colors flex items-center gap-1"
             >
               <Trophy className="h-3.5 w-3.5" />
-              RANKS
+              COMMUNITY
             </Link>
             {isAuthenticated && (user?.is_moderator || user?.is_staff) && (
               <>
@@ -272,6 +272,13 @@ export default function Header() {
                   SUBMIT
                 </Link>
                 <Link
+                  to="/swap"
+                  className="relative text-gray-400 hover:text-cyber-cyan transition-colors p-1"
+                  title="Swap Shop"
+                >
+                  <Store className="h-5 w-5" />
+                </Link>
+                <Link
                   to="/messages"
                   className="relative text-gray-400 hover:text-cyber-cyan transition-colors p-1"
                 >
@@ -341,6 +348,12 @@ export default function Header() {
                   className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
                   <Plus className="h-5 w-5" />
+                </Link>
+                <Link
+                  to="/swap"
+                  className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  <Store className="h-5 w-5" />
                 </Link>
                 <Link
                   to="/messages"
@@ -426,12 +439,20 @@ export default function Header() {
               RECIPES
             </Link>
             <Link
-              to="/leaderboard"
+              to="/community"
               className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-yellow flex items-center gap-1"
               onClick={() => setIsMenuOpen(false)}
             >
               <Trophy className="h-3.5 w-3.5" />
-              LEADERBOARD
+              COMMUNITY
+            </Link>
+            <Link
+              to="/swap"
+              className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan flex items-center gap-1"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <Store className="h-3.5 w-3.5" />
+              SWAP SHOP
             </Link>
             {isAuthenticated && (
               <Link

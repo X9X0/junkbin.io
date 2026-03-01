@@ -50,17 +50,17 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
         filter_user = params.get('user')
         if filter_user:
             qs = qs.filter(user_id=filter_user)
-            # Non-owner sees only public "have" items
+            # Non-owner sees only public items (both have and want)
             if not user.is_authenticated or str(user.id) != filter_user:
-                qs = qs.filter(visibility='public', item_type='have')
+                qs = qs.filter(visibility='public')
         elif self.action == 'list':
-            # Default list: only public "have" items (browse mode)
+            # Default list: public items (browse mode)
             if not user.is_authenticated:
-                qs = qs.filter(visibility='public', item_type='have')
+                qs = qs.filter(visibility='public')
             else:
-                # Authenticated user: show public "have" from others + all own items
+                # Authenticated user: show all public items + all own items
                 qs = qs.filter(
-                    models.Q(visibility='public', item_type='have') |
+                    models.Q(visibility='public') |
                     models.Q(user=user)
                 )
 
@@ -83,6 +83,10 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
                 except ContentType.DoesNotExist:
                     pass
 
+        object_id = params.get('object_id')
+        if object_id:
+            qs = qs.filter(object_id=object_id)
+
         filter_status = params.get('status')
         if filter_status:
             qs = qs.filter(status=filter_status)
@@ -90,6 +94,23 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
         filter_condition = params.get('condition')
         if filter_condition:
             qs = qs.filter(condition=filter_condition)
+
+        q = params.get('q')
+        if q:
+            from apps.products.models import Product
+            from apps.components.models import Component
+            product_ids = Product.objects.filter(
+                models.Q(model_number__icontains=q) | models.Q(manufacturer__icontains=q)
+            ).values_list('id', flat=True)
+            component_ids = Component.objects.filter(
+                models.Q(part_number__icontains=q) | models.Q(manufacturer__icontains=q)
+            ).values_list('id', flat=True)
+            product_ct = ContentType.objects.get_for_model(Product)
+            component_ct = ContentType.objects.get_for_model(Component)
+            qs = qs.filter(
+                models.Q(content_type=product_ct, object_id__in=product_ids) |
+                models.Q(content_type=component_ct, object_id__in=component_ids)
+            )
 
         return qs.distinct()
 

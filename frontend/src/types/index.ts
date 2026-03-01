@@ -362,7 +362,7 @@ export interface UserBlock {
 // Junkbin types
 export interface JunkbinItem {
   id: string;
-  user: { id: string; username: string };
+  user: { id: string; username: string; display_name?: string; avatar?: string | null };
   content_type: 'product' | 'component';
   object_id: string;
   item_name: string;
