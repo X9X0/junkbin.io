@@ -20,6 +20,7 @@ export default function EditComponentModal({
 }: EditComponentModalProps) {
   const queryClient = useQueryClient();
   const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState<'details' | 'datasheets'>('details');
 
   const [manufacturer, setManufacturer] = useState('');
   const [partNumber, setPartNumber] = useState('');
@@ -68,8 +69,6 @@ export default function EditComponentModal({
     if (description) data.description = description;
     mutation.mutate(data);
   };
-
-  const [activeTab, setActiveTab] = useState<'details' | 'datasheets'>('details');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
