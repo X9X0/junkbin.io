@@ -18,6 +18,7 @@ SIDEBAR_GROUPS = {
         ('products', 'schematic'),
         ('products', 'productimage'),
         ('components', 'componentimage'),
+        ('components', 'componentdatasheet'),
         ('components', 'componenttypeimage'),
     ],
     'Community': [
