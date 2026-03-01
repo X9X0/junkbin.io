@@ -9,7 +9,6 @@ import {
   Users,
   Zap,
   Mail,
-  Github,
   ArrowRight,
   AlertTriangle,
   ChevronRight,
@@ -351,15 +350,6 @@ export default function Home() {
                   CREATE ACCOUNT
                   <ArrowRight className="h-4 w-4 inline ml-2" />
                 </Link>
-                <a
-                  href="https://github.com/junkbin"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-cyber btn-cyber-pink"
-                >
-                  <Github className="h-4 w-4 inline mr-2" />
-                  GITHUB
-                </a>
               </div>
             </div>
           </div>

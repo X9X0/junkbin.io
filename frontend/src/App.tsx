@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/Layout';
@@ -17,7 +17,8 @@ import PasswordResetConfirm from './pages/PasswordResetConfirm';
 import VerifyEmail from './pages/VerifyEmail';
 import Moderation from './pages/Moderation';
 import AnalyticsDashboard from './pages/AnalyticsDashboard';
-import Leaderboard from './pages/Leaderboard';
+import Community from './pages/Community';
+import SwapShop from './pages/SwapShop';
 import Messages from './pages/Messages';
 import MessageThread from './pages/MessageThread';
 import NewConversation from './pages/NewConversation';
@@ -62,7 +63,9 @@ function App() {
                 <Route path="schematics" element={<Schematics />} />
                 <Route path="search" element={<Search />} />
                 <Route path="submit" element={<Submit />} />
-                <Route path="leaderboard" element={<Leaderboard />} />
+                <Route path="leaderboard" element={<Navigate to="/community" replace />} />
+                <Route path="community" element={<Community />} />
+                <Route path="swap" element={<SwapShop />} />
                 <Route path="users/:id" element={<UserProfile />} />
                 <Route path="messages" element={<Messages />} />
                 <Route path="messages/new" element={<NewConversation />} />

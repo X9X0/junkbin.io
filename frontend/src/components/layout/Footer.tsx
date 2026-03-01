@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Github, Heart, Wrench } from 'lucide-react';
+import { Heart, Wrench } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -112,16 +112,6 @@ export default function Footer() {
                   Documentation
                 </Link>
               </li>
-              <li>
-                <a
-                  href="/api/docs/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
-                >
-                  API Docs
-                </a>
-              </li>
             </ul>
           </div>
         </div>
@@ -132,14 +122,6 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} Junkbin.io - Open Source
           </p>
           <div className="flex items-center gap-4 sm:gap-6">
-            <a
-              href="https://github.com/junkbin"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-gray-500 hover:text-cyber-cyan transition-colors"
-            >
-              <Github className="h-5 w-5" />
-            </a>
             <span className="text-xs text-gray-600 font-mono hidden sm:flex items-center gap-1">
               Press <span className="px-1.5 py-0.5 bg-cyber-dark border border-cyber-light/30 text-gray-400">?</span> for shortcuts
             </span>

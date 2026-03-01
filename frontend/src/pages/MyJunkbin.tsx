@@ -99,19 +99,27 @@ export default function MyJunkbin() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h1 className="font-display text-3xl font-bold text-white">MY JUNKBIN</h1>
-          {summary && (
-            <div className="flex items-center gap-4 text-sm font-mono">
-              <span className="text-cyber-green">
-                {summary.have_count} <span className="text-gray-500">have</span>
-              </span>
-              <span className="text-cyber-yellow">
-                {summary.want_count} <span className="text-gray-500">want</span>
-              </span>
-              <span className="text-cyber-cyan">
-                {summary.available_count} <span className="text-gray-500">for trade</span>
-              </span>
-            </div>
-          )}
+          <div className="flex flex-wrap items-center gap-4">
+            {summary && (
+              <div className="flex items-center gap-4 text-sm font-mono">
+                <span className="text-cyber-green">
+                  {summary.have_count} <span className="text-gray-500">have</span>
+                </span>
+                <span className="text-cyber-yellow">
+                  {summary.want_count} <span className="text-gray-500">want</span>
+                </span>
+                <span className="text-cyber-cyan">
+                  {summary.available_count} <span className="text-gray-500">for trade</span>
+                </span>
+              </div>
+            )}
+            <Link
+              to="/swap"
+              className="flex items-center gap-1.5 border border-cyber-cyan/50 px-3 py-1.5 text-xs font-mono text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors whitespace-nowrap"
+            >
+              BROWSE SWAP SHOP →
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}

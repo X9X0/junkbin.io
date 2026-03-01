@@ -1,14 +1,74 @@
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { components } from '../api/endpoints';
+import { components, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import EditComponentModal from '../components/EditComponentModal';
 import PricingPanel from '../components/PricingPanel';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
 import DatasheetUpload from '../components/DatasheetUpload';
-import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen } from 'lucide-react';
+import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen, MessageSquare, Store } from 'lucide-react';
+import type { JunkbinItem } from '../types';
+
+function CompactSwapCard({ item, currentUserId, isAuthenticated }: {
+  item: JunkbinItem;
+  currentUserId?: string;
+  isAuthenticated: boolean;
+}) {
+  const canContact =
+    isAuthenticated && currentUserId !== item.user.id && item.item_type === 'have' && item.status === 'available';
+  return (
+    <div className="card-cyber p-3 flex flex-col gap-2 min-w-[180px]">
+      <div className="flex items-center gap-2 flex-wrap">
+        {item.item_type === 'have' && (
+          <span className={item.status === 'available'
+            ? 'badge-cyber text-[10px] text-cyber-green border-cyber-green'
+            : 'badge-cyber text-[10px] text-gray-500 border-gray-600'
+          }>
+            {item.status === 'available' ? 'AVAIL' : 'NOT FOR TRADE'}
+          </span>
+        )}
+        {item.item_type === 'have' && (
+          <span className="badge-cyber text-[10px] text-gray-400 border-gray-600">
+            {{ new: 'New', working: 'Working', broken: 'Broken', unknown: 'Unknown' }[item.condition] || item.condition}
+          </span>
+        )}
+        {item.quantity > 1 && (
+          <span className="text-xs text-gray-500 font-mono">×{item.quantity}</span>
+        )}
+      </div>
+      {item.notes && (
+        <p className="text-xs text-gray-400 line-clamp-2">{item.notes}</p>
+      )}
+      <div className="flex items-center justify-between gap-2 pt-1 border-t border-cyber-light/20">
+        <Link to={`/users/${item.user.id}`} className="flex items-center gap-1.5 group min-w-0">
+          <div className="w-5 h-5 rounded-full bg-cyber-gray border border-cyber-light/30 flex items-center justify-center overflow-hidden flex-shrink-0">
+            {item.user.avatar ? (
+              <img src={item.user.avatar} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-gray-500 font-mono text-[9px]">
+                {item.user.username.charAt(0).toUpperCase()}
+              </span>
+            )}
+          </div>
+          <span className="text-[11px] text-gray-400 group-hover:text-cyber-cyan transition-colors font-mono truncate">
+            {item.user.display_name || item.user.username}
+          </span>
+        </Link>
+        {canContact && (
+          <Link
+            to={`/messages/new?user=${item.user.id}`}
+            className="text-cyber-cyan hover:text-white transition-colors flex-shrink-0"
+            title="Contact"
+          >
+            <MessageSquare className="h-3.5 w-3.5" />
+          </Link>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function ComponentDetail() {
   const { id } = useParams<{ id: string }>();
@@ -27,6 +87,12 @@ export default function ComponentDetail() {
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ['component-products', id],
     queryFn: () => components.crossReference(id!),
+    enabled: !!id,
+  });
+
+  const { data: swapItems } = useQuery({
+    queryKey: ['junkbin', 'component', id],
+    queryFn: () => junkbin.list({ content_type: 'component', object_id: id }),
     enabled: !!id,
   });
 
@@ -264,6 +330,61 @@ export default function ComponentDetail() {
             </div>
           </div>
         )}
+
+        {/* WHO HAS THIS? — only shown if there are any junkbin items */}
+        {swapItems && swapItems.count > 0 && (() => {
+          const haveItems = swapItems.results.filter((i) => i.item_type === 'have');
+          const wantItems = swapItems.results.filter((i) => i.item_type === 'want');
+          return (
+            <div className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <Store className="h-5 w-5 text-cyber-cyan" />
+                <h2 className="font-display text-xl font-bold text-white">
+                  WHO HAS THIS?
+                </h2>
+                <Link to={`/swap?content_type=component`} className="text-xs text-gray-500 hover:text-cyber-cyan font-mono transition-colors">
+                  → SWAP SHOP
+                </Link>
+              </div>
+
+              {haveItems.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-mono text-xs text-cyber-cyan uppercase mb-2">
+                    HAVE ({haveItems.length})
+                  </h3>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {haveItems.map((item) => (
+                      <CompactSwapCard
+                        key={item.id}
+                        item={item}
+                        currentUserId={user?.id}
+                        isAuthenticated={isAuthenticated}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {wantItems.length > 0 && (
+                <div>
+                  <h3 className="font-mono text-xs text-cyber-yellow uppercase mb-2">
+                    WANT ({wantItems.length})
+                  </h3>
+                  <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
+                    {wantItems.map((item) => (
+                      <CompactSwapCard
+                        key={item.id}
+                        item={item}
+                        currentUserId={user?.id}
+                        isAuthenticated={isAuthenticated}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Products containing this component */}
         <div>
