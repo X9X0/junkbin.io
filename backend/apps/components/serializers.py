@@ -4,7 +4,7 @@ Component serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Component, ComponentImage, ComponentTypeImage, ProductComponent, ComponentVote
+from .models import Component, ComponentImage, ComponentTypeImage, ComponentDatasheet, ProductComponent, ComponentVote
 from utils.file_validation import validate_image_file
 from utils.image_processing import strip_exif
 
@@ -71,6 +71,39 @@ class ComponentImageUploadSerializer(serializers.ModelSerializer):
         if stripped != value:
             value.file = stripped
             value.seek(0)
+        return value
+
+
+class ComponentDatasheetSerializer(serializers.ModelSerializer):
+    """Serializer for reading component datasheets."""
+
+    uploaded_by = CreatedBySerializer(read_only=True)
+    file_url = serializers.SerializerMethodField()
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        url = obj.file.url
+        return request.build_absolute_uri(url) if request else url
+
+    class Meta:
+        model = ComponentDatasheet
+        fields = [
+            'id', 'title', 'version', 'source_type', 'source_url',
+            'source_notes', 'file_url', 'file_type', 'file_size',
+            'uploaded_by', 'uploaded_at', 'is_approved', 'download_count',
+        ]
+
+
+class ComponentDatasheetUploadSerializer(serializers.ModelSerializer):
+    """Serializer for uploading a component datasheet."""
+
+    class Meta:
+        model = ComponentDatasheet
+        fields = ['file', 'title', 'version', 'source_type', 'source_url', 'source_notes']
+
+    def validate_file(self, value):
+        from utils.file_validation import validate_schematic_file
+        validate_schematic_file(value)
         return value
 
 
@@ -152,6 +185,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     pricing_data = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
+    datasheets = serializers.SerializerMethodField()
 
     class Meta:
         model = Component
@@ -162,7 +196,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at', 'pricing_data',
-            'primary_image', 'images'
+            'primary_image', 'images', 'datasheets',
         ]
         read_only_fields = [
             'id', 'usage_count', 'is_verified',
@@ -180,6 +214,10 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         if not (request and hasattr(request, 'user') and request.user.is_staff):
             qs = qs.filter(is_approved=True)
         return ComponentImageSerializer(qs, many=True, context=self.context).data
+
+    def get_datasheets(self, obj):
+        qs = obj.datasheets.filter(is_approved=True)
+        return ComponentDatasheetSerializer(qs, many=True, context=self.context).data
 
 
 class ComponentCreateSerializer(serializers.ModelSerializer):

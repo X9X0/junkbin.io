@@ -4,6 +4,7 @@ import { components } from '../api/endpoints';
 import { X, Loader2 } from 'lucide-react';
 import { COMPONENT_TYPES } from '../utils/constants';
 import { parseApiError } from '../utils/formErrors';
+import DatasheetUpload from './DatasheetUpload';
 import type { Component } from '../types';
 
 interface EditComponentModalProps {
@@ -68,6 +69,8 @@ export default function EditComponentModal({
     mutation.mutate(data);
   };
 
+  const [activeTab, setActiveTab] = useState<'details' | 'datasheets'>('details');
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg bg-cyber-darker border border-cyber-light/30 max-h-[90vh] overflow-y-auto">
@@ -79,6 +82,36 @@ export default function EditComponentModal({
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-cyber-light/30">
+          {(['details', 'datasheets'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 text-xs font-mono uppercase transition-colors ${
+                activeTab === tab
+                  ? 'text-cyber-cyan border-b-2 border-cyber-cyan'
+                  : 'text-gray-500 hover:text-white'
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === 'datasheets' && (
+          <div className="p-4">
+            <p className="text-xs text-gray-500 font-mono mb-4">
+              Upload a datasheet PDF or image. It will appear on the component page after review.
+            </p>
+            <DatasheetUpload
+              uploadFn={(formData) => components.uploadDatasheet(component.id, formData)}
+              invalidateKey={['component', component.id]}
+            />
+          </div>
+        )}
+
+        {activeTab === 'details' && (
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {error && (
             <div className="p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm">
@@ -198,6 +231,7 @@ export default function EditComponentModal({
             )}
           </button>
         </form>
+        )}
       </div>
     </div>
   );

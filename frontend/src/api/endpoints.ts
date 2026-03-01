@@ -303,6 +303,13 @@ export const components = {
     });
     return response.data;
   },
+
+  uploadDatasheet: async (id: string, formData: FormData): Promise<any> => {
+    const response = await api.post(`/components/${id}/upload_datasheet/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
 };
 
 // Product-component voting endpoints

@@ -7,13 +7,15 @@ import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import EditComponentModal from '../components/EditComponentModal';
 import PricingPanel from '../components/PricingPanel';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
-import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil } from 'lucide-react';
+import DatasheetUpload from '../components/DatasheetUpload';
+import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen } from 'lucide-react';
 
 export default function ComponentDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [showDatasheetUpload, setShowDatasheetUpload] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
   const { data: component, isLoading: componentLoading } = useQuery({
@@ -143,6 +145,15 @@ export default function ComponentDetail() {
                     {showUpload ? 'Hide Upload' : 'Upload Image'}
                   </button>
                 )}
+                {isAuthenticated && (
+                  <button
+                    onClick={() => setShowDatasheetUpload(!showDatasheetUpload)}
+                    className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
+                  >
+                    <BookOpen className="h-4 w-4" />
+                    {showDatasheetUpload ? 'Hide Upload' : 'Upload Datasheet'}
+                  </button>
+                )}
                 {isAuthenticated && (user?.is_staff || component.created_by?.id === user?.id) && (
                   <button
                     onClick={() => setShowEditModal(true)}
@@ -182,6 +193,18 @@ export default function ComponentDetail() {
               />
             </div>
           )}
+
+          {/* Datasheet upload section */}
+          {showDatasheetUpload && isAuthenticated && (
+            <div className="mt-6">
+              <h3 className="font-display text-sm font-bold text-white mb-3">UPLOAD DATASHEET</h3>
+              <DatasheetUpload
+                uploadFn={(formData) => components.uploadDatasheet(id!, formData)}
+                invalidateKey={['component', id!]}
+                onSuccess={() => setShowDatasheetUpload(false)}
+              />
+            </div>
+          )}
         </div>
 
         {/* Pricing & Availability */}
@@ -192,6 +215,55 @@ export default function ComponentDetail() {
             datasheetUrl={component.datasheet_url}
           />
         </div>
+
+        {/* Datasheets */}
+        {component.datasheets && component.datasheets.length > 0 && (
+          <div className="mb-8">
+            <h2 className="font-display text-xl font-bold text-white mb-4">
+              DATASHEETS
+            </h2>
+            <div className="space-y-2">
+              {component.datasheets.map((ds) => (
+                <div
+                  key={ds.id}
+                  className="card-cyber p-4 flex items-center gap-4"
+                >
+                  <FileText className="h-5 w-5 text-cyber-cyan flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                      <span className="text-white font-medium truncate">{ds.title}</span>
+                      {ds.version && (
+                        <span className="badge-cyber text-cyber-cyan border-cyber-cyan text-xs">
+                          {ds.version}
+                        </span>
+                      )}
+                      <span className="badge-cyber text-gray-400 border-gray-600 text-xs uppercase">
+                        {ds.file_type}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 font-mono">
+                      {ds.file_size && (
+                        <span>{(ds.file_size / 1024).toFixed(0)} KB</span>
+                      )}
+                      <span>{ds.source_type}</span>
+                      {ds.uploaded_by && <span>by {ds.uploaded_by.username}</span>}
+                      <span>{ds.download_count} downloads</span>
+                    </div>
+                  </div>
+                  <a
+                    href={ds.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-cyber-cyan hover:text-white transition-colors text-sm flex-shrink-0"
+                  >
+                    <Download className="h-4 w-4" />
+                    Download
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Products containing this component */}
         <div>
