@@ -118,9 +118,15 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-12 pt-6 border-t border-cyber-light/20 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-xs text-gray-500 font-mono">
-            &copy; {new Date().getFullYear()} Junkbin.io - Open Source
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <p className="text-xs text-gray-500 font-mono">
+              &copy; {new Date().getFullYear()} Junkbin.io - Open Source
+            </p>
+            <span className="text-gray-600 font-mono text-xs hidden sm:inline">·</span>
+            <span className="text-xs text-gray-600 font-mono">
+              v{__APP_VERSION__} · {new Date(__BUILD_TIME__).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(__BUILD_TIME__).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false })} UTC
+            </span>
+          </div>
           <div className="flex items-center gap-4 sm:gap-6">
             <span className="text-xs text-gray-600 font-mono hidden sm:flex items-center gap-1">
               Press <span className="px-1.5 py-0.5 bg-cyber-dark border border-cyber-light/30 text-gray-400">?</span> for shortcuts
