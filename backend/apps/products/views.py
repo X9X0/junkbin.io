@@ -735,8 +735,8 @@ class ProductViewSet(viewsets.ModelViewSet):
             'products': Product.objects.filter(is_approved=False).count(),
             'schematics': Schematic.objects.filter(is_approved=False).count(),
             'recipes': Recipe.objects.filter(is_approved=False).count(),
-            'images': ProductImage.objects.filter(is_approved=False).count()
-            + ComponentImage.objects.filter(is_approved=False).count(),
+            'images': ProductImage.objects.filter(is_approved=False).count(),
+            'component_images': ComponentImage.objects.filter(is_approved=False).count(),
             'datasheets': ComponentDatasheet.objects.filter(is_approved=False).count(),
         })
 
