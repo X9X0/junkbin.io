@@ -438,6 +438,64 @@ class ComponentTypeImage(models.Model):
         return f'{self.get_component_type_display()} (default)'
 
 
+def datasheet_file_path(instance, filename):
+    """Generate upload path for component datasheets."""
+    ext = filename.rsplit('.', 1)[-1]
+    return f'datasheets/components/{instance.component.id}/{uuid.uuid4().hex}.{ext}'
+
+
+ALLOWED_DATASHEET_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'svg']
+
+
+class ComponentDatasheet(models.Model):
+    """Uploaded datasheet files for a component."""
+
+    class SourceType(models.TextChoices):
+        OFFICIAL    = 'official',    _('Official Manufacturer')
+        COMMUNITY   = 'community',   _('Community Upload')
+        REVERSE_ENG = 'reverse_eng', _('Reverse Engineered')
+        MIRROR      = 'mirror',      _('Third-party Mirror')
+
+    component    = models.ForeignKey(Component, on_delete=models.CASCADE, related_name='datasheets')
+    file         = models.FileField(
+        upload_to=datasheet_file_path,
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_DATASHEET_EXTENSIONS)]
+    )
+    title        = models.CharField(max_length=300)
+    version      = models.CharField(max_length=50, blank=True)
+    source_type  = models.CharField(max_length=30, choices=SourceType.choices, default=SourceType.OFFICIAL)
+    source_url   = models.URLField(blank=True)
+    source_notes = models.TextField(blank=True)
+    file_type    = models.CharField(max_length=10, blank=True)
+    file_size    = models.PositiveIntegerField(null=True, blank=True)
+    uploaded_by  = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='component_datasheets'
+    )
+    uploaded_at    = models.DateTimeField(auto_now_add=True)
+    is_approved    = models.BooleanField(default=False)
+    download_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ['-uploaded_at']
+
+    def __str__(self):
+        return f'{self.component} — {self.title}'
+
+    def save(self, *args, **kwargs):
+        if self.file:
+            if not self.file_type:
+                self.file_type = self.file.name.rsplit('.', 1)[-1].lower()
+            if not self.file_size:
+                try:
+                    self.file_size = self.file.size
+                except Exception:
+                    pass
+        super().save(*args, **kwargs)
+
+
 class ComponentViewStats(models.Model):
     """Daily aggregate view counts for component popularity tracking."""
 

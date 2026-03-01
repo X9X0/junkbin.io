@@ -127,6 +127,23 @@ export interface ProductComment {
   updated_at: string;
 }
 
+// Component datasheet type
+export interface ComponentDatasheet {
+  id: string;
+  title: string;
+  version: string;
+  source_type: string;
+  source_url: string;
+  source_notes: string;
+  file_url: string;
+  file_type: string;
+  file_size: number | null;
+  uploaded_by: { id: string; username: string } | null;
+  uploaded_at: string;
+  is_approved: boolean;
+  download_count: number;
+}
+
 // Component image type (own image or type-default fallback)
 export interface ComponentImage {
   id?: string;
@@ -162,6 +179,7 @@ export interface Component {
   alternative_part_numbers?: string[];
   cross_references?: Component[];
   images?: ComponentImage[];
+  datasheets?: ComponentDatasheet[];
   created_at?: string;
   updated_at?: string;
 }

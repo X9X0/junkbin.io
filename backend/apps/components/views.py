@@ -25,6 +25,8 @@ from .serializers import (
     ComponentCreateSerializer,
     ComponentImageSerializer,
     ComponentImageUploadSerializer,
+    ComponentDatasheetSerializer,
+    ComponentDatasheetUploadSerializer,
     ProductComponentSerializer,
     ProductComponentCreateSerializer,
     CrossReferenceResultSerializer,
@@ -61,7 +63,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         return ComponentDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'add_cross_reference', 'upload_image']:
+        if self.action in ['create', 'add_cross_reference', 'upload_image', 'upload_datasheet']:
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action == 'lookup':
             return [permissions.IsAuthenticated()]
@@ -126,6 +128,25 @@ class ComponentViewSet(viewsets.ModelViewSet):
             return Response(
                 ComponentImageSerializer(image, context={'request': request}).data,
                 status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=True, methods=['post'], parser_classes=[MultiPartParser, FormParser])
+    def upload_datasheet(self, request, pk=None):
+        """Upload a datasheet file for this component."""
+        component = self.get_object()
+        serializer = ComponentDatasheetUploadSerializer(
+            data=request.data, context={'request': request}
+        )
+        if serializer.is_valid():
+            datasheet = serializer.save(component=component, uploaded_by=request.user)
+            if request.user.can_submit_without_review:
+                datasheet.is_approved = True
+                datasheet.save(update_fields=['is_approved'])
+                request.user.increment_contribution()
+            return Response(
+                ComponentDatasheetSerializer(datasheet, context={'request': request}).data,
+                status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
