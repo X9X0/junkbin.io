@@ -729,7 +729,7 @@ class ProductViewSet(viewsets.ModelViewSet):
     def pending_counts(self, request):
         """Get counts of pending (unapproved) content for moderation dashboard."""
         from apps.recipes.models import Recipe
-        from apps.components.models import ComponentImage
+        from apps.components.models import ComponentImage, ComponentDatasheet
 
         return Response({
             'products': Product.objects.filter(is_approved=False).count(),
@@ -737,6 +737,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             'recipes': Recipe.objects.filter(is_approved=False).count(),
             'images': ProductImage.objects.filter(is_approved=False).count()
             + ComponentImage.objects.filter(is_approved=False).count(),
+            'datasheets': ComponentDatasheet.objects.filter(is_approved=False).count(),
         })
 
 

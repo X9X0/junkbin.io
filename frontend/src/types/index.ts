@@ -130,6 +130,7 @@ export interface ProductComment {
 // Component datasheet type
 export interface ComponentDatasheet {
   id: string;
+  component: string;
   title: string;
   version: string;
   source_type: string;

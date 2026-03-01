@@ -88,7 +88,7 @@ class ComponentDatasheetSerializer(serializers.ModelSerializer):
     class Meta:
         model = ComponentDatasheet
         fields = [
-            'id', 'title', 'version', 'source_type', 'source_url',
+            'id', 'component', 'title', 'version', 'source_type', 'source_url',
             'source_notes', 'file_url', 'file_type', 'file_size',
             'uploaded_by', 'uploaded_at', 'is_approved', 'download_count',
         ]
