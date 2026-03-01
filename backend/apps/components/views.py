@@ -557,6 +557,46 @@ class ProductComponentViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+class ComponentImageModerationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for component image moderation.
+    List and approve/reject pending component images (moderator/staff only).
+    """
+
+    queryset = ComponentImage.objects.select_related('component', 'uploaded_by')
+    serializer_class = ComponentImageSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['is_approved', 'component', 'uploaded_by', 'image_type']
+    ordering_fields = ['uploaded_at']
+    ordering = ['-uploaded_at']
+
+    def get_permissions(self):
+        from apps.api.permissions import IsModeratorOrAdmin
+        return [IsModeratorOrAdmin()]
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a pending component image."""
+        image = self.get_object()
+        if image.is_approved:
+            return Response({'detail': 'Image is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        image.is_approved = True
+        image.save(update_fields=['is_approved'])
+        if image.uploaded_by:
+            image.uploaded_by.increment_contribution()
+        return Response({'detail': 'Image approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a pending component image."""
+        image = self.get_object()
+        if image.is_approved:
+            return Response({'detail': 'Cannot reject an already-approved image.'}, status=status.HTTP_400_BAD_REQUEST)
+        image.image.delete(save=False)
+        image.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class ComponentDatasheetViewSet(viewsets.ModelViewSet):
     """
     ViewSet for component datasheet moderation.
