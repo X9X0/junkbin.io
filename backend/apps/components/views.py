@@ -18,7 +18,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from utils.cache import staff_key_prefix
 from apps.api.metrics import component_view_counter
 
-from .models import Component, ComponentImage, ComponentViewStats, ProductComponent, ComponentVote
+from .models import Component, ComponentImage, ComponentDatasheet, ComponentViewStats, ProductComponent, ComponentVote
 from .serializers import (
     ComponentListSerializer,
     ComponentDetailSerializer,
@@ -555,6 +555,46 @@ class ProductComponentViewSet(viewsets.ModelViewSet):
 
         serializer = ComponentVoteDetailSerializer(votes, many=True)
         return Response(serializer.data)
+
+
+class ComponentDatasheetViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for component datasheet moderation.
+    List and approve/reject pending datasheets (moderator/staff only).
+    """
+
+    queryset = ComponentDatasheet.objects.select_related('component', 'uploaded_by')
+    serializer_class = ComponentDatasheetSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['is_approved', 'component', 'uploaded_by', 'source_type']
+    ordering_fields = ['uploaded_at']
+    ordering = ['-uploaded_at']
+
+    def get_permissions(self):
+        from apps.api.permissions import IsModeratorOrAdmin
+        return [IsModeratorOrAdmin()]
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve a pending datasheet."""
+        datasheet = self.get_object()
+        if datasheet.is_approved:
+            return Response({'detail': 'Datasheet is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        datasheet.is_approved = True
+        datasheet.save(update_fields=['is_approved'])
+        if datasheet.uploaded_by:
+            datasheet.uploaded_by.increment_contribution()
+        return Response({'detail': 'Datasheet approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a pending datasheet."""
+        datasheet = self.get_object()
+        if datasheet.is_approved:
+            return Response({'detail': 'Cannot reject an already-approved datasheet.'}, status=status.HTTP_400_BAD_REQUEST)
+        datasheet.file.delete(save=False)
+        datasheet.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # Import models for cross_reference action

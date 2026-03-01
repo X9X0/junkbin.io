@@ -197,7 +197,7 @@ export const products = {
     await api.post(`/products/${id}/reject/`);
   },
 
-  pendingCounts: async (): Promise<{ products: number; schematics: number; recipes: number; images: number }> => {
+  pendingCounts: async (): Promise<{ products: number; schematics: number; recipes: number; images: number; datasheets: number }> => {
     const response = await api.get('/products/pending_counts/');
     return response.data;
   },
@@ -309,6 +309,23 @@ export const components = {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
+  },
+};
+
+// Component datasheet moderation endpoints
+export const componentDatasheets = {
+  list: async (params?: any): Promise<PaginatedResponse<any>> => {
+    const response = await api.get('/component-datasheets/', { params });
+    return response.data;
+  },
+
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/component-datasheets/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/component-datasheets/${id}/reject/`);
   },
 };
 
