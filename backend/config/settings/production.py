@@ -132,9 +132,11 @@ CACHES = {
     }
 }
 
-# Session backend using cache
-SESSION_ENGINE = 'django.contrib.sessions.backends.cache'
+# Session backend: cached_db persists to DB if Redis evicts the key,
+# preventing admin logouts on Redis restart or memory pressure.
+SESSION_ENGINE = 'django.contrib.sessions.backends.cached_db'
 SESSION_CACHE_ALIAS = 'default'
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh TTL on every admin request
 
 # =============================================================================
 # Static Files (Production)
