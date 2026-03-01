@@ -1,5 +1,9 @@
 # Junkbin.io
 
+![Version](https://img.shields.io/badge/version-0.9.0-05d9e8?style=flat-square&labelColor=0a0a0f)
+![Status](https://img.shields.io/badge/status-beta-f72585?style=flat-square&labelColor=0a0a0f)
+![Stack](https://img.shields.io/badge/stack-Django%20%2B%20React-44cf6c?style=flat-square&labelColor=0a0a0f)
+
 > "NO USER SERVICEABLE PARTS INSIDE" - We respectfully disagree.
 
 A community-driven database for documenting electronic components found in consumer electronics. Transform e-waste into a searchable salvage ground for repair and DIY projects.
@@ -65,7 +69,6 @@ npm run dev
 
 - [Roadmap](docs/ROADMAP.md) - Project roadmap with feature breakdown
 - [Project Structure](docs/PROJECT_STRUCTURE.md) - Codebase layout and conventions
-- [API Docs](https://junkbin.io/api/docs/) - Interactive Swagger/OpenAPI reference
 
 ## 🎨 Tech Stack
 
