@@ -3,6 +3,7 @@ User admin configuration for Junkbin.io
 """
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from django.db.models import OuterRef, Subquery
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import gettext_lazy as _
@@ -17,7 +18,8 @@ class UserAdmin(BaseUserAdmin):
     list_display = [
         'username', 'email', 'is_trusted', 'is_moderator',
         'reputation_score', 'contribution_count', 'report_count',
-        'email_verified', 'messaging_blocked', 'is_active', 'created_at'
+        'email_verified', 'messaging_blocked', 'is_active',
+        'last_login', 'last_login_ip', 'created_at'
     ]
     list_filter = [
         'is_trusted', 'is_moderator', 'is_staff', 'is_superuser',
@@ -64,6 +66,20 @@ class UserAdmin(BaseUserAdmin):
             ),
         }),
     )
+
+    def get_queryset(self, request):
+        latest_login_ip = UserActivity.objects.filter(
+            user=OuterRef('pk'),
+            activity_type=UserActivity.ActivityType.LOGIN,
+        ).order_by('-created_at').values('ip_address')[:1]
+        return super().get_queryset(request).annotate(
+            _last_login_ip=Subquery(latest_login_ip)
+        )
+
+    def last_login_ip(self, obj):
+        return getattr(obj, '_last_login_ip', None) or '—'
+    last_login_ip.short_description = 'Last IP'
+    last_login_ip.admin_order_field = '_last_login_ip'
 
     def contribution_review_link(self, obj):
         url = reverse('admin-user-contributions', args=[obj.pk])
