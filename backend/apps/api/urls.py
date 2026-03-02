@@ -64,10 +64,12 @@ def clear_token_cookies(response):
     response.delete_cookie(
         key=jwt_settings.get('AUTH_COOKIE', 'access_token'),
         path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+        samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
     )
     response.delete_cookie(
         key=jwt_settings.get('AUTH_COOKIE_REFRESH', 'refresh_token'),
         path=jwt_settings.get('AUTH_COOKIE_PATH', '/'),
+        samesite=jwt_settings.get('AUTH_COOKIE_SAMESITE', 'Lax'),
     )
 
     return response

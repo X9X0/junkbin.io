@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3, Store } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { search } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { useUnreadCount } from '../../hooks/useUnreadCount';
@@ -9,6 +9,7 @@ import clsx from 'clsx';
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
+  const queryClient = useQueryClient();
   const unreadCount = useUnreadCount();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -315,7 +316,7 @@ export default function Header() {
                       My Submissions
                     </Link>
                     <button
-                      onClick={logout}
+                      onClick={async () => { await logout(); queryClient.clear(); navigate('/login'); }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-cyber-pink hover:bg-cyber-light/20 flex items-center gap-2"
                     >
                       <LogOut className="h-4 w-4" />
@@ -516,10 +517,7 @@ export default function Header() {
                     + SUBMIT NEW
                   </Link>
                   <button
-                    onClick={() => {
-                      logout();
-                      setIsMenuOpen(false);
-                    }}
+                    onClick={async () => { await logout(); queryClient.clear(); setIsMenuOpen(false); navigate('/login'); }}
                     className="py-2 font-mono text-sm text-cyber-pink"
                   >
                     LOGOUT
