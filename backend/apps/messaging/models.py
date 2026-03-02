@@ -148,13 +148,12 @@ class MessageAttachment(models.Model):
         return f'Attachment {self.original_filename} on {self.message_id}'
 
     def save(self, *args, **kwargs):
-        if self.file and not self.pk:
+        # file_type/file_size are set by the caller (view) from the uploaded
+        # file object where f.content_type and f.size are reliable.
+        # Fall back to mimetypes if somehow file_type is still blank.
+        if not self.file_type and self.original_filename:
             mime, _ = mimetypes.guess_type(self.original_filename)
             self.file_type = mime or 'application/octet-stream'
-            try:
-                self.file_size = self.file.size
-            except Exception:
-                self.file_size = 0
         super().save(*args, **kwargs)
 
 
