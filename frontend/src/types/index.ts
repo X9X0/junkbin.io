@@ -344,6 +344,15 @@ export interface Conversation {
   updated_at: string;
 }
 
+export interface MessageAttachment {
+  id: string;
+  url: string;
+  original_filename: string;
+  file_type: string;
+  file_size: number;
+  is_image: boolean;
+}
+
 export interface Message {
   id: string;
   sender: MessageParticipant;
@@ -351,6 +360,7 @@ export interface Message {
   is_read: boolean;
   created_at: string;
   conversation_id?: string;
+  attachments?: MessageAttachment[];
 }
 
 export interface UserBlock {

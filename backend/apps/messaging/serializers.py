@@ -4,7 +4,7 @@ Messaging serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
-from .models import Conversation, Message, UserBlock
+from .models import Conversation, Message, MessageAttachment, UserBlock
 
 User = get_user_model()
 
@@ -17,14 +17,36 @@ class MessageParticipantSerializer(serializers.ModelSerializer):
         fields = ['id', 'username', 'avatar', 'is_trusted', 'is_moderator']
 
 
+class MessageAttachmentSerializer(serializers.ModelSerializer):
+    """Serializer for a file attached to a message."""
+
+    url = serializers.SerializerMethodField()
+    is_image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MessageAttachment
+        fields = ['id', 'url', 'original_filename', 'file_type', 'file_size', 'is_image']
+
+    def get_url(self, obj):
+        request = self.context.get('request')
+        url = obj.file.url
+        if request:
+            return request.build_absolute_uri(url)
+        return url
+
+    def get_is_image(self, obj):
+        return obj.file_type.startswith('image/')
+
+
 class MessageSerializer(serializers.ModelSerializer):
     """Serializer for a single message within a thread."""
 
     sender = MessageParticipantSerializer(read_only=True)
+    attachments = MessageAttachmentSerializer(many=True, read_only=True)
 
     class Meta:
         model = Message
-        fields = ['id', 'sender', 'content', 'is_read', 'created_at']
+        fields = ['id', 'sender', 'content', 'is_read', 'created_at', 'attachments']
         read_only_fields = ['id', 'sender', 'is_read', 'created_at']
 
 
@@ -84,12 +106,12 @@ class MessageCreateSerializer(serializers.Serializer):
         required=False,
         help_text='Required when starting a new conversation'
     )
-    content = serializers.CharField(max_length=5000)
+    content = serializers.CharField(max_length=5000, required=False, allow_blank=True)
 
     def validate_content(self, value):
         stripped = value.strip()
         if not stripped:
-            raise serializers.ValidationError('Message content cannot be empty.')
+            return ''
         from utils.content_filter import check_content
         is_clean, _ = check_content(stripped)
         if not is_clean:
@@ -98,6 +120,15 @@ class MessageCreateSerializer(serializers.Serializer):
                 'Please review our community guidelines.'
             )
         return stripped
+
+    def validate(self, attrs):
+        content = attrs.get('content', '').strip()
+        files = self.context.get('files', [])
+        if not content and not files:
+            raise serializers.ValidationError(
+                'A message must have text content or at least one attachment.'
+            )
+        return attrs
 
 
 class UserBlockSerializer(serializers.ModelSerializer):

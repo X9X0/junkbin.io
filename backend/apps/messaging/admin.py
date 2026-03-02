@@ -3,7 +3,14 @@ Messaging admin configuration for Junkbin.io
 """
 from django.contrib import admin
 
-from .models import Conversation, Message, UserBlock
+from .models import Conversation, Message, MessageAttachment, UserBlock
+
+
+class MessageAttachmentInline(admin.TabularInline):
+    model = MessageAttachment
+    extra = 0
+    readonly_fields = ['id', 'original_filename', 'file_type', 'file_size', 'uploaded_at']
+    can_delete = True
 
 
 class MessageInline(admin.TabularInline):
@@ -30,6 +37,7 @@ class MessageAdmin(admin.ModelAdmin):
     search_fields = ['sender__username', 'content']
     readonly_fields = ['id', 'conversation', 'sender', 'created_at']
     raw_id_fields = ['conversation', 'sender']
+    inlines = [MessageAttachmentInline]
 
     def content_preview(self, obj):
         return obj.content[:80] + '...' if len(obj.content) > 80 else obj.content

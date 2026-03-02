@@ -1,11 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messaging } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, Loader2, Flag, Ban, ShieldOff, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Flag, Ban, ShieldOff, ChevronUp, Paperclip, X, FileText, Download } from 'lucide-react';
 import ReportModal from '../components/ReportModal';
 import clsx from 'clsx';
+import type { MessageAttachment } from '../types';
+
+const MAX_FILES = 5;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'zip', 'txt', 'csv']);
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
 
 function timeAgo(dateStr: string): string {
   const seconds = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
@@ -22,7 +33,6 @@ function timeAgo(dateStr: string): string {
 export default function MessageThread() {
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -31,6 +41,9 @@ export default function MessageThread() {
   const [page, setPage] = useState(1);
   const [reportMessageId, setReportMessageId] = useState<string | null>(null);
   const [showReportUser, setShowReportUser] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch conversation detail (also marks messages as read)
   const { data: conversation } = useQuery({
@@ -71,10 +84,12 @@ export default function MessageThread() {
 
   // Send message mutation
   const sendMutation = useMutation({
-    mutationFn: (text: string) =>
-      messaging.send({ conversation_id: conversationId, content: text }),
+    mutationFn: ({ text, files }: { text: string; files: File[] }) =>
+      messaging.send({ conversation_id: conversationId, content: text, files }),
     onSuccess: () => {
       setContent('');
+      setPendingFiles([]);
+      setFileError(null);
       queryClient.invalidateQueries({ queryKey: ['messages', conversationId] });
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
       queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
@@ -111,8 +126,8 @@ export default function MessageThread() {
 
   const handleSend = () => {
     const trimmed = content.trim();
-    if (!trimmed || sendMutation.isPending) return;
-    sendMutation.mutate(trimmed);
+    if ((!trimmed && pendingFiles.length === 0) || sendMutation.isPending) return;
+    sendMutation.mutate({ text: trimmed, files: pendingFiles });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -120,6 +135,34 @@ export default function MessageThread() {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files ?? []);
+    e.target.value = '';
+    const combined = [...pendingFiles, ...selected];
+
+    if (combined.length > MAX_FILES) {
+      setFileError(`Max ${MAX_FILES} attachments per message.`);
+      return;
+    }
+    for (const f of selected) {
+      const ext = f.name.includes('.') ? f.name.split('.').pop()!.toLowerCase() : '';
+      if (!ALLOWED_EXTENSIONS.has(ext)) {
+        setFileError(`File type .${ext} is not allowed.`);
+        return;
+      }
+      if (f.size > MAX_FILE_SIZE) {
+        setFileError(`${f.name} exceeds the 10 MB size limit.`);
+        return;
+      }
+    }
+    setFileError(null);
+    setPendingFiles(combined);
+  };
+
+  const removeFile = (index: number) => {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
   // Messages come newest first from API, reverse for display
@@ -235,9 +278,44 @@ export default function MessageThread() {
                       : 'bg-cyber-dark border border-cyber-light/30'
                   )}
                 >
-                  <p className="text-sm text-gray-200 whitespace-pre-wrap break-words">
-                    {msg.content}
-                  </p>
+                  {msg.content && (
+                    <p className="text-sm text-gray-200 whitespace-pre-wrap break-words">
+                      {msg.content}
+                    </p>
+                  )}
+                  {msg.attachments && msg.attachments.length > 0 && (
+                    <div className={clsx('flex flex-col gap-2', msg.content && 'mt-2')}>
+                      {msg.attachments.map((att: MessageAttachment) =>
+                        att.is_image ? (
+                          <a
+                            key={att.id}
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="block"
+                          >
+                            <img
+                              src={att.url}
+                              alt={att.original_filename}
+                              className="max-w-xs max-h-64 object-contain border border-cyber-light/20"
+                            />
+                          </a>
+                        ) : (
+                          <a
+                            key={att.id}
+                            href={att.url}
+                            download={att.original_filename}
+                            className="flex items-center gap-2 px-3 py-2 border border-cyber-light/30 hover:border-cyber-cyan/50 transition-colors text-xs font-mono text-gray-300 hover:text-cyber-cyan"
+                          >
+                            <FileText className="h-4 w-4 shrink-0" />
+                            <span className="truncate">{att.original_filename}</span>
+                            <span className="text-gray-500 shrink-0">{formatBytes(att.file_size)}</span>
+                            <Download className="h-3 w-3 shrink-0 ml-auto" />
+                          </a>
+                        )
+                      )}
+                    </div>
+                  )}
                   <div className={clsx(
                     'flex items-center gap-2 mt-1',
                     isSelf ? 'justify-end' : 'justify-start'
@@ -265,28 +343,77 @@ export default function MessageThread() {
 
       {/* Compose area */}
       <div className="border-t border-cyber-light/30 pt-4">
-        {sendMutation.isError && (
+        {(sendMutation.isError || fileError) && (
           <div className="mb-3 p-2 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-xs font-mono">
-            Failed to send message. Please try again.
+            {fileError ?? 'Failed to send message. Please try again.'}
+          </div>
+        )}
+        {/* Pending file previews */}
+        {pendingFiles.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-2">
+            {pendingFiles.map((f, i) => {
+              const isImage = f.type.startsWith('image/');
+              return (
+                <div
+                  key={i}
+                  className="relative flex items-center gap-1 border border-cyber-light/30 bg-cyber-dark px-2 py-1 text-xs font-mono text-gray-300"
+                >
+                  {isImage ? (
+                    <img
+                      src={URL.createObjectURL(f)}
+                      alt={f.name}
+                      className="h-10 w-10 object-cover"
+                    />
+                  ) : (
+                    <FileText className="h-4 w-4 text-gray-500" />
+                  )}
+                  <span className="max-w-[120px] truncate">{f.name}</span>
+                  <span className="text-gray-600">{formatBytes(f.size)}</span>
+                  <button
+                    onClick={() => removeFile(i)}
+                    className="ml-1 text-gray-500 hover:text-cyber-pink transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
         <div className="flex gap-3">
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept=".jpg,.jpeg,.png,.gif,.webp,.pdf,.zip,.txt,.csv"
+            className="hidden"
+            onChange={handleFileChange}
+          />
+          {/* Paperclip button */}
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            title="Attach files"
+            className="self-end p-2 text-gray-500 hover:text-cyber-cyan transition-colors"
+          >
+            <Paperclip className="h-5 w-5" />
+          </button>
           <textarea
             ref={textareaRef}
             value={content}
             onChange={(e) => setContent(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            rows={2}
+            rows={4}
             maxLength={5000}
             className="input-cyber flex-1 resize-none text-sm"
           />
           <button
             onClick={handleSend}
-            disabled={!content.trim() || sendMutation.isPending}
+            disabled={(!content.trim() && pendingFiles.length === 0) || sendMutation.isPending}
             className={clsx(
               'btn-cyber px-4 self-end',
-              (!content.trim() || sendMutation.isPending) && 'opacity-50 cursor-not-allowed'
+              ((!content.trim() && pendingFiles.length === 0) || sendMutation.isPending) && 'opacity-50 cursor-not-allowed'
             )}
           >
             {sendMutation.isPending ? (
@@ -298,7 +425,7 @@ export default function MessageThread() {
         </div>
         <div className="flex items-center justify-between mt-1">
           <span className="text-[10px] text-gray-600 font-mono">
-            Ctrl+Enter to send
+            Ctrl+Enter to send · {pendingFiles.length}/{MAX_FILES} files
           </span>
           <span className="text-[10px] text-gray-600 font-mono">
             {content.length}/5000
