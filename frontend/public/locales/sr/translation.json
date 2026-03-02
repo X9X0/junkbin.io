@@ -1,6 +1,9 @@
 {
-  "_meta": {"generated": "2026-03-02", "method": "machine-deepl", "reviewed": false},
-
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "machine-deepl",
+    "reviewed": false
+  },
   "nav": {
     "products": "PROIZVODI",
     "components": "KOMPONENTE",
@@ -28,7 +31,6 @@
     "submit_new": "+ DODAJ NOVI",
     "my_junkbin_upper": "MOJ JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "PRIJAVA U SISTEM",
@@ -102,7 +104,6 @@
       "go_to_login": "IDI NA PRIJAVU"
     }
   },
-
   "home": {
     "under_construction": "SAJT U IZGRADNJI",
     "tagline_command": "cat /etc/warning.txt",
@@ -146,7 +147,6 @@
     "learn_r2r": "SAZNAJTE VIŠE O PRAVU NA POPRAVKU →",
     "error_prefix": "GREŠKA:"
   },
-
   "products": {
     "title": "BAZA",
     "title_highlight": "PROIZVODA",
@@ -175,7 +175,6 @@
     "no_products_desc": "Pokušajte da prilagodite pretragu ili filtere",
     "add_product": "DODAJ PROIZVOD"
   },
-
   "components": {
     "title": "KATALOG",
     "title_highlight": "KOMPONENTI",
@@ -196,7 +195,6 @@
     "add_component": "DODAJ KOMPONENTU",
     "verified": "Verifikovano"
   },
-
   "schematics": {
     "title": "ŠEME I DOKUMENTACIJA",
     "subtitle": "Servisni priručnici, blok dijagrami, PCB rasporedi i tehnička dokumentacija",
@@ -232,7 +230,6 @@
     "about_title": "// O ŠEMAMA",
     "about_text": "Ovaj arhiv sadrži servisne priručnike, šeme i tehničku dokumentaciju koju je doprinela zajednica za popravke. Svi dokumenti pružaju se u obrazovne svrhe i svrhe popravke u podršci pokretu za pravo na popravku. Ako imate dokumentaciju za deljenje, molimo doprineste."
   },
-
   "recipes": {
     "title": "RECEPTI ZA PROJEKTE",
     "subtitle": "Elektronski projekti zajednice sa listama delova",
@@ -258,7 +255,6 @@
     "optional": "NEOBAVEZNO",
     "have": "IMAM"
   },
-
   "recipe_detail": {
     "loading": "UČITAVANJE RECEPTA...",
     "not_found_title": "RECEPT NIJE PRONAĐEN",
@@ -281,7 +277,6 @@
     "missing_parts": "NEDOSTAJUĆI DELOVI DOSTUPNI OD DRUGIH KORISNIKA",
     "available_from": "dostupno od:"
   },
-
   "submit": {
     "title": "POŠALJI DOKUMENTACIJU",
     "subtitle": "Pomozite da izgradimo bazu podataka elektronskog otpada",
@@ -322,7 +317,6 @@
     "auth_required_desc": "Morate biti prijavljeni da biste slali proizvode ili komponente.",
     "login_to_continue": "PRIJAVITE SE ZA NASTAVAK"
   },
-
   "submit_recipe": {
     "title": "POŠALJI RECEPT",
     "edit_title": "UREDI RECEPT",
@@ -344,7 +338,6 @@
     "submitting": "SLANJE U TOKU...",
     "cancel": "Otkaži"
   },
-
   "swap": {
     "title": "SWAP SHOP",
     "subtitle": "Pregledajte predmete koje zajednica nudi za razmenu ili traži",
@@ -364,7 +357,6 @@
     "available": "DOSTUPNO",
     "not_for_trade": "NIJE ZA RAZMENU"
   },
-
   "community": {
     "title": "ZAJEDNICA",
     "subtitle": "Najbolji saradnici rangirani prema reputaciji",
@@ -379,7 +371,6 @@
     "no_contributors": "Još nema saradnika",
     "redirecting": "Preusmeravanje na Zajednicu..."
   },
-
   "profile": {
     "not_logged_in": "NISTE PRIJAVLJENI",
     "please_log_in": "Molimo prijavite se za pregled vašeg profila.",
@@ -424,7 +415,6 @@
     "approved": "ODOBRENO",
     "contact": "Kontakt"
   },
-
   "messages": {
     "title": "PORUKE",
     "no_conversations": "JOŠ NEMA RAZGOVORA",
@@ -439,7 +429,6 @@
     "unblock": "ODBLOKIRAJ",
     "report": "PRIJAVI"
   },
-
   "new_conversation": {
     "title": "NOVA PORUKA",
     "to_label": "ZA:",
@@ -450,7 +439,6 @@
     "no_users_found": "Nema pronađenih korisnika",
     "send": "Pošalji poruku"
   },
-
   "my_junkbin": {
     "title": "MOJ JUNKBIN",
     "tab_have": "IMAM",
@@ -474,7 +462,6 @@
     "visibility_private": "Privatno",
     "remove_confirm": "Ukloniti iz junkbina?"
   },
-
   "my_submissions": {
     "title": "MOJA SLANJA",
     "subtitle": "Pratite sve svoje doprinose na junkbin.io",
@@ -487,7 +474,6 @@
     "no_recipes": "JOŠ NEMA RECEPATA",
     "no_components": "JOŠ NEMA KOMPONENTI"
   },
-
   "not_found": {
     "line1": "NEMA DELOVA KOJE",
     "line2": "KORISNIK MOŽE SERVISIRATI",
@@ -498,7 +484,6 @@
     "return_home": "POVRATAK NA POČETNU",
     "go_back": "NAZAD"
   },
-
   "search": {
     "title": "PRETRAŽI BAZU PODATAKA",
     "placeholder": "Pretraži proizvode, komponente...",
@@ -512,7 +497,6 @@
     "search_error": "Greška pri pretraživanju",
     "enter_to_search": "Unesite najmanje 2 karaktera za pretraživanje"
   },
-
   "guidelines": {
     "title": "SMERNICE ZAJEDNICE",
     "subtitle": "Standardi za doprinos zajednici Junkbin.io",
@@ -524,14 +508,12 @@
     "section_appeals": "ŽALBE",
     "last_updated": "Poslednje ažuriranje: februar 2026."
   },
-
   "docs": {
     "title": "DOKUMENTACIJA",
     "subtitle": "Sve što vam je potrebno za korišćenje i doprinos Junkbin.io",
     "close": "Zatvori",
     "last_updated": "Poslednje ažuriranje: februar 2026."
   },
-
   "verify_email": {
     "verifying_title": "VERIFIKACIJA EMAILA",
     "verifying_message": "Molimo sačekajte dok verifikujemo vašu email adresu...",
@@ -540,7 +522,6 @@
     "invalid_link": "Nevažeća verifikaciona veza.",
     "continue_to_site": "NASTAVI NA SAJT"
   },
-
   "moderation": {
     "title": "KONTROLNA TABLA MODERACIJE",
     "access_denied": "PRISTUP ODBIJEN",
@@ -578,7 +559,6 @@
     "no_reviews": "NEMA PREGLEDA",
     "no_reports": "SVE ČISTO"
   },
-
   "analytics": {
     "title": "ANALITIKA",
     "subtitle": "Metrike sajta i angažman",
@@ -594,7 +574,6 @@
     "trending_components": "Popularne komponente",
     "activity_breakdown": "Pregled aktivnosti"
   },
-
   "buildable": {
     "title": "ŠTA MOGU DA IZGRADIM?",
     "subtitle": "Recepti usklađeni sa vašim junkbinom — sortirani prema broju delova koje već imate",
@@ -608,7 +587,6 @@
     "no_recipes_title": "NEMA ODGOVARAJUĆIH RECEPATA",
     "no_recipes_desc": "Dodajte više komponenti u junkbin da biste pronašli odgovarajuće recepte"
   },
-
   "product_detail": {
     "loading": "UČITAVANJE...",
     "not_found_title": "PROIZVOD NIJE PRONAĐEN",
@@ -633,7 +611,6 @@
     "swap_have": "IMA",
     "swap_want": "TRAŽI"
   },
-
   "component_detail": {
     "loading": "UČITAVANJE PODATAKA UNAKRSNE REFERENCE...",
     "not_found_title": "KOMPONENTA NIJE PRONAĐENA",
@@ -657,7 +634,6 @@
     "swap_available": "DOSTUPNO",
     "swap_not_for_trade": "NIJE ZA RAZMENU"
   },
-
   "common": {
     "loading": "Učitavanje...",
     "error": "Nešto je pošlo po zlu. Molimo pokušajte ponovo.",
@@ -685,7 +661,6 @@
     "for_shortcuts": "za prečice",
     "copyright": "© {{year}} Junkbin.io -"
   },
-
   "footer": {
     "tagline": "Baza podataka kojom upravlja zajednica za dokumentaciju elektronskih komponenti. Podržavamo pokret za pravo na popravku čineći šeme i informacije o komponentama slobodno dostupnim.",
     "motto": "NO USER SERVICEABLE PARTS INSIDE",
@@ -695,13 +670,13 @@
     "explore_components": "Komponente",
     "explore_schematics": "Šeme",
     "explore_contribute": "Doprinesi",
+    "explore_news": "Šta je novo",
     "community": "ZAJEDNICA",
     "community_r2r": "Pravo na popravku",
     "community_ifixit": "iFixit",
     "community_guidelines": "Smernice",
     "community_docs": "Dokumentacija"
   },
-
   "modals": {
     "add_junkbin_title": "DODAJ U JUNKBIN",
     "already_in_junkbin": "Već je u vašem junkbinu",
@@ -744,7 +719,6 @@
     "resolve_note": "Napomena",
     "resolve_submit": "REŠI"
   },
-
   "forms": {
     "manufacturer_placeholder": "npr. Flipper Devices",
     "model_placeholder": "npr. Flipper Zero",
@@ -761,20 +735,17 @@
     "notes_placeholder": "Neobavezne napomene...",
     "search_component_placeholder": "Pretraži po kataloški broj ili proizvođač..."
   },
-
   "keyboard_shortcuts": {
     "title": "PREČICE NA TASTATURI",
     "navigation": "Navigacija",
     "actions": "Akcije",
     "close": "Zatvori"
   },
-
   "onboarding": {
     "title": "POČETAK RADA",
     "dismiss": "Odbaci",
     "got_it": "Razumem"
   },
-
   "errors": {
     "not_found": "Stranica nije pronađena",
     "unauthorized": "Morate biti prijavljeni",
@@ -783,7 +754,6 @@
     "network_error": "Mrežna greška. Proverite vezu.",
     "load_failed": "Učitavanje podataka nije uspelo"
   },
-
   "lang": {
     "switcher_label": "Jezik",
     "en": "English",

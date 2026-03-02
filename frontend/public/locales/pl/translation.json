@@ -1,6 +1,9 @@
 {
-  "_meta": {"generated": "2026-03-02", "method": "machine-deepl", "reviewed": false},
-
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "machine-deepl",
+    "reviewed": false
+  },
   "nav": {
     "products": "PRODUKTY",
     "components": "KOMPONENTY",
@@ -28,7 +31,6 @@
     "submit_new": "+ DODAJ NOWY",
     "my_junkbin_upper": "MÓJ JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "LOGOWANIE DO SYSTEMU",
@@ -102,7 +104,6 @@
       "go_to_login": "PRZEJDŹ DO LOGOWANIA"
     }
   },
-
   "home": {
     "under_construction": "STRONA W BUDOWIE",
     "tagline_command": "cat /etc/warning.txt",
@@ -146,7 +147,6 @@
     "learn_r2r": "DOWIEDZ SIĘ WIĘCEJ O RIGHT TO REPAIR →",
     "error_prefix": "BŁĄD:"
   },
-
   "products": {
     "title": "BAZA",
     "title_highlight": "PRODUKTÓW",
@@ -175,7 +175,6 @@
     "no_products_desc": "Spróbuj zmienić kryteria wyszukiwania lub filtry",
     "add_product": "DODAJ PRODUKT"
   },
-
   "components": {
     "title": "KATALOG",
     "title_highlight": "KOMPONENTÓW",
@@ -196,7 +195,6 @@
     "add_component": "DODAJ KOMPONENT",
     "verified": "Zweryfikowany"
   },
-
   "schematics": {
     "title": "SCHEMATY I DOKUMENTACJA",
     "subtitle": "Instrukcje serwisowe, schematy blokowe, rozmieszczenia PCB i dokumentacja techniczna",
@@ -232,7 +230,6 @@
     "about_title": "// O SCHEMATACH",
     "about_text": "To archiwum zawiera instrukcje serwisowe, schematy i dokumentację techniczną udostępnioną przez społeczność naprawczą. Wszystkie dokumenty są udostępniane w celach edukacyjnych i naprawczych, wspierając ruch Right to Repair. Jeśli masz dokumentację do udostępnienia, prosimy o jej dodanie."
   },
-
   "recipes": {
     "title": "PRZEPISY NA PROJEKTY",
     "subtitle": "Projekty elektroniczne tworzone przez społeczność wraz z listą części",
@@ -258,7 +255,6 @@
     "optional": "OPCJONALNIE",
     "have": "MAJĄ"
   },
-
   "recipe_detail": {
     "loading": "ŁADOWANIE PRZEPISU...",
     "not_found_title": "PRZEPIS NIE ZNALEZIONY",
@@ -281,7 +277,6 @@
     "missing_parts": "BRAKUJĄCE CZĘŚCI DOSTĘPNE OD INNYCH UŻYTKOWNIKÓW",
     "available_from": "dostępne od:"
   },
-
   "submit": {
     "title": "DODAJ DOKUMENTACJĘ",
     "subtitle": "Pomóż budować bazę danych odzysku e-odpadów",
@@ -322,7 +317,6 @@
     "auth_required_desc": "Musisz być zalogowany, aby zgłaszać produkty lub komponenty.",
     "login_to_continue": "ZALOGUJ SIĘ, ABY KONTYNUOWAĆ"
   },
-
   "submit_recipe": {
     "title": "DODAJ PRZEPIS",
     "edit_title": "EDYTUJ PRZEPIS",
@@ -344,7 +338,6 @@
     "submitting": "WYSYŁANIE...",
     "cancel": "Anuluj"
   },
-
   "swap": {
     "title": "SWAP SHOP",
     "subtitle": "Przeglądaj przedmioty, które społeczność oferuje lub których szuka",
@@ -364,7 +357,6 @@
     "available": "DOSTĘPNY",
     "not_for_trade": "NIE NA WYMIANĘ"
   },
-
   "community": {
     "title": "SPOŁECZNOŚĆ",
     "subtitle": "Najlepsi współtwórcy uszeregowani według reputacji",
@@ -379,7 +371,6 @@
     "no_contributors": "Brak współtwórców",
     "redirecting": "Przekierowanie do Społeczności..."
   },
-
   "profile": {
     "not_logged_in": "NIE ZALOGOWANY",
     "please_log_in": "Zaloguj się, aby wyświetlić swój profil.",
@@ -424,7 +415,6 @@
     "approved": "ZATWIERDZONY",
     "contact": "Kontakt"
   },
-
   "messages": {
     "title": "WIADOMOŚCI",
     "no_conversations": "BRAK ROZMÓW",
@@ -439,7 +429,6 @@
     "unblock": "ODBLOKUJ",
     "report": "ZGŁOŚ"
   },
-
   "new_conversation": {
     "title": "NOWA WIADOMOŚĆ",
     "to_label": "DO:",
@@ -450,7 +439,6 @@
     "no_users_found": "Nie znaleziono użytkowników",
     "send": "Wyślij wiadomość"
   },
-
   "my_junkbin": {
     "title": "MÓJ JUNKBIN",
     "tab_have": "MAJĄ",
@@ -474,7 +462,6 @@
     "visibility_private": "Prywatny",
     "remove_confirm": "Usunąć z junkkbinu?"
   },
-
   "my_submissions": {
     "title": "MOJE ZGŁOSZENIA",
     "subtitle": "Śledź wszystkie swoje wkłady w junkbin.io",
@@ -487,7 +474,6 @@
     "no_recipes": "BRAK PRZEPISÓW",
     "no_components": "BRAK KOMPONENTÓW"
   },
-
   "not_found": {
     "line1": "NO USER SERVICEABLE",
     "line2": "PARTS INSIDE",
@@ -498,7 +484,6 @@
     "return_home": "WRÓĆ DO STRONY GŁÓWNEJ",
     "go_back": "WRÓĆ"
   },
-
   "search": {
     "title": "PRZESZUKAJ BAZĘ DANYCH",
     "placeholder": "Szukaj produktów, komponentów...",
@@ -512,7 +497,6 @@
     "search_error": "Błąd podczas wyszukiwania",
     "enter_to_search": "Wprowadź co najmniej 2 znaki, aby wyszukać"
   },
-
   "guidelines": {
     "title": "WYTYCZNE SPOŁECZNOŚCI",
     "subtitle": "Standardy dotyczące wkładu w społeczność Junkbin.io",
@@ -524,14 +508,12 @@
     "section_appeals": "ODWOŁANIA",
     "last_updated": "Ostatnia aktualizacja: luty 2026"
   },
-
   "docs": {
     "title": "DOKUMENTACJA",
     "subtitle": "Wszystko, czego potrzebujesz, aby korzystać z Junkbin.io i przyczyniać się do jego rozwoju",
     "close": "Zamknij",
     "last_updated": "Ostatnia aktualizacja: luty 2026"
   },
-
   "verify_email": {
     "verifying_title": "WERYFIKACJA E-MAILA",
     "verifying_message": "Poczekaj, weryfikujemy Twój adres e-mail...",
@@ -540,7 +522,6 @@
     "invalid_link": "Nieprawidłowy link weryfikacyjny.",
     "continue_to_site": "PRZEJDŹ DO SERWISU"
   },
-
   "moderation": {
     "title": "PANEL MODERACJI",
     "access_denied": "BRAK DOSTĘPU",
@@ -578,7 +559,6 @@
     "no_reviews": "BRAK RECENZJI",
     "no_reports": "WSZYSTKO W PORZĄDKU"
   },
-
   "analytics": {
     "title": "ANALITYKA",
     "subtitle": "Metryki serwisu i zaangażowanie",
@@ -594,7 +574,6 @@
     "trending_components": "Popularne komponenty",
     "activity_breakdown": "Zestawienie aktywności"
   },
-
   "buildable": {
     "title": "CO MOGĘ ZBUDOWAĆ?",
     "subtitle": "Przepisy dopasowane do twojego junkkbinu — posortowane według liczby już posiadanych części",
@@ -608,7 +587,6 @@
     "no_recipes_title": "BRAK PASUJĄCYCH PRZEPISÓW",
     "no_recipes_desc": "Dodaj więcej komponentów do swojego junkkbinu, aby znaleźć pasujące przepisy"
   },
-
   "product_detail": {
     "loading": "ŁADOWANIE...",
     "not_found_title": "PRODUKT NIE ZNALEZIONY",
@@ -633,7 +611,6 @@
     "swap_have": "MAJĄ",
     "swap_want": "SZUKAJĄ"
   },
-
   "component_detail": {
     "loading": "ŁADOWANIE DANYCH CROSS-REFERENCE...",
     "not_found_title": "KOMPONENT NIE ZNALEZIONY",
@@ -657,7 +634,6 @@
     "swap_available": "DOSTĘPNY",
     "swap_not_for_trade": "NIE NA WYMIANĘ"
   },
-
   "common": {
     "loading": "Ładowanie...",
     "error": "Coś poszło nie tak. Spróbuj ponownie.",
@@ -685,7 +661,6 @@
     "for_shortcuts": "dla skrótów",
     "copyright": "© {{year}} Junkbin.io —"
   },
-
   "footer": {
     "tagline": "Tworzona przez społeczność baza danych dokumentacji komponentów elektronicznych. Wspieramy ruch Right to Repair, udostępniając schematy i informacje o komponentach każdemu.",
     "motto": "NO USER SERVICEABLE PARTS INSIDE",
@@ -695,13 +670,13 @@
     "explore_components": "Komponenty",
     "explore_schematics": "Schematy",
     "explore_contribute": "Współtwórz",
+    "explore_news": "Co nowego",
     "community": "SPOŁECZNOŚĆ",
     "community_r2r": "Right to Repair",
     "community_ifixit": "iFixit",
     "community_guidelines": "Wytyczne",
     "community_docs": "Dokumentacja"
   },
-
   "modals": {
     "add_junkbin_title": "DODAJ DO JUNKKBINU",
     "already_in_junkbin": "Już w twoim junkkbinie",
@@ -744,7 +719,6 @@
     "resolve_note": "Notatka",
     "resolve_submit": "ROZWIĄŻ"
   },
-
   "forms": {
     "manufacturer_placeholder": "np. Flipper Devices",
     "model_placeholder": "np. Flipper Zero",
@@ -761,20 +735,17 @@
     "notes_placeholder": "Opcjonalne notatki...",
     "search_component_placeholder": "Szukaj według numeru katalogowego lub producenta..."
   },
-
   "keyboard_shortcuts": {
     "title": "SKRÓTY KLAWISZOWE",
     "navigation": "Nawigacja",
     "actions": "Działania",
     "close": "Zamknij"
   },
-
   "onboarding": {
     "title": "PIERWSZE KROKI",
     "dismiss": "Odrzuć",
     "got_it": "Rozumiem"
   },
-
   "errors": {
     "not_found": "Strona nie znaleziona",
     "unauthorized": "Musisz być zalogowany",
@@ -783,7 +754,6 @@
     "network_error": "Błąd sieci. Sprawdź połączenie.",
     "load_failed": "Nie udało się załadować danych"
   },
-
   "lang": {
     "switcher_label": "Język",
     "en": "English",

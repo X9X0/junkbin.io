@@ -1,6 +1,9 @@
 {
-  "_meta": {"generated": "2026-03-02", "method": "machine-deepl", "reviewed": false},
-
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "machine-deepl",
+    "reviewed": false
+  },
   "nav": {
     "products": "PRODUKTY",
     "components": "KOMPONENTY",
@@ -28,7 +31,6 @@
     "submit_new": "+ PŘIDAT NOVÝ",
     "my_junkbin_upper": "MŮJ JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "PŘIHLÁŠENÍ DO SYSTÉMU",
@@ -102,7 +104,6 @@
       "go_to_login": "PŘEJÍT NA PŘIHLÁŠENÍ"
     }
   },
-
   "home": {
     "under_construction": "WEB VE VÝSTAVBĚ",
     "tagline_command": "cat /etc/warning.txt",
@@ -146,7 +147,6 @@
     "learn_r2r": "VÍCE O RIGHT TO REPAIR →",
     "error_prefix": "CHYBA:"
   },
-
   "products": {
     "title": "DATABÁZE",
     "title_highlight": "PRODUKTŮ",
@@ -175,7 +175,6 @@
     "no_products_desc": "Zkuste upravit vyhledávání nebo filtry",
     "add_product": "PŘIDAT PRODUKT"
   },
-
   "components": {
     "title": "KATALOG",
     "title_highlight": "KOMPONENT",
@@ -196,7 +195,6 @@
     "add_component": "PŘIDAT KOMPONENTU",
     "verified": "Ověřeno"
   },
-
   "schematics": {
     "title": "SCHEMATA A DOKUMENTACE",
     "subtitle": "Servisní manuály, blokové diagramy, rozvržení DPS a technická dokumentace",
@@ -232,7 +230,6 @@
     "about_title": "// O SCHÉMATECH",
     "about_text": "Tento archiv obsahuje servisní manuály, schemata a technickou dokumentaci přispěnou opravárenskou komunitou. Všechny dokumenty jsou poskytovány pro vzdělávací a opravárenské účely na podporu hnutí Right to Repair. Pokud máte dokumentaci ke sdílení, prosíme, přispějte."
   },
-
   "recipes": {
     "title": "PROJEKTOVÉ NÁVODY",
     "subtitle": "Elektronické projekty komunity se seznamem součástek",
@@ -258,7 +255,6 @@
     "optional": "VOLITELNÉ",
     "have": "MÁ"
   },
-
   "recipe_detail": {
     "loading": "NAČÍTÁNÍ NÁVODU...",
     "not_found_title": "NÁVOD NENALEZEN",
@@ -281,7 +277,6 @@
     "missing_parts": "CHYBĚJÍCÍ SOUČÁSTI DOSTUPNÉ OD JINÝCH UŽIVATELŮ",
     "available_from": "dostupné od:"
   },
-
   "submit": {
     "title": "PŘIDAT DOKUMENTACI",
     "subtitle": "Pomozte budovat databázi zachráněného elektroodpadu",
@@ -322,7 +317,6 @@
     "auth_required_desc": "Musíte být přihlášeni, abyste mohli přidávat produkty nebo komponenty.",
     "login_to_continue": "PŘIHLASTE SE PRO POKRAČOVÁNÍ"
   },
-
   "submit_recipe": {
     "title": "PŘIDAT NÁVOD",
     "edit_title": "UPRAVIT NÁVOD",
@@ -344,7 +338,6 @@
     "submitting": "ODESÍLÁNÍ...",
     "cancel": "Zrušit"
   },
-
   "swap": {
     "title": "SWAP SHOP",
     "subtitle": "Procházejte předměty, které komunita nabízí k výměně nebo hledá",
@@ -364,7 +357,6 @@
     "available": "DOSTUPNÉ",
     "not_for_trade": "NENÍ NA VÝMĚNU"
   },
-
   "community": {
     "title": "KOMUNITA",
     "subtitle": "Nejlepší přispěvatelé seřazení podle reputace",
@@ -379,7 +371,6 @@
     "no_contributors": "Zatím žádní přispěvatelé",
     "redirecting": "Přesměrování na Komunitu..."
   },
-
   "profile": {
     "not_logged_in": "NEPŘIHLÁŠEN",
     "please_log_in": "Pro zobrazení profilu se přihlaste.",
@@ -424,7 +415,6 @@
     "approved": "SCHVÁLENO",
     "contact": "Kontakt"
   },
-
   "messages": {
     "title": "ZPRÁVY",
     "no_conversations": "ŽÁDNÉ KONVERZACE",
@@ -439,7 +429,6 @@
     "unblock": "ODBLOKOVAT",
     "report": "NAHLÁSIT"
   },
-
   "new_conversation": {
     "title": "NOVÁ ZPRÁVA",
     "to_label": "KOMU:",
@@ -450,7 +439,6 @@
     "no_users_found": "Žádní uživatelé nenalezeni",
     "send": "Odeslat zprávu"
   },
-
   "my_junkbin": {
     "title": "MŮJ JUNKBIN",
     "tab_have": "MÁM",
@@ -474,7 +462,6 @@
     "visibility_private": "Soukromé",
     "remove_confirm": "Odebrat z junkkbinu?"
   },
-
   "my_submissions": {
     "title": "MOJE PŘÍSPĚVKY",
     "subtitle": "Sledujte všechny své příspěvky na junkbin.io",
@@ -487,7 +474,6 @@
     "no_recipes": "ZATÍM ŽÁDNÉ NÁVODY",
     "no_components": "ZATÍM ŽÁDNÉ KOMPONENTY"
   },
-
   "not_found": {
     "line1": "NO USER SERVICEABLE",
     "line2": "PARTS INSIDE",
@@ -498,7 +484,6 @@
     "return_home": "ZPĚT NA HLAVNÍ STRÁNKU",
     "go_back": "ZPĚT"
   },
-
   "search": {
     "title": "PROHLEDAT DATABÁZI",
     "placeholder": "Hledat produkty, komponenty...",
@@ -512,7 +497,6 @@
     "search_error": "Chyba při vyhledávání",
     "enter_to_search": "Pro vyhledávání zadejte alespoň 2 znaky"
   },
-
   "guidelines": {
     "title": "PRAVIDLA KOMUNITY",
     "subtitle": "Standardy pro přispívání do komunity Junkbin.io",
@@ -524,14 +508,12 @@
     "section_appeals": "ODVOLÁNÍ",
     "last_updated": "Poslední aktualizace: únor 2026"
   },
-
   "docs": {
     "title": "DOKUMENTACE",
     "subtitle": "Vše, co potřebujete k používání a přispívání do Junkbin.io",
     "close": "Zavřít",
     "last_updated": "Poslední aktualizace: únor 2026"
   },
-
   "verify_email": {
     "verifying_title": "OVĚŘOVÁNÍ E-MAILU",
     "verifying_message": "Čekejte prosím, ověřujeme vaši e-mailovou adresu...",
@@ -540,7 +522,6 @@
     "invalid_link": "Neplatný ověřovací odkaz.",
     "continue_to_site": "POKRAČOVAT NA WEB"
   },
-
   "moderation": {
     "title": "PANEL MODERACE",
     "access_denied": "PŘÍSTUP ODEPŘEN",
@@ -578,7 +559,6 @@
     "no_reviews": "ŽÁDNÉ RECENZE",
     "no_reports": "VŠE V POŘÁDKU"
   },
-
   "analytics": {
     "title": "ANALYTIKA",
     "subtitle": "Metriky webu a zapojení",
@@ -594,7 +574,6 @@
     "trending_components": "Populární komponenty",
     "activity_breakdown": "Přehled aktivity"
   },
-
   "buildable": {
     "title": "CO MOHU SESTAVIT?",
     "subtitle": "Návody porovnané s vaším junkkbinem — seřazené podle počtu součástek, které již máte",
@@ -608,7 +587,6 @@
     "no_recipes_title": "ŽÁDNÉ ODPOVÍDAJÍCÍ NÁVODY",
     "no_recipes_desc": "Přidejte více komponent do svého junkkbinu a najděte odpovídající návody"
   },
-
   "product_detail": {
     "loading": "NAČÍTÁNÍ...",
     "not_found_title": "PRODUKT NENALEZEN",
@@ -633,7 +611,6 @@
     "swap_have": "MÁ",
     "swap_want": "HLEDÁ"
   },
-
   "component_detail": {
     "loading": "NAČÍTÁNÍ DAT CROSS-REFERENCE...",
     "not_found_title": "KOMPONENTA NENALEZENA",
@@ -657,7 +634,6 @@
     "swap_available": "DOSTUPNÉ",
     "swap_not_for_trade": "NENÍ NA VÝMĚNU"
   },
-
   "common": {
     "loading": "Načítání...",
     "error": "Něco se pokazilo. Zkuste to znovu.",
@@ -685,7 +661,6 @@
     "for_shortcuts": "pro zkratky",
     "copyright": "© {{year}} Junkbin.io —"
   },
-
   "footer": {
     "tagline": "Komunitní databáze dokumentace elektronických součástek. Podporujeme hnutí Right to Repair zpřístupněním schémat a informací o součástkách všem.",
     "motto": "NO USER SERVICEABLE PARTS INSIDE",
@@ -695,13 +670,13 @@
     "explore_components": "Komponenty",
     "explore_schematics": "Schemata",
     "explore_contribute": "Přispět",
+    "explore_news": "Co je nového",
     "community": "KOMUNITA",
     "community_r2r": "Right to Repair",
     "community_ifixit": "iFixit",
     "community_guidelines": "Pravidla",
     "community_docs": "Dokumentace"
   },
-
   "modals": {
     "add_junkbin_title": "PŘIDAT DO JUNKKBINU",
     "already_in_junkbin": "Již ve vašem junkkbinu",
@@ -744,7 +719,6 @@
     "resolve_note": "Poznámka",
     "resolve_submit": "VYŘEŠIT"
   },
-
   "forms": {
     "manufacturer_placeholder": "např. Flipper Devices",
     "model_placeholder": "např. Flipper Zero",
@@ -761,20 +735,17 @@
     "notes_placeholder": "Volitelné poznámky...",
     "search_component_placeholder": "Hledat podle čísla součástky nebo výrobce..."
   },
-
   "keyboard_shortcuts": {
     "title": "KLÁVESOVÉ ZKRATKY",
     "navigation": "Navigace",
     "actions": "Akce",
     "close": "Zavřít"
   },
-
   "onboarding": {
     "title": "ZAČÍNÁME",
     "dismiss": "Zavřít",
     "got_it": "Rozumím"
   },
-
   "errors": {
     "not_found": "Stránka nenalezena",
     "unauthorized": "Musíte být přihlášeni",
@@ -783,7 +754,6 @@
     "network_error": "Chyba sítě. Zkontrolujte připojení.",
     "load_failed": "Nepodařilo se načíst data"
   },
-
   "lang": {
     "switcher_label": "Jazyk",
     "en": "English",
