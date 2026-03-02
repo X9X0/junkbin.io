@@ -390,14 +390,6 @@ export default function MessageThread() {
             className="hidden"
             onChange={handleFileChange}
           />
-          {/* Paperclip button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            title="Attach files"
-            className="self-end p-2 text-gray-500 hover:text-cyber-cyan transition-colors"
-          >
-            <Paperclip className="h-5 w-5" />
-          </button>
           <textarea
             ref={textareaRef}
             value={content}
@@ -408,20 +400,30 @@ export default function MessageThread() {
             maxLength={5000}
             className="input-cyber flex-1 resize-none text-sm"
           />
-          <button
-            onClick={handleSend}
-            disabled={(!content.trim() && pendingFiles.length === 0) || sendMutation.isPending}
-            className={clsx(
-              'btn-cyber px-4 self-end',
-              ((!content.trim() && pendingFiles.length === 0) || sendMutation.isPending) && 'opacity-50 cursor-not-allowed'
-            )}
-          >
-            {sendMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-          </button>
+          {/* Button stack: paperclip above send */}
+          <div className="flex flex-col gap-2 self-end">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              title="Attach files"
+              className="btn-cyber px-4"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+            <button
+              onClick={handleSend}
+              disabled={(!content.trim() && pendingFiles.length === 0) || sendMutation.isPending}
+              className={clsx(
+                'btn-cyber px-4',
+                ((!content.trim() && pendingFiles.length === 0) || sendMutation.isPending) && 'opacity-50 cursor-not-allowed'
+              )}
+            >
+              {sendMutation.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
         <div className="flex items-center justify-between mt-1">
           <span className="text-[10px] text-gray-600 font-mono">

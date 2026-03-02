@@ -212,7 +212,7 @@ class SendMessageView(APIView):
         from .tasks import notify_new_message
         notify_new_message.delay(str(message.pk))
 
-        message.refresh_from_db()
+        message = Message.objects.prefetch_related('attachments').get(pk=message.pk)
         response_data = MessageSerializer(message, context={'request': request}).data
         response_data['conversation_id'] = str(conversation.pk)
         return Response(response_data, status=status.HTTP_201_CREATED)
