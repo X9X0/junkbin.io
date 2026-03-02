@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
-import { Upload, Camera, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import { Upload, Camera, X, Loader2, CheckCircle, AlertCircle, Clock, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
 
 interface ImageTypeOption {
@@ -309,9 +309,24 @@ export default function ImageUpload({
 
       {/* Success message */}
       {uploadMutation.isSuccess && files.length === 0 && (
-        <div className="flex items-center gap-2 p-3 border border-cyber-green/50 bg-cyber-green/10 text-cyber-green text-sm font-mono">
-          <CheckCircle className="h-4 w-4" />
-          Images uploaded successfully!
+        <div className="border border-cyber-green/50 bg-cyber-green/10 p-3 space-y-2">
+          <div className="flex items-center gap-2 text-cyber-green text-sm font-mono">
+            <CheckCircle className="h-4 w-4 shrink-0" />
+            Images uploaded — pending moderator review.
+          </div>
+          <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+            <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
+            <span>They will appear once approved, usually within a few hours.</span>
+          </div>
+          <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+            <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
+            <span>
+              After{' '}
+              <span className="text-white font-mono">25 contributions</span> and{' '}
+              <span className="text-white font-mono">50 reputation</span>,
+              uploads publish instantly.
+            </span>
+          </div>
         </div>
       )}
 

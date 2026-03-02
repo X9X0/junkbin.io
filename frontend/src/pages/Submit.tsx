@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import api from '../api/client';
@@ -7,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
+import ModerationNotice from '../components/ModerationNotice';
 import { parseApiError } from '../utils/formErrors';
 import { PRODUCT_CATEGORIES, REGIONS, COMPONENT_TYPES } from '../utils/constants';
 
@@ -36,12 +36,18 @@ interface ComponentFormData {
   datasheet_url: string;
 }
 
+interface SubmittedItem {
+  type: SubmitType;
+  id: string;
+  label: string;
+}
+
 export default function Submit() {
-  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const [submitType, setSubmitType] = useState<SubmitType>('product');
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [submittedItem, setSubmittedItem] = useState<SubmittedItem | null>(null);
 
   // Product form state
   const [productData, setProductData] = useState<ProductFormData>({
@@ -74,7 +80,11 @@ export default function Submit() {
       return response;
     },
     onSuccess: (data) => {
-      navigate(`/products/${data.id}`);
+      setSubmittedItem({
+        type: 'product',
+        id: data.id,
+        label: `${data.manufacturer} ${data.model_number}`,
+      });
     },
     onError: (err: any) => {
       setError(parseApiError(err, 'Failed to create product. Please try again.'));
@@ -87,7 +97,11 @@ export default function Submit() {
       return response.data;
     },
     onSuccess: (data) => {
-      navigate(`/components/${data.id}/products`);
+      setSubmittedItem({
+        type: 'component',
+        id: data.id,
+        label: `${data.manufacturer} ${data.part_number}`,
+      });
     },
     onError: (err: any) => {
       setError(parseApiError(err, 'Failed to create component. Please try again.'));
@@ -144,6 +158,37 @@ export default function Submit() {
 
   const isProductStep1Valid = productData.manufacturer && productData.model_number && productData.category;
   const isComponentStep1Valid = componentData.manufacturer && componentData.part_number && componentData.component_type;
+
+  const handleSubmitAnother = () => {
+    setSubmittedItem(null);
+    setStep(1);
+    setError(null);
+    setProductData({ manufacturer: '', model_number: '', revision: '', region: 'global', category: '', year_manufactured: '', fcc_id: '', description: '', teardown_notes: '' });
+    setComponentData({ part_number: '', manufacturer: '', component_type: '', package_type: '', description: '', typical_function: '', datasheet_url: '' });
+  };
+
+  if (submittedItem) {
+    const viewLink =
+      submittedItem.type === 'product'
+        ? `/products/${submittedItem.id}`
+        : `/components/${submittedItem.id}/products`;
+    return (
+      <div className="py-8">
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="mb-8 text-center">
+            <h1 className="font-display text-3xl font-bold text-white mb-2">
+              SUBMIT <span className="text-cyber-green">DOCUMENTATION</span>
+            </h1>
+          </div>
+          <ModerationNotice
+            itemLabel={submittedItem.label}
+            viewLink={viewLink}
+            onSubmitAnother={handleSubmitAnother}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-8">

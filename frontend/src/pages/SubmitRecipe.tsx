@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { recipes, components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import type { Component } from '../types';
 import { parseApiError } from '../utils/formErrors';
 import { RECIPE_CATEGORIES, DIFFICULTIES } from '../utils/constants';
+import ModerationNotice from '../components/ModerationNotice';
 
 interface BomEntry {
   component: Component;
@@ -18,9 +19,9 @@ interface BomEntry {
 
 export default function SubmitRecipe() {
   const { isAuthenticated } = useAuth();
-  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
+  const [submittedRecipe, setSubmittedRecipe] = useState<{ id: string; name: string } | null>(null);
 
   // Step 1 fields
   const [name, setName] = useState('');
@@ -44,7 +45,7 @@ export default function SubmitRecipe() {
   const submitMutation = useMutation({
     mutationFn: (formData: FormData) => recipes.create(formData),
     onSuccess: (data) => {
-      navigate(`/recipes/${data.id}`);
+      setSubmittedRecipe({ id: data.id, name: data.name });
     },
     onError: (err: any) => {
       setError(parseApiError(err, 'Failed to submit recipe. Please try again.'));
@@ -112,6 +113,37 @@ export default function SubmitRecipe() {
   };
 
   const canProceed = name.trim() && description.trim() && difficulty && category;
+
+  if (submittedRecipe) {
+    return (
+      <div className="py-8">
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="mb-8">
+            <h1 className="font-display text-3xl font-bold text-white mb-2">
+              SUBMIT <span className="text-cyber-cyan">RECIPE</span>
+            </h1>
+          </div>
+          <ModerationNotice
+            itemLabel={submittedRecipe.name}
+            viewLink={`/recipes/${submittedRecipe.id}`}
+            onSubmitAnother={() => {
+              setSubmittedRecipe(null);
+              setStep(1);
+              setName('');
+              setDescription('');
+              setDifficulty('beginner');
+              setCategory('other');
+              setExternalUrl('');
+              setEstimatedTime('');
+              setImage(null);
+              setBomEntries([]);
+              setError('');
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-8">
