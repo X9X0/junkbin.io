@@ -176,7 +176,7 @@ export default function SwapShop() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
+    <div className="mx-auto max-w-screen-2xl px-4 py-8">
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-2">
         <div className="flex items-center gap-3">

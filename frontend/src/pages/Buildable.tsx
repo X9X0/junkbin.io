@@ -77,7 +77,7 @@ export default function Buildable() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-screen-2xl px-4">
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2 flex items-center gap-3">

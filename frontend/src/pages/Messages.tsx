@@ -34,7 +34,7 @@ export default function Messages() {
   const conversations = data?.results ?? [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)', overflow: 'hidden' }}>
+    <div className="mx-auto max-w-screen-2xl px-4 py-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)', overflow: 'hidden' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div className="flex items-center gap-3">

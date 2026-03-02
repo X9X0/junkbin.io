@@ -60,7 +60,7 @@ export default function Home() {
         <div className="absolute top-20 left-1/4 w-96 h-96 bg-cyber-cyan/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-cyber-pink/10 rounded-full blur-3xl animate-pulse" />
 
-        <div className="relative mx-auto max-w-5xl px-4 text-center">
+        <div className="relative mx-auto max-w-7xl px-4 text-center">
           {/* Warning badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 border border-cyber-yellow/50 bg-cyber-yellow/5">
             <AlertTriangle className="h-4 w-4 text-cyber-yellow" />
@@ -158,7 +158,7 @@ export default function Home() {
 
       {/* Live Stats Section */}
       <section className="py-12 border-y border-cyber-cyan/20 bg-cyber-darker/80">
-        <div className="mx-auto max-w-5xl px-4">
+        <div className="mx-auto max-w-7xl px-4">
           <div className="text-center mb-8">
             <h2 className="font-mono text-sm text-cyber-cyan/70 tracking-widest">
               {t('home.db_status')} <span className="text-cyber-green">{t('home.db_online')}</span>
@@ -204,7 +204,7 @@ export default function Home() {
       {/* Featured Products */}
       {featuredProducts && featuredProducts.length > 0 && (
         <section className="py-12">
-          <div className="mx-auto max-w-5xl px-4">
+          <div className="mx-auto max-w-7xl px-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display text-xl font-bold text-white">
                 {t('home.featured_products')} <span className="text-cyber-cyan">{t('home.featured_products_highlight')}</span>
@@ -253,7 +253,7 @@ export default function Home() {
 
       {/* What We're Building Section */}
       <section className="py-16">
-        <div className="mx-auto max-w-5xl px-4">
+        <div className="mx-auto max-w-7xl px-4">
           <div className="text-center mb-12">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">
               {t('home.what_were_building')} <span className="text-cyber-cyan chromatic-aberration">{t('home.building')}</span>

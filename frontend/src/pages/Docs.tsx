@@ -52,7 +52,7 @@ export default function Docs() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-screen-2xl px-4 py-8">
       {/* Header */}
       <div className="flex items-center gap-3 mb-2">
         <div className="p-2 bg-cyber-cyan/20 border border-cyber-cyan/50">

@@ -122,7 +122,7 @@ export default function ComponentDetail() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-screen-2xl px-4">
         {/* Back link */}
         <Link
           to="/components"

@@ -178,7 +178,7 @@ export default function ProductDetail() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-screen-2xl px-4">
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm font-mono text-gray-500 mb-6">
           <Link to="/products" className="hover:text-cyber-cyan">
