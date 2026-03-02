@@ -1,6 +1,6 @@
 # Junkbin.io
 
-![Version](https://img.shields.io/badge/version-0.9.0-05d9e8?style=flat-square&labelColor=0a0a0f)
+![Version](https://img.shields.io/badge/version-0.9.1-05d9e8?style=flat-square&labelColor=0a0a0f)
 ![Status](https://img.shields.io/badge/status-beta-f72585?style=flat-square&labelColor=0a0a0f)
 ![Stack](https://img.shields.io/badge/stack-Django%20%2B%20React-44cf6c?style=flat-square&labelColor=0a0a0f)
 ![Languages](https://img.shields.io/badge/languages-15-f9f002?style=flat-square&labelColor=0a0a0f)
