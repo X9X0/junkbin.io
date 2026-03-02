@@ -1,6 +1,7 @@
 """
 Messaging views for Junkbin.io API
 """
+import mimetypes
 from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -197,10 +198,16 @@ class SendMessageView(APIView):
 
         # Save attachments
         for f in files:
+            ct = f.content_type or ''
+            if not ct or ct == 'application/octet-stream':
+                ct, _ = mimetypes.guess_type(f.name)
+                ct = ct or 'application/octet-stream'
             attachment = MessageAttachment(
                 message=message,
                 file=f,
                 original_filename=f.name,
+                file_type=ct,
+                file_size=f.size,
             )
             attachment.save()
 
