@@ -17,6 +17,7 @@ from rest_framework_simplejwt.views import (
 )
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.users.models import UserActivity
 from .views import APIRootView, SearchView, HealthCheckView, StatsView, AnalyticsView
 
 
@@ -79,6 +80,25 @@ class CookieTokenObtainPairView(TokenObtainPairView):
     """Token obtain view that sets HttpOnly cookies."""
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'auth'
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            serializer = self.get_serializer(data=request.data)
+            try:
+                serializer.is_valid()
+                user = serializer.user
+                x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+                ip = x_forwarded_for.split(',')[0].strip() if x_forwarded_for else request.META.get('REMOTE_ADDR')
+                UserActivity.objects.create(
+                    user=user,
+                    activity_type=UserActivity.ActivityType.LOGIN,
+                    ip_address=ip,
+                    user_agent=request.META.get('HTTP_USER_AGENT', '')[:500],
+                )
+            except Exception:
+                pass
+        return response
 
     def finalize_response(self, request, response, *args, **kwargs):
         if response.status_code == 200 and 'access' in response.data:
