@@ -85,6 +85,11 @@ export const auth = {
     return response.data;
   },
 
+  updateMe: async (data: Record<string, unknown>): Promise<User> => {
+    const response = await api.patch('/auth/me/', data);
+    return response.data;
+  },
+
   changePassword: async (data: { current_password: string; new_password: string; new_password_confirm: string }): Promise<void> => {
     await api.post('/auth/password/change/', data);
   },

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import i18n from '../i18n';
 
 // Use relative URL in production (works with nginx proxy), localhost for dev
 const API_URL = import.meta.env.VITE_API_URL || '/api';
@@ -25,12 +26,13 @@ export const api = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor to add CSRF token
+// Request interceptor to add CSRF token and Accept-Language
 api.interceptors.request.use((config) => {
   const csrfToken = getCsrfToken();
   if (csrfToken) {
     config.headers['X-CSRFToken'] = csrfToken;
   }
+  config.headers['Accept-Language'] = i18n.language || 'en';
   return config;
 });
 

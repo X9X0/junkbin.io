@@ -1,13 +1,33 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3, Store } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3, Store, Globe, Check } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { search } from '../../api/endpoints';
+import { search, auth as authApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { useUnreadCount } from '../../hooks/useUnreadCount';
 import clsx from 'clsx';
 
+const LANGUAGES = [
+  { code: 'en', label: 'English' },
+  { code: 'fr', label: 'Français' },
+  { code: 'es', label: 'Español' },
+  { code: 'pt', label: 'Português' },
+  { code: 'de', label: 'Deutsch' },
+  { code: 'it', label: 'Italiano' },
+  { code: 'nl', label: 'Nederlands' },
+  { code: 'pl', label: 'Polski' },
+  { code: 'cs', label: 'Čeština' },
+  { code: 'sk', label: 'Slovenčina' },
+  { code: 'hr', label: 'Hrvatski' },
+  { code: 'sr', label: 'Srpski' },
+  { code: 'sl', label: 'Slovenščina' },
+  { code: 'ru', label: 'Русский' },
+  { code: 'uk', label: 'Українська' },
+];
+
 export default function Header() {
+  const { t, i18n } = useTranslation();
   const { user, isAuthenticated, logout } = useAuth();
   const queryClient = useQueryClient();
   const unreadCount = useUnreadCount();
@@ -15,7 +35,9 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const searchRef = useRef<HTMLDivElement>(null);
+  const langRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
   // Debounce search query — wait 300ms after user stops typing
@@ -40,6 +62,9 @@ export default function Header() {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setShowSuggestions(false);
       }
+      if (langRef.current && !langRef.current.contains(e.target as Node)) {
+        setShowLangMenu(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -59,9 +84,23 @@ export default function Header() {
     navigate(path);
   };
 
+  const handleLanguageChange = (code: string) => {
+    i18n.changeLanguage(code);
+    setShowLangMenu(false);
+    setIsMenuOpen(false);
+    // Persist to user profile when authenticated
+    if (isAuthenticated) {
+      authApi.updateMe({ preferred_language: code }).catch(() => {
+        // Non-critical — localStorage already saved by i18next
+      });
+    }
+  };
+
   const totalResults = suggestions
     ? (suggestions.products?.length || 0) + (suggestions.components?.length || 0) + (suggestions.schematics?.length || 0) + (suggestions.users?.length || 0)
     : 0;
+
+  const currentLang = LANGUAGES.find(l => l.code === i18n.language) || LANGUAGES[0];
 
   return (
     <header className="sticky top-0 z-50 border-b border-cyber-light/30 bg-cyber-darker/95 backdrop-blur-sm">
@@ -78,7 +117,7 @@ export default function Header() {
                 JUNK<span className="text-cyber-cyan">BIN</span>
               </h1>
               <p className="text-[10px] font-mono text-gray-500 tracking-widest">
-                RIGHT TO REPAIR
+                {t('nav.right_to_repair')}
               </p>
             </div>
           </Link>
@@ -89,32 +128,32 @@ export default function Header() {
               to="/products"
               className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
             >
-              PRODUCTS
+              {t('nav.products')}
             </Link>
             <Link
               to="/components"
               className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
             >
-              COMPONENTS
+              {t('nav.components')}
             </Link>
             <Link
               to="/schematics"
               className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
             >
-              SCHEMATICS
+              {t('nav.schematics')}
             </Link>
             <Link
               to="/recipes"
               className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
             >
-              RECIPES
+              {t('nav.recipes')}
             </Link>
             <Link
               to="/community"
               className="font-mono text-sm text-gray-400 hover:text-cyber-yellow transition-colors flex items-center gap-1"
             >
               <Trophy className="h-3.5 w-3.5" />
-              COMMUNITY
+              {t('nav.community')}
             </Link>
             {isAuthenticated && (user?.is_moderator || user?.is_staff) && (
               <>
@@ -123,14 +162,14 @@ export default function Header() {
                   className="font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
                 >
                   <Shield className="h-3.5 w-3.5" />
-                  MOD
+                  {t('nav.mod')}
                 </Link>
                 <Link
                   to="/analytics"
                   className="font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
-                  ANALYTICS
+                  {t('nav.analytics')}
                 </Link>
               </>
             )}
@@ -148,7 +187,7 @@ export default function Header() {
                     setShowSuggestions(true);
                   }}
                   onFocus={() => setShowSuggestions(true)}
-                  placeholder="Search products, components..."
+                  placeholder={t('nav.search_placeholder')}
                   className="w-64 bg-cyber-dark border border-cyber-light/50 rounded-none px-4 py-2 pl-10 text-sm font-mono text-gray-200 placeholder-gray-500 focus:border-cyber-cyan focus:outline-none transition-colors"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -164,7 +203,7 @@ export default function Header() {
                   </div>
                 ) : totalResults === 0 ? (
                   <div className="p-3 text-sm text-gray-500 text-center">
-                    No results for "{searchQuery}"
+                    {t('nav.no_results_for', { query: searchQuery })}
                   </div>
                 ) : (
                   <>
@@ -246,7 +285,7 @@ export default function Header() {
                       }}
                       className="w-full px-3 py-2 text-center text-sm text-cyber-cyan hover:bg-cyber-cyan/10 border-t border-cyber-light/30"
                     >
-                      View all {totalResults} results →
+                      {t('nav.view_all_results', { count: totalResults })}
                     </button>
                   </>
                 )}
@@ -254,7 +293,7 @@ export default function Header() {
             )}
           </div>
 
-          {/* Right side - Auth */}
+          {/* Right side - Auth + Language */}
           <div className="hidden md:flex items-center gap-4">
             {isAuthenticated ? (
               <>
@@ -263,19 +302,19 @@ export default function Header() {
                   className="font-mono text-sm text-cyber-green hover:text-cyber-green/80 transition-colors flex items-center gap-1"
                 >
                   <Hammer className="h-3.5 w-3.5" />
-                  BUILD
+                  {t('nav.build')}
                 </Link>
                 <Link
                   to="/submit"
                   className="btn-cyber flex items-center gap-2 text-sm py-1.5"
                 >
                   <Plus className="h-4 w-4" />
-                  SUBMIT
+                  {t('nav.submit')}
                 </Link>
                 <Link
                   to="/swap"
                   className="relative text-gray-400 hover:text-cyber-cyan transition-colors p-1"
-                  title="Swap Shop"
+                  title={t('nav.swap')}
                 >
                   <Store className="h-5 w-5" />
                 </Link>
@@ -300,27 +339,27 @@ export default function Header() {
                       to="/profile"
                       className="block px-4 py-2 text-sm text-gray-400 hover:text-cyber-cyan hover:bg-cyber-light/20"
                     >
-                      Profile
+                      {t('nav.profile')}
                     </Link>
                     <Link
                       to="/my-junkbin"
                       className="block px-4 py-2 text-sm text-gray-400 hover:text-cyber-cyan hover:bg-cyber-light/20 flex items-center gap-2"
                     >
                       <Archive className="h-3.5 w-3.5" />
-                      My Junkbin
+                      {t('nav.my_junkbin')}
                     </Link>
                     <Link
                       to="/my-submissions"
                       className="block px-4 py-2 text-sm text-gray-400 hover:text-cyber-cyan hover:bg-cyber-light/20"
                     >
-                      My Submissions
+                      {t('nav.my_submissions')}
                     </Link>
                     <button
                       onClick={async () => { await logout(); queryClient.clear(); navigate('/login'); }}
                       className="w-full text-left px-4 py-2 text-sm text-gray-400 hover:text-cyber-pink hover:bg-cyber-light/20 flex items-center gap-2"
                     >
                       <LogOut className="h-4 w-4" />
-                      Logout
+                      {t('nav.logout')}
                     </button>
                   </div>
                 </div>
@@ -331,13 +370,41 @@ export default function Header() {
                   to="/login"
                   className="font-mono text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  LOGIN
+                  {t('nav.login')}
                 </Link>
                 <Link to="/register" className="btn-cyber text-sm py-1.5">
-                  REGISTER
+                  {t('nav.register')}
                 </Link>
               </>
             )}
+
+            {/* Language switcher */}
+            <div ref={langRef} className="relative">
+              <button
+                onClick={() => setShowLangMenu(!showLangMenu)}
+                className="flex items-center gap-1 text-gray-400 hover:text-cyber-cyan transition-colors p-1"
+                title={t('lang.switcher_label')}
+              >
+                <Globe className="h-4 w-4" />
+                <span className="font-mono text-xs uppercase">{i18n.language?.slice(0, 2) || 'en'}</span>
+              </button>
+              {showLangMenu && (
+                <div className="absolute right-0 mt-2 w-44 py-1 bg-cyber-dark border border-cyber-light/30 shadow-lg z-50">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => handleLanguageChange(lang.code)}
+                      className="w-full px-3 py-2 text-left text-sm text-gray-400 hover:text-cyber-cyan hover:bg-cyber-light/20 flex items-center justify-between transition-colors"
+                    >
+                      <span>{lang.label}</span>
+                      {i18n.language?.startsWith(lang.code) && (
+                        <Check className="h-3.5 w-3.5 text-cyber-cyan" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Mobile controls */}
@@ -395,7 +462,7 @@ export default function Header() {
         <div
           className={clsx(
             'md:hidden overflow-hidden transition-all duration-300',
-            isMenuOpen ? 'max-h-96 py-4' : 'max-h-0'
+            isMenuOpen ? 'max-h-[32rem] py-4' : 'max-h-0'
           )}
         >
           <form onSubmit={handleSearch} className="mb-4">
@@ -404,7 +471,7 @@ export default function Header() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search..."
+                placeholder={t('nav.search_mobile_placeholder')}
                 className="w-full bg-cyber-dark border border-cyber-light/50 px-4 py-2 pl-10 text-sm font-mono text-gray-200 placeholder-gray-500 focus:border-cyber-cyan focus:outline-none"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -416,28 +483,28 @@ export default function Header() {
               className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan"
               onClick={() => setIsMenuOpen(false)}
             >
-              PRODUCTS
+              {t('nav.products')}
             </Link>
             <Link
               to="/components"
               className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan"
               onClick={() => setIsMenuOpen(false)}
             >
-              COMPONENTS
+              {t('nav.components')}
             </Link>
             <Link
               to="/schematics"
               className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan"
               onClick={() => setIsMenuOpen(false)}
             >
-              SCHEMATICS
+              {t('nav.schematics')}
             </Link>
             <Link
               to="/recipes"
               className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan"
               onClick={() => setIsMenuOpen(false)}
             >
-              RECIPES
+              {t('nav.recipes')}
             </Link>
             <Link
               to="/community"
@@ -445,7 +512,7 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               <Trophy className="h-3.5 w-3.5" />
-              COMMUNITY
+              {t('nav.community')}
             </Link>
             <Link
               to="/swap"
@@ -453,7 +520,7 @@ export default function Header() {
               onClick={() => setIsMenuOpen(false)}
             >
               <Store className="h-3.5 w-3.5" />
-              SWAP SHOP
+              {t('nav.swap')}
             </Link>
             {isAuthenticated && (
               <Link
@@ -462,7 +529,7 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 <MessageSquare className="h-3.5 w-3.5" />
-                MESSAGES
+                {t('nav.messages')}
                 {unreadCount > 0 && (
                   <span className="ml-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
                     {unreadCount > 99 ? '99+' : unreadCount}
@@ -478,7 +545,7 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <Shield className="h-3.5 w-3.5" />
-                  MODERATION
+                  {t('nav.moderation')}
                 </Link>
                 <Link
                   to="/analytics"
@@ -486,7 +553,7 @@ export default function Header() {
                   onClick={() => setIsMenuOpen(false)}
                 >
                   <BarChart3 className="h-3.5 w-3.5" />
-                  ANALYTICS
+                  {t('nav.analytics')}
                 </Link>
               </>
             )}
@@ -499,7 +566,7 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Hammer className="h-3.5 w-3.5" />
-                    BUILD
+                    {t('nav.build')}
                   </Link>
                   <Link
                     to="/my-junkbin"
@@ -507,20 +574,20 @@ export default function Header() {
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <Archive className="h-3.5 w-3.5" />
-                    MY JUNKBIN
+                    {t('nav.my_junkbin_upper')}
                   </Link>
                   <Link
                     to="/submit"
                     className="block py-2 font-mono text-sm text-cyber-cyan"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    + SUBMIT NEW
+                    {t('nav.submit_new')}
                   </Link>
                   <button
                     onClick={async () => { await logout(); queryClient.clear(); setIsMenuOpen(false); navigate('/login'); }}
                     className="py-2 font-mono text-sm text-cyber-pink"
                   >
-                    LOGOUT
+                    {t('nav.logout')}
                   </button>
                 </>
               ) : (
@@ -530,17 +597,41 @@ export default function Header() {
                     className="block py-2 font-mono text-sm text-gray-400"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    LOGIN
+                    {t('nav.login')}
                   </Link>
                   <Link
                     to="/register"
                     className="block py-2 font-mono text-sm text-cyber-cyan"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    REGISTER
+                    {t('nav.register')}
                   </Link>
                 </>
               )}
+            </div>
+
+            {/* Mobile language selector */}
+            <div className="border-t border-cyber-light/30 pt-4 mt-2">
+              <p className="text-xs font-mono text-gray-600 mb-2 flex items-center gap-1">
+                <Globe className="h-3.5 w-3.5" />
+                {t('lang.switcher_label')}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <button
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code)}
+                    className={clsx(
+                      'px-2 py-1 text-xs font-mono border transition-colors',
+                      i18n.language?.startsWith(lang.code)
+                        ? 'border-cyber-cyan text-cyber-cyan bg-cyber-cyan/10'
+                        : 'border-cyber-light/30 text-gray-500 hover:text-cyber-cyan hover:border-cyber-cyan/50'
+                    )}
+                  >
+                    {lang.label}
+                  </button>
+                ))}
+              </div>
             </div>
           </nav>
         </div>

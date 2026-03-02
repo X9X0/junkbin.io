@@ -42,6 +42,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'username', 'email', 'first_name', 'last_name',
             'display_name', 'bio', 'avatar', 'location', 'website',
+            'preferred_language',
             'reputation_score', 'contribution_count', 'report_count',
             'is_staff', 'is_trusted', 'is_moderator', 'email_verified',
             'oauth_provider', 'preferences', 'created_at', 'updated_at',

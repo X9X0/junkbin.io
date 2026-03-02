@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import { UserPlus, AlertCircle, Check } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
 
 export default function Register() {
+  const { t } = useTranslation();
   const { register, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -26,7 +28,7 @@ export default function Register() {
     setError('');
 
     if (formData.password !== formData.password_confirm) {
-      setError('Passwords do not match');
+      setError(t('auth.register.passwords_mismatch'));
       return;
     }
 
@@ -36,7 +38,7 @@ export default function Register() {
       await register(formData);
       navigate('/');
     } catch (err: any) {
-      setError(parseApiError(err, 'Registration failed. Please try again.'));
+      setError(parseApiError(err, t('auth.register.registration_failed')));
     } finally {
       setIsLoading(false);
     }
@@ -47,10 +49,10 @@ export default function Register() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            CREATE <span className="text-cyber-cyan">ACCOUNT</span>
+            {t('auth.register.title')}
           </h1>
           <p className="text-gray-500 font-mono text-sm">
-            Join the repair community
+            {t('auth.register.subtitle')}
           </p>
         </div>
 
@@ -65,7 +67,7 @@ export default function Register() {
                 await googleLogin(credential);
                 navigate('/');
               } catch (err: any) {
-                setError(err.response?.data?.error || 'Google sign-up failed');
+                setError(err.response?.data?.error || t('auth.register.google_failed'));
               } finally {
                 setIsLoading(false);
               }
@@ -78,7 +80,7 @@ export default function Register() {
               <div className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-cyber-dark px-4 text-sm font-mono text-gray-500">OR</span>
+              <span className="bg-cyber-dark px-4 text-sm font-mono text-gray-500">{t('auth.register.or')}</span>
             </div>
           </div>
 
@@ -92,7 +94,7 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                USERNAME
+                {t('auth.register.username')}
               </label>
               <input
                 type="text"
@@ -100,14 +102,14 @@ export default function Register() {
                 value={formData.username}
                 onChange={handleChange}
                 className="input-cyber"
-                placeholder="Choose a username"
+                placeholder={t('auth.register.username_placeholder')}
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                EMAIL
+                {t('auth.register.email')}
               </label>
               <input
                 type="email"
@@ -115,14 +117,14 @@ export default function Register() {
                 value={formData.email}
                 onChange={handleChange}
                 className="input-cyber"
-                placeholder="your@email.com"
+                placeholder={t('auth.register.email_placeholder')}
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                PASSWORD
+                {t('auth.register.password')}
               </label>
               <input
                 type="password"
@@ -130,7 +132,7 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 className="input-cyber"
-                placeholder="Min 8 characters"
+                placeholder={t('auth.register.password_placeholder')}
                 required
                 minLength={8}
               />
@@ -138,7 +140,7 @@ export default function Register() {
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                CONFIRM PASSWORD
+                {t('auth.register.confirm_password')}
               </label>
               <input
                 type="password"
@@ -146,7 +148,7 @@ export default function Register() {
                 value={formData.password_confirm}
                 onChange={handleChange}
                 className="input-cyber"
-                placeholder="Repeat password"
+                placeholder={t('auth.register.confirm_placeholder')}
                 required
               />
             </div>
@@ -157,11 +159,11 @@ export default function Register() {
               className="w-full btn-cyber flex items-center justify-center gap-2 py-3"
             >
               {isLoading ? (
-                <span className="animate-pulse">CREATING ACCOUNT...</span>
+                <span className="animate-pulse">{t('auth.register.submitting')}</span>
               ) : (
                 <>
                   <UserPlus className="h-4 w-4" />
-                  REGISTER
+                  {t('auth.register.submit')}
                 </>
               )}
             </button>
@@ -170,20 +172,20 @@ export default function Register() {
           {/* Benefits */}
           <div className="mt-6 p-4 bg-cyber-cyan/5 border border-cyber-cyan/20">
             <p className="text-xs font-mono text-gray-400 mb-3">
-              WITH AN ACCOUNT YOU CAN:
+              {t('auth.register.benefits_title')}
             </p>
             <ul className="space-y-2 text-sm text-gray-300">
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-cyber-green" />
-                Submit products and components
+                {t('auth.register.benefit_submit')}
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-cyber-green" />
-                Upload schematics and documentation
+                {t('auth.register.benefit_upload')}
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-cyber-green" />
-                Build reputation in the community
+                {t('auth.register.benefit_reputation')}
               </li>
             </ul>
           </div>
@@ -191,9 +193,9 @@ export default function Register() {
           <div className="divider-circuit" />
 
           <p className="text-center text-sm text-gray-500">
-            Already have an account?{' '}
+            {t('auth.register.have_account')}{' '}
             <Link to="/login" className="text-cyber-cyan hover:underline">
-              Login
+              {t('auth.register.login_link')}
             </Link>
           </p>
         </div>

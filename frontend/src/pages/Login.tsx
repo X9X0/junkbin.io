@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import { LogIn, AlertCircle } from 'lucide-react';
 
 export default function Login() {
+  const { t } = useTranslation();
   const { login, googleLogin } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
@@ -21,7 +23,7 @@ export default function Login() {
       await login({ username, password });
       navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid credentials');
+      setError(err.response?.data?.detail || t('auth.login.invalid_credentials'));
     } finally {
       setIsLoading(false);
     }
@@ -32,10 +34,10 @@ export default function Login() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            SYSTEM <span className="text-cyber-cyan">LOGIN</span>
+            {t('auth.login.title')}
           </h1>
           <p className="text-gray-500 font-mono text-sm">
-            Access the repair database
+            {t('auth.login.subtitle')}
           </p>
         </div>
 
@@ -50,33 +52,33 @@ export default function Login() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                USERNAME
+                {t('auth.login.username')}
               </label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="input-cyber"
-                placeholder="Enter username"
+                placeholder={t('auth.login.username_placeholder')}
                 required
               />
             </div>
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                PASSWORD
+                {t('auth.login.password')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-cyber"
-                placeholder="Enter password"
+                placeholder={t('auth.login.password_placeholder')}
                 required
               />
               <div className="mt-2 text-right">
                 <Link to="/reset-password" className="text-sm text-cyber-cyan hover:underline">
-                  Forgot password?
+                  {t('auth.login.forgot')}
                 </Link>
               </div>
             </div>
@@ -87,11 +89,11 @@ export default function Login() {
               className="w-full btn-cyber flex items-center justify-center gap-2 py-3"
             >
               {isLoading ? (
-                <span className="animate-pulse">AUTHENTICATING...</span>
+                <span className="animate-pulse">{t('auth.login.submitting')}</span>
               ) : (
                 <>
                   <LogIn className="h-4 w-4" />
-                  LOGIN
+                  {t('auth.login.submit')}
                 </>
               )}
             </button>
@@ -103,7 +105,7 @@ export default function Login() {
               <div className="w-full border-t border-gray-700" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-cyber-dark px-4 text-sm font-mono text-gray-500">OR</span>
+              <span className="bg-cyber-dark px-4 text-sm font-mono text-gray-500">{t('auth.login.or')}</span>
             </div>
           </div>
 
@@ -116,7 +118,7 @@ export default function Login() {
                 await googleLogin(credential);
                 navigate('/');
               } catch (err: any) {
-                setError(err.response?.data?.error || 'Google sign-in failed');
+                setError(err.response?.data?.error || t('auth.login.google_failed'));
               } finally {
                 setIsLoading(false);
               }
@@ -127,9 +129,9 @@ export default function Login() {
           <div className="divider-circuit" />
 
           <p className="text-center text-sm text-gray-500">
-            Don't have an account?{' '}
+            {t('auth.login.no_account')}{' '}
             <Link to="/register" className="text-cyber-cyan hover:underline">
-              Register
+              {t('auth.login.register_link')}
             </Link>
           </p>
         </div>

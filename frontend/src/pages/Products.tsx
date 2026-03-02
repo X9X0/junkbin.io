@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { products } from '../api/endpoints';
 import { Cpu, Grid, List, Search, ChevronDown } from 'lucide-react';
 import clsx from 'clsx';
@@ -8,8 +9,10 @@ import Pagination from '../components/Pagination';
 import { ProductGridSkeleton } from '../components/Skeleton';
 import LazyImage from '../components/LazyImage';
 
+// Category labels are short UI strings; "All Categories" is translated below.
+// The rest are kept as-is since they are category display names.
 const CATEGORIES = [
-  { value: '', label: 'All Categories' },
+  { value: '', label: null }, // translated via t('products.all_categories')
   { value: 'router', label: 'Router' },
   { value: 'phone', label: 'Smartphone' },
   { value: 'laptop', label: 'Laptop' },
@@ -22,6 +25,7 @@ const CATEGORIES = [
 ];
 
 export default function Products() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -69,10 +73,10 @@ export default function Products() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            PRODUCT <span className="text-cyber-cyan">DATABASE</span>
+            {t('products.title')} <span className="text-cyber-cyan">{t('products.title_highlight')}</span>
           </h1>
           <p className="text-gray-400">
-            Browse documented electronic products and their components
+            {t('products.subtitle')}
           </p>
         </div>
 
@@ -85,7 +89,7 @@ export default function Products() {
                 type="text"
                 value={search}
                 onChange={(e) => updateFilter('search', e.target.value)}
-                placeholder="Search by manufacturer, model, FCC ID..."
+                placeholder={t('products.search_placeholder')}
                 className="input-cyber pl-10"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -100,7 +104,7 @@ export default function Products() {
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
-                    {cat.label}
+                    {cat.label === null ? t('products.all_categories') : cat.label}
                   </option>
                 ))}
               </select>
@@ -114,10 +118,10 @@ export default function Products() {
                 onChange={(e) => updateFilter('ordering', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
-                <option value="-created_at">Newest First</option>
-                <option value="created_at">Oldest First</option>
-                <option value="manufacturer">Manufacturer A-Z</option>
-                <option value="-component_count">Most Components</option>
+                <option value="-created_at">{t('products.newest_first')}</option>
+                <option value="created_at">{t('products.oldest_first')}</option>
+                <option value="manufacturer">{t('products.manufacturer_az')}</option>
+                <option value="-component_count">{t('products.most_components')}</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
             </div>
@@ -153,7 +157,7 @@ export default function Products() {
         {/* Results count */}
         {data && (
           <div className="mb-4 text-sm text-gray-500 font-mono">
-            {data.count} products found
+            {t('products.count_found', { count: data.count })}
           </div>
         )}
 
@@ -205,7 +209,7 @@ export default function Products() {
                     </span>
                     {product.is_featured && (
                       <span className="badge-cyber text-cyber-yellow border-cyber-yellow text-[10px]">
-                        FEATURED
+                        {t('common.featured')}
                       </span>
                     )}
                   </div>
@@ -216,7 +220,7 @@ export default function Products() {
 
                   {product.revision && (
                     <div className="text-xs text-gray-500 font-mono">
-                      Rev: {product.revision}
+                      {t('products.revision')} {product.revision}
                     </div>
                   )}
 
@@ -224,8 +228,8 @@ export default function Products() {
                     <span className="badge-cyber text-gray-400 border-gray-600">
                       {product.category_display || product.category}
                     </span>
-                    <span>{product.component_count} parts</span>
-                    {product.fcc_id && <span>FCC: {product.fcc_id}</span>}
+                    <span>{product.component_count} {t('products.parts')}</span>
+                    {product.fcc_id && <span>{t('products.fcc')} {product.fcc_id}</span>}
                   </div>
 
                   {viewMode === 'list' && product.description && (
@@ -243,12 +247,12 @@ export default function Products() {
         {data && data.results.length === 0 && (
           <div className="text-center py-20">
             <Cpu className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="font-display text-xl text-white mb-2">NO PRODUCTS FOUND</h3>
+            <h3 className="font-display text-xl text-white mb-2">{t('products.no_products_title')}</h3>
             <p className="text-gray-500 mb-6">
-              Try adjusting your search or filters
+              {t('products.no_products_desc')}
             </p>
             <Link to="/submit" className="btn-cyber">
-              ADD A PRODUCT
+              {t('products.add_product')}
             </Link>
           </div>
         )}

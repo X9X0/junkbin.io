@@ -3,6 +3,7 @@ Product serializers for Junkbin.io API
 """
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 
 from .models import Product, ProductImage, ProductComment, Schematic
 from utils.file_validation import validate_image_file, validate_schematic_file
@@ -225,7 +226,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 
         if queryset.exists():
             raise serializers.ValidationError(
-                'A product with this manufacturer, model, revision, and region already exists.'
+                _('A product with this manufacturer, model, revision, and region already exists.')
             )
         return attrs
 
@@ -326,13 +327,13 @@ class ProductCommentCreateSerializer(serializers.ModelSerializer):
     def validate_content(self, value):
         stripped = value.strip()
         if not stripped:
-            raise serializers.ValidationError('Comment cannot be empty.')
+            raise serializers.ValidationError(_('Comment cannot be empty.'))
         from utils.content_filter import check_content
         is_clean, _ = check_content(stripped)
         if not is_clean:
             raise serializers.ValidationError(
-                'Your comment contains prohibited language. '
-                'Please review our community guidelines.'
+                _('Your comment contains prohibited language. '
+                  'Please review our community guidelines.')
             )
         return stripped
 

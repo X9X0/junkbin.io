@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle, AlertCircle, Mail } from 'lucide-react';
 import api from '../api/client';
 
 export default function VerifyEmail() {
+  const { t } = useTranslation();
   const { token } = useParams<{ token: string }>();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [message, setMessage] = useState('');
@@ -12,10 +14,10 @@ export default function VerifyEmail() {
     const verifyEmail = async () => {
       try {
         const response = await api.post('/auth/verify-email/', { token });
-        setMessage(response.data.message || 'Email verified successfully!');
+        setMessage(response.data.message || t('verify_email.success_title'));
         setStatus('success');
       } catch (err: any) {
-        setMessage(err.response?.data?.error || 'Verification failed. The link may have expired.');
+        setMessage(err.response?.data?.error || t('verify_email.invalid_link'));
         setStatus('error');
       }
     };
@@ -24,7 +26,7 @@ export default function VerifyEmail() {
       verifyEmail();
     } else {
       setStatus('error');
-      setMessage('Invalid verification link.');
+      setMessage(t('verify_email.invalid_link'));
     }
   }, [token]);
 
@@ -35,10 +37,10 @@ export default function VerifyEmail() {
           <div className="card-cyber p-8 text-center">
             <Mail className="h-16 w-16 text-cyber-cyan mx-auto mb-4 animate-pulse" />
             <h1 className="font-display text-2xl font-bold text-white mb-4">
-              VERIFYING <span className="text-cyber-cyan">EMAIL</span>
+              {t('verify_email.verifying_title')}
             </h1>
             <p className="text-gray-400">
-              Please wait while we verify your email address...
+              {t('verify_email.verifying_message')}
             </p>
           </div>
         </div>
@@ -53,11 +55,11 @@ export default function VerifyEmail() {
           <div className="card-cyber p-8 text-center">
             <CheckCircle className="h-16 w-16 text-cyber-green mx-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-white mb-4">
-              EMAIL <span className="text-cyber-green">VERIFIED</span>
+              {t('verify_email.success_title')}
             </h1>
             <p className="text-gray-400 mb-6">{message}</p>
             <Link to="/" className="btn-cyber inline-block">
-              CONTINUE TO SITE
+              {t('verify_email.continue_to_site')}
             </Link>
           </div>
         </div>
@@ -71,11 +73,11 @@ export default function VerifyEmail() {
         <div className="card-cyber p-8 text-center">
           <AlertCircle className="h-16 w-16 text-cyber-pink mx-auto mb-4" />
           <h1 className="font-display text-2xl font-bold text-white mb-4">
-            VERIFICATION <span className="text-cyber-pink">FAILED</span>
+            {t('verify_email.failed_title')}
           </h1>
           <p className="text-gray-400 mb-6">{message}</p>
           <Link to="/login" className="btn-cyber inline-block">
-            GO TO LOGIN
+            {t('auth.reset_confirm.go_to_login')}
           </Link>
         </div>
       </div>

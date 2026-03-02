@@ -1,14 +1,15 @@
+{% load i18n %}
 Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
 
-New Message from {{ sender.username }}
+{% blocktrans with sender=sender.username %}New Message from {{ sender }}{% endblocktrans %}
 
-Hello {{ user.username }},
+{% blocktrans with username=user.username %}Hello {{ username }},{% endblocktrans %}
 
-You have a new message from {{ sender.username }}:
+{% blocktrans with sender=sender.username %}You have a new message from {{ sender }}:{% endblocktrans %}
 
 "{{ message_preview }}"
 
-View the conversation here:
+{% trans "View the conversation here:" %}
 {{ conversation_url }}
 
 ---

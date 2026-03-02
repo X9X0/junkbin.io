@@ -66,6 +66,12 @@ class User(AbstractUser):
         blank=True,
         help_text=_('Personal website or portfolio')
     )
+    preferred_language = models.CharField(
+        max_length=10,
+        blank=True,
+        default='',
+        help_text=_('Preferred UI language code (e.g. en, de, pl)')
+    )
 
     # Reputation and contribution tracking
     reputation_score = models.IntegerField(

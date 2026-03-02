@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import type { JunkbinItem } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const CONDITION_LABELS: Record<string, string> = {
   new: 'New',
@@ -29,6 +30,7 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export default function MyJunkbin() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'have' | 'want'>('have');
@@ -98,18 +100,18 @@ export default function MyJunkbin() {
       <div className="mx-auto max-w-5xl px-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <h1 className="font-display text-3xl font-bold text-white">MY JUNKBIN</h1>
+          <h1 className="font-display text-3xl font-bold text-white">{t('my_junkbin.title')}</h1>
           <div className="flex flex-wrap items-center gap-4">
             {summary && (
               <div className="flex items-center gap-4 text-sm font-mono">
                 <span className="text-cyber-green">
-                  {summary.have_count} <span className="text-gray-500">have</span>
+                  {summary.have_count} <span className="text-gray-500">{t('my_junkbin.tab_have').toLowerCase()}</span>
                 </span>
                 <span className="text-cyber-yellow">
-                  {summary.want_count} <span className="text-gray-500">want</span>
+                  {summary.want_count} <span className="text-gray-500">{t('my_junkbin.tab_want').toLowerCase()}</span>
                 </span>
                 <span className="text-cyber-cyan">
-                  {summary.available_count} <span className="text-gray-500">for trade</span>
+                  {summary.available_count} <span className="text-gray-500">{t('my_junkbin.for_trade')}</span>
                 </span>
               </div>
             )}
@@ -141,7 +143,7 @@ export default function MyJunkbin() {
                   : 'border-transparent text-gray-500 hover:text-white'
               )}
             >
-              {tab.toUpperCase()}
+              {tab === 'have' ? t('my_junkbin.tab_have') : t('my_junkbin.tab_want')}
               {summary && (
                 <span className="ml-2 text-xs opacity-60">
                   ({tab === 'have' ? summary.have_count : summary.want_count})
@@ -158,7 +160,7 @@ export default function MyJunkbin() {
             onChange={(e) => setFilterContentType(e.target.value)}
             className="bg-cyber-dark border border-cyber-light/50 px-3 py-1.5 text-sm text-white font-mono focus:border-cyber-cyan focus:outline-none"
           >
-            <option value="">All Types</option>
+            <option value="">{t('my_junkbin.all_types')}</option>
             <option value="product">Products</option>
             <option value="component">Components</option>
           </select>
@@ -168,9 +170,9 @@ export default function MyJunkbin() {
               onChange={(e) => setFilterStatus(e.target.value)}
               className="bg-cyber-dark border border-cyber-light/50 px-3 py-1.5 text-sm text-white font-mono focus:border-cyber-cyan focus:outline-none"
             >
-              <option value="">All Statuses</option>
-              <option value="available">For Trade</option>
-              <option value="not_for_trade">Not for Trade</option>
+              <option value="">{t('my_junkbin.all_statuses')}</option>
+              <option value="available">{t('my_junkbin.for_trade_filter')}</option>
+              <option value="not_for_trade">{t('my_junkbin.not_for_trade_filter')}</option>
             </select>
           )}
         </div>
@@ -184,12 +186,12 @@ export default function MyJunkbin() {
           <div className="card-cyber p-12 text-center">
             <Package className="h-14 w-14 text-gray-600 mx-auto mb-4" />
             <h3 className="font-display text-lg text-white mb-2">
-              {activeTab === 'have' ? 'NO ITEMS YET' : 'WANT LIST IS EMPTY'}
+              {activeTab === 'have' ? t('my_junkbin.no_have_title') : t('my_junkbin.no_want_title')}
             </h3>
             <p className="text-gray-400 text-sm mb-4">
               {activeTab === 'have'
-                ? 'Browse products and components to add them to your collection.'
-                : 'Browse products and components to add them to your want list.'}
+                ? t('my_junkbin.no_have_desc')
+                : t('my_junkbin.no_want_desc')}
             </p>
             <div className="flex items-center justify-center gap-3">
               <Link to="/products" className="btn-cyber text-sm">
@@ -307,7 +309,7 @@ export default function MyJunkbin() {
                               }
                               className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white focus:border-cyber-cyan focus:outline-none"
                             >
-                              <option value="not_for_trade">Not for Trade</option>
+                              <option value="not_for_trade">{t('my_junkbin.not_for_trade_filter')}</option>
                               <option value="available">Available for Trade</option>
                             </select>
                           </div>
@@ -324,10 +326,10 @@ export default function MyJunkbin() {
                               }
                               className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white focus:border-cyber-cyan focus:outline-none"
                             >
-                              <option value="new">New</option>
-                              <option value="working">Working</option>
-                              <option value="broken">Broken / For Parts</option>
-                              <option value="unknown">Unknown</option>
+                              <option value="new">{t('my_junkbin.condition_new')}</option>
+                              <option value="working">{t('my_junkbin.condition_working')}</option>
+                              <option value="broken">{t('my_junkbin.condition_broken')}</option>
+                              <option value="unknown">{t('my_junkbin.condition_unknown')}</option>
                             </select>
                           </div>
                         </div>
@@ -347,8 +349,8 @@ export default function MyJunkbin() {
                             }
                             className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white focus:border-cyber-cyan focus:outline-none"
                           >
-                            <option value="public">Public</option>
-                            <option value="private">Private</option>
+                            <option value="public">{t('my_junkbin.visibility_public')}</option>
+                            <option value="private">{t('my_junkbin.visibility_private')}</option>
                           </select>
                         </div>
                         <div>
@@ -385,7 +387,7 @@ export default function MyJunkbin() {
                         <div>
                           {confirmDelete === item.id ? (
                             <div className="flex items-center gap-3">
-                              <span className="text-xs text-gray-400">Remove from junkbin?</span>
+                              <span className="text-xs text-gray-400">{t('my_junkbin.remove_confirm')}</span>
                               <button
                                 onClick={() => deleteMutation.mutate(item.id)}
                                 disabled={deleteMutation.isPending}
@@ -418,7 +420,7 @@ export default function MyJunkbin() {
                           {updateMutation.isPending ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            'SAVE'
+                            t('common.save')
                           )}
                         </button>
                       </div>

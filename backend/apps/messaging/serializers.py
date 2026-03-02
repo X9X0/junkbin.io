@@ -3,6 +3,7 @@ Messaging serializers for Junkbin.io API
 """
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 
 from .models import Conversation, Message, MessageAttachment, UserBlock
 
@@ -116,8 +117,8 @@ class MessageCreateSerializer(serializers.Serializer):
         is_clean, _ = check_content(stripped)
         if not is_clean:
             raise serializers.ValidationError(
-                'Your message contains prohibited language. '
-                'Please review our community guidelines.'
+                _('Your message contains prohibited language. '
+                  'Please review our community guidelines.')
             )
         return stripped
 
@@ -126,7 +127,7 @@ class MessageCreateSerializer(serializers.Serializer):
         files = self.context.get('files', [])
         if not content and not files:
             raise serializers.ValidationError(
-                'A message must have text content or at least one attachment.'
+                _('A message must have text content or at least one attachment.')
             )
         return attrs
 

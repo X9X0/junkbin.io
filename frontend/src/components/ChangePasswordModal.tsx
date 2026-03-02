@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { auth } from '../api/endpoints';
 import { X, Loader2, CheckCircle } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
+import { useTranslation } from 'react-i18next';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ interface ChangePasswordModalProps {
 }
 
 export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordModalProps) {
+  const { t } = useTranslation();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [newPasswordConfirm, setNewPasswordConfirm] = useState('');
@@ -42,8 +44,8 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
   if (!isOpen) return null;
 
   const validationError = () => {
-    if (newPassword && newPassword.length < 8) return 'New password must be at least 8 characters.';
-    if (newPasswordConfirm && newPassword !== newPasswordConfirm) return 'Passwords do not match.';
+    if (newPassword && newPassword.length < 8) return t('modals.password_too_short');
+    if (newPasswordConfirm && newPassword !== newPasswordConfirm) return t('modals.passwords_mismatch');
     return '';
   };
 
@@ -65,7 +67,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
       <div className="w-full max-w-md bg-cyber-darker border border-cyber-light/30 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-cyber-light/30">
-          <h2 className="font-display text-lg font-bold text-white">CHANGE PASSWORD</h2>
+          <h2 className="font-display text-lg font-bold text-white">{t('modals.change_password_title')}</h2>
           <button onClick={resetAndClose} className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
           </button>
@@ -74,7 +76,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
         {success ? (
           <div className="p-8 text-center">
             <CheckCircle className="h-12 w-12 text-cyber-green mx-auto mb-3" />
-            <p className="text-cyber-green font-mono">PASSWORD CHANGED SUCCESSFULLY</p>
+            <p className="text-cyber-green font-mono">{t('modals.password_changed')}</p>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="p-4 space-y-4">
@@ -86,7 +88,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
             <div>
               <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-                Current Password *
+                {t('modals.current_password')} *
               </label>
               <input
                 type="password"
@@ -100,7 +102,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
             <div>
               <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-                New Password *
+                {t('modals.new_password')} *
               </label>
               <input
                 type="password"
@@ -115,7 +117,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
 
             <div>
               <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-                Confirm New Password *
+                {t('modals.confirm_new_password')} *
               </label>
               <input
                 type="password"
@@ -143,7 +145,7 @@ export default function ChangePasswordModal({ isOpen, onClose }: ChangePasswordM
                   CHANGING...
                 </>
               ) : (
-                'CHANGE PASSWORD'
+                t('modals.change_password_title')
               )}
             </button>
           </form>

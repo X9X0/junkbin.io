@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load i18n %}<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -8,22 +8,22 @@
         <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
         <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
 
-        <h1 style="color: #f9f002; font-size: 24px;">Community Strike Notice</h1>
+        <h1 style="color: #f9f002; font-size: 24px;">{% trans "Community Strike Notice" %}</h1>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Hello {{ user.username }},</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% blocktrans with username=user.username %}Hello {{ username }},{% endblocktrans %}</p>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Your account has received a community strike following a validated report against your content.</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "Your account has received a community strike following a validated report against your content." %}</p>
 
         <div style="background-color: #17334b; border-left: 4px solid #f9f002; padding: 15px; margin: 20px 0;">
-            <strong style="color: #f9f002;">Current strike count: {{ strike_count }}</strong><br>
-            <span style="color: #c0c0c0;">At 3 strikes, your account will be flagged for moderator review.</span>
+            <strong style="color: #f9f002;">{% blocktrans with count=strike_count %}Current strike count: {{ count }}{% endblocktrans %}</strong><br>
+            <span style="color: #c0c0c0;">{% trans "At 3 strikes, your account will be flagged for moderator review." %}</span>
         </div>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Please review our community guidelines to avoid further strikes:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "Please review our community guidelines to avoid further strikes:" %}</p>
 
-        <a href="{{ guidelines_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Review Guidelines</a>
+        <a href="{{ guidelines_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">{% trans "Review Guidelines" %}</a>
 
-        <p style="color: #c0c0c0; font-size: 13px; line-height: 1.5;">If you believe this strike was issued in error, contact us at <a href="mailto:appeals@junkbin.io" style="color: #00f0ff;">appeals@junkbin.io</a>.</p>
+        <p style="color: #c0c0c0; font-size: 13px; line-height: 1.5;">{% blocktrans %}If you believe this strike was issued in error, contact us at <a href="mailto:appeals@junkbin.io" style="color: #00f0ff;">appeals@junkbin.io</a>.{% endblocktrans %}</p>
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
             <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>

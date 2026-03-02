@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Clock, ShieldCheck, TrendingUp } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface ModerationNoticeProps {
   itemLabel: string;
@@ -14,6 +15,8 @@ interface ModerationNoticeProps {
  *   TRUSTED_USER_MIN_REPUTATION          = 100
  */
 export default function ModerationNotice({ itemLabel, viewLink, onSubmitAnother }: ModerationNoticeProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="card-cyber p-6 space-y-5">
       {/* Success header */}

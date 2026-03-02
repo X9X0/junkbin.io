@@ -80,6 +80,7 @@ MIDDLEWARE = [
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -103,6 +104,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'django.template.context_processors.i18n',
             ],
         },
     },
@@ -133,6 +135,25 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'America/New_York'
 USE_I18N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ('en', 'English'),
+    ('fr', 'French'),
+    ('es', 'Spanish'),
+    ('pt', 'Portuguese'),
+    ('de', 'German'),
+    ('it', 'Italian'),
+    ('nl', 'Dutch'),
+    ('pl', 'Polish'),
+    ('cs', 'Czech'),
+    ('sk', 'Slovak'),
+    ('hr', 'Croatian'),
+    ('sr', 'Serbian'),
+    ('sl', 'Slovenian'),
+    ('ru', 'Russian'),
+    ('uk', 'Ukrainian'),
+]
+LOCALE_PATHS = [BASE_DIR / 'locale']
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'

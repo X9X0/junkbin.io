@@ -30,6 +30,7 @@ export interface User {
   report_count?: number;
   email_verified?: boolean;
   oauth_provider?: string;
+  preferred_language?: string;
   preferences?: UserPreferences;
   updated_at?: string;
   last_contribution_at?: string;

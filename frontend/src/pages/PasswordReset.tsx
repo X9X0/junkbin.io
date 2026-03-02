@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '../api/client';
 
 export default function PasswordReset() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -18,7 +20,7 @@ export default function PasswordReset() {
       await api.post('/auth/password/reset/', { email });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to send reset email');
+      setError(err.response?.data?.error || t('auth.reset.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -31,13 +33,13 @@ export default function PasswordReset() {
           <div className="card-cyber p-8 text-center">
             <CheckCircle className="h-16 w-16 text-cyber-cyan mx-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-white mb-4">
-              CHECK YOUR <span className="text-cyber-cyan">EMAIL</span>
+              {t('auth.reset.success_title')}
             </h1>
             <p className="text-gray-400 mb-6">
-              If an account with that email exists, we've sent password reset instructions.
+              {t('auth.reset.success_message')}
             </p>
             <Link to="/login" className="btn-cyber inline-block">
-              BACK TO LOGIN
+              {t('auth.reset.back_to_login')}
             </Link>
           </div>
         </div>
@@ -50,10 +52,10 @@ export default function PasswordReset() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            RESET <span className="text-cyber-cyan">PASSWORD</span>
+            {t('auth.reset.title')}
           </h1>
           <p className="text-gray-500 font-mono text-sm">
-            Enter your email to receive reset instructions
+            {t('auth.reset.subtitle')}
           </p>
         </div>
 
@@ -68,14 +70,14 @@ export default function PasswordReset() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                EMAIL ADDRESS
+                {t('auth.reset.email')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input-cyber"
-                placeholder="Enter your email"
+                placeholder={t('auth.reset.email_placeholder')}
                 required
               />
             </div>
@@ -86,11 +88,11 @@ export default function PasswordReset() {
               className="w-full btn-cyber flex items-center justify-center gap-2 py-3"
             >
               {isLoading ? (
-                <span className="animate-pulse">SENDING...</span>
+                <span className="animate-pulse">{t('auth.reset.submitting')}</span>
               ) : (
                 <>
                   <Mail className="h-4 w-4" />
-                  SEND RESET LINK
+                  {t('auth.reset.submit')}
                 </>
               )}
             </button>
@@ -99,9 +101,9 @@ export default function PasswordReset() {
           <div className="divider-circuit" />
 
           <p className="text-center text-sm text-gray-500">
-            Remember your password?{' '}
+            {t('auth.reset.remember_password')}{' '}
             <Link to="/login" className="text-cyber-cyan hover:underline">
-              Login
+              {t('auth.reset.login_link')}
             </Link>
           </p>
         </div>

@@ -1,5 +1,6 @@
 import { X, Keyboard } from 'lucide-react';
 import { SHORTCUTS } from '../hooks/useKeyboardShortcuts';
+import { useTranslation } from 'react-i18next';
 
 interface KeyboardShortcutsModalProps {
   isOpen: boolean;
@@ -15,6 +16,8 @@ function KeyBadge({ children }: { children: React.ReactNode }) {
 }
 
 export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShortcutsModalProps) {
+  const { t } = useTranslation();
+
   if (!isOpen) return null;
 
   return (
@@ -42,7 +45,7 @@ export default function KeyboardShortcutsModal({ isOpen, onClose }: KeyboardShor
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-white">
-              KEYBOARD SHORTCUTS
+              {t('keyboard_shortcuts.title')}
             </h2>
             <p className="text-xs text-gray-500 font-mono">Power user navigation</p>
           </div>

@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import i18n from '../i18n';
 import type { User, LoginCredentials, RegisterData } from '../types';
 import { auth } from '../api/endpoints';
 
@@ -15,6 +16,12 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+function applyUserLanguage(userData: User) {
+  if (userData.preferred_language) {
+    i18n.changeLanguage(userData.preferred_language);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,7 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // First get CSRF token, then check auth status
     auth.getCsrfToken()
       .then(() => auth.me())
-      .then(setUser)
+      .then((userData) => {
+        setUser(userData);
+        applyUserLanguage(userData);
+      })
       .catch(() => {
         // Not authenticated or token invalid
         setUser(null);
@@ -36,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await auth.login(credentials);
     const userData = await auth.me();
     setUser(userData);
+    applyUserLanguage(userData);
   };
 
   const register = async (data: RegisterData) => {
@@ -49,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Cookies are set by the backend — fetch user profile
     const userData = await auth.me();
     setUser(userData);
+    applyUserLanguage(userData);
     return { created: result.created };
   };
 

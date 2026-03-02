@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { BarChart3, Search, Cpu, Users, TrendingUp, Activity, Database, Loader2 } from 'lucide-react';
 import { analytics } from '../api/endpoints';
@@ -39,6 +40,7 @@ const ACTIVITY_LABELS: Record<string, string> = {
 };
 
 export default function AnalyticsDashboard() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [days, setDays] = useState(30);
 
@@ -63,9 +65,9 @@ export default function AnalyticsDashboard() {
           <BarChart3 className="h-8 w-8 text-cyber-cyan" />
           <div>
             <h1 className="font-display text-2xl font-bold text-white tracking-wider">
-              ANALYTICS
+              {t('analytics.title')}
             </h1>
-            <p className="text-sm text-gray-500 font-mono">Site metrics & engagement</p>
+            <p className="text-sm text-gray-500 font-mono">{t('analytics.subtitle')}</p>
           </div>
         </div>
 
@@ -104,25 +106,25 @@ export default function AnalyticsDashboard() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <StatCard
               icon={<Database className="h-5 w-5" />}
-              label="Products"
+              label={t('analytics.total_products')}
               value={data.content_stats.products}
               color="text-cyber-cyan"
             />
             <StatCard
               icon={<Cpu className="h-5 w-5" />}
-              label="Components"
+              label={t('analytics.total_components')}
               value={data.content_stats.components}
               color="text-cyber-pink"
             />
             <StatCard
               icon={<Activity className="h-5 w-5" />}
-              label="Schematics"
+              label={t('analytics.total_schematics')}
               value={data.content_stats.schematics}
               color="text-cyber-green"
             />
             <StatCard
               icon={<TrendingUp className="h-5 w-5" />}
-              label="Recipes"
+              label={t('analytics.total_recipes')}
               value={data.content_stats.recipes}
               color="text-cyber-yellow"
             />
@@ -134,7 +136,7 @@ export default function AnalyticsDashboard() {
             <div className="card-cyber p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Users className="h-5 w-5 text-cyber-cyan" />
-                <h2 className="font-display text-lg text-white">Daily Active Users</h2>
+                <h2 className="font-display text-lg text-white">{t('analytics.daily_active_users')}</h2>
               </div>
               <div className="text-cyber-cyan">
                 <Sparkline data={data.dau.map((d: DailyActiveUsers) => d.count)} width={500} height={80} />
@@ -154,20 +156,20 @@ export default function AnalyticsDashboard() {
             <div className="card-cyber p-6">
               <div className="flex items-center gap-2 mb-4">
                 <Search className="h-5 w-5 text-cyber-pink" />
-                <h2 className="font-display text-lg text-white">Search Analytics</h2>
+                <h2 className="font-display text-lg text-white">{t('analytics.search_analytics')}</h2>
               </div>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
                   <div className="text-2xl font-mono font-bold text-white">
                     {data.search_analytics.total.toLocaleString()}
                   </div>
-                  <div className="text-xs text-gray-500">Total Searches</div>
+                  <div className="text-xs text-gray-500">{t('analytics.total_searches')}</div>
                 </div>
                 <div>
                   <div className="text-2xl font-mono font-bold text-cyber-yellow">
                     {data.search_analytics.zero_result_pct}%
                   </div>
-                  <div className="text-xs text-gray-500">Zero Results</div>
+                  <div className="text-xs text-gray-500">{t('analytics.zero_results')}</div>
                 </div>
               </div>
             </div>
@@ -177,7 +179,7 @@ export default function AnalyticsDashboard() {
           <div className="grid md:grid-cols-2 gap-6 mb-8">
             {/* Top Queries */}
             <div className="card-cyber p-6">
-              <h2 className="font-display text-lg text-white mb-4">Top Search Queries</h2>
+              <h2 className="font-display text-lg text-white mb-4">{t('analytics.top_queries')}</h2>
               <div className="space-y-2 max-h-72 overflow-y-auto">
                 {data.search_analytics.top_queries.length === 0 ? (
                   <p className="text-gray-500 text-sm">No search data yet</p>
@@ -203,7 +205,7 @@ export default function AnalyticsDashboard() {
             <div className="card-cyber p-6">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="h-5 w-5 text-cyber-green" />
-                <h2 className="font-display text-lg text-white">Trending Components</h2>
+                <h2 className="font-display text-lg text-white">{t('analytics.trending_components')}</h2>
               </div>
               <div className="space-y-2 max-h-72 overflow-y-auto">
                 {data.trending_components.length === 0 ? (
@@ -236,7 +238,7 @@ export default function AnalyticsDashboard() {
           <div className="card-cyber p-6">
             <div className="flex items-center gap-2 mb-4">
               <Activity className="h-5 w-5 text-cyber-yellow" />
-              <h2 className="font-display text-lg text-white">Activity Breakdown</h2>
+              <h2 className="font-display text-lg text-white">{t('analytics.activity_breakdown')}</h2>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
               {data.activity_breakdown.map((a, i) => (

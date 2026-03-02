@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -38,6 +39,7 @@ function formatDate(dateStr: string) {
 }
 
 export default function Moderation() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -53,8 +55,8 @@ export default function Moderation() {
     return (
       <div className="py-20 text-center">
         <Shield className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-        <h2 className="font-display text-2xl text-white mb-2">ACCESS DENIED</h2>
-        <p className="text-gray-500">You need moderator privileges to access this page.</p>
+        <h2 className="font-display text-2xl text-white mb-2">{t('moderation.access_denied')}</h2>
+        <p className="text-gray-500">{t('moderation.access_denied_desc')}</p>
       </div>
     );
   }
@@ -104,7 +106,7 @@ export default function Moderation() {
             )}
           >
             <Package className="h-4 w-4" />
-            PENDING CONTENT
+            {t('moderation.tab_pending')}
           </button>
           <button
             onClick={() => updateFilter('tab', 'reviews')}
@@ -116,7 +118,7 @@ export default function Moderation() {
             )}
           >
             <Users className="h-4 w-4" />
-            USER REVIEWS
+            {t('moderation.tab_reviews')}
           </button>
           <button
             onClick={() => updateFilter('tab', 'reports')}
@@ -128,7 +130,7 @@ export default function Moderation() {
             )}
           >
             <AlertTriangle className="h-4 w-4" />
-            REPORTS
+            {t('moderation.tab_reports')}
           </button>
         </div>
 
@@ -187,6 +189,7 @@ interface ReportsTabProps {
 }
 
 function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: ReportsTabProps) {
+  const { t } = useTranslation();
   const pageSize = 20;
 
   const { data: statsData } = useQuery({
@@ -206,7 +209,7 @@ function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: 
       {/* Stats bar */}
       {statsData && (
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <StatCard label="PENDING" value={statsData.pending} color="text-cyber-yellow" icon={Clock} />
+          <StatCard label={t('moderation.status_pending')} value={statsData.pending} color="text-cyber-yellow" icon={Clock} />
           <StatCard label="TOTAL" value={statsData.total} color="text-gray-400" icon={AlertTriangle} />
           <StatCard label="VALID" value={statsData.resolved_valid} color="text-cyber-green" icon={CheckCircle} />
           <StatCard label="INVALID" value={statsData.resolved_invalid} color="text-cyber-pink" icon={AlertTriangle} />
@@ -221,25 +224,25 @@ function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: 
             onChange={(e) => updateFilter('status', e.target.value)}
             className="input-cyber appearance-none"
           >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="investigating">Investigating</option>
-            <option value="resolved_valid">Resolved - Valid</option>
-            <option value="resolved_invalid">Resolved - Invalid</option>
-            <option value="dismissed">Dismissed</option>
+            <option value="">{t('moderation.all_statuses')}</option>
+            <option value="pending">{t('moderation.status_pending')}</option>
+            <option value="investigating">{t('moderation.status_investigating')}</option>
+            <option value="resolved_valid">{t('moderation.status_resolved_valid')}</option>
+            <option value="resolved_invalid">{t('moderation.status_resolved_invalid')}</option>
+            <option value="dismissed">{t('moderation.status_dismissed')}</option>
           </select>
           <select
             value={reason}
             onChange={(e) => updateFilter('reason', e.target.value)}
             className="input-cyber appearance-none"
           >
-            <option value="">All Reasons</option>
-            <option value="incorrect_info">Incorrect Information</option>
-            <option value="duplicate">Duplicate Entry</option>
-            <option value="spam">Spam/Advertising</option>
-            <option value="inappropriate">Inappropriate Content</option>
-            <option value="copyright">Copyright Violation</option>
-            <option value="other">Other</option>
+            <option value="">{t('moderation.all_reasons')}</option>
+            <option value="incorrect_info">{t('moderation.reason_incorrect')}</option>
+            <option value="duplicate">{t('moderation.reason_duplicate')}</option>
+            <option value="spam">{t('moderation.reason_spam')}</option>
+            <option value="inappropriate">{t('moderation.reason_inappropriate')}</option>
+            <option value="copyright">{t('moderation.reason_copyright')}</option>
+            <option value="other">{t('moderation.reason_other')}</option>
           </select>
         </div>
       </div>
@@ -249,20 +252,20 @@ function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: 
         <div className="text-center py-12 text-gray-500">Loading reports...</div>
       ) : data && data.results.length > 0 ? (
         <>
-          <div className="text-sm text-gray-500 font-mono mb-4">{data.count} reports found</div>
+          <div className="text-sm text-gray-500 font-mono mb-4">{t('moderation.count_reports', { count: data.count })}</div>
 
           {/* Table */}
           <div className="overflow-x-auto card-cyber">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-cyber-light/30">
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">REPORTER</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">REPORTED USER</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">REASON</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden md:table-cell">CONTENT</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden lg:table-cell">DATE</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">STATUS</th>
-                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">ACTIONS</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_reporter')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_reported')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_reason')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden md:table-cell">{t('moderation.col_content')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden lg:table-cell">{t('moderation.col_date')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_status')}</th>
+                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -288,7 +291,7 @@ function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: 
                           className="text-cyber-cyan hover:text-white text-sm font-mono flex items-center gap-1 ml-auto transition-colors"
                         >
                           <Eye className="h-4 w-4" />
-                          REVIEW
+                          {t('moderation.btn_review')}
                         </button>
                       ) : (
                         <button
@@ -296,7 +299,7 @@ function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: 
                           className="text-gray-600 hover:text-gray-400 text-sm font-mono flex items-center gap-1 ml-auto transition-colors"
                         >
                           <Eye className="h-4 w-4" />
-                          VIEW
+                          {t('moderation.btn_view')}
                         </button>
                       )}
                     </td>
@@ -319,7 +322,7 @@ function ReportsTab({ status, reason, page, updateFilter, goToPage, onReview }: 
       ) : (
         <div className="text-center py-20">
           <CheckCircle className="h-16 w-16 text-cyber-green/30 mx-auto mb-4" />
-          <h3 className="font-display text-xl text-white mb-2">ALL CLEAR</h3>
+          <h3 className="font-display text-xl text-white mb-2">{t('moderation.no_reports')}</h3>
           <p className="text-gray-500">No reports match the current filters.</p>
         </div>
       )}
@@ -340,6 +343,7 @@ interface ReviewsTabProps {
 }
 
 function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsTabProps) {
+  const { t } = useTranslation();
   const pageSize = 20;
 
   const { data, isLoading } = useQuery({
@@ -358,8 +362,8 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
           onChange={(e) => updateFilter('status', e.target.value)}
           className="input-cyber appearance-none"
         >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
+          <option value="">{t('moderation.all_statuses')}</option>
+          <option value="pending">{t('moderation.status_pending')}</option>
           <option value="in_progress">In Progress</option>
           <option value="cleared">Cleared</option>
           <option value="warning_issued">Warning Issued</option>
@@ -379,12 +383,12 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
             <table className="w-full">
               <thead>
                 <tr className="border-b border-cyber-light/30">
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">USER</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">TYPE</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">STRIKES</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden md:table-cell">CREATED</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">STATUS</th>
-                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">ACTIONS</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_user')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_type')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_strikes')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden md:table-cell">{t('moderation.col_created')}</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_status')}</th>
+                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -408,7 +412,7 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
                         className="text-cyber-cyan hover:text-white text-sm font-mono flex items-center gap-1 ml-auto transition-colors"
                       >
                         <Eye className="h-4 w-4" />
-                        {['pending', 'in_progress'].includes(review.status) ? 'REVIEW' : 'VIEW'}
+                        {['pending', 'in_progress'].includes(review.status) ? t('moderation.btn_review') : t('moderation.btn_view')}
                       </button>
                     </td>
                   </tr>
@@ -430,7 +434,7 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
       ) : (
         <div className="text-center py-20">
           <Shield className="h-16 w-16 text-cyber-green/30 mx-auto mb-4" />
-          <h3 className="font-display text-xl text-white mb-2">NO REVIEWS</h3>
+          <h3 className="font-display text-xl text-white mb-2">{t('moderation.no_reviews')}</h3>
           <p className="text-gray-500">No user reviews match the current filters.</p>
         </div>
       )}
@@ -471,6 +475,7 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
 };
 
 function PendingContentTab() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
 
@@ -714,11 +719,11 @@ function PendingContentTab() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-cyber-light/30">
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">TYPE</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_type')}</th>
                   <th className="text-left px-4 py-3 font-mono text-xs text-gray-500">TITLE</th>
                   <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden md:table-cell">SUBMITTED BY</th>
-                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden lg:table-cell">DATE</th>
-                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">ACTIONS</th>
+                  <th className="text-left px-4 py-3 font-mono text-xs text-gray-500 hidden lg:table-cell">{t('moderation.col_date')}</th>
+                  <th className="text-right px-4 py-3 font-mono text-xs text-gray-500">{t('moderation.col_actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -749,7 +754,7 @@ function PendingContentTab() {
                             className="text-cyber-cyan hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
                           >
                             <Eye className="h-4 w-4" />
-                            VIEW
+                            {t('moderation.btn_view')}
                           </Link>
                           <button
                             onClick={() => handleApprove(item)}
@@ -779,7 +784,7 @@ function PendingContentTab() {
       ) : (
         <div className="text-center py-20">
           <CheckCircle className="h-16 w-16 text-cyber-green/30 mx-auto mb-4" />
-          <h3 className="font-display text-xl text-white mb-2">ALL CLEAR</h3>
+          <h3 className="font-display text-xl text-white mb-2">{t('moderation.no_reports')}</h3>
           <p className="text-gray-500">No pending content to review.</p>
         </div>
       )}
