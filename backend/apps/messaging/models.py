@@ -3,10 +3,17 @@ Messaging models for Junkbin.io
 
 Models for user-to-user private messaging.
 """
+import mimetypes
+import os
 import uuid
 from django.db import models
 from django.conf import settings
 from django.utils.translation import gettext_lazy as _
+
+
+def message_attachment_path(instance, filename):
+    ext = os.path.splitext(filename)[1]
+    return f'messages/{instance.message.conversation_id}/{uuid.uuid4()}{ext}'
 
 
 class Conversation(models.Model):
@@ -90,6 +97,7 @@ class Message(models.Model):
     )
     content = models.TextField(
         max_length=5000,
+        blank=True,
         help_text=_('Message content')
     )
     is_read = models.BooleanField(
@@ -110,6 +118,44 @@ class Message(models.Model):
     def __str__(self):
         sender_name = self.sender.username if self.sender else 'deleted'
         return f'Message by {sender_name} at {self.created_at}'
+
+
+class MessageAttachment(models.Model):
+    """A file attached to a message."""
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    message = models.ForeignKey(
+        Message,
+        on_delete=models.CASCADE,
+        related_name='attachments',
+    )
+    file = models.FileField(upload_to=message_attachment_path)
+    original_filename = models.CharField(max_length=255)
+    file_type = models.CharField(max_length=100, blank=True)
+    file_size = models.PositiveIntegerField(default=0)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('message attachment')
+        verbose_name_plural = _('message attachments')
+        ordering = ['uploaded_at']
+
+    def __str__(self):
+        return f'Attachment {self.original_filename} on {self.message_id}'
+
+    def save(self, *args, **kwargs):
+        if self.file and not self.pk:
+            mime, _ = mimetypes.guess_type(self.original_filename)
+            self.file_type = mime or 'application/octet-stream'
+            try:
+                self.file_size = self.file.size
+            except Exception:
+                self.file_size = 0
+        super().save(*args, **kwargs)
 
 
 class UserBlock(models.Model):

@@ -544,7 +544,18 @@ export const messaging = {
     return response.data;
   },
 
-  send: async (data: { conversation_id?: string; recipient_id?: string; content: string }): Promise<Message> => {
+  send: async (data: { conversation_id?: string; recipient_id?: string; content: string; files?: File[] }): Promise<Message> => {
+    if (data.files && data.files.length > 0) {
+      const form = new FormData();
+      if (data.content) form.append('content', data.content);
+      if (data.conversation_id) form.append('conversation_id', data.conversation_id);
+      if (data.recipient_id) form.append('recipient_id', data.recipient_id);
+      data.files.forEach((f) => form.append('files', f));
+      const response = await api.post('/messages/send/', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return response.data;
+    }
     const response = await api.post('/messages/send/', data);
     return response.data;
   },

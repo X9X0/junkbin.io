@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils import timezone
 
-from .models import Conversation, Message, UserBlock
+from .models import Conversation, Message, MessageAttachment, UserBlock
 from .serializers import (
     ConversationListSerializer,
     ConversationDetailSerializer,
@@ -62,14 +62,14 @@ class ConversationViewSet(viewsets.ReadOnlyModelViewSet):
     def messages(self, request, pk=None):
         """Paginated messages for a conversation."""
         conversation = self.get_object()
-        messages = conversation.messages.select_related('sender').order_by('-created_at')
+        messages = conversation.messages.select_related('sender').prefetch_related('attachments').order_by('-created_at')
 
         page = self.paginate_queryset(messages)
         if page is not None:
-            serializer = MessageSerializer(page, many=True)
+            serializer = MessageSerializer(page, many=True, context={'request': request})
             return self.get_paginated_response(serializer.data)
 
-        serializer = MessageSerializer(messages, many=True)
+        serializer = MessageSerializer(messages, many=True, context={'request': request})
         return Response(serializer.data)
 
 
@@ -84,12 +84,37 @@ class SendMessageView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsVerifiedEmail]
     throttle_classes = [MessageRateThrottle]
 
+    _ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'zip', 'txt', 'csv'}
+    _MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
+    _MAX_FILES = 5
+
     def post(self, request):
-        serializer = MessageCreateSerializer(data=request.data)
+        files = request.FILES.getlist('files')
+
+        # Validate file attachments
+        if len(files) > self._MAX_FILES:
+            return Response(
+                {'detail': f'Max {self._MAX_FILES} attachments per message.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        for f in files:
+            ext = f.name.rsplit('.', 1)[-1].lower() if '.' in f.name else ''
+            if ext not in self._ALLOWED_EXTENSIONS:
+                return Response(
+                    {'detail': f'File type .{ext} is not allowed.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if f.size > self._MAX_FILE_SIZE:
+                return Response(
+                    {'detail': f'{f.name} exceeds the 10 MB size limit.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        serializer = MessageCreateSerializer(data=request.data, context={'files': files})
         serializer.is_valid(raise_exception=True)
 
         sender = request.user
-        content = serializer.validated_data['content']
+        content = serializer.validated_data.get('content', '')
         conversation_id = request.data.get('conversation_id')
         recipient_id = serializer.validated_data.get('recipient_id')
 
@@ -170,6 +195,15 @@ class SendMessageView(APIView):
             content=content,
         )
 
+        # Save attachments
+        for f in files:
+            attachment = MessageAttachment(
+                message=message,
+                file=f,
+                original_filename=f.name,
+            )
+            attachment.save()
+
         # Bump conversation updated_at
         conversation.updated_at = timezone.now()
         conversation.save(update_fields=['updated_at'])
@@ -178,7 +212,8 @@ class SendMessageView(APIView):
         from .tasks import notify_new_message
         notify_new_message.delay(str(message.pk))
 
-        response_data = MessageSerializer(message).data
+        message.refresh_from_db()
+        response_data = MessageSerializer(message, context={'request': request}).data
         response_data['conversation_id'] = str(conversation.pk)
         return Response(response_data, status=status.HTTP_201_CREATED)
 
