@@ -68,6 +68,14 @@ export default function Footer() {
                   {t('footer.explore_contribute')}
                 </Link>
               </li>
+              <li>
+                <Link
+                  to="/news"
+                  className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  {t('footer.explore_news')}
+                </Link>
+              </li>
             </ul>
           </div>
 

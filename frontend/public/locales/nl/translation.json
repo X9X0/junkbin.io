@@ -1,5 +1,9 @@
-{"_meta": {"generated": "2026-03-02", "method": "machine-deepl", "reviewed": false},
-
+{
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "machine-deepl",
+    "reviewed": false
+  },
   "nav": {
     "products": "PRODUCTEN",
     "components": "COMPONENTEN",
@@ -27,7 +31,6 @@
     "submit_new": "+ NIEUW INDIENEN",
     "my_junkbin_upper": "MIJN JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "SYSTEEMTOEGANG",
@@ -101,7 +104,6 @@
       "go_to_login": "NAAR LOGIN"
     }
   },
-
   "home": {
     "under_construction": "SITE IN AANBOUW",
     "tagline_command": "cat /etc/warning.txt",
@@ -145,7 +147,6 @@
     "learn_r2r": "MEER LEREN OVER RIGHT TO REPAIR →",
     "error_prefix": "FOUT:"
   },
-
   "products": {
     "title": "PRODUCT",
     "title_highlight": "DATABASE",
@@ -174,7 +175,6 @@
     "no_products_desc": "Pas je zoekopdracht of filters aan",
     "add_product": "PRODUCT TOEVOEGEN"
   },
-
   "components": {
     "title": "COMPONENTEN",
     "title_highlight": "CATALOGUS",
@@ -195,7 +195,6 @@
     "add_component": "COMPONENT TOEVOEGEN",
     "verified": "Geverifieerd"
   },
-
   "schematics": {
     "title": "SCHEMA'S & DOCUMENTATIE",
     "subtitle": "Servicehandleidingen, blokdiagrammen, PCB-layouts en technische documentatie",
@@ -231,7 +230,6 @@
     "about_title": "// OVER SCHEMA'S",
     "about_text": "Dit archief bevat servicehandleidingen, schema's en technische documentatie die zijn bijgedragen door de repair-community. Alle documenten zijn beschikbaar gesteld voor educatieve en reparatiedoeleinden ter ondersteuning van de Right to Repair-beweging. Als je documentatie wilt delen, draag dan bij."
   },
-
   "recipes": {
     "title": "PROJECTRECEPTEN",
     "subtitle": "Community-elektronica-projecten met onderdelenlijsten",
@@ -257,7 +255,6 @@
     "optional": "OPTIONEEL",
     "have": "BESCHIKBAAR"
   },
-
   "recipe_detail": {
     "loading": "PROJECT LADEN...",
     "not_found_title": "PROJECT NIET GEVONDEN",
@@ -280,7 +277,6 @@
     "missing_parts": "ONTBREKENDE ONDERDELEN BESCHIKBAAR VAN ANDERE GEBRUIKERS",
     "available_from": "beschikbaar bij:"
   },
-
   "submit": {
     "title": "DOCUMENTATIE INDIENEN",
     "subtitle": "Help de e-waste salvage-database op te bouwen",
@@ -321,7 +317,6 @@
     "auth_required_desc": "Je moet ingelogd zijn om producten of componenten in te dienen.",
     "login_to_continue": "INLOGGEN OM DOOR TE GAAN"
   },
-
   "submit_recipe": {
     "title": "PROJECT INDIENEN",
     "edit_title": "PROJECT BEWERKEN",
@@ -343,7 +338,6 @@
     "submitting": "INDIENEN...",
     "cancel": "Annuleren"
   },
-
   "swap": {
     "title": "SWAP SHOP",
     "subtitle": "Bekijk items die de community wil ruilen of zoekt",
@@ -363,7 +357,6 @@
     "available": "BESCHIKBAAR",
     "not_for_trade": "NIET TE RUILEN"
   },
-
   "community": {
     "title": "COMMUNITY",
     "subtitle": "Topbijdragers gerangschikt op reputatie",
@@ -378,7 +371,6 @@
     "no_contributors": "Nog geen bijdragers",
     "redirecting": "Doorverwijzen naar Community..."
   },
-
   "profile": {
     "not_logged_in": "NIET INGELOGD",
     "please_log_in": "Log in om je profiel te bekijken.",
@@ -423,7 +415,6 @@
     "approved": "GOEDGEKEURD",
     "contact": "Contact"
   },
-
   "messages": {
     "title": "BERICHTEN",
     "no_conversations": "NOG GEEN GESPREKKEN",
@@ -438,7 +429,6 @@
     "unblock": "DEBLOKKEREN",
     "report": "MELDEN"
   },
-
   "new_conversation": {
     "title": "NIEUW BERICHT",
     "to_label": "AAN:",
@@ -449,7 +439,6 @@
     "no_users_found": "Geen gebruikers gevonden",
     "send": "Bericht versturen"
   },
-
   "my_junkbin": {
     "title": "MIJN JUNKBIN",
     "tab_have": "BESCHIKBAAR",
@@ -473,7 +462,6 @@
     "visibility_private": "Privé",
     "remove_confirm": "Verwijderen uit junkbin?"
   },
-
   "my_submissions": {
     "title": "MIJN BIJDRAGEN",
     "subtitle": "Alle bijdragen aan junkbin.io bijhouden",
@@ -486,7 +474,6 @@
     "no_recipes": "NOG GEEN PROJECTEN",
     "no_components": "NOG GEEN COMPONENTEN"
   },
-
   "not_found": {
     "line1": "GEEN DOOR GEBRUIKER",
     "line2": "ONDERHOUDBARE ONDERDELEN",
@@ -497,7 +484,6 @@
     "return_home": "TERUG NAAR HOME",
     "go_back": "TERUG"
   },
-
   "search": {
     "title": "DATABASE DOORZOEKEN",
     "placeholder": "Zoek producten, componenten...",
@@ -511,7 +497,6 @@
     "search_error": "Fout bij zoeken",
     "enter_to_search": "Voer minimaal 2 tekens in om te zoeken"
   },
-
   "guidelines": {
     "title": "COMMUNITYRICHTLIJNEN",
     "subtitle": "Standaarden voor bijdragen aan de Junkbin.io-community",
@@ -523,14 +508,12 @@
     "section_appeals": "BEZWAAR",
     "last_updated": "Laatst bijgewerkt: februari 2026"
   },
-
   "docs": {
     "title": "DOCUMENTATIE",
     "subtitle": "Alles wat je nodig hebt om Junkbin.io te gebruiken en bij te dragen",
     "close": "Sluiten",
     "last_updated": "Laatst bijgewerkt: februari 2026"
   },
-
   "verify_email": {
     "verifying_title": "E-MAIL VERIFIËREN",
     "verifying_message": "Even geduld terwijl we je e-mailadres verifiëren...",
@@ -539,7 +522,6 @@
     "invalid_link": "Ongeldige verificatielink.",
     "continue_to_site": "DOORGAAN NAAR SITE"
   },
-
   "moderation": {
     "title": "MODERATIE-DASHBOARD",
     "access_denied": "TOEGANG GEWEIGERD",
@@ -577,7 +559,6 @@
     "no_reviews": "GEEN BEOORDELINGEN",
     "no_reports": "ALLES IN ORDE"
   },
-
   "analytics": {
     "title": "ANALYTICS",
     "subtitle": "Sitestatistieken & betrokkenheid",
@@ -593,7 +574,6 @@
     "trending_components": "Trending componenten",
     "activity_breakdown": "Activiteitsoverzicht"
   },
-
   "buildable": {
     "title": "WAT KAN IK BOUWEN?",
     "subtitle": "Projecten vergeleken met je junkbin — gesorteerd op hoeveel onderdelen je al hebt",
@@ -607,7 +587,6 @@
     "no_recipes_title": "GEEN OVEREENKOMENDE PROJECTEN",
     "no_recipes_desc": "Voeg meer componenten toe aan je junkbin om overeenkomende projecten te vinden"
   },
-
   "product_detail": {
     "loading": "LADEN...",
     "not_found_title": "PRODUCT NIET GEVONDEN",
@@ -632,7 +611,6 @@
     "swap_have": "BESCHIKBAAR",
     "swap_want": "GEZOCHT"
   },
-
   "component_detail": {
     "loading": "KRUISVERWIJZINGSGEGEVENS LADEN...",
     "not_found_title": "COMPONENT NIET GEVONDEN",
@@ -656,7 +634,6 @@
     "swap_available": "BESCHIKBAAR",
     "swap_not_for_trade": "NIET TE RUILEN"
   },
-
   "common": {
     "loading": "Laden...",
     "error": "Er is iets misgegaan. Probeer het opnieuw.",
@@ -684,7 +661,6 @@
     "for_shortcuts": "voor sneltoetsen",
     "copyright": "© {{year}} Junkbin.io -"
   },
-
   "footer": {
     "tagline": "Een community-gedreven database voor documentatie van elektronische componenten. Ter ondersteuning van de Right to Repair-beweging door schema's en componentinformatie vrij toegankelijk te maken.",
     "motto": "NO USER SERVICEABLE PARTS INSIDE",
@@ -694,13 +670,13 @@
     "explore_components": "Componenten",
     "explore_schematics": "Schema's",
     "explore_contribute": "Bijdragen",
+    "explore_news": "Nieuw",
     "community": "COMMUNITY",
     "community_r2r": "Right to Repair",
     "community_ifixit": "iFixit",
     "community_guidelines": "Richtlijnen",
     "community_docs": "Documentatie"
   },
-
   "modals": {
     "add_junkbin_title": "TOEVOEGEN AAN JUNKBIN",
     "already_in_junkbin": "Al in je junkbin",
@@ -743,7 +719,6 @@
     "resolve_note": "Notitie",
     "resolve_submit": "OPLOSSEN"
   },
-
   "forms": {
     "manufacturer_placeholder": "bijv. Flipper Devices",
     "model_placeholder": "bijv. Flipper Zero",
@@ -760,20 +735,17 @@
     "notes_placeholder": "Optionele notities...",
     "search_component_placeholder": "Zoek op onderdeelnummer of fabrikant..."
   },
-
   "keyboard_shortcuts": {
     "title": "SNELTOETSEN",
     "navigation": "Navigatie",
     "actions": "Acties",
     "close": "Sluiten"
   },
-
   "onboarding": {
     "title": "AAN DE SLAG",
     "dismiss": "Sluiten",
     "got_it": "Begrepen"
   },
-
   "errors": {
     "not_found": "Pagina niet gevonden",
     "unauthorized": "Je moet ingelogd zijn",
@@ -782,7 +754,6 @@
     "network_error": "Netwerkfout. Controleer je verbinding.",
     "load_failed": "Gegevens laden mislukt"
   },
-
   "lang": {
     "switcher_label": "Taal",
     "en": "English",

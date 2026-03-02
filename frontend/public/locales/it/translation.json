@@ -1,5 +1,9 @@
-{"_meta": {"generated": "2026-03-02", "method": "machine-deepl", "reviewed": false},
-
+{
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "machine-deepl",
+    "reviewed": false
+  },
   "nav": {
     "products": "PRODOTTI",
     "components": "COMPONENTI",
@@ -27,7 +31,6 @@
     "submit_new": "+ INVIA NUOVO",
     "my_junkbin_upper": "IL MIO JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "ACCESSO AL SISTEMA",
@@ -101,7 +104,6 @@
       "go_to_login": "VAI AL LOGIN"
     }
   },
-
   "home": {
     "under_construction": "SITO IN COSTRUZIONE",
     "tagline_command": "cat /etc/warning.txt",
@@ -145,7 +147,6 @@
     "learn_r2r": "SCOPRI DI PIÙ SUL RIGHT TO REPAIR →",
     "error_prefix": "ERRORE:"
   },
-
   "products": {
     "title": "DATABASE",
     "title_highlight": "PRODOTTI",
@@ -174,7 +175,6 @@
     "no_products_desc": "Prova a modificare la ricerca o i filtri",
     "add_product": "AGGIUNGI UN PRODOTTO"
   },
-
   "components": {
     "title": "CATALOGO",
     "title_highlight": "COMPONENTI",
@@ -195,7 +195,6 @@
     "add_component": "AGGIUNGI UN COMPONENTE",
     "verified": "Verificato"
   },
-
   "schematics": {
     "title": "SCHEMI E DOCUMENTAZIONE",
     "subtitle": "Manuali di servizio, diagrammi a blocchi, layout PCB e documentazione tecnica",
@@ -231,7 +230,6 @@
     "about_title": "// INFORMAZIONI SUGLI SCHEMI",
     "about_text": "Questo archivio contiene manuali di servizio, schemi e documentazione tecnica contribuita dalla community di riparazione. Tutti i documenti sono forniti a scopo educativo e di riparazione a supporto del movimento Right to Repair. Se hai documentazione da condividere, contribuisci."
   },
-
   "recipes": {
     "title": "RICETTE DI PROGETTO",
     "subtitle": "Progetti elettronici della community con liste di componenti",
@@ -257,7 +255,6 @@
     "optional": "OPZIONALE",
     "have": "DISPONIBILE"
   },
-
   "recipe_detail": {
     "loading": "CARICAMENTO RICETTA...",
     "not_found_title": "RICETTA NON TROVATA",
@@ -280,7 +277,6 @@
     "missing_parts": "PARTI MANCANTI DISPONIBILI DA ALTRI UTENTI",
     "available_from": "disponibile da:"
   },
-
   "submit": {
     "title": "INVIA DOCUMENTAZIONE",
     "subtitle": "Aiuta a costruire il database di recupero e-waste",
@@ -321,7 +317,6 @@
     "auth_required_desc": "Devi essere connesso per inviare prodotti o componenti.",
     "login_to_continue": "ACCEDI PER CONTINUARE"
   },
-
   "submit_recipe": {
     "title": "INVIA RICETTA",
     "edit_title": "MODIFICA RICETTA",
@@ -343,7 +338,6 @@
     "submitting": "INVIO IN CORSO...",
     "cancel": "Annulla"
   },
-
   "swap": {
     "title": "SWAP SHOP",
     "subtitle": "Sfoglia gli oggetti che la community ha da scambiare o sta cercando",
@@ -363,7 +357,6 @@
     "available": "DISPONIBILE",
     "not_for_trade": "NON IN SCAMBIO"
   },
-
   "community": {
     "title": "COMMUNITY",
     "subtitle": "I migliori contributori classificati per reputazione",
@@ -378,7 +371,6 @@
     "no_contributors": "Nessun contributore ancora",
     "redirecting": "Reindirizzamento alla Community..."
   },
-
   "profile": {
     "not_logged_in": "NON CONNESSO",
     "please_log_in": "Accedi per visualizzare il tuo profilo.",
@@ -423,7 +415,6 @@
     "approved": "APPROVATO",
     "contact": "Contatta"
   },
-
   "messages": {
     "title": "MESSAGGI",
     "no_conversations": "NESSUNA CONVERSAZIONE ANCORA",
@@ -438,7 +429,6 @@
     "unblock": "SBLOCCA",
     "report": "SEGNALA"
   },
-
   "new_conversation": {
     "title": "NUOVO MESSAGGIO",
     "to_label": "A:",
@@ -449,7 +439,6 @@
     "no_users_found": "Nessun utente trovato",
     "send": "Invia Messaggio"
   },
-
   "my_junkbin": {
     "title": "IL MIO JUNKBIN",
     "tab_have": "DISPONIBILE",
@@ -473,7 +462,6 @@
     "visibility_private": "Privato",
     "remove_confirm": "Rimuovere dal junkbin?"
   },
-
   "my_submissions": {
     "title": "I MIEI CONTRIBUTI",
     "subtitle": "Traccia tutti i tuoi contributi a junkbin.io",
@@ -486,7 +474,6 @@
     "no_recipes": "NESSUNA RICETTA ANCORA",
     "no_components": "NESSUN COMPONENTE ANCORA"
   },
-
   "not_found": {
     "line1": "NESSUNA PARTE",
     "line2": "RIPARABILE DALL'UTENTE",
@@ -497,7 +484,6 @@
     "return_home": "TORNA ALLA HOME",
     "go_back": "INDIETRO"
   },
-
   "search": {
     "title": "CERCA NEL DATABASE",
     "placeholder": "Cerca prodotti, componenti...",
@@ -511,7 +497,6 @@
     "search_error": "Errore durante la ricerca",
     "enter_to_search": "Inserisci almeno 2 caratteri per cercare"
   },
-
   "guidelines": {
     "title": "LINEE GUIDA DELLA COMMUNITY",
     "subtitle": "Standard per contribuire alla community di Junkbin.io",
@@ -523,14 +508,12 @@
     "section_appeals": "APPELLI",
     "last_updated": "Ultimo aggiornamento: febbraio 2026"
   },
-
   "docs": {
     "title": "DOCUMENTAZIONE",
     "subtitle": "Tutto ciò di cui hai bisogno per usare e contribuire a Junkbin.io",
     "close": "Chiudi",
     "last_updated": "Ultimo aggiornamento: febbraio 2026"
   },
-
   "verify_email": {
     "verifying_title": "VERIFICA EMAIL",
     "verifying_message": "Attendi mentre verifichiamo il tuo indirizzo email...",
@@ -539,7 +522,6 @@
     "invalid_link": "Link di verifica non valido.",
     "continue_to_site": "CONTINUA AL SITO"
   },
-
   "moderation": {
     "title": "DASHBOARD DI MODERAZIONE",
     "access_denied": "ACCESSO NEGATO",
@@ -577,7 +559,6 @@
     "no_reviews": "NESSUNA REVISIONE",
     "no_reports": "TUTTO OK"
   },
-
   "analytics": {
     "title": "ANALYTICS",
     "subtitle": "Metriche del sito e coinvolgimento",
@@ -593,7 +574,6 @@
     "trending_components": "Componenti di Tendenza",
     "activity_breakdown": "Dettaglio Attività"
   },
-
   "buildable": {
     "title": "COSA POSSO COSTRUIRE?",
     "subtitle": "Ricette confrontate con il tuo junkbin — ordinate per quante parti hai già",
@@ -607,7 +587,6 @@
     "no_recipes_title": "NESSUNA RICETTA CORRISPONDENTE",
     "no_recipes_desc": "Aggiungi più componenti al tuo junkbin per trovare ricette corrispondenti"
   },
-
   "product_detail": {
     "loading": "CARICAMENTO...",
     "not_found_title": "PRODOTTO NON TROVATO",
@@ -632,7 +611,6 @@
     "swap_have": "DISPONIBILE",
     "swap_want": "CERCASI"
   },
-
   "component_detail": {
     "loading": "CARICAMENTO DATI CROSS-REFERENCE...",
     "not_found_title": "COMPONENTE NON TROVATO",
@@ -656,7 +634,6 @@
     "swap_available": "DISPONIBILE",
     "swap_not_for_trade": "NON IN SCAMBIO"
   },
-
   "common": {
     "loading": "Caricamento...",
     "error": "Qualcosa è andato storto. Riprova.",
@@ -684,7 +661,6 @@
     "for_shortcuts": "per le scorciatoie",
     "copyright": "© {{year}} Junkbin.io -"
   },
-
   "footer": {
     "tagline": "Un database collaborativo per la documentazione di componenti elettronici. A supporto del movimento Right to Repair rendendo schemi e informazioni sui componenti liberamente accessibili.",
     "motto": "NO USER SERVICEABLE PARTS INSIDE",
@@ -694,13 +670,13 @@
     "explore_components": "Componenti",
     "explore_schematics": "Schemi",
     "explore_contribute": "Contribuisci",
+    "explore_news": "Novità",
     "community": "COMMUNITY",
     "community_r2r": "Right to Repair",
     "community_ifixit": "iFixit",
     "community_guidelines": "Linee Guida",
     "community_docs": "Documentazione"
   },
-
   "modals": {
     "add_junkbin_title": "AGGIUNGI AL JUNKBIN",
     "already_in_junkbin": "Già nel tuo junkbin",
@@ -743,7 +719,6 @@
     "resolve_note": "Nota",
     "resolve_submit": "RISOLVI"
   },
-
   "forms": {
     "manufacturer_placeholder": "es. Flipper Devices",
     "model_placeholder": "es. Flipper Zero",
@@ -760,20 +735,17 @@
     "notes_placeholder": "Note opzionali...",
     "search_component_placeholder": "Cerca per numero di parte o produttore..."
   },
-
   "keyboard_shortcuts": {
     "title": "SCORCIATOIE DA TASTIERA",
     "navigation": "Navigazione",
     "actions": "Azioni",
     "close": "Chiudi"
   },
-
   "onboarding": {
     "title": "PER INIZIARE",
     "dismiss": "Ignora",
     "got_it": "Capito"
   },
-
   "errors": {
     "not_found": "Pagina non trovata",
     "unauthorized": "Devi essere connesso",
@@ -782,7 +754,6 @@
     "network_error": "Errore di rete. Controlla la connessione.",
     "load_failed": "Caricamento dati non riuscito"
   },
-
   "lang": {
     "switcher_label": "Lingua",
     "en": "English",

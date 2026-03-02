@@ -1,6 +1,9 @@
 {
-  "_meta": { "generated": "2026-03-02", "method": "machine-deepl", "reviewed": false },
-
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "machine-deepl",
+    "reviewed": false
+  },
   "nav": {
     "products": "ПРОДУКТИ",
     "components": "КОМПОНЕНТИ",
@@ -28,7 +31,6 @@
     "submit_new": "+ ДОДАТИ",
     "my_junkbin_upper": "МІЙ JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "ВХІД У СИСТЕМУ",
@@ -102,7 +104,6 @@
       "go_to_login": "ПЕРЕЙТИ ДО ВХОДУ"
     }
   },
-
   "home": {
     "under_construction": "САЙТ У РОЗРОБЦІ",
     "tagline_command": "cat /etc/warning.txt",
@@ -146,7 +147,6 @@
     "learn_r2r": "ДІЗНАТИСЯ БІЛЬШЕ ПРО ПРАВО НА РЕМОНТ →",
     "error_prefix": "ПОМИЛКА:"
   },
-
   "products": {
     "title": "БАЗА",
     "title_highlight": "ДАНИХ ПРОДУКТІВ",
@@ -175,7 +175,6 @@
     "no_products_desc": "Спробуйте змінити пошуковий запит або фільтри",
     "add_product": "ДОДАТИ ПРОДУКТ"
   },
-
   "components": {
     "title": "КАТАЛОГ",
     "title_highlight": "КОМПОНЕНТІВ",
@@ -196,7 +195,6 @@
     "add_component": "ДОДАТИ КОМПОНЕНТ",
     "verified": "Перевірено"
   },
-
   "schematics": {
     "title": "СХЕМИ ТА ДОКУМЕНТАЦІЯ",
     "subtitle": "Сервісні посібники, блок-схеми, топології плат та технічна документація",
@@ -232,7 +230,6 @@
     "about_title": "// ПРО СХЕМИ",
     "about_text": "Цей архів містить сервісні посібники, схеми та технічну документацію, надану спільнотою ремонтників."
   },
-
   "recipes": {
     "title": "РЕЦЕПТИ ПРОЕКТІВ",
     "subtitle": "Електронні проекти спільноти зі списками деталей",
@@ -258,7 +255,6 @@
     "optional": "НЕОБОВ'ЯЗКОВО",
     "have": "Є"
   },
-
   "recipe_detail": {
     "loading": "ЗАВАНТАЖЕННЯ РЕЦЕПТУ...",
     "not_found_title": "РЕЦЕПТ НЕ ЗНАЙДЕНО",
@@ -281,7 +277,6 @@
     "missing_parts": "ВІДСУТНІ ДЕТАЛІ У ІНШИХ КОРИСТУВАЧІВ",
     "available_from": "доступно у:"
   },
-
   "submit": {
     "title": "ДОДАТИ ДОКУМЕНТАЦІЮ",
     "subtitle": "Допоможіть створити базу даних електронних компонентів",
@@ -322,7 +317,6 @@
     "auth_required_desc": "Для надсилання продуктів або компонентів необхідно увійти в систему.",
     "login_to_continue": "УВІЙТИ ДЛЯ ПРОДОВЖЕННЯ"
   },
-
   "submit_recipe": {
     "title": "ДОДАТИ РЕЦЕПТ",
     "edit_title": "РЕДАГУВАТИ РЕЦЕПТ",
@@ -344,7 +338,6 @@
     "submitting": "НАДСИЛАННЯ...",
     "cancel": "Скасувати"
   },
-
   "swap": {
     "title": "ОБМІННИК",
     "subtitle": "Перегляд предметів, які учасники готові обміняти або шукають",
@@ -364,7 +357,6 @@
     "available": "ДОСТУПНО",
     "not_for_trade": "НЕ ДЛЯ ОБМІНУ"
   },
-
   "community": {
     "title": "СПІЛЬНОТА",
     "subtitle": "Кращі учасники, відсортовані за репутацією",
@@ -379,7 +371,6 @@
     "no_contributors": "Учасників поки немає",
     "redirecting": "Перехід до Спільноти..."
   },
-
   "profile": {
     "not_logged_in": "НЕ УВІЙШЛИ В СИСТЕМУ",
     "please_log_in": "Будь ласка, увійдіть для перегляду профілю.",
@@ -424,7 +415,6 @@
     "approved": "СХВАЛЕНО",
     "contact": "Написати"
   },
-
   "messages": {
     "title": "ПОВІДОМЛЕННЯ",
     "no_conversations": "ПЕРЕПИСОК ЩЕ НЕМАЄ",
@@ -439,7 +429,6 @@
     "unblock": "РОЗБЛОКУВАТИ",
     "report": "ПОСКАРЖИТИСЯ"
   },
-
   "new_conversation": {
     "title": "НОВЕ ПОВІДОМЛЕННЯ",
     "to_label": "КОМУ:",
@@ -450,7 +439,6 @@
     "no_users_found": "Користувачів не знайдено",
     "send": "Надіслати повідомлення"
   },
-
   "my_junkbin": {
     "title": "МІЙ JUNKBIN",
     "tab_have": "Є",
@@ -474,7 +462,6 @@
     "visibility_private": "Приватно",
     "remove_confirm": "Видалити з junkbin?"
   },
-
   "my_submissions": {
     "title": "МОЇ ЗАЯВКИ",
     "subtitle": "Відстежуйте всі свої внески на junkbin.io",
@@ -487,7 +474,6 @@
     "no_recipes": "РЕЦЕПТІВ ЩЕ НЕМАЄ",
     "no_components": "КОМПОНЕНТІВ ЩЕ НЕМАЄ"
   },
-
   "not_found": {
     "line1": "НЕМАЄ ДЕТАЛЕЙ",
     "line2": "ПРИДАТНИХ ДЛЯ САМОСТІЙНОГО РЕМОНТУ",
@@ -498,7 +484,6 @@
     "return_home": "НА ГОЛОВНУ",
     "go_back": "НАЗАД"
   },
-
   "search": {
     "title": "ПОШУК ПО БАЗІ ДАНИХ",
     "placeholder": "Пошук продуктів, компонентів...",
@@ -512,7 +497,6 @@
     "search_error": "Помилка при виконанні пошуку",
     "enter_to_search": "Введіть не менше 2 символів для пошуку"
   },
-
   "guidelines": {
     "title": "ПРАВИЛА СПІЛЬНОТИ",
     "subtitle": "Стандарти участі у спільноті Junkbin.io",
@@ -524,14 +508,12 @@
     "section_appeals": "АПЕЛЯЦІЇ",
     "last_updated": "Останнє оновлення: лютий 2026"
   },
-
   "docs": {
     "title": "ДОКУМЕНТАЦІЯ",
     "subtitle": "Все необхідне для використання та участі в Junkbin.io",
     "close": "Закрити",
     "last_updated": "Останнє оновлення: лютий 2026"
   },
-
   "verify_email": {
     "verifying_title": "ВЕРИФІКАЦІЯ EMAIL",
     "verifying_message": "Зачекайте, поки ми перевіряємо вашу адресу електронної пошти...",
@@ -540,7 +522,6 @@
     "invalid_link": "Недійсне посилання для верифікації.",
     "continue_to_site": "ПЕРЕЙТИ НА САЙТ"
   },
-
   "moderation": {
     "title": "ПАНЕЛЬ МОДЕРАЦІЇ",
     "access_denied": "ДОСТУП ЗАБОРОНЕНО",
@@ -578,7 +559,6 @@
     "no_reviews": "ПЕРЕВІРОК НЕМАЄ",
     "no_reports": "ВСЕ ЧИСТО"
   },
-
   "analytics": {
     "title": "АНАЛІТИКА",
     "subtitle": "Метрики сайту та залученість",
@@ -594,7 +574,6 @@
     "trending_components": "Популярні компоненти",
     "activity_breakdown": "Розбивка активності"
   },
-
   "buildable": {
     "title": "ЩО Я МОЖУ ЗІБРАТИ?",
     "subtitle": "Рецепти, підібрані за вашим junkbin — відсортовані за кількістю вже наявних деталей",
@@ -608,7 +587,6 @@
     "no_recipes_title": "ВІДПОВІДНИХ РЕЦЕПТІВ НЕМАЄ",
     "no_recipes_desc": "Додайте більше компонентів до вашого junkbin для пошуку рецептів"
   },
-
   "product_detail": {
     "loading": "ЗАВАНТАЖЕННЯ...",
     "not_found_title": "ПРОДУКТ НЕ ЗНАЙДЕНО",
@@ -633,7 +611,6 @@
     "swap_have": "Є",
     "swap_want": "ШУКАЮТЬ"
   },
-
   "component_detail": {
     "loading": "ЗАВАНТАЖЕННЯ ДАНИХ ПЕРЕХРЕСНИХ ПОСИЛАНЬ...",
     "not_found_title": "КОМПОНЕНТ НЕ ЗНАЙДЕНО",
@@ -657,7 +634,6 @@
     "swap_available": "ДОСТУПНО",
     "swap_not_for_trade": "НЕ ДЛЯ ОБМІНУ"
   },
-
   "common": {
     "loading": "Завантаження...",
     "error": "Щось пішло не так. Будь ласка, спробуйте ще раз.",
@@ -685,7 +661,6 @@
     "for_shortcuts": "для гарячих клавіш",
     "copyright": "© {{year}} Junkbin.io -"
   },
-
   "footer": {
     "tagline": "Спільна база даних документації електронних компонентів. Підтримуємо рух за право на ремонт, роблячи схеми та інформацію про компоненти вільно доступними.",
     "motto": "КОРИСТУВАЧ НЕ МОЖЕ САМОСТІЙНО ПРОВЕСТИ РЕМОНТ",
@@ -695,13 +670,13 @@
     "explore_components": "Компоненти",
     "explore_schematics": "Схеми",
     "explore_contribute": "Долучитися",
+    "explore_news": "Що нового",
     "community": "СПІЛЬНОТА",
     "community_r2r": "Право на ремонт",
     "community_ifixit": "iFixit",
     "community_guidelines": "Правила",
     "community_docs": "Документація"
   },
-
   "modals": {
     "add_junkbin_title": "ДОДАТИ ДО JUNKBIN",
     "already_in_junkbin": "Вже у вашому junkbin",
@@ -744,7 +719,6 @@
     "resolve_note": "Нотатка",
     "resolve_submit": "ВИРІШИТИ"
   },
-
   "forms": {
     "manufacturer_placeholder": "напр. Flipper Devices",
     "model_placeholder": "напр. Flipper Zero",
@@ -761,20 +735,17 @@
     "notes_placeholder": "Необов'язкові нотатки...",
     "search_component_placeholder": "Пошук за артикулом або виробником..."
   },
-
   "keyboard_shortcuts": {
     "title": "ГАРЯЧІ КЛАВІШІ",
     "navigation": "Навігація",
     "actions": "Дії",
     "close": "Закрити"
   },
-
   "onboarding": {
     "title": "ПОЧАТОК РОБОТИ",
     "dismiss": "Закрити",
     "got_it": "Зрозуміло"
   },
-
   "errors": {
     "not_found": "Сторінку не знайдено",
     "unauthorized": "Необхідно увійти в систему",
@@ -783,7 +754,6 @@
     "network_error": "Помилка мережі. Перевірте підключення.",
     "load_failed": "Не вдалося завантажити дані"
   },
-
   "lang": {
     "switcher_label": "Мова",
     "en": "English",
