@@ -1,4 +1,5 @@
 import { useSearchParams, Link, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { recipes } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
@@ -18,6 +19,7 @@ const FILTER_DIFFICULTIES = [
 ];
 
 export default function Buildable() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -80,10 +82,10 @@ export default function Buildable() {
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2 flex items-center gap-3">
             <Hammer className="h-8 w-8 text-cyber-green" />
-            WHAT CAN I <span className="text-cyber-green">BUILD?</span>
+            {t('buildable.title')}
           </h1>
           <p className="text-gray-400">
-            Recipes matched against your junkbin — sorted by how many parts you already have
+            {t('buildable.subtitle')}
           </p>
         </div>
 
@@ -129,11 +131,11 @@ export default function Buildable() {
                 onChange={(e) => updateFilter('min_match', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full"
               >
-                <option value="0">Any Match %</option>
-                <option value="25">25%+ Match</option>
-                <option value="50">50%+ Match</option>
-                <option value="75">75%+ Match</option>
-                <option value="100">100% Match</option>
+                <option value="0">{t('buildable.filter_any')}</option>
+                <option value="25">{t('buildable.filter_25')}</option>
+                <option value="50">{t('buildable.filter_50')}</option>
+                <option value="75">{t('buildable.filter_75')}</option>
+                <option value="100">{t('buildable.filter_100')}</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
             </div>
@@ -143,7 +145,7 @@ export default function Buildable() {
         {/* Results count */}
         {data && (
           <div className="mb-4 text-sm text-gray-500 font-mono">
-            {data.count} buildable recipes
+            {t('buildable.count_found', { count: data.count })}
           </div>
         )}
 
@@ -151,7 +153,7 @@ export default function Buildable() {
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <div className="text-cyber-green font-mono animate-pulse">
-              MATCHING YOUR PARTS...
+              {t('buildable.loading')}
             </div>
           </div>
         )}
@@ -170,17 +172,17 @@ export default function Buildable() {
           <div className="text-center py-20">
             <Hammer className="h-16 w-16 text-gray-600 mx-auto mb-4" />
             <h3 className="font-display text-xl text-white mb-2">
-              NO MATCHING RECIPES
+              {t('buildable.no_recipes_title')}
             </h3>
             <p className="text-gray-500 mb-6">
-              Add more components to your junkbin to find matching recipes
+              {t('buildable.no_recipes_desc')}
             </p>
             <Link
               to="/my-junkbin"
               className="btn-cyber inline-flex items-center gap-2"
             >
               <Archive className="h-4 w-4" />
-              GO TO MY JUNKBIN
+              {t('my_junkbin.title')}
             </Link>
           </div>
         )}

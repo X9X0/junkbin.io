@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import api from '../api/client';
 import { X, AlertTriangle, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -28,6 +29,7 @@ export default function ReportModal({
   objectId,
   itemName,
 }: ReportModalProps) {
+  const { t } = useTranslation();
   const [reason, setReason] = useState('');
   const [description, setDescription] = useState('');
 
@@ -92,7 +94,7 @@ export default function ReportModal({
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-white">
-              REPORT {contentTypeLabel.toUpperCase()}
+              {t('modals.report_title')} {contentTypeLabel.toUpperCase()}
             </h2>
             {itemName && (
               <p className="text-sm text-gray-500 font-mono truncate max-w-xs">
@@ -116,7 +118,7 @@ export default function ReportModal({
             {/* Reason selection */}
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-2">
-                REASON FOR REPORT <span className="text-cyber-pink">*</span>
+                {t('modals.report_reason').toUpperCase()} <span className="text-cyber-pink">*</span>
               </label>
               <div className="space-y-2">
                 {REPORT_REASONS.map((r) => (
@@ -149,7 +151,7 @@ export default function ReportModal({
             {/* Description */}
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-2">
-                DESCRIPTION <span className="text-cyber-pink">*</span>
+                {t('modals.report_details').toUpperCase()} <span className="text-cyber-pink">*</span>
               </label>
               <textarea
                 value={description}
@@ -179,7 +181,7 @@ export default function ReportModal({
                 onClick={onClose}
                 className="text-gray-400 hover:text-white text-sm font-mono"
               >
-                CANCEL
+                {t('common.cancel').toUpperCase()}
               </button>
               <button
                 type="submit"
@@ -198,7 +200,7 @@ export default function ReportModal({
                 ) : (
                   <>
                     <AlertTriangle className="h-4 w-4" />
-                    SUBMIT REPORT
+                    {t('modals.report_submit')}
                   </>
                 )}
               </button>

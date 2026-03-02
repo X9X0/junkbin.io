@@ -3,6 +3,7 @@
 ![Version](https://img.shields.io/badge/version-0.9.0-05d9e8?style=flat-square&labelColor=0a0a0f)
 ![Status](https://img.shields.io/badge/status-beta-f72585?style=flat-square&labelColor=0a0a0f)
 ![Stack](https://img.shields.io/badge/stack-Django%20%2B%20React-44cf6c?style=flat-square&labelColor=0a0a0f)
+![Languages](https://img.shields.io/badge/languages-15-f9f002?style=flat-square&labelColor=0a0a0f)
 
 > "NO USER SERVICEABLE PARTS INSIDE" - We respectfully disagree.
 
@@ -20,6 +21,29 @@ Help people repair their devices by cataloging which consumer products contain s
 - **Smart Search**: Find products containing specific parts
 - **Community Moderation**: Report inaccuracies, build reputation
 - **Dual Submission Levels**: Basic (major components) or Advanced (everything)
+- **15 Languages**: Auto-detected from browser, switchable via globe icon, saved to profile
+
+## 🌍 Languages
+
+| Code | Language | Status |
+|------|----------|--------|
+| `en` | English | Authoritative |
+| `fr` | Français | Machine-translated |
+| `es` | Español | Machine-translated |
+| `pt` | Português | Machine-translated |
+| `de` | Deutsch | Machine-translated |
+| `it` | Italiano | Machine-translated |
+| `nl` | Nederlands | Machine-translated |
+| `pl` | Polski | Machine-translated |
+| `cs` | Čeština | Machine-translated |
+| `sk` | Slovenčina | Machine-translated |
+| `hr` | Hrvatski | Machine-translated |
+| `sr` | Srpski | Machine-translated |
+| `sl` | Slovenščina | Machine-translated |
+| `ru` | Русский | Machine-translated |
+| `uk` | Українська | Machine-translated |
+
+Translation files live in `frontend/public/locales/{lang}/translation.json`. Native speaker corrections are welcome — edit the JSON and open a PR. Candidates for future addition: Romanian (`ro`), Hungarian (`hu`), Turkish (`tr`).
 
 ## 🚀 Quick Start
 
@@ -99,6 +123,7 @@ We welcome contributions! Areas we need help with:
 - ⬜ Documentation
 - ⬜ UI/UX design
 - ⬜ Testing
+- ⬜ Translation review — 14 non-English locales are machine-translated and need native speaker corrections (`frontend/public/locales/{lang}/translation.json`)
 
 ## 📜 License
 

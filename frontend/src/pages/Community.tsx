@@ -6,6 +6,7 @@ import clsx from 'clsx';
 import Pagination from '../components/Pagination';
 import { BadgeChip } from '../components/BadgeDisplay';
 import type { Badge } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const PAGE_SIZE = 20;
 
@@ -16,6 +17,7 @@ const rankColors = [
 ];
 
 export default function Community() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const page = parseInt(searchParams.get('page') || '1', 10);
 
@@ -51,18 +53,18 @@ export default function Community() {
           className="flex items-center gap-2 border border-cyber-cyan/50 px-4 py-2 text-sm font-mono text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
         >
           <Store className="h-4 w-4" />
-          SWAP SHOP →
+          {t('nav.swap')} →
         </Link>
       </div>
       <p className="text-gray-500 font-mono text-sm mb-8">
-        // Top contributors ranked by reputation
+        // {t('community.subtitle')}
       </p>
 
       {/* Stats bar */}
       {data && (
         <div className="flex items-center gap-6 mb-6 px-4 py-3 border border-cyber-light/20 bg-cyber-dark/50">
           <div className="flex items-center gap-2">
-            <span className="text-gray-500 font-mono text-xs">TOTAL CONTRIBUTORS</span>
+            <span className="text-gray-500 font-mono text-xs">{t('community.total_contributors')}</span>
             <span className="text-cyber-yellow font-mono font-bold">{data.count}</span>
           </div>
         </div>
@@ -80,13 +82,13 @@ export default function Community() {
           {/* Desktop table */}
           <div className="hidden md:block">
             <div className="grid grid-cols-[60px_1fr_100px_100px_minmax(0,160px)_100px_120px] gap-2 px-4 py-2 text-gray-500 font-mono text-xs border-b border-cyber-light/30">
-              <span>RANK</span>
-              <span>USER</span>
-              <span className="text-right">REPUTATION</span>
-              <span className="text-right">CONTRIBUTIONS</span>
-              <span className="text-center">BADGES</span>
-              <span className="text-right">JOINED</span>
-              <span className="text-right">JUNKBIN</span>
+              <span>{t('community.col_rank')}</span>
+              <span>{t('community.col_user')}</span>
+              <span className="text-right">{t('community.col_reputation')}</span>
+              <span className="text-right">{t('community.col_contributions')}</span>
+              <span className="text-center">{t('community.col_badges')}</span>
+              <span className="text-right">{t('community.col_joined')}</span>
+              <span className="text-right">{t('community.col_junkbin')}</span>
             </div>
 
             <div className="space-y-1 mt-1">
@@ -178,7 +180,7 @@ export default function Community() {
                         className="inline-flex items-center gap-1 text-[11px] font-mono text-gray-500 hover:text-cyber-cyan transition-colors"
                       >
                         <Archive className="h-3 w-3" />
-                        JUNKBIN
+                        {t('community.col_junkbin')}
                       </Link>
                     </div>
                   </div>
@@ -272,7 +274,7 @@ export default function Community() {
       ) : (
         <div className="text-center py-16">
           <Trophy className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-          <p className="text-gray-500 font-mono">No contributors yet</p>
+          <p className="text-gray-500 font-mono">{t('community.no_contributors')}</p>
         </div>
       )}
     </div>

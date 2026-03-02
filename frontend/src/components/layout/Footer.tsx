@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Heart, Wrench } from 'lucide-react';
 
 export default function Footer() {
+  const { t } = useTranslation();
+
   return (
     <footer className="border-t border-cyber-light/30 bg-cyber-darker mt-auto">
       <div className="mx-auto max-w-7xl px-4 py-12">
@@ -15,24 +18,22 @@ export default function Footer() {
               </span>
             </Link>
             <p className="text-gray-400 text-sm mb-4 max-w-md">
-              A community-driven database for electronic component documentation.
-              Supporting the Right to Repair movement by making schematics and
-              component information freely accessible.
+              {t('footer.tagline')}
             </p>
             <div className="flex items-center gap-1 text-sm text-gray-500 font-mono">
               <span className="text-cyber-pink">&lt;</span>
-              NO USER SERVICEABLE PARTS INSIDE
+              {t('footer.motto')}
               <span className="text-cyber-pink">/&gt;</span>
             </div>
             <p className="text-xs text-gray-600 mt-1 font-mono">
-              We took that personally.
+              {t('footer.motto_response')}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
             <h3 className="font-mono text-sm font-semibold text-white mb-4 tracking-wider">
-              EXPLORE
+              {t('footer.explore')}
             </h3>
             <ul className="space-y-2">
               <li>
@@ -40,7 +41,7 @@ export default function Footer() {
                   to="/products"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Products
+                  {t('footer.explore_products')}
                 </Link>
               </li>
               <li>
@@ -48,7 +49,7 @@ export default function Footer() {
                   to="/components"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Components
+                  {t('footer.explore_components')}
                 </Link>
               </li>
               <li>
@@ -56,7 +57,7 @@ export default function Footer() {
                   to="/schematics"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Schematics
+                  {t('footer.explore_schematics')}
                 </Link>
               </li>
               <li>
@@ -64,7 +65,7 @@ export default function Footer() {
                   to="/submit"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Contribute
+                  {t('footer.explore_contribute')}
                 </Link>
               </li>
             </ul>
@@ -73,7 +74,7 @@ export default function Footer() {
           {/* Community */}
           <div>
             <h3 className="font-mono text-sm font-semibold text-white mb-4 tracking-wider">
-              COMMUNITY
+              {t('footer.community')}
             </h3>
             <ul className="space-y-2">
               <li>
@@ -83,7 +84,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Right to Repair
+                  {t('footer.community_r2r')}
                 </a>
               </li>
               <li>
@@ -93,7 +94,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  iFixit
+                  {t('footer.community_ifixit')}
                 </a>
               </li>
               <li>
@@ -101,7 +102,7 @@ export default function Footer() {
                   to="/guidelines"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Guidelines
+                  {t('footer.community_guidelines')}
                 </Link>
               </li>
               <li>
@@ -109,7 +110,7 @@ export default function Footer() {
                   to="/docs"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
-                  Documentation
+                  {t('footer.community_docs')}
                 </Link>
               </li>
             </ul>
@@ -120,7 +121,7 @@ export default function Footer() {
         <div className="mt-12 pt-6 border-t border-cyber-light/20 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
             <p className="text-xs text-gray-500 font-mono">
-              &copy; {new Date().getFullYear()} Junkbin.io - Open Source
+              {t('common.copyright', { year: new Date().getFullYear() })} {t('common.open_source')}
             </p>
             <span className="text-gray-600 font-mono text-xs hidden sm:inline">·</span>
             <span className="text-xs text-gray-600 font-mono">
@@ -129,10 +130,10 @@ export default function Footer() {
           </div>
           <div className="flex items-center gap-4 sm:gap-6">
             <span className="text-xs text-gray-600 font-mono hidden sm:flex items-center gap-1">
-              Press <span className="px-1.5 py-0.5 bg-cyber-dark border border-cyber-light/30 text-gray-400">?</span> for shortcuts
+              {t('common.press_for_shortcuts')} <span className="px-1.5 py-0.5 bg-cyber-dark border border-cyber-light/30 text-gray-400">?</span> {t('common.for_shortcuts')}
             </span>
             <span className="text-xs text-gray-500 font-mono flex items-center gap-1">
-              Made with <Heart className="h-3 w-3 text-cyber-pink" /> for repair
+              {t('common.made_with_love')} <Heart className="h-3 w-3 text-cyber-pink" /> {t('common.for_repair')}
             </span>
           </div>
         </div>

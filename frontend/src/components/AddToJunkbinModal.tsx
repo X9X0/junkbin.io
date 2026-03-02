@@ -4,6 +4,7 @@ import { junkbin } from '../api/endpoints';
 import { X, Trash2, Loader2, Check } from 'lucide-react';
 import clsx from 'clsx';
 import type { JunkbinItem } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface AddToJunkbinModalProps {
   contentType: 'product' | 'component';
@@ -20,6 +21,7 @@ export default function AddToJunkbinModal({
   isOpen,
   onClose,
 }: AddToJunkbinModalProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [itemType, setItemType] = useState<'have' | 'want'>('have');
   const [status, setStatus] = useState('not_for_trade');
@@ -103,7 +105,7 @@ export default function AddToJunkbinModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-cyber-light/30">
           <h2 className="font-display text-lg font-bold text-white">
-            ADD TO JUNKBIN
+            {t('modals.add_junkbin_title')}
           </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
@@ -126,7 +128,7 @@ export default function AddToJunkbinModal({
               {/* Existing items */}
               {existingItems.length > 0 && (
                 <div className="mb-4 space-y-2">
-                  <h3 className="text-xs font-mono text-gray-500 uppercase">Already in your junkbin</h3>
+                  <h3 className="text-xs font-mono text-gray-500 uppercase">{t('modals.already_in_junkbin')}</h3>
                   {existingItems.map((item) => (
                     <div
                       key={item.id}
@@ -144,7 +146,7 @@ export default function AddToJunkbinModal({
                         <span className="text-sm text-gray-300">
                           {item.item_type === 'have' && (
                             <>
-                              {item.status === 'available' ? 'For Trade' : 'Not for Trade'}
+                              {item.status === 'available' ? t('modals.status_available') : t('modals.status_not_for_trade')}
                               {' · '}
                               {item.condition}
                             </>
@@ -165,7 +167,7 @@ export default function AddToJunkbinModal({
                             onClick={() => setConfirmDelete(null)}
                             className="text-xs text-gray-500 hover:text-white"
                           >
-                            Cancel
+                            {t('common.cancel')}
                           </button>
                         </div>
                       ) : (
@@ -191,7 +193,7 @@ export default function AddToJunkbinModal({
                   {/* Item type */}
                   <div>
                     <label className="text-xs font-mono text-gray-500 uppercase block mb-2">
-                      Type
+                      {t('modals.type_label')}
                     </label>
                     <div className="flex gap-2">
                       {(!hasHave || itemType === 'have') && (
@@ -207,7 +209,7 @@ export default function AddToJunkbinModal({
                             hasHave && 'opacity-40 cursor-not-allowed'
                           )}
                         >
-                          I HAVE THIS
+                          {t('modals.i_have')}
                         </button>
                       )}
                       {(!hasWant || itemType === 'want') && (
@@ -223,7 +225,7 @@ export default function AddToJunkbinModal({
                             hasWant && 'opacity-40 cursor-not-allowed'
                           )}
                         >
-                          I WANT THIS
+                          {t('modals.i_want')}
                         </button>
                       )}
                     </div>
@@ -235,30 +237,30 @@ export default function AddToJunkbinModal({
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="text-xs font-mono text-gray-500 uppercase block mb-1">
-                            Status
+                            {t('modals.status_label')}
                           </label>
                           <select
                             value={status}
                             onChange={(e) => setStatus(e.target.value)}
                             className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white focus:border-cyber-cyan focus:outline-none"
                           >
-                            <option value="not_for_trade">Not for Trade</option>
-                            <option value="available">Available for Trade</option>
+                            <option value="not_for_trade">{t('modals.status_not_for_trade')}</option>
+                            <option value="available">{t('modals.status_available')}</option>
                           </select>
                         </div>
                         <div>
                           <label className="text-xs font-mono text-gray-500 uppercase block mb-1">
-                            Condition
+                            {t('modals.condition_label')}
                           </label>
                           <select
                             value={condition}
                             onChange={(e) => setCondition(e.target.value)}
                             className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white focus:border-cyber-cyan focus:outline-none"
                           >
-                            <option value="new">New</option>
-                            <option value="working">Working</option>
-                            <option value="broken">Broken / For Parts</option>
-                            <option value="unknown">Unknown</option>
+                            <option value="new">{t('modals.condition_new')}</option>
+                            <option value="working">{t('modals.condition_working')}</option>
+                            <option value="broken">{t('modals.condition_broken')}</option>
+                            <option value="unknown">{t('modals.condition_unknown')}</option>
                           </select>
                         </div>
                       </div>
@@ -269,20 +271,20 @@ export default function AddToJunkbinModal({
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="text-xs font-mono text-gray-500 uppercase block mb-1">
-                        Visibility
+                        {t('modals.visibility_label')}
                       </label>
                       <select
                         value={visibility}
                         onChange={(e) => setVisibility(e.target.value)}
                         className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white focus:border-cyber-cyan focus:outline-none"
                       >
-                        <option value="public">Public</option>
-                        <option value="private">Private</option>
+                        <option value="public">{t('modals.visibility_public')}</option>
+                        <option value="private">{t('modals.visibility_private')}</option>
                       </select>
                     </div>
                     <div>
                       <label className="text-xs font-mono text-gray-500 uppercase block mb-1">
-                        Quantity
+                        {t('modals.quantity_label')}
                       </label>
                       <input
                         type="number"
@@ -296,14 +298,14 @@ export default function AddToJunkbinModal({
 
                   <div>
                     <label className="text-xs font-mono text-gray-500 uppercase block mb-1">
-                      Notes <span className="text-gray-600">(optional)</span>
+                      {t('modals.notes_label')} <span className="text-gray-600">{t('common.optional')}</span>
                     </label>
                     <textarea
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       maxLength={500}
                       rows={2}
-                      placeholder="Any notes about this item..."
+                      placeholder={t('modals.notes_placeholder')}
                       className="w-full bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white placeholder-gray-600 focus:border-cyber-cyan focus:outline-none resize-none"
                     />
                   </div>
@@ -327,7 +329,7 @@ export default function AddToJunkbinModal({
                     ) : (
                       <>
                         <Check className="h-4 w-4" />
-                        ADD TO JUNKBIN
+                        {t('modals.add_junkbin_title')}
                       </>
                     )}
                   </button>

@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import api from '../api/client';
 
 export default function PasswordResetConfirm() {
+  const { t } = useTranslation();
   const { uid, token } = useParams<{ uid: string; token: string }>();
   const navigate = useNavigate();
   const [password, setPassword] = useState('');
@@ -17,12 +19,12 @@ export default function PasswordResetConfirm() {
     setError('');
 
     if (password !== passwordConfirm) {
-      setError('Passwords do not match');
+      setError(t('auth.reset_confirm.passwords_mismatch'));
       return;
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters');
+      setError(t('auth.reset_confirm.password_too_short'));
       return;
     }
 
@@ -37,7 +39,7 @@ export default function PasswordResetConfirm() {
       });
       setSuccess(true);
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to reset password. The link may have expired.');
+      setError(err.response?.data?.error || t('auth.reset_confirm.failed'));
     } finally {
       setIsLoading(false);
     }
@@ -50,16 +52,16 @@ export default function PasswordResetConfirm() {
           <div className="card-cyber p-8 text-center">
             <CheckCircle className="h-16 w-16 text-cyber-cyan mx-auto mb-4" />
             <h1 className="font-display text-2xl font-bold text-white mb-4">
-              PASSWORD <span className="text-cyber-cyan">RESET</span>
+              {t('auth.reset_confirm.success_title')}
             </h1>
             <p className="text-gray-400 mb-6">
-              Your password has been successfully reset. You can now log in with your new password.
+              {t('auth.reset_confirm.success_message')}
             </p>
             <button
               onClick={() => navigate('/login')}
               className="btn-cyber"
             >
-              GO TO LOGIN
+              {t('auth.reset_confirm.go_to_login')}
             </button>
           </div>
         </div>
@@ -72,10 +74,10 @@ export default function PasswordResetConfirm() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            NEW <span className="text-cyber-cyan">PASSWORD</span>
+            {t('auth.reset_confirm.title')}
           </h1>
           <p className="text-gray-500 font-mono text-sm">
-            Enter your new password
+            {t('auth.reset_confirm.subtitle')}
           </p>
         </div>
 
@@ -90,14 +92,14 @@ export default function PasswordResetConfirm() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                NEW PASSWORD
+                {t('auth.reset_confirm.new_password')}
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input-cyber"
-                placeholder="Enter new password"
+                placeholder={t('auth.reset_confirm.new_password_placeholder')}
                 required
                 minLength={8}
               />
@@ -105,14 +107,14 @@ export default function PasswordResetConfirm() {
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-2">
-                CONFIRM PASSWORD
+                {t('auth.reset_confirm.confirm_password')}
               </label>
               <input
                 type="password"
                 value={passwordConfirm}
                 onChange={(e) => setPasswordConfirm(e.target.value)}
                 className="input-cyber"
-                placeholder="Confirm new password"
+                placeholder={t('auth.reset_confirm.confirm_placeholder')}
                 required
                 minLength={8}
               />
@@ -124,11 +126,11 @@ export default function PasswordResetConfirm() {
               className="w-full btn-cyber flex items-center justify-center gap-2 py-3"
             >
               {isLoading ? (
-                <span className="animate-pulse">RESETTING...</span>
+                <span className="animate-pulse">{t('auth.reset_confirm.submitting')}</span>
               ) : (
                 <>
                   <Lock className="h-4 w-4" />
-                  RESET PASSWORD
+                  {t('auth.reset_confirm.submit')}
                 </>
               )}
             </button>
@@ -138,7 +140,7 @@ export default function PasswordResetConfirm() {
 
           <p className="text-center text-sm text-gray-500">
             <Link to="/login" className="text-cyber-cyan hover:underline">
-              Back to Login
+              {t('auth.reset_confirm.back_to_login')}
             </Link>
           </p>
         </div>

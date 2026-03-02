@@ -5,6 +5,7 @@ import { products, schematics, recipes, components } from '../api/endpoints';
 import { Package, FileText, Wrench, Cpu, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Product, Schematic, Recipe, Component } from '../types';
+import { useTranslation } from 'react-i18next';
 
 type TabType = 'products' | 'schematics' | 'recipes' | 'components';
 
@@ -15,13 +16,6 @@ const TAB_ACTIVE_STYLES: Record<TabType, string> = {
   components: 'border-cyber-pink text-cyber-pink',
 };
 
-const TABS: { key: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { key: 'products', label: 'PRODUCTS', icon: Package },
-  { key: 'schematics', label: 'SCHEMATICS', icon: FileText },
-  { key: 'recipes', label: 'RECIPES', icon: Wrench },
-  { key: 'components', label: 'COMPONENTS', icon: Cpu },
-];
-
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
     month: 'short',
@@ -31,10 +25,18 @@ function formatDate(dateStr: string) {
 }
 
 export default function MySubmissions() {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const activeTab = (searchParams.get('type') as TabType) || 'products';
+
+  const TABS: { key: TabType; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+    { key: 'products', label: t('my_submissions.tab_products'), icon: Package },
+    { key: 'schematics', label: t('my_submissions.tab_schematics'), icon: FileText },
+    { key: 'recipes', label: t('my_submissions.tab_recipes'), icon: Wrench },
+    { key: 'components', label: t('my_submissions.tab_components'), icon: Cpu },
+  ];
 
   const setTab = (tab: TabType) => {
     const params = new URLSearchParams();
@@ -85,7 +87,7 @@ export default function MySubmissions() {
             MY <span className="text-cyber-cyan">SUBMISSIONS</span>
           </h1>
           <p className="text-gray-400 font-mono text-sm mt-1">
-            Track all your contributions to junkbin.io
+            {t('my_submissions.subtitle')}
           </p>
         </div>
 
@@ -128,6 +130,7 @@ export default function MySubmissions() {
 }
 
 function StatusBadge({ approved }: { approved: boolean }) {
+  const { t } = useTranslation();
   return (
     <span
       className={clsx(
@@ -137,25 +140,24 @@ function StatusBadge({ approved }: { approved: boolean }) {
           : 'border-cyber-yellow/50 text-cyber-yellow'
       )}
     >
-      {approved ? 'APPROVED' : 'PENDING'}
+      {approved ? t('common.approved') : t('common.pending')}
     </span>
   );
 }
 
-function EmptyState({ type }: { type: string }) {
+function EmptyState({ titleKey }: { titleKey: string }) {
+  const { t } = useTranslation();
   return (
     <div className="card-cyber p-12 text-center">
       <Package className="h-14 w-14 text-gray-600 mx-auto mb-4" />
-      <h3 className="font-display text-lg text-white mb-2">NO {type.toUpperCase()} YET</h3>
-      <p className="text-gray-400 text-sm">
-        Your submitted {type} will appear here.
-      </p>
+      <h3 className="font-display text-lg text-white mb-2">{t(titleKey)}</h3>
     </div>
   );
 }
 
 function ProductsList({ items }: { items: Product[] }) {
-  if (items.length === 0) return <EmptyState type="products" />;
+  const { t } = useTranslation();
+  if (items.length === 0) return <EmptyState titleKey="my_submissions.no_products" />;
 
   return (
     <div className="space-y-2">
@@ -186,7 +188,8 @@ function ProductsList({ items }: { items: Product[] }) {
 }
 
 function SchematicsList({ items }: { items: Schematic[] }) {
-  if (items.length === 0) return <EmptyState type="schematics" />;
+  const { t } = useTranslation();
+  if (items.length === 0) return <EmptyState titleKey="my_submissions.no_schematics" />;
 
   return (
     <div className="space-y-2">
@@ -219,7 +222,8 @@ function SchematicsList({ items }: { items: Schematic[] }) {
 }
 
 function RecipesList({ items }: { items: Recipe[] }) {
-  if (items.length === 0) return <EmptyState type="recipes" />;
+  const { t } = useTranslation();
+  if (items.length === 0) return <EmptyState titleKey="my_submissions.no_recipes" />;
 
   return (
     <div className="space-y-2">
@@ -252,7 +256,8 @@ function RecipesList({ items }: { items: Recipe[] }) {
 }
 
 function ComponentsList({ items }: { items: Component[] }) {
-  if (items.length === 0) return <EmptyState type="components" />;
+  const { t } = useTranslation();
+  if (items.length === 0) return <EmptyState titleKey="my_submissions.no_components" />;
 
   return (
     <div className="space-y-2">

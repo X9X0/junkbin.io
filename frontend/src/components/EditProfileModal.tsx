@@ -4,6 +4,7 @@ import { auth } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { X, Loader2 } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
+import { useTranslation } from 'react-i18next';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface EditProfileModalProps {
 }
 
 export default function EditProfileModal({ isOpen, onClose }: EditProfileModalProps) {
+  const { t } = useTranslation();
   const { user, refreshUser } = useAuth();
   const [error, setError] = useState('');
 
@@ -57,7 +59,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
       <div className="w-full max-w-lg bg-cyber-darker border border-cyber-light/30 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-cyber-light/30">
-          <h2 className="font-display text-lg font-bold text-white">EDIT PROFILE</h2>
+          <h2 className="font-display text-lg font-bold text-white">{t('modals.edit_profile_title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white">
             <X className="h-5 w-5" />
           </button>
@@ -72,7 +74,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
 
           <div>
             <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-              Bio
+              {t('modals.bio')}
             </label>
             <textarea
               value={bio}
@@ -87,7 +89,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
 
           <div>
             <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-              Location
+              {t('modals.location')}
             </label>
             <input
               type="text"
@@ -101,7 +103,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
 
           <div>
             <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-              Website
+              {t('modals.website')}
             </label>
             <input
               type="url"
@@ -114,7 +116,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
 
           <div>
             <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
-              Avatar <span className="text-gray-600">(optional)</span>
+              {t('modals.avatar')} <span className="text-gray-600">{t('common.optional')}</span>
             </label>
             <input
               type="file"
@@ -135,7 +137,7 @@ export default function EditProfileModal({ isOpen, onClose }: EditProfileModalPr
                 SAVING...
               </>
             ) : (
-              'SAVE CHANGES'
+              t('common.save')
             )}
           </button>
         </form>

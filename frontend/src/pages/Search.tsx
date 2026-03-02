@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface SearchResult {
   products: Array<{
@@ -53,6 +54,7 @@ interface SearchResult {
 type TabType = 'all' | 'products' | 'components' | 'schematics' | 'users';
 
 export default function Search() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   const [localQuery, setLocalQuery] = useState(query);
@@ -80,11 +82,11 @@ export default function Search() {
     : 0;
 
   const tabs = [
-    { key: 'all', label: 'All', count: totalResults },
-    { key: 'products', label: 'Products', count: data?.products.length || 0, icon: Package },
-    { key: 'components', label: 'Components', count: data?.components.length || 0, icon: Cpu },
-    { key: 'schematics', label: 'Schematics', count: data?.schematics.length || 0, icon: FileText },
-    { key: 'users', label: 'Users', count: data?.users?.length || 0, icon: UserIcon },
+    { key: 'all', label: t('search.tab_all'), count: totalResults },
+    { key: 'products', label: t('search.tab_products'), count: data?.products.length || 0, icon: Package },
+    { key: 'components', label: t('search.tab_components'), count: data?.components.length || 0, icon: Cpu },
+    { key: 'schematics', label: t('search.tab_schematics'), count: data?.schematics.length || 0, icon: FileText },
+    { key: 'users', label: t('search.tab_users'), count: data?.users?.length || 0, icon: UserIcon },
   ];
 
   return (
@@ -103,7 +105,7 @@ export default function Search() {
                 type="text"
                 value={localQuery}
                 onChange={(e) => setLocalQuery(e.target.value)}
-                placeholder="Search products, components..."
+                placeholder={t('search.placeholder')}
                 className="w-full bg-cyber-dark border-2 border-cyber-light/50 px-5 py-3 sm:py-4 pl-12 sm:pl-14 text-base sm:text-lg font-mono text-gray-200 placeholder-gray-500 focus:border-cyber-cyan focus:outline-none transition-colors"
               />
               <SearchIcon className="absolute left-4 sm:left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -122,7 +124,7 @@ export default function Search() {
           <div className="card-cyber p-12 text-center">
             <SearchIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
             <p className="text-gray-400 font-mono">
-              Enter at least 2 characters to search
+              {t('search.enter_to_search')}
             </p>
           </div>
         ) : isLoading ? (
@@ -132,21 +134,20 @@ export default function Search() {
           </div>
         ) : error ? (
           <div className="card-cyber p-8 text-center">
-            <p className="text-cyber-pink font-mono">Error performing search</p>
+            <p className="text-cyber-pink font-mono">{t('search.search_error')}</p>
           </div>
         ) : totalResults === 0 ? (
           <div className="card-cyber p-12 text-center">
             <SearchIcon className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-400 font-mono mb-2">No results found for "{query}"</p>
-            <p className="text-gray-600 text-sm">Try different keywords or check your spelling</p>
+            <p className="text-gray-400 font-mono mb-2">{t('nav.no_results_for', { query })}</p>
+            <p className="text-gray-600 text-sm">{t('search.try_different')}</p>
           </div>
         ) : (
           <>
             {/* Summary */}
             <div className="mb-6">
               <p className="text-gray-400 font-mono text-sm">
-                Found <span className="text-cyber-cyan">{totalResults}</span> results for "
-                <span className="text-white">{query}</span>"
+                {t('search.results_found', { count: totalResults, query })}
               </p>
             </div>
 

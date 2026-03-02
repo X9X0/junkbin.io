@@ -7,6 +7,7 @@ import { Store, Package, Cpu, Search, MessageSquare } from 'lucide-react';
 import clsx from 'clsx';
 import Pagination from '../components/Pagination';
 import type { JunkbinItem } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const CONDITION_LABELS: Record<string, string> = {
   new: 'New',
@@ -26,6 +27,7 @@ function SwapCard({
   isAuthenticated: boolean;
   currentUserId?: string;
 }) {
+  const { t } = useTranslation();
   const isOwnItem = currentUserId === item.user.id;
   const canContact =
     isAuthenticated && !isOwnItem && tab === 'have' && item.status === 'available';
@@ -61,7 +63,7 @@ function SwapCard({
                 : 'text-gray-500 border-gray-600'
             )}
           >
-            {item.status === 'available' ? 'AVAILABLE' : 'NOT FOR TRADE'}
+            {item.status === 'available' ? t('swap.available') : t('swap.not_for_trade')}
           </span>
         )}
       </div>
@@ -128,6 +130,7 @@ function SwapCard({
 }
 
 export default function SwapShop() {
+  const { t } = useTranslation();
   const { isAuthenticated, user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'have' | 'want'>('have');
@@ -184,12 +187,12 @@ export default function SwapShop() {
         </div>
         {isAuthenticated && (
           <Link to="/my-junkbin" className="btn-cyber text-sm py-1.5 whitespace-nowrap">
-            MY JUNKBIN →
+            {t('swap.my_junkbin')} →
           </Link>
         )}
       </div>
       <p className="text-gray-500 font-mono text-sm mb-8">
-        // Browse items the community has for trade or is looking for
+        // {t('swap.subtitle')}
       </p>
 
       {/* Tabs */}
@@ -211,7 +214,7 @@ export default function SwapShop() {
                 : 'border-transparent text-gray-500 hover:text-white'
             )}
           >
-            {tab === 'have' ? 'HAVE' : 'WANT'}
+            {tab === 'have' ? t('swap.tab_have') : t('swap.tab_want')}
           </button>
         ))}
       </div>
@@ -226,7 +229,7 @@ export default function SwapShop() {
               setSearchInput(e.target.value);
               resetPage();
             }}
-            placeholder="Search by name or manufacturer..."
+            placeholder={t('swap.search_placeholder')}
             className="w-full bg-cyber-dark border border-cyber-light/50 px-4 py-2 pl-10 text-sm font-mono text-gray-200 placeholder-gray-500 focus:border-cyber-cyan focus:outline-none"
           />
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -239,9 +242,9 @@ export default function SwapShop() {
           }}
           className="bg-cyber-dark border border-cyber-light/50 px-3 py-2 text-sm text-white font-mono focus:border-cyber-cyan focus:outline-none"
         >
-          <option value="">All Types</option>
-          <option value="product">Products</option>
-          <option value="component">Components</option>
+          <option value="">{t('swap.all_types')}</option>
+          <option value="product">{t('swap.filter_products')}</option>
+          <option value="component">{t('swap.filter_components')}</option>
         </select>
         {activeTab === 'have' && (
           <label className="flex items-center gap-2 text-sm font-mono text-gray-400 cursor-pointer whitespace-nowrap">
@@ -254,7 +257,7 @@ export default function SwapShop() {
               }}
               className="w-4 h-4 accent-cyber-cyan"
             />
-            Available Only
+            {t('swap.available_only')}
           </label>
         )}
       </div>
@@ -262,7 +265,7 @@ export default function SwapShop() {
       {/* Result count */}
       {!isLoading && data && (
         <p className="text-gray-500 font-mono text-xs mb-4">
-          {data.count} {data.count === 1 ? 'item' : 'items'} found
+          {t('swap.count_found', { count: data.count })}
         </p>
       )}
 
@@ -299,12 +302,12 @@ export default function SwapShop() {
           <Store className="h-12 w-12 text-gray-600 mx-auto mb-4" />
           <p className="text-gray-500 font-mono">
             {activeTab === 'have'
-              ? 'No items for trade yet.'
-              : 'Nobody is looking for anything yet.'}
+              ? t('swap.no_have_items')
+              : t('swap.no_want_items')}
           </p>
           {!isAuthenticated && (
             <Link to="/login" className="text-cyber-cyan hover:underline text-sm mt-2 inline-block font-mono">
-              Log in to add your items
+              {t('swap.log_in_to_add')}
             </Link>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Lightbulb, ChevronRight, ChevronLeft } from 'lucide-react';
 import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
 
 interface Tip {
   id: string;
@@ -48,6 +49,7 @@ const STORAGE_KEY = 'junkbin_onboarding_dismissed';
 const TIPS_SEEN_KEY = 'junkbin_tips_seen';
 
 export default function OnboardingTips() {
+  const { t } = useTranslation();
   const [isVisible, setIsVisible] = useState(false);
   const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const [seenTips, setSeenTips] = useState<string[]>([]);
@@ -143,7 +145,7 @@ export default function OnboardingTips() {
             onClick={handleDismissAll}
             className="text-xs text-gray-600 hover:text-gray-400"
           >
-            Don't show tips
+            {t('onboarding.dismiss')}
           </button>
           <div className="flex items-center gap-2">
             {currentTipIndex > 0 && (
@@ -167,7 +169,7 @@ export default function OnboardingTips() {
                   <ChevronRight className="h-3 w-3" />
                 </>
               ) : (
-                'Got it!'
+                t('onboarding.got_it')
               )}
             </button>
           </div>

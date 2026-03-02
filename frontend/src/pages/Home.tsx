@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { stats, newsletter, products } from '../api/endpoints';
 import {
@@ -16,6 +17,7 @@ import {
 import { parseApiError } from '../utils/formErrors';
 
 export default function Home() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -39,7 +41,7 @@ export default function Home() {
       setError('');
     },
     onError: (err: any) => {
-      setError(parseApiError(err, 'Failed to subscribe. Please try again.'));
+      setError(parseApiError(err, t('common.error')));
     },
   });
 
@@ -63,7 +65,7 @@ export default function Home() {
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 border border-cyber-yellow/50 bg-cyber-yellow/5">
             <AlertTriangle className="h-4 w-4 text-cyber-yellow" />
             <span className="text-cyber-yellow font-mono text-sm tracking-wider">
-              SITE UNDER CONSTRUCTION
+              {t('home.under_construction')}
             </span>
           </div>
 
@@ -87,32 +89,32 @@ export default function Home() {
                 <span className="text-cyber-cyan/50 text-xs ml-2">terminal v1.0</span>
               </div>
               <div className="text-cyber-cyan text-sm mb-2">
-                <span className="text-cyber-green">$</span> cat /etc/warning.txt
+                <span className="text-cyber-green">$</span> {t('home.tagline_command')}
               </div>
               <div className="text-gray-400 text-sm leading-relaxed">
-                <span className="text-cyber-pink">&gt;</span> "NO USER SERVICEABLE PARTS INSIDE"
+                <span className="text-cyber-pink">&gt;</span> {t('home.tagline_quote')}
               </div>
               <div className="text-white text-sm mt-2">
-                <span className="text-cyber-green">$</span> echo "We took that personally."
+                <span className="text-cyber-green">$</span> echo "{t('home.tagline_response')}"
                 <span className="blink ml-1 text-cyber-cyan">_</span>
               </div>
             </div>
           </div>
 
           <p className="max-w-2xl mx-auto text-gray-400 text-lg mb-6">
-            A community-driven database for electronic components, schematics, and repair documentation.
+            {t('home.description')}
           </p>
 
           <div className="flex items-center justify-center gap-2 text-cyber-pink font-semibold text-xl mb-12">
             <Zap className="h-5 w-5" />
-            <span>RIGHT TO REPAIR STARTS HERE</span>
+            <span>{t('home.right_to_repair')}</span>
             <Zap className="h-5 w-5" />
           </div>
 
           {/* Coming Soon CTA */}
           <div className="max-w-lg mx-auto">
             <h2 className="font-display text-xl text-white mb-4">
-              LAUNCHING <span className="text-cyber-green">SOON</span>
+              {t('home.launching_soon')} <span className="text-cyber-green">{t('home.soon')}</span>
             </h2>
 
             {!submitted ? (
@@ -123,7 +125,7 @@ export default function Home() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="enter_email@domain.com"
+                      placeholder={t('home.email_placeholder')}
                       required
                       disabled={subscribeMutation.isPending}
                       className="terminal-input w-full px-4 py-3 text-cyber-cyan placeholder-cyber-cyan/40 disabled:opacity-50"
@@ -136,18 +138,18 @@ export default function Home() {
                     disabled={subscribeMutation.isPending}
                   >
                     <Mail className="h-4 w-4 inline mr-2" />
-                    {subscribeMutation.isPending ? 'SUBSCRIBING...' : 'NOTIFY ME'}
+                    {subscribeMutation.isPending ? t('home.subscribing') : t('home.notify_me')}
                   </button>
                 </div>
                 {error && (
                   <div className="text-cyber-pink font-mono text-sm">
-                    <span className="text-cyber-pink">ERROR:</span> {error}
+                    <span className="text-cyber-pink">{t('home.error_prefix')}</span> {error}
                   </div>
                 )}
               </form>
             ) : (
               <div className="border border-cyber-green/50 bg-cyber-green/10 p-4 font-mono text-cyber-green text-sm">
-                <span className="text-cyber-green">✓</span> SUBSCRIPTION_CONFIRMED — You'll be notified at launch.
+                <span className="text-cyber-green">✓</span> {t('home.subscription_confirmed')}
               </div>
             )}
           </div>
@@ -159,7 +161,7 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-4">
           <div className="text-center mb-8">
             <h2 className="font-mono text-sm text-cyber-cyan/70 tracking-widest">
-              // DATABASE STATUS: <span className="text-cyber-green">ONLINE</span>
+              {t('home.db_status')} <span className="text-cyber-green">{t('home.db_online')}</span>
             </h2>
           </div>
 
@@ -169,7 +171,7 @@ export default function Home() {
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-cyan mb-1">
                 {siteStats?.products ?? '—'}
               </div>
-              <div className="text-gray-500 group-hover:text-cyber-cyan font-mono text-xs tracking-wider transition-colors">PRODUCTS</div>
+              <div className="text-gray-500 group-hover:text-cyber-cyan font-mono text-xs tracking-wider transition-colors">{t('home.stats_products')}</div>
             </Link>
 
             <Link to="/components" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-pink/50 transition-colors group block">
@@ -177,7 +179,7 @@ export default function Home() {
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-pink mb-1">
                 {siteStats?.components ?? '—'}
               </div>
-              <div className="text-gray-500 group-hover:text-cyber-pink font-mono text-xs tracking-wider transition-colors">COMPONENTS</div>
+              <div className="text-gray-500 group-hover:text-cyber-pink font-mono text-xs tracking-wider transition-colors">{t('home.stats_components')}</div>
             </Link>
 
             <Link to="/schematics" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-green/50 transition-colors group block">
@@ -185,7 +187,7 @@ export default function Home() {
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-green mb-1">
                 {siteStats?.schematics ?? '—'}
               </div>
-              <div className="text-gray-500 group-hover:text-cyber-green font-mono text-xs tracking-wider transition-colors">SCHEMATICS</div>
+              <div className="text-gray-500 group-hover:text-cyber-green font-mono text-xs tracking-wider transition-colors">{t('home.stats_schematics')}</div>
             </Link>
 
             <Link to="/leaderboard" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-yellow/50 transition-colors group block">
@@ -193,7 +195,7 @@ export default function Home() {
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-yellow mb-1">
                 {siteStats?.contributors ?? '—'}
               </div>
-              <div className="text-gray-500 group-hover:text-cyber-yellow font-mono text-xs tracking-wider transition-colors">CONTRIBUTORS</div>
+              <div className="text-gray-500 group-hover:text-cyber-yellow font-mono text-xs tracking-wider transition-colors">{t('home.stats_contributors')}</div>
             </Link>
           </div>
         </div>
@@ -205,13 +207,13 @@ export default function Home() {
           <div className="mx-auto max-w-5xl px-4">
             <div className="flex items-center justify-between mb-6">
               <h2 className="font-display text-xl font-bold text-white">
-                FEATURED <span className="text-cyber-cyan">PRODUCTS</span>
+                {t('home.featured_products')} <span className="text-cyber-cyan">{t('home.featured_products_highlight')}</span>
               </h2>
               <Link
                 to="/products"
                 className="text-xs text-cyber-cyan hover:text-white transition-colors flex items-center gap-1 font-mono"
               >
-                VIEW ALL <ChevronRight className="h-3.5 w-3.5" />
+                {t('home.view_all')} <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
             <div className="flex gap-4 overflow-x-auto scrollbar-hide pb-2">
@@ -239,8 +241,8 @@ export default function Home() {
                     {product.model_number}
                   </div>
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500 font-mono">
-                    <span>{product.component_count} parts</span>
-                    <span>{product.schematic_count} docs</span>
+                    <span>{product.component_count} {t('home.parts')}</span>
+                    <span>{product.schematic_count} {t('home.docs')}</span>
                   </div>
                 </Link>
               ))}
@@ -254,10 +256,10 @@ export default function Home() {
         <div className="mx-auto max-w-5xl px-4">
           <div className="text-center mb-12">
             <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-3">
-              WHAT WE'RE <span className="text-cyber-cyan chromatic-aberration">BUILDING</span>
+              {t('home.what_were_building')} <span className="text-cyber-cyan chromatic-aberration">{t('home.building')}</span>
             </h2>
             <p className="text-gray-500 font-mono text-sm">
-              // A repair knowledge base for everyone
+              {t('home.building_subtitle')}
             </p>
           </div>
 
@@ -270,10 +272,10 @@ export default function Home() {
                   <Cpu className="h-5 w-5 text-cyber-cyan" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-white mb-2">
-                  Component Database
+                  {t('home.feature1_title')}
                 </h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Cross-reference ICs, transistors, and parts across thousands of consumer electronics.
+                  {t('home.feature1_desc')}
                 </p>
                 <div className="text-cyber-cyan/50 font-mono text-xs">
                   → parts.lookup()
@@ -289,10 +291,10 @@ export default function Home() {
                   <FileText className="h-5 w-5 text-cyber-pink" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-white mb-2">
-                  Schematics & BOMs
+                  {t('home.feature2_title')}
                 </h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Service manuals, block diagrams, and bills of materials from teardowns.
+                  {t('home.feature2_desc')}
                 </p>
                 <div className="text-cyber-pink/50 font-mono text-xs">
                   → docs.fetch()
@@ -308,10 +310,10 @@ export default function Home() {
                   <Users className="h-5 w-5 text-cyber-green" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-white mb-2">
-                  Community Driven
+                  {t('home.feature3_title')}
                 </h3>
                 <p className="text-gray-400 text-sm mb-4">
-                  Built by repair enthusiasts, for repair enthusiasts. Open data for everyone.
+                  {t('home.feature3_desc')}
                 </p>
                 <div className="text-cyber-green/50 font-mono text-xs">
                   → community.join()
@@ -339,15 +341,15 @@ export default function Home() {
 
             <div className="relative">
               <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-4">
-                WANT <span className="text-cyber-yellow">EARLY ACCESS</span>?
+                {t('home.early_access_title')} <span className="text-cyber-yellow">{t('home.early_access_highlight')}</span>{t('home.early_access_question')}
               </h2>
               <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                We're looking for beta testers and early contributors to help build the database.
+                {t('home.early_access_desc')}
               </p>
 
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link to="/register" className="btn-cyber">
-                  CREATE ACCOUNT
+                  {t('home.create_account')}
                   <ArrowRight className="h-4 w-4 inline ml-2" />
                 </Link>
               </div>
@@ -363,12 +365,10 @@ export default function Home() {
             <Zap className="h-10 w-10 text-cyber-yellow mx-auto" />
           </div>
           <h2 className="font-display text-xl md:text-2xl font-bold text-white mb-4">
-            "NO USER SERVICEABLE PARTS INSIDE"
+            {t('home.r2r_quote')}
           </h2>
           <p className="text-gray-400 mb-6">
-            Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway.
-            Every documented component, every shared schematic, every teardown photo helps independent
-            repair shops, hobbyists, and consumers fight for their right to repair.
+            {t('home.r2r_desc')}
           </p>
           <a
             href="https://repair.org"
@@ -376,7 +376,7 @@ export default function Home() {
             rel="noopener noreferrer"
             className="text-cyber-yellow font-mono text-sm hover:underline"
           >
-            LEARN MORE ABOUT RIGHT TO REPAIR →
+            {t('home.learn_r2r')}
           </a>
         </div>
       </section>

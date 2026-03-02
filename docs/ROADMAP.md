@@ -327,6 +327,47 @@ UNIQUE(user, content_type, object_id, item_type)
 - ImageUpload: File validation, drag/drop, upload
 - Submit wizard: Step progression, form validation
 
+### Phase 4: Internationalisation ✅ COMPLETE (March 2, 2026)
+
+#### Multi-Language Support
+- ✅ **react-i18next** integration with lazy-loaded locale files (`/locales/{lang}/translation.json`) — i18next-browser-languagedetector reads `localStorage` key `junkbin_lang` first, then `navigator.language`
+- ✅ Extract ~200+ hardcoded strings from pages and components into translation keys across 36 semantic sections
+- ✅ Language switcher in Header (globe icon) — desktop dropdown + mobile grid, auto-detect from browser, saved to localStorage (anonymous) / user profile (authenticated)
+- ✅ Django backend: `LocaleMiddleware`, `LANGUAGES` setting, wrapped serializer error strings with `_()`, i18n email templates (`{% load i18n %}`, `{% trans %}`, `{% blocktrans %}`)
+- ✅ `preferred_language` field on User model (migration 0005) — profile PATCH saves preference, `AuthContext` applies it on login and auth check
+- ✅ Axios `Accept-Language` interceptor forwards active locale to backend
+- ✅ `auth.updateMe()` JSON PATCH endpoint for lightweight profile field updates without multipart overhead
+
+#### Supported Languages (15 total)
+
+| Code | Language | Script | Status |
+|------|----------|--------|--------|
+| `en` | English | Latin | Source / Authoritative |
+| `fr` | Français | Latin | Machine-translated (Mar 2026) |
+| `es` | Español | Latin | Machine-translated (Mar 2026) |
+| `pt` | Português | Latin | Machine-translated (Mar 2026) |
+| `de` | Deutsch | Latin | Machine-translated (Mar 2026) |
+| `it` | Italiano | Latin | Machine-translated (Mar 2026) |
+| `nl` | Nederlands | Latin | Machine-translated (Mar 2026) |
+| `pl` | Polski | Latin | Machine-translated (Mar 2026) |
+| `cs` | Čeština | Latin | Machine-translated (Mar 2026) |
+| `sk` | Slovenčina | Latin | Machine-translated (Mar 2026) |
+| `hr` | Hrvatski | Latin | Machine-translated (Mar 2026) |
+| `sr` | Srpski | Latin | Machine-translated (Mar 2026) |
+| `sl` | Slovenščina | Latin | Machine-translated (Mar 2026) |
+| `ru` | Русский | Cyrillic | Machine-translated (Mar 2026) |
+| `uk` | Українська | Cyrillic | Machine-translated (Mar 2026) |
+
+#### Remaining / Ongoing
+- ⬜ **Community translation review** — all 14 non-English locales are machine-translated; native speaker corrections welcome via PR
+- ⬜ **CONTRIBUTING_TRANSLATIONS.md** — contributor guide for translation corrections
+- ⬜ **Django .po / .mo files** — run `makemessages` + `compilemessages` to serve Django error messages and email templates in user's language (infrastructure in place, .po files not yet generated)
+- ⬜ **Additional languages** — candidates: `ro` (Romanian), `hu` (Hungarian), `tr` (Turkish); straightforward to add with existing infrastructure
+
+**Plan file:** `~/.claude/plans/swirling-shimmying-iverson.md`
+
+---
+
 ### Phase 3: Advanced Features (Weeks 15-20)
 
 #### Community Features
@@ -752,6 +793,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: February 17, 2026
-**Version**: 2.0
-**Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Deployed & E2E Tested
+**Last Updated**: March 2, 2026
+**Version**: 2.1
+**Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Phase 4 Complete (15 languages) - Deployed & E2E Tested

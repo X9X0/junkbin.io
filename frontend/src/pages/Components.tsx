@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { components } from '../api/endpoints';
 import { Cpu, Grid, List, Search, ChevronDown, ExternalLink, CheckCircle, Package } from 'lucide-react';
 import clsx from 'clsx';
@@ -60,6 +61,7 @@ const COMPONENT_TYPES = [
 ];
 
 export default function Components() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
@@ -106,10 +108,10 @@ export default function Components() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
-            COMPONENT <span className="text-cyber-pink">CATALOG</span>
+            {t('components.title')} <span className="text-cyber-pink">{t('components.title_highlight')}</span>
           </h1>
           <p className="text-gray-400">
-            Search electronic components and find which products contain them
+            {t('components.subtitle')}
           </p>
         </div>
 
@@ -122,7 +124,7 @@ export default function Components() {
                 type="text"
                 value={search}
                 onChange={(e) => updateFilter('search', e.target.value)}
-                placeholder="Search by part number, manufacturer, description..."
+                placeholder={t('components.search_placeholder')}
                 className="input-cyber pl-10"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -137,7 +139,7 @@ export default function Components() {
               >
                 {COMPONENT_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
-                    {type.label}
+                    {type.value === '' ? t('components.all_types') : type.label}
                   </option>
                 ))}
               </select>
@@ -151,11 +153,11 @@ export default function Components() {
                 onChange={(e) => updateFilter('ordering', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
-                <option value="-usage_count">Most Used</option>
-                <option value="usage_count">Least Used</option>
-                <option value="manufacturer">Manufacturer A-Z</option>
-                <option value="part_number">Part Number A-Z</option>
-                <option value="-created_at">Newest First</option>
+                <option value="-usage_count">{t('components.most_used')}</option>
+                <option value="usage_count">{t('components.least_used')}</option>
+                <option value="manufacturer">{t('components.manufacturer_az')}</option>
+                <option value="part_number">{t('components.part_number_az')}</option>
+                <option value="-created_at">{t('components.newest_first')}</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
             </div>
@@ -191,7 +193,7 @@ export default function Components() {
         {/* Results count */}
         {data && (
           <div className="mb-4 text-sm text-gray-500 font-mono">
-            {data.count} components found
+            {t('components.count_found', { count: data.count })}
           </div>
         )}
 
@@ -241,7 +243,7 @@ export default function Components() {
                       {component.manufacturer}
                     </span>
                     {component.is_verified && (
-                      <span title="Verified">
+                      <span title={t('components.verified')}>
                         <CheckCircle className="h-3.5 w-3.5 text-cyber-green" />
                       </span>
                     )}
@@ -272,7 +274,7 @@ export default function Components() {
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-xs">
                     <span className="text-cyber-cyan">
-                      Found in {component.usage_count} products
+                      {t('components.found_in_products', { count: component.usage_count })}
                     </span>
                     {component.datasheet_url && (
                       <button
@@ -284,7 +286,7 @@ export default function Components() {
                         }}
                       >
                         <ExternalLink className="h-3 w-3" />
-                        Datasheet
+                        {t('components.datasheet')}
                       </button>
                     )}
                   </div>
@@ -295,7 +297,7 @@ export default function Components() {
                       className="text-xs font-mono text-cyber-cyan group-hover:text-white transition-colors flex items-center gap-1"
                     >
                       <Cpu className="h-3.5 w-3.5" />
-                      Find products with this component →
+                      {t('components.find_products')}
                     </span>
                   </div>
                 </div>
@@ -308,12 +310,12 @@ export default function Components() {
         {data && data.results.length === 0 && (
           <div className="text-center py-20">
             <Package className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="font-display text-xl text-white mb-2">NO COMPONENTS FOUND</h3>
+            <h3 className="font-display text-xl text-white mb-2">{t('components.no_components_title')}</h3>
             <p className="text-gray-500 mb-6">
-              Try adjusting your search or filters
+              {t('components.no_components_desc')}
             </p>
             <Link to="/submit" className="btn-cyber">
-              ADD A COMPONENT
+              {t('components.add_component')}
             </Link>
           </div>
         )}
