@@ -72,7 +72,7 @@ export default function Recipes() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-7xl px-4">
+      <div className="mx-auto max-w-screen-2xl px-4">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>

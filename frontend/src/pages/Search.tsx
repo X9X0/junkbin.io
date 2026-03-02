@@ -91,7 +91,7 @@ export default function Search() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-5xl px-4">
+      <div className="mx-auto max-w-7xl px-4">
         {/* Search Header */}
         <div className="mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-6">

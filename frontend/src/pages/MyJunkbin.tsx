@@ -97,7 +97,7 @@ export default function MyJunkbin() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-5xl px-4">
+      <div className="mx-auto max-w-7xl px-4">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <h1 className="font-display text-3xl font-bold text-white">{t('my_junkbin.title')}</h1>

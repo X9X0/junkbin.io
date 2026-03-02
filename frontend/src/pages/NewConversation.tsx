@@ -117,7 +117,7 @@ export default function NewConversation() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-3xl px-4">
+      <div className="mx-auto max-w-screen-2xl px-4">
         {/* Header */}
         <div className="flex items-center gap-4 mb-6">
           <Link

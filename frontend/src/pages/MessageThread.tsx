@@ -45,6 +45,31 @@ export default function MessageThread() {
   const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [lightbox, setLightbox] = useState<{ url: string; filename: string } | null>(null);
+  const [composeHeight, setComposeHeight] = useState<number | null>(null);
+  const dragRef = useRef<{ startY: number; startHeight: number } | null>(null);
+
+  // Set desktop default height after mount
+  useEffect(() => {
+    if (window.innerWidth >= 768) setComposeHeight(240);
+  }, []);
+
+  const handleDragStart = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const h = textareaRef.current?.offsetHeight ?? 240;
+    dragRef.current = { startY: e.clientY, startHeight: h };
+    const onMove = (ev: MouseEvent) => {
+      if (!dragRef.current) return;
+      const delta = dragRef.current.startY - ev.clientY; // up = expand
+      setComposeHeight(Math.max(80, Math.min(600, dragRef.current.startHeight + delta)));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
 
   useEffect(() => {
     if (!lightbox) return;
@@ -178,7 +203,7 @@ export default function MessageThread() {
   const hasMore = !!messagesData?.next;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)', overflow: 'hidden' }}>
+    <div className="mx-auto max-w-screen-2xl px-4 py-4 flex flex-col" style={{ height: 'calc(100vh - 4rem)', overflow: 'hidden' }}>
       {/* Header */}
       <div className="flex items-center justify-between mb-4 pb-4 border-b border-cyber-light/30">
         <div className="flex items-center gap-3">
@@ -405,16 +430,30 @@ export default function MessageThread() {
             className="hidden"
             onChange={handleFileChange}
           />
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            rows={4}
-            maxLength={5000}
-            className="input-cyber flex-1 resize-none text-sm"
-          />
+          {/* Textarea with top-center drag handle (desktop only) */}
+          <div className="relative flex-1">
+            <div
+              className="hidden md:flex absolute -top-3 left-0 right-0 justify-center items-center h-4 cursor-ns-resize z-10 group select-none"
+              onMouseDown={handleDragStart}
+            >
+              <div className="flex items-center gap-1">
+                <div className="w-10 h-px bg-cyber-light/40 group-hover:bg-cyber-cyan/60 transition-colors" />
+                <div className="h-1 w-1 rounded-full bg-cyber-light/40 group-hover:bg-cyber-cyan/60 transition-colors" />
+                <div className="w-10 h-px bg-cyber-light/40 group-hover:bg-cyber-cyan/60 transition-colors" />
+              </div>
+            </div>
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type a message..."
+              rows={4}
+              maxLength={5000}
+              className="input-cyber w-full resize-none text-sm"
+              style={composeHeight !== null ? { height: `${composeHeight}px` } : undefined}
+            />
+          </div>
           {/* Button stack: paperclip above send */}
           <div className="flex flex-col gap-2 self-end">
             <button

@@ -80,7 +80,7 @@ export default function MySubmissions() {
 
   return (
     <div className="py-8">
-      <div className="mx-auto max-w-5xl px-4">
+      <div className="mx-auto max-w-7xl px-4">
         {/* Header */}
         <div className="mb-6">
           <h1 className="font-display text-3xl font-bold text-white">
