@@ -44,6 +44,14 @@ export default function MessageThread() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [lightbox, setLightbox] = useState<{ url: string; filename: string } | null>(null);
+
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setLightbox(null); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightbox]);
 
   // Fetch conversation detail (also marks messages as read)
   const { data: conversation } = useQuery({
@@ -287,19 +295,26 @@ export default function MessageThread() {
                     <div className={clsx('flex flex-col gap-2', msg.content && 'mt-2')}>
                       {msg.attachments.map((att: MessageAttachment) =>
                         att.is_image ? (
-                          <a
+                          <div
                             key={att.id}
-                            href={att.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block"
+                            className="relative group/img cursor-zoom-in inline-block"
+                            onClick={() => setLightbox({ url: att.url, filename: att.original_filename })}
                           >
                             <img
                               src={att.url}
                               alt={att.original_filename}
                               className="max-w-xs max-h-64 object-contain border border-cyber-light/20"
                             />
-                          </a>
+                            <a
+                              href={att.url}
+                              download={att.original_filename}
+                              onClick={(e) => e.stopPropagation()}
+                              title="Download"
+                              className="absolute bottom-1 right-1 opacity-0 group-hover/img:opacity-100 bg-black/60 p-1 transition-opacity"
+                            >
+                              <Download className="h-3 w-3 text-white" />
+                            </a>
+                          </div>
                         ) : (
                           <a
                             key={att.id}
@@ -455,6 +470,43 @@ export default function MessageThread() {
           objectId={otherParticipant.id}
           itemName={otherParticipant.username}
         />
+      )}
+
+      {/* Image lightbox */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 flex items-center justify-center p-4"
+          onClick={() => setLightbox(null)}
+        >
+          <div
+            className="relative flex flex-col items-center gap-3 max-w-[90vw] max-h-[90vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setLightbox(null)}
+              className="absolute -top-9 right-0 text-gray-400 hover:text-white transition-colors"
+              title="Close"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src={lightbox.url}
+              alt={lightbox.filename}
+              className="max-w-full max-h-[80vh] object-contain"
+            />
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-mono text-gray-400 truncate max-w-xs">{lightbox.filename}</span>
+              <a
+                href={lightbox.url}
+                download={lightbox.filename}
+                className="btn-cyber text-xs px-3 py-1 flex items-center gap-1.5"
+              >
+                <Download className="h-3 w-3" />
+                Download
+              </a>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
