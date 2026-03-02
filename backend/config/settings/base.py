@@ -130,7 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'America/New_York'
 USE_I18N = True
 USE_TZ = True
 
@@ -295,7 +295,7 @@ AXES_LOCKOUT_PARAMETERS = ['username', 'ip_address']  # Lock by username + IP co
 AXES_RESET_ON_SUCCESS = True  # Reset failed attempts on successful login
 AXES_LOCKOUT_CALLABLE = 'apps.api.middleware.axes_lockout_response'  # Custom lockout message
 AXES_ENABLE_ACCESS_FAILURE_LOG = True  # Persist failed login attempts in AccessFailureLog
-AXES_IPWARE_PROXY_COUNT = 1  # Trust 1 proxy (nginx)
+AXES_IPWARE_PROXY_COUNT = 0  # nginx appends the real client IP to XFF; take rightmost entry
 AXES_IPWARE_META_PRECEDENCE_ORDER = [
     'HTTP_X_FORWARDED_FOR',
     'REMOTE_ADDR',
@@ -324,7 +324,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'send-daily-digest': {
         'task': 'apps.api.tasks.send_daily_digest',
-        'schedule': crontab(hour=12, minute=0),  # 8 AM EDT (UTC-4)
+        'schedule': crontab(hour=8, minute=0),  # 8 AM Eastern
     },
     'cleanup-search-queries': {
         'task': 'apps.api.tasks.cleanup_old_search_queries',
@@ -389,8 +389,8 @@ ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 # Moderation settings
 REPORT_STRIKE_THRESHOLD = 3  # Number of reports before automatic review
-TRUSTED_USER_CONTRIBUTION_THRESHOLD = 50  # Contributions needed for trusted status
-TRUSTED_USER_MIN_REPUTATION = 100  # Minimum reputation for trusted status
+TRUSTED_USER_CONTRIBUTION_THRESHOLD = 25  # Contributions needed for trusted status
+TRUSTED_USER_MIN_REPUTATION = 50  # Minimum reputation for trusted status
 
 # Voting settings
 VERIFICATION_VOTE_THRESHOLD = 3   # Net vote score needed for auto-verification
