@@ -42,8 +42,13 @@ export default {
         'glow': 'glow 2s ease-in-out infinite alternate',
         'scan': 'scan 8s linear infinite',
         'flicker': 'flicker 0.15s infinite',
+        'yellow-pulse': 'yellow-pulse 1.4s ease-in-out infinite',
       },
       keyframes: {
+        'yellow-pulse': {
+          '0%, 100%': { opacity: '1', filter: 'brightness(1) drop-shadow(0 0 6px #f9f002)' },
+          '50%': { opacity: '0.55', filter: 'brightness(1.6) drop-shadow(0 0 14px #f9f002)' },
+        },
         glow: {
           '0%': { boxShadow: '0 0 5px currentColor, 0 0 10px currentColor' },
           '100%': { boxShadow: '0 0 10px currentColor, 0 0 20px currentColor, 0 0 30px currentColor' },

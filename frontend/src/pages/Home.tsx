@@ -152,6 +152,14 @@ export default function Home() {
                 <span className="text-cyber-green">✓</span> {t('home.subscription_confirmed')}
               </div>
             )}
+
+            <div className="flex items-center justify-center gap-3 mt-5 animate-yellow-pulse">
+              <span className="text-[#f9f002] text-2xl leading-none">▼</span>
+              <p className="font-bold text-[#f9f002] tracking-widest uppercase text-lg">
+                Beta Testers Register Below
+              </p>
+              <span className="text-[#f9f002] text-2xl leading-none">▼</span>
+            </div>
           </div>
         </div>
       </section>
