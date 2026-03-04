@@ -423,9 +423,15 @@ class ProductViewSet(viewsets.ModelViewSet):
                         'package_type': pkg,
                         'description': cleaned.get('description', ''),
                         'specifications': specs,
+                        'datasheet_url': cleaned.get('datasheet_url', ''),
                         'created_by': request.user,
                     }
                 )
+
+                # Backfill datasheet_url if the component already exists but lacks one
+                if not was_created and cleaned.get('datasheet_url') and not component.datasheet_url:
+                    component.datasheet_url = cleaned['datasheet_url']
+                    component.save(update_fields=['datasheet_url'])
 
                 if was_created:
                     created += 1

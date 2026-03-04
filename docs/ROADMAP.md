@@ -379,6 +379,14 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ User discovery & public profiles — public user profile pages, user search in global search and header, clickable leaderboard, new conversation page with recipient autocomplete and ?to= prefill (Feb 14, 2026)
 - ✅ Email notification preferences — granular per-category toggles (messages, submissions, reports, account) with master switch, all notification tasks respect preferences, settings UI on Profile page (Feb 14, 2026)
 
+#### PCBTracer Integration
+[PCBTracer](https://pcbtracer.com) is a free browser-based PCB analysis and reverse-engineering tool with AI-powered component identification and KiCad/BOM export. Integration points:
+
+- ✅ **PCBTracer BOM import** — BOM CSV export from PCBTracer (and KiCad) is accepted directly by the existing BOM import wizard. Added PCBTracer/KiCad column aliases (`References`, `Datasheet`, `Lib Ref`, `Val`, `Annotation`, `Component Name/Value`, `Signal Name`), `datasheet_url` as a new mappable field (saved to Component and backfilled on existing records), and KiCad-style comma/semicolon-delimited reference designator normalisation (Mar 4, 2026)
+- ⬜ **"Open in PCBTracer" button** — On product pages with PCB photo uploads, add a button that passes the image URL to PCBTracer via URL parameter, letting users jump straight into PCB analysis without re-uploading
+- ⬜ **PCBTracer → Swap Shop match** — After a user exports a BOM from PCBTracer and imports it, surface a one-click flow to check the Swap Shop for who has the required parts
+- ⬜ **Submission workflow guidance** — Surface PCBTracer as the recommended documentation tool when a user starts a new product submission ("Documenting a PCB? Use PCBTracer to identify components, then import the BOM here")
+
 #### Integration & Automation
 - ✅ Nexar/Octopart API integration — GraphQL MPN search with OAuth2, component pricing/availability/datasheets from 100+ distributors (DigiKey, Mouser, etc.), cached in specifications JSONField, "Lookup Pricing" button on ComponentDetail, Celery task for bulk enrichment (Feb 15, 2026)
 - ✅ **SETUP: Nexar API credentials** — `NEXAR_CLIENT_ID` and `NEXAR_CLIENT_SECRET` configured in `.env` (sign up at https://nexar.com/api, free tier: 100 matched parts lifetime) (Feb 15, 2026)
@@ -793,6 +801,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: March 2, 2026
-**Version**: 2.1
+**Last Updated**: March 4, 2026
+**Version**: 2.2
 **Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Phase 4 Complete (15 languages) - Deployed & E2E Tested

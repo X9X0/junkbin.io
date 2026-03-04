@@ -106,6 +106,16 @@ export default function Footer() {
                 </a>
               </li>
               <li>
+                <a
+                  href="https://pcbtracer.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  PCBTracer
+                </a>
+              </li>
+              <li>
                 <Link
                   to="/guidelines"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"

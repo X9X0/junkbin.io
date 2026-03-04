@@ -188,14 +188,29 @@ export default function BomImport({ productId, onSuccess, onClose }: BomImportPr
                 <p className="text-gray-400 font-mono text-sm">PARSING CSV...</p>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3">
+                <div className="flex flex-col items-center gap-3">
                 <Upload className="h-10 w-10 text-gray-500" />
                 <p className="text-gray-400">
                   Drag & drop a CSV file here, or click to browse
                 </p>
                 <p className="text-gray-600 text-xs font-mono">
-                  .CSV files only, max 5MB
+                  .CSV files only · max 5MB
                 </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Compatible with</span>
+                  <a
+                    href="https://pcbtracer.com"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-[10px] font-mono px-2 py-0.5 border border-cyber-cyan/30 text-cyber-cyan hover:border-cyber-cyan/60 transition-colors"
+                  >
+                    PCBTracer
+                  </a>
+                  <span className="text-[10px] font-mono px-2 py-0.5 border border-cyber-light/20 text-gray-500">
+                    KiCad BOM
+                  </span>
+                </div>
               </div>
             )}
           </div>
