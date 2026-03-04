@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import {
@@ -11,6 +12,7 @@ import {
   ChevronRight,
   ChevronLeft,
   Eye,
+  ArrowLeftRight,
 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -461,15 +463,22 @@ export default function BomImport({ productId, onSuccess, onClose }: BomImportPr
 
               {/* After successful import */}
               {importResult && !importResult.dry_run && (
-                <button
-                  onClick={() => {
-                    onSuccess?.();
-                    onClose?.();
-                  }}
-                  className="btn-cyber text-sm py-1.5"
-                >
-                  Done
-                </button>
+                <div className="flex items-center gap-3">
+                  <Link
+                    to="/swap?content_type=component"
+                    onClick={() => { onSuccess?.(); onClose?.(); }}
+                    className="flex items-center gap-1.5 text-sm text-cyber-cyan hover:text-white font-mono transition-colors"
+                  >
+                    <ArrowLeftRight className="h-4 w-4" />
+                    CHECK SWAP SHOP
+                  </Link>
+                  <button
+                    onClick={() => { onSuccess?.(); onClose?.(); }}
+                    className="btn-cyber text-sm py-1.5"
+                  >
+                    Done
+                  </button>
+                </div>
               )}
             </div>
           </div>

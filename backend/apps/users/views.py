@@ -553,3 +553,144 @@ class GoogleAuthView(APIView):
         )
         set_token_cookies(response, access_token, refresh_token)
         return response
+
+
+class GitHubAuthView(APIView):
+    """Authenticate or register a user via GitHub OAuth authorization code."""
+
+    permission_classes = [permissions.AllowAny]
+    authentication_classes = []
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    def post(self, request):
+        import requests as http_requests
+
+        code = request.data.get('code')
+        if not code:
+            return Response(
+                {'error': 'Missing code'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        client_id = getattr(settings, 'OAUTH_GITHUB_CLIENT_ID', None)
+        client_secret = getattr(settings, 'OAUTH_GITHUB_CLIENT_SECRET', None)
+        if not client_id or not client_secret:
+            return Response(
+                {'error': 'GitHub OAuth is not configured'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
+
+        # Exchange code for access_token
+        try:
+            token_resp = http_requests.post(
+                'https://github.com/login/oauth/access_token',
+                json={'client_id': client_id, 'client_secret': client_secret, 'code': code},
+                headers={'Accept': 'application/json'},
+                timeout=10,
+            )
+            token_data = token_resp.json()
+        except Exception:
+            return Response(
+                {'error': 'Failed to contact GitHub'},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        access_token = token_data.get('access_token')
+        if not access_token:
+            return Response(
+                {'error': 'GitHub authentication failed'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Get GitHub user profile
+        try:
+            user_resp = http_requests.get(
+                'https://api.github.com/user',
+                headers={
+                    'Authorization': f'Bearer {access_token}',
+                    'Accept': 'application/vnd.github+json',
+                },
+                timeout=10,
+            )
+            github_user = user_resp.json()
+        except Exception:
+            return Response(
+                {'error': 'Failed to get GitHub user info'},
+                status=status.HTTP_502_BAD_GATEWAY
+            )
+
+        # Resolve email — may be private, so also check /user/emails
+        email = github_user.get('email')
+        if not email:
+            try:
+                emails_resp = http_requests.get(
+                    'https://api.github.com/user/emails',
+                    headers={'Authorization': f'Bearer {access_token}'},
+                    timeout=10,
+                )
+                primary = next(
+                    (e for e in emails_resp.json() if e.get('primary') and e.get('verified')),
+                    None
+                )
+                if primary:
+                    email = primary['email']
+            except Exception:
+                pass
+
+        if not email:
+            return Response(
+                {'error': 'No verified email on GitHub account. Please make your email public or verify it on GitHub.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        email = email.lower()
+        github_login = github_user.get('login', '')
+        created = False
+
+        try:
+            user = User.objects.get(email__iexact=email)
+            if user.oauth_provider and user.oauth_provider != 'github':
+                return Response(
+                    {'error': f'This email is linked to a {user.oauth_provider} account.'},
+                    status=status.HTTP_409_CONFLICT
+                )
+            if not user.oauth_provider:
+                user.oauth_provider = 'github'
+                user.email_verified = True
+                user.save(update_fields=['oauth_provider', 'email_verified'])
+        except User.DoesNotExist:
+            base_username = ''.join(
+                c if c.isalnum() or c == '_' else '' for c in github_login
+            )[:20] or 'user'
+            username = base_username
+            suffix = 1
+            while User.objects.filter(username__iexact=username).exists():
+                username = f'{base_username}{suffix}'
+                suffix += 1
+
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password=None,
+                oauth_provider='github',
+                email_verified=True,
+            )
+            created = True
+
+        refresh = RefreshToken.for_user(user)
+        access_token_str = str(refresh.access_token)
+        refresh_token_str = str(refresh)
+
+        from apps.api.urls import set_token_cookies
+
+        response_data = {
+            'user': UserSerializer(user).data,
+            'created': created,
+        }
+        response = Response(
+            response_data,
+            status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+        )
+        set_token_cookies(response, access_token_str, refresh_token_str)
+        return response

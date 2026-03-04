@@ -3,12 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import GitHubLoginButton from '../components/GitHubLoginButton';
 import { UserPlus, AlertCircle, Check } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
 
 export default function Register() {
   const { t } = useTranslation();
-  const { register, googleLogin } = useAuth();
+  const { register, googleLogin, githubLogin } = useAuth();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
@@ -57,23 +58,41 @@ export default function Register() {
         </div>
 
         <div className="card-cyber p-8">
-          {/* Quick signup via Google */}
-          <GoogleLoginButton
-            text="signup_with"
-            onSuccess={async (credential) => {
-              setError('');
-              setIsLoading(true);
-              try {
-                await googleLogin(credential);
-                navigate('/');
-              } catch (err: any) {
-                setError(err.response?.data?.error || t('auth.register.google_failed'));
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            onError={(msg) => setError(msg)}
-          />
+          {/* Quick signup via Google / GitHub */}
+          <div className="space-y-3">
+            <GoogleLoginButton
+              text="signup_with"
+              onSuccess={async (credential) => {
+                setError('');
+                setIsLoading(true);
+                try {
+                  await googleLogin(credential);
+                  navigate('/');
+                } catch (err: any) {
+                  setError(err.response?.data?.error || t('auth.register.google_failed'));
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              onError={(msg) => setError(msg)}
+            />
+            <GitHubLoginButton
+              text="signup_with"
+              onSuccess={async (code) => {
+                setError('');
+                setIsLoading(true);
+                try {
+                  await githubLogin(code);
+                  navigate('/');
+                } catch (err: any) {
+                  setError(err.response?.data?.error || 'GitHub sign-up failed');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              onError={(msg) => setError(msg)}
+            />
+          </div>
 
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">

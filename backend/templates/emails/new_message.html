@@ -1,3 +1,4 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,19 +9,19 @@
         <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
         <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
 
-        <h1 style="color: #00f0ff; font-size: 24px;">New Message</h1>
+        <h1 style="color: #00f0ff; font-size: 24px;">{% trans "New Message" %}</h1>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Hello {{ user.username }},</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% blocktrans with username=user.username %}Hello {{ username }},{% endblocktrans %}</p>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">You have a new message from <strong style="color: #00f0ff;">{{ sender.username }}</strong>:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% blocktrans with sender=sender.username %}You have a new message from <strong style="color: #00f0ff;">{{ sender }}</strong>:{% endblocktrans %}</p>
 
         <div style="background-color: #17334b; border-left: 4px solid #00f0ff; padding: 15px; margin: 20px 0;">
             <span style="color: #c0c0c0; font-style: italic;">"{{ message_preview }}"</span>
         </div>
 
-        <a href="{{ conversation_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">View Conversation</a>
+        <a href="{{ conversation_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">{% trans "View Conversation" %}</a>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "If the button doesn't work, copy and paste this link into your browser:" %}</p>
         <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5; word-break: break-all;"><a href="{{ conversation_url }}" style="color: #00f0ff;">{{ conversation_url }}</a></p>
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">

@@ -3,6 +3,7 @@ Recipe serializers for Junkbin.io API
 """
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.utils.translation import gettext_lazy as _
 
 from .models import Recipe, RecipeComponent
 from apps.components.models import Component
@@ -144,45 +145,45 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                     return result
                 except json.JSONDecodeError:
                     raise serializers.ValidationError(
-                        {'bom': ['Invalid JSON.']}
+                        {'bom': [_('Invalid JSON.')]}
                     )
         return super().to_internal_value(data)
 
     def validate_name(self, value):
         stripped = value.strip()
         if not stripped:
-            raise serializers.ValidationError('Name cannot be empty.')
+            raise serializers.ValidationError(_('Name cannot be empty.'))
         from utils.content_filter import check_content
-        is_clean, _ = check_content(stripped)
+        is_clean, violation = check_content(stripped)
         if not is_clean:
             raise serializers.ValidationError(
-                'Name contains prohibited language. '
-                'Please review our community guidelines.'
+                _('Name contains prohibited language. '
+                  'Please review our community guidelines.')
             )
         return stripped
 
     def validate_description(self, value):
         stripped = value.strip()
         if not stripped:
-            raise serializers.ValidationError('Description cannot be empty.')
+            raise serializers.ValidationError(_('Description cannot be empty.'))
         from utils.content_filter import check_content
-        is_clean, _ = check_content(stripped)
+        is_clean, violation = check_content(stripped)
         if not is_clean:
             raise serializers.ValidationError(
-                'Description contains prohibited language. '
-                'Please review our community guidelines.'
+                _('Description contains prohibited language. '
+                  'Please review our community guidelines.')
             )
         return stripped
 
     def validate_bom(self, value):
         if not value:
-            raise serializers.ValidationError('BOM must have at least 1 item.')
+            raise serializers.ValidationError(_('BOM must have at least 1 item.'))
         if len(value) > 100:
-            raise serializers.ValidationError('BOM cannot exceed 100 items.')
+            raise serializers.ValidationError(_('BOM cannot exceed 100 items.'))
 
         component_ids = [item['component_id'] for item in value]
         if len(component_ids) != len(set(component_ids)):
-            raise serializers.ValidationError('BOM contains duplicate components.')
+            raise serializers.ValidationError(_('BOM contains duplicate components.'))
 
         existing = set(
             Component.objects.filter(
@@ -192,7 +193,7 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         missing = [str(cid) for cid in component_ids if cid not in existing]
         if missing:
             raise serializers.ValidationError(
-                f'Components not found: {", ".join(missing)}'
+                _('Components not found: %(components)s') % {'components': ', '.join(missing)}
             )
 
         return value

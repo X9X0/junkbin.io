@@ -3,11 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import GoogleLoginButton from '../components/GoogleLoginButton';
+import GitHubLoginButton from '../components/GitHubLoginButton';
 import { LogIn, AlertCircle } from 'lucide-react';
 
 export default function Login() {
   const { t } = useTranslation();
-  const { login, googleLogin } = useAuth();
+  const { login, googleLogin, githubLogin } = useAuth();
   const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -109,22 +110,40 @@ export default function Login() {
             </div>
           </div>
 
-          <GoogleLoginButton
-            text="signin_with"
-            onSuccess={async (credential) => {
-              setError('');
-              setIsLoading(true);
-              try {
-                await googleLogin(credential);
-                navigate('/');
-              } catch (err: any) {
-                setError(err.response?.data?.error || t('auth.login.google_failed'));
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            onError={(msg) => setError(msg)}
-          />
+          <div className="space-y-3">
+            <GoogleLoginButton
+              text="signin_with"
+              onSuccess={async (credential) => {
+                setError('');
+                setIsLoading(true);
+                try {
+                  await googleLogin(credential);
+                  navigate('/');
+                } catch (err: any) {
+                  setError(err.response?.data?.error || t('auth.login.google_failed'));
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              onError={(msg) => setError(msg)}
+            />
+            <GitHubLoginButton
+              text="signin_with"
+              onSuccess={async (code) => {
+                setError('');
+                setIsLoading(true);
+                try {
+                  await githubLogin(code);
+                  navigate('/');
+                } catch (err: any) {
+                  setError(err.response?.data?.error || 'GitHub sign-in failed');
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              onError={(msg) => setError(msg)}
+            />
+          </div>
 
           <div className="divider-circuit" />
 

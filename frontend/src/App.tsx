@@ -34,6 +34,7 @@ import SubmitRecipe from './pages/SubmitRecipe';
 import Buildable from './pages/Buildable';
 import NotFound from './pages/NotFound';
 import Search from './pages/Search';
+import GitHubCallback from './pages/GitHubCallback';
 import ScrollToTop from './components/ScrollToTop';
 import ErrorBoundary from './components/ErrorBoundary';
 import './index.css';
@@ -55,6 +56,7 @@ function App() {
           <ScrollToTop />
           <ErrorBoundary>
             <Routes>
+              <Route path="auth/github/callback" element={<GitHubCallback />} />
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="products" element={<Products />} />
