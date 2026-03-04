@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import {
   BookOpen, Users, Search, Upload, MessageSquare, Package,
   ChevronRight, Menu, X,
-  Shield, Star, Heart, Send, Bell,
+  Shield, Star, Heart, Send, Bell, Globe,
 } from 'lucide-react';
+
+const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
 
 interface Section {
   id: string;
@@ -16,6 +18,7 @@ const userSections: Section[] = [
   { id: 'getting-started', label: 'Getting Started', icon: <BookOpen className="h-4 w-4" />, color: 'text-cyber-cyan' },
   { id: 'browsing', label: 'Browsing & Search', icon: <Search className="h-4 w-4" />, color: 'text-cyber-cyan' },
   { id: 'contributing', label: 'Contributing', icon: <Upload className="h-4 w-4" />, color: 'text-cyber-green' },
+  { id: 'translations', label: 'Translations', icon: <Globe className="h-4 w-4" />, color: 'text-cyber-green' },
   { id: 'community', label: 'Community', icon: <Users className="h-4 w-4" />, color: 'text-cyber-green' },
   { id: 'junkbin', label: 'Junkbin & Trading', icon: <Package className="h-4 w-4" />, color: 'text-cyber-yellow' },
   { id: 'messaging', label: 'Messaging', icon: <MessageSquare className="h-4 w-4" />, color: 'text-cyber-yellow' },
@@ -130,8 +133,8 @@ export default function Docs() {
                 <p className="leading-relaxed">
                   Click <strong className="text-white">Register</strong> in the header to create an account with your
                   email and a password. You'll receive a verification email — click the link to activate your account.
-                  Alternatively, sign in instantly with <strong className="text-white">Google</strong> using the
-                  "Continue with Google" button on the login page.
+                  Alternatively, sign in instantly with <strong className="text-white">Google</strong> or{' '}
+                  <strong className="text-white">GitHub</strong> using the OAuth buttons on the login page.
                 </p>
               </div>
 
@@ -256,6 +259,78 @@ export default function Docs() {
                   category, URL), then build the BOM with component search. Recipes let other users discover what
                   they can build from their junkbin.
                 </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Translations */}
+          <section id="translations" className="card-cyber p-6 scroll-mt-20">
+            <div className="flex items-center gap-2 mb-4">
+              <Globe className="h-5 w-5 text-cyber-green" />
+              <h2 className="font-display text-lg font-bold text-cyber-green tracking-wider">
+                TRANSLATIONS
+              </h2>
+            </div>
+
+            <div className="space-y-4 text-sm text-gray-300">
+              <p className="leading-relaxed">
+                Junkbin.io is available in <strong className="text-white">18 languages</strong>. All non-English
+                translations are currently machine-translated and need native speaker review. If you speak one of
+                these languages, you can improve the quality directly on GitHub — no coding experience needed.
+              </p>
+
+              <div>
+                <h3 className="text-white font-semibold mb-1">Frontend UI strings (JSON)</h3>
+                <p className="leading-relaxed mb-2">
+                  All visible text in the app lives in a single JSON file per language. Find your language below,
+                  edit the values (not the keys), and open a pull request.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { code: 'fr', label: 'Français' }, { code: 'es', label: 'Español' },
+                    { code: 'pt', label: 'Português' }, { code: 'de', label: 'Deutsch' },
+                    { code: 'it', label: 'Italiano' }, { code: 'nl', label: 'Nederlands' },
+                    { code: 'pl', label: 'Polski' }, { code: 'cs', label: 'Čeština' },
+                    { code: 'sk', label: 'Slovenčina' }, { code: 'hr', label: 'Hrvatski' },
+                    { code: 'sr', label: 'Srpski' }, { code: 'sl', label: 'Slovenščina' },
+                    { code: 'ru', label: 'Русский' }, { code: 'uk', label: 'Українська' },
+                    { code: 'ro', label: 'Română' }, { code: 'hu', label: 'Magyar' },
+                    { code: 'tr', label: 'Türkçe' },
+                  ].map(({ code, label }) => (
+                    <a
+                      key={code}
+                      href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${code}/translation.json`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-2 py-1 text-xs font-mono border border-cyber-light/30 text-gray-500 hover:text-cyber-cyan hover:border-cyber-cyan/50 transition-colors"
+                    >
+                      {label}
+                    </a>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-white font-semibold mb-1">Email templates & error messages (.po files)</h3>
+                <p className="leading-relaxed">
+                  Backend strings (email subjects, validation errors) use GNU gettext{' '}
+                  <code className="px-1 bg-cyber-dark border border-cyber-light/20 text-cyber-cyan text-xs">.po</code>{' '}
+                  files. Open your language's file in{' '}
+                  <a href="https://poedit.net" target="_blank" rel="noopener noreferrer" className="text-cyber-cyan hover:underline">Poedit</a>{' '}
+                  or any text editor, fill in the empty <code className="px-1 bg-cyber-dark border border-cyber-light/20 text-cyber-cyan text-xs">msgstr</code> lines, and submit a PR.
+                </p>
+              </div>
+
+              <div className="flex gap-3 pt-1">
+                <a
+                  href={`${GITHUB_REPO}/blob/main/docs/CONTRIBUTING_TRANSLATIONS.md`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-mono text-cyber-green border border-cyber-green/40 px-3 py-1.5 hover:bg-cyber-green/10 transition-colors"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  Full contributor guide →
+                </a>
               </div>
             </div>
           </section>
@@ -432,7 +507,7 @@ export default function Docs() {
           </section>
 
           <p className="text-center text-xs text-gray-600 font-mono pt-4">
-            Last updated: February 2026
+            Last updated: March 2026
           </p>
         </div>
       </div>
