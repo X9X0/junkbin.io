@@ -24,7 +24,12 @@ const LANGUAGES = [
   { code: 'sl', label: 'Slovenščina' },
   { code: 'ru', label: 'Русский' },
   { code: 'uk', label: 'Українська' },
+  { code: 'ro', label: 'Română' },
+  { code: 'hu', label: 'Magyar' },
+  { code: 'tr', label: 'Türkçe' },
 ];
+
+const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
 
 export default function Header() {
   const { t, i18n } = useTranslation();
@@ -402,6 +407,18 @@ export default function Header() {
                       )}
                     </button>
                   ))}
+                  <div className="border-t border-cyber-light/20 mt-1 pt-1">
+                    <a
+                      href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${i18n.language?.slice(0, 2) || 'en'}/translation.json`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full px-3 py-2 text-left text-xs text-gray-600 hover:text-cyber-green hover:bg-cyber-light/20 flex items-center gap-1.5 transition-colors"
+                      onClick={() => setShowLangMenu(false)}
+                    >
+                      <Globe className="h-3 w-3" />
+                      Help improve this translation →
+                    </a>
+                  </div>
                 </div>
               )}
             </div>
@@ -632,6 +649,16 @@ export default function Header() {
                   </button>
                 ))}
               </div>
+              <a
+                href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${i18n.language?.slice(0, 2) || 'en'}/translation.json`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-2 flex items-center gap-1.5 text-xs text-gray-600 hover:text-cyber-green transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Globe className="h-3 w-3" />
+                Help improve this translation →
+              </a>
             </div>
           </nav>
         </div>

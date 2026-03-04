@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Heart, Wrench } from 'lucide-react';
+import { Heart, Wrench, Globe } from 'lucide-react';
+
+const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
 
 export default function Footer() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const currentLang = i18n.language?.slice(0, 2) || 'en';
 
   return (
     <footer className="border-t border-cyber-light/30 bg-cyber-darker mt-auto">
@@ -130,6 +133,17 @@ export default function Footer() {
                 >
                   {t('footer.community_docs')}
                 </Link>
+              </li>
+              <li>
+                <a
+                  href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${currentLang}/translation.json`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-gray-400 hover:text-cyber-green transition-colors flex items-center gap-1.5"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {t('footer.contribute_translations')}
+                </a>
               </li>
             </ul>
           </div>
