@@ -106,7 +106,7 @@
   },
   "home": {
     "under_construction": "SAJT U IZGRADNJI",
-    "tagline_command": "cat /etc/warning.txt",
+    "tagline_command": "cat /etc/upozorenje.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
     "tagline_response": "To smo shvatili lično.",
     "description": "Baza podataka kojom upravlja zajednica za elektronske komponente, šeme i dokumentaciju za popravke.",
