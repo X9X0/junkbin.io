@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Heart, Wrench, Globe } from 'lucide-react';
 
-const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
+const WEBLATE_PROJECT = 'https://hosted.weblate.org/projects/junkbin-io';
 
 export default function Footer() {
   const { t, i18n } = useTranslation();
@@ -136,7 +136,7 @@ export default function Footer() {
               </li>
               <li>
                 <a
-                  href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${currentLang}/translation.json`}
+                  href={`${WEBLATE_PROJECT}/frontend-ui/${currentLang}/`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-sm text-gray-400 hover:text-cyber-green transition-colors flex items-center gap-1.5"

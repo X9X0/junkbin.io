@@ -29,7 +29,7 @@ const LANGUAGES = [
   { code: 'tr', label: 'Türkçe' },
 ];
 
-const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
+const WEBLATE_PROJECT = 'https://hosted.weblate.org/projects/junkbin-io';
 
 export default function Header() {
   const { t, i18n } = useTranslation();
@@ -409,7 +409,7 @@ export default function Header() {
                   ))}
                   <div className="border-t border-cyber-light/20 mt-1 pt-1">
                     <a
-                      href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${i18n.language?.slice(0, 2) || 'en'}/translation.json`}
+                      href={`${WEBLATE_PROJECT}/frontend-ui/${i18n.language?.slice(0, 2) || 'en'}/`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="w-full px-3 py-2 text-left text-xs text-gray-600 hover:text-cyber-green hover:bg-cyber-light/20 flex items-center gap-1.5 transition-colors"
@@ -650,7 +650,7 @@ export default function Header() {
                 ))}
               </div>
               <a
-                href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${i18n.language?.slice(0, 2) || 'en'}/translation.json`}
+                href={`${WEBLATE_PROJECT}/frontend-ui/${i18n.language?.slice(0, 2) || 'en'}/`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-2 flex items-center gap-1.5 text-xs text-gray-600 hover:text-cyber-green transition-colors"
