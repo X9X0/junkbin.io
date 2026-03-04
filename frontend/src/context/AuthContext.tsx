@@ -10,6 +10,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   googleLogin: (credential: string) => Promise<{ created: boolean }>;
+  githubLogin: (code: string) => Promise<{ created: boolean }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -57,7 +58,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const googleLogin = async (credential: string) => {
     const result = await auth.googleLogin(credential);
-    // Cookies are set by the backend — fetch user profile
+    const userData = await auth.me();
+    setUser(userData);
+    applyUserLanguage(userData);
+    return { created: result.created };
+  };
+
+  const githubLogin = async (code: string) => {
+    const result = await auth.githubLogin(code);
     const userData = await auth.me();
     setUser(userData);
     applyUserLanguage(userData);
@@ -88,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         googleLogin,
+        githubLogin,
         logout,
         refreshUser,
       }}

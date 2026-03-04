@@ -12,6 +12,28 @@ interface WeekEntry {
 
 const weeks: WeekEntry[] = [
   {
+    id: 'week-5',
+    label: 'Week 5',
+    dates: 'Mar 3–4, 2026',
+    color: 'cyber-cyan',
+    icon: <Globe className="h-5 w-5" />,
+    intro:
+      "Version 0.9.3. The polish release. Every corner of the site that was still speaking hardcoded English got translated — the Guidelines page, all five HTML email templates, every validation error message. The Django locale infrastructure is now fully in place: 353 extractable strings, .po files for all 18 languages, ready for community translators to fill. Three new languages joined the family: Romanian, Hungarian, and Turkish. PCBTracer got deeper wired in — open any product's PCB image directly in the tracer, and after a BOM import the Swap Shop is one click away. GitHub OAuth went live. And API documentation is now admin-only.",
+    items: [
+      'GitHub OAuth: sign in or register with your GitHub account — popup-based Authorization Code flow, server-side token exchange, auto account linking',
+      '18 languages: Romanian, Hungarian, and Turkish added to the UI switcher',
+      'Guidelines page fully translated: all ~45 body strings now use i18n keys',
+      'HTML email templates translated: email verification, password reset, newsletter confirm, account action, and new message emails all use {% trans %} tags',
+      'Serializer validation errors wrapped in gettext_lazy — translatable across all 18 backend locales',
+      'Django .po/.mo locale infrastructure: 353 translatable strings extracted, compilemessages run for all 18 languages',
+      'Translation contributor guide added: docs/CONTRIBUTING_TRANSLATIONS.md covers both JSON and .po workflows',
+      '"Open in PCBTracer" button on product pages — opens the current PCB image directly in PCBTracer',
+      'PCBTracer hint on the Submit page — shown when submitting a product, links to pcbtracer.com',
+      'BOM import → Swap Shop shortcut: after a successful import the "Check Swap Shop" link appears filtered to components',
+      'API schema and docs endpoints restricted to admin users',
+    ],
+  },
+  {
     id: 'week-4',
     label: 'Week 4',
     dates: 'Feb 28 – Mar 2, 2026',

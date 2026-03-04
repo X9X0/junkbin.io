@@ -240,6 +240,21 @@ export default function ProductDetail() {
                 </button>
               )}
             </div>
+
+            {/* PCBTracer button */}
+            {product.images && product.images.length > 0 && (
+              <div className="mt-3">
+                <a
+                  href={`https://pcbtracer.com?image=${encodeURIComponent(product.images[selectedImage]?.image || product.images[0].image)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-green transition-colors font-mono"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  OPEN IN PCBTRACER
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Product Info */}

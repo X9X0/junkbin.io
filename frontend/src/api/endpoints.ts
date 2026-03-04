@@ -68,6 +68,11 @@ export const auth = {
     return response.data;
   },
 
+  githubLogin: async (code: string): Promise<{ user: User; created: boolean }> => {
+    const response = await api.post('/auth/github/', { code });
+    return response.data;
+  },
+
   getPreferences: async (): Promise<UserPreferences> => {
     const response = await api.get('/auth/preferences/');
     return response.data;

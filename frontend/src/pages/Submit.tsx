@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle } from 'lucide-react';
+import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle, ExternalLink } from 'lucide-react';
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
 import ModerationNotice from '../components/ModerationNotice';
@@ -240,6 +240,25 @@ export default function Submit() {
             <span className="text-xs text-gray-500">Add a part</span>
           </button>
         </div>
+
+        {/* PCBTracer hint — product only */}
+        {submitType === 'product' && (
+          <div className="mb-6 px-4 py-3 border border-cyber-green/30 bg-cyber-green/5 flex items-center justify-between gap-3 text-sm">
+            <span className="text-gray-400">
+              Documenting a PCB?{' '}
+              <span className="text-cyber-green">Use PCBTracer to identify components, then import the BOM here.</span>
+            </span>
+            <a
+              href="https://pcbtracer.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-shrink-0 flex items-center gap-1 text-xs font-mono text-cyber-green hover:text-white transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              OPEN PCBTRACER
+            </a>
+          </div>
+        )}
 
         {/* Progress Steps */}
         <div className="flex items-center justify-center gap-2 mb-8">

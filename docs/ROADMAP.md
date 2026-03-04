@@ -234,7 +234,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Email verification workflow
 - ✅ Google OAuth integration — Google Identity Services popup on frontend, backend ID token verification via `google-auth`, auto-creates or links accounts, issues JWT cookies (Feb 15, 2026)
 - ✅ **SETUP: Google OAuth** — `OAUTH_GOOGLE_CLIENT_ID` and `OAUTH_GOOGLE_CLIENT_SECRET` configured in `.env`, Docker env vars wired up, frontend build arg injected (Feb 17, 2026)
-- ⬜ GitHub OAuth integration
+- ✅ GitHub OAuth integration — Authorization Code flow via popup, `GitHubLoginButton` component, `/auth/github/callback` relay page, backend token exchange + account linking, JWT cookies
 - ⬜ Microsoft OAuth integration
 - ✅ Basic user profile pages
 - ✅ Password reset functionality
@@ -338,7 +338,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ✅ Axios `Accept-Language` interceptor forwards active locale to backend
 - ✅ `auth.updateMe()` JSON PATCH endpoint for lightweight profile field updates without multipart overhead
 
-#### Supported Languages (15 total)
+#### Supported Languages (18 total)
 
 | Code | Language | Script | Status |
 |------|----------|--------|--------|
@@ -357,12 +357,15 @@ UNIQUE(user, content_type, object_id, item_type)
 | `sl` | Slovenščina | Latin | Machine-translated (Mar 2026) |
 | `ru` | Русский | Cyrillic | Machine-translated (Mar 2026) |
 | `uk` | Українська | Cyrillic | Machine-translated (Mar 2026) |
+| `ro` | Română | Latin | Machine-translated (Mar 2026) |
+| `hu` | Magyar | Latin | Machine-translated (Mar 2026) |
+| `tr` | Türkçe | Latin | Machine-translated (Mar 2026) |
 
 #### Remaining / Ongoing
 - ⬜ **Community translation review** — all 14 non-English locales are machine-translated; native speaker corrections welcome via PR
 - ⬜ **CONTRIBUTING_TRANSLATIONS.md** — contributor guide for translation corrections
-- ⬜ **Django .po / .mo files** — run `makemessages` + `compilemessages` to serve Django error messages and email templates in user's language (infrastructure in place, .po files not yet generated)
-- ⬜ **Additional languages** — candidates: `ro` (Romanian), `hu` (Hungarian), `tr` (Turkish); straightforward to add with existing infrastructure
+- ✅ **Django .po / .mo files** — `makemessages` + `compilemessages` run for all 18 languages; 353 translatable strings extracted from templates and serializers (Mar 4, 2026)
+- ✅ **Additional languages** — `ro` (Romanian), `hu` (Hungarian), `tr` (Turkish) added (Mar 4, 2026)
 
 **Plan file:** `~/.claude/plans/swirling-shimmying-iverson.md`
 
@@ -803,4 +806,4 @@ npm run test:coverage  # Coverage report
 
 **Last Updated**: March 4, 2026
 **Version**: 2.2
-**Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Phase 4 Complete (15 languages) - Deployed & E2E Tested
+**Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Phase 4 Complete (18 languages) - Deployed & E2E Tested

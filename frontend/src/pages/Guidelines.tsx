@@ -1,6 +1,9 @@
+import { useTranslation } from 'react-i18next';
 import { Shield, AlertTriangle, MessageSquare, FileText, Scale, Mail } from 'lucide-react';
 
 export default function Guidelines() {
+  const { t } = useTranslation();
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       {/* Header */}
@@ -9,25 +12,21 @@ export default function Guidelines() {
           <Shield className="h-6 w-6 text-cyber-cyan" />
         </div>
         <h1 className="font-display text-2xl font-bold tracking-wider text-white">
-          COMMUNITY GUIDELINES
+          {t('guidelines.title')}
         </h1>
       </div>
       <p className="text-gray-500 text-sm font-mono mb-8">
-        Standards for contributing to the Junkbin.io community
+        {t('guidelines.subtitle')}
       </p>
 
       <div className="space-y-6">
         {/* Mission */}
         <section className="card-cyber p-6">
           <h2 className="font-display text-lg font-bold text-cyber-cyan mb-3 tracking-wider">
-            OUR MISSION
+            {t('guidelines.section_mission')}
           </h2>
           <p className="text-gray-300 text-sm leading-relaxed">
-            Junkbin.io is a community-driven database for electronic component documentation,
-            supporting the Right to Repair movement. We believe repair information should be
-            freely accessible. Every contribution helps someone fix a device instead of
-            throwing it away. These guidelines exist to keep the community productive,
-            respectful, and focused on that goal.
+            {t('guidelines.mission_text')}
           </p>
         </section>
 
@@ -36,29 +35,29 @@ export default function Guidelines() {
           <div className="flex items-center gap-2 mb-3">
             <FileText className="h-5 w-5 text-cyber-green" />
             <h2 className="font-display text-lg font-bold text-cyber-green tracking-wider">
-              CONTENT STANDARDS
+              {t('guidelines.section_content')}
             </h2>
           </div>
           <ul className="space-y-3 text-sm text-gray-300">
             <li className="flex gap-3">
               <span className="text-cyber-green font-mono flex-shrink-0">01</span>
-              <span><strong className="text-white">Accuracy matters.</strong> Double-check part numbers, manufacturer names, and reference designators before submitting. If you're unsure, note it in the description.</span>
+              <span><strong className="text-white">{t('guidelines.content_01_title')}</strong> {t('guidelines.content_01_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-green font-mono flex-shrink-0">02</span>
-              <span><strong className="text-white">Cite your sources.</strong> When uploading schematics or datasheets, indicate where they came from (manufacturer site, community reverse-engineering, etc.).</span>
+              <span><strong className="text-white">{t('guidelines.content_02_title')}</strong> {t('guidelines.content_02_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-green font-mono flex-shrink-0">03</span>
-              <span><strong className="text-white">No duplicates.</strong> Search before submitting a new product or component. If it already exists, add to the existing entry instead.</span>
+              <span><strong className="text-white">{t('guidelines.content_03_title')}</strong> {t('guidelines.content_03_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-green font-mono flex-shrink-0">04</span>
-              <span><strong className="text-white">Quality photos.</strong> When uploading PCB images, use good lighting and focus. Clear images help others identify components.</span>
+              <span><strong className="text-white">{t('guidelines.content_04_title')}</strong> {t('guidelines.content_04_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-green font-mono flex-shrink-0">05</span>
-              <span><strong className="text-white">Stay on topic.</strong> Comments should relate to the product, its components, or repair information. Save off-topic discussions for messages.</span>
+              <span><strong className="text-white">{t('guidelines.content_05_title')}</strong> {t('guidelines.content_05_text')}</span>
             </li>
           </ul>
         </section>
@@ -68,25 +67,25 @@ export default function Guidelines() {
           <div className="flex items-center gap-2 mb-3">
             <MessageSquare className="h-5 w-5 text-cyber-cyan" />
             <h2 className="font-display text-lg font-bold text-cyber-cyan tracking-wider">
-              COMMUNICATION STANDARDS
+              {t('guidelines.section_communication')}
             </h2>
           </div>
           <ul className="space-y-3 text-sm text-gray-300">
             <li className="flex gap-3">
               <span className="text-cyber-cyan font-mono flex-shrink-0">01</span>
-              <span><strong className="text-white">Be respectful.</strong> Disagreements about component identification are normal. Discuss the data, not the person.</span>
+              <span><strong className="text-white">{t('guidelines.comm_01_title')}</strong> {t('guidelines.comm_01_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-cyan font-mono flex-shrink-0">02</span>
-              <span><strong className="text-white">No harassment.</strong> Targeted, repeated, or unwelcome messages to another user are not tolerated. Use the block feature if needed.</span>
+              <span><strong className="text-white">{t('guidelines.comm_02_title')}</strong> {t('guidelines.comm_02_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-cyan font-mono flex-shrink-0">03</span>
-              <span><strong className="text-white">No hate speech.</strong> Slurs, discriminatory language, and content promoting hatred against any group are prohibited.</span>
+              <span><strong className="text-white">{t('guidelines.comm_03_title')}</strong> {t('guidelines.comm_03_text')}</span>
             </li>
             <li className="flex gap-3">
               <span className="text-cyber-cyan font-mono flex-shrink-0">04</span>
-              <span><strong className="text-white">No spam.</strong> Don't send unsolicited promotional messages or post repetitive content.</span>
+              <span><strong className="text-white">{t('guidelines.comm_04_title')}</strong> {t('guidelines.comm_04_text')}</span>
             </li>
           </ul>
         </section>
@@ -96,40 +95,40 @@ export default function Guidelines() {
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="h-5 w-5 text-cyber-pink" />
             <h2 className="font-display text-lg font-bold text-cyber-pink tracking-wider">
-              PROHIBITED CONTENT
+              {t('guidelines.section_prohibited')}
             </h2>
           </div>
           <p className="text-gray-400 text-sm mb-3">
-            The following will result in content removal and may lead to account action:
+            {t('guidelines.prohibited_intro')}
           </p>
           <ul className="space-y-2 text-sm text-gray-300">
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>Deliberately incorrect technical information</span>
+              <span>{t('guidelines.prohibited_01')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>Spam, advertising, or promotional content</span>
+              <span>{t('guidelines.prohibited_02')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>Copyright-infringing material without fair use basis</span>
+              <span>{t('guidelines.prohibited_03')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>NSFW, violent, or graphic content</span>
+              <span>{t('guidelines.prohibited_04')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>Harassment, threats, or doxxing</span>
+              <span>{t('guidelines.prohibited_05')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>Hate speech, slurs, or discriminatory language</span>
+              <span>{t('guidelines.prohibited_06')}</span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-cyber-pink mt-0.5">&#x2716;</span>
-              <span>Impersonation of other users or organizations</span>
+              <span>{t('guidelines.prohibited_07')}</span>
             </li>
           </ul>
         </section>
@@ -139,55 +138,55 @@ export default function Guidelines() {
           <div className="flex items-center gap-2 mb-3">
             <Scale className="h-5 w-5 text-cyber-yellow" />
             <h2 className="font-display text-lg font-bold text-cyber-yellow tracking-wider">
-              ENFORCEMENT
+              {t('guidelines.section_enforcement')}
             </h2>
           </div>
           <p className="text-gray-300 text-sm mb-4 leading-relaxed">
-            We use a transparent, graduated enforcement system:
+            {t('guidelines.enforcement_intro')}
           </p>
           <div className="space-y-4">
             <div className="flex items-start gap-4">
               <div className="min-w-[80px] text-center">
                 <span className="inline-block px-3 py-1 bg-cyber-cyan/20 border border-cyber-cyan/50 text-cyber-cyan font-mono text-xs">
-                  REPORT
+                  {t('guidelines.enforcement_report_label')}
                 </span>
               </div>
               <p className="text-sm text-gray-400">
-                Any user can report content or messages that violate these guidelines. Reports are reviewed by moderators.
+                {t('guidelines.enforcement_report_text')}
               </p>
             </div>
             <div className="flex items-start gap-4">
               <div className="min-w-[80px] text-center">
                 <span className="inline-block px-3 py-1 bg-cyber-yellow/20 border border-cyber-yellow/50 text-cyber-yellow font-mono text-xs">
-                  STRIKE
+                  {t('guidelines.enforcement_strike_label')}
                 </span>
               </div>
               <p className="text-sm text-gray-400">
-                Valid reports result in a strike on the reported user's account. You'll be notified by email when you receive a strike.
+                {t('guidelines.enforcement_strike_text')}
               </p>
             </div>
             <div className="flex items-start gap-4">
               <div className="min-w-[80px] text-center">
                 <span className="inline-block px-3 py-1 bg-cyber-yellow/20 border border-cyber-yellow/50 text-cyber-yellow font-mono text-xs">
-                  REVIEW
+                  {t('guidelines.enforcement_review_label')}
                 </span>
               </div>
               <p className="text-sm text-gray-400">
-                At 3 strikes, your account is automatically flagged for moderator review. Reviews can result in:
+                {t('guidelines.enforcement_review_text')}
               </p>
             </div>
             <div className="ml-[96px] space-y-2 text-sm">
               <p className="text-gray-400">
-                <span className="text-cyber-green font-mono">CLEARED</span> — No action needed, strikes were minor or context-dependent
+                <span className="text-cyber-green font-mono">{t('guidelines.outcome_cleared')}</span> — {t('guidelines.outcome_cleared_text')}
               </p>
               <p className="text-gray-400">
-                <span className="text-cyber-yellow font-mono">WARNING</span> — Formal warning issued, no account restrictions
+                <span className="text-cyber-yellow font-mono">{t('guidelines.outcome_warning')}</span> — {t('guidelines.outcome_warning_text')}
               </p>
               <p className="text-gray-400">
-                <span className="text-cyber-pink font-mono">RESTRICTED</span> — Trusted status revoked, contributions require moderation
+                <span className="text-cyber-pink font-mono">{t('guidelines.outcome_restricted')}</span> — {t('guidelines.outcome_restricted_text')}
               </p>
               <p className="text-gray-400">
-                <span className="text-cyber-pink font-mono">SUSPENDED</span> — Account deactivated
+                <span className="text-cyber-pink font-mono">{t('guidelines.outcome_suspended')}</span> — {t('guidelines.outcome_suspended_text')}
               </p>
             </div>
           </div>
@@ -198,20 +197,19 @@ export default function Guidelines() {
           <div className="flex items-center gap-2 mb-3">
             <Mail className="h-5 w-5 text-gray-400" />
             <h2 className="font-display text-lg font-bold text-white tracking-wider">
-              APPEALS
+              {t('guidelines.section_appeals')}
             </h2>
           </div>
           <p className="text-gray-300 text-sm leading-relaxed">
-            If you believe a moderation action was made in error, you can appeal by
-            emailing <a href="mailto:appeals@junkbin.io" className="text-cyber-cyan hover:underline">appeals@junkbin.io</a> with
-            your username and a description of the situation. Appeals are reviewed by a different moderator
-            than the one who took the original action. We aim to respond within 48 hours.
+            {t('guidelines.appeals_text_before')}{' '}
+            <a href="mailto:appeals@junkbin.io" className="text-cyber-cyan hover:underline">{t('guidelines.appeals_email')}</a>{' '}
+            {t('guidelines.appeals_text_after')}
           </p>
         </section>
 
         {/* Last updated */}
         <p className="text-center text-xs text-gray-600 font-mono pt-4">
-          Last updated: February 2026
+          {t('guidelines.last_updated')}
         </p>
       </div>
     </div>

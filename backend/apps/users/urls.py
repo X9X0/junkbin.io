@@ -15,6 +15,7 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
     GoogleAuthView,
+    GitHubAuthView,
 )
 
 router = DefaultRouter()
@@ -31,4 +32,5 @@ urlpatterns = [
     path('auth/password/reset/confirm/', PasswordResetConfirmView.as_view(), name='password-reset-confirm'),
     path('auth/preferences/', PreferencesView.as_view(), name='preferences'),
     path('auth/google/', GoogleAuthView.as_view(), name='google-auth'),
+    path('auth/github/', GitHubAuthView.as_view(), name='github-auth'),
 ]

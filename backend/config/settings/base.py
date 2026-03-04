@@ -152,6 +152,9 @@ LANGUAGES = [
     ('sl', 'Slovenian'),
     ('ru', 'Russian'),
     ('uk', 'Ukrainian'),
+    ('ro', 'Romanian'),
+    ('hu', 'Hungarian'),
+    ('tr', 'Turkish'),
 ]
 LOCALE_PATHS = [BASE_DIR / 'locale']
 
@@ -294,6 +297,10 @@ LOGIN_URL = '/api/auth/login/'
 
 # Google OAuth Client ID (used by GoogleAuthView for ID token verification)
 OAUTH_GOOGLE_CLIENT_ID = env('OAUTH_GOOGLE_CLIENT_ID', default='')
+
+# GitHub OAuth credentials (used by GitHubAuthView for code exchange)
+OAUTH_GITHUB_CLIENT_ID = env('OAUTH_GITHUB_CLIENT_ID', default='')
+OAUTH_GITHUB_CLIENT_SECRET = env('OAUTH_GITHUB_CLIENT_SECRET', default='')
 
 # Social Account Providers
 SOCIALACCOUNT_PROVIDERS = {

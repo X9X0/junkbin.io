@@ -1,3 +1,4 @@
+{% load i18n %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -8,23 +9,23 @@
         <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
         <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
 
-        <h1 style="color: #00f0ff; font-size: 24px;">Welcome to Junkbin.io!</h1>
+        <h1 style="color: #00f0ff; font-size: 24px;">{% trans "Welcome to Junkbin.io!" %}</h1>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Hello {{ user.username }},</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% blocktrans with username=user.username %}Hello {{ username }},{% endblocktrans %}</p>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Thanks for signing up! Please verify your email address by clicking the button below:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "Thanks for signing up! Please verify your email address by clicking the button below:" %}</p>
 
-        <a href="{{ verify_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Verify Email</a>
+        <a href="{{ verify_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">{% trans "Verify Email" %}</a>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "If the button doesn't work, copy and paste this link into your browser:" %}</p>
         <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5; word-break: break-all;"><a href="{{ verify_url }}" style="color: #00f0ff;">{{ verify_url }}</a></p>
 
         <div style="background-color: #17334b; border-left: 4px solid #00f0ff; padding: 15px; margin: 20px 0;">
-            <strong style="color: #e0e0e0;">Didn't create this account?</strong><br>
-            <span style="color: #c0c0c0;">If you didn't sign up for Junkbin.io, you can safely ignore this email.</span>
+            <strong style="color: #e0e0e0;">{% trans "Didn't create this account?" %}</strong><br>
+            <span style="color: #c0c0c0;">{% trans "If you didn't sign up for Junkbin.io, you can safely ignore this email." %}</span>
         </div>
 
-        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">This link will expire in 24 hours.</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "This link will expire in 24 hours." %}</p>
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
             <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
