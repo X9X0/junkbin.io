@@ -59,7 +59,7 @@ junkbin.io/
 │   │   │   ├── urls.py                # Product routes (products, schematics, product-images)
 │   │   │   ├── admin.py               # Product admin + CSV export
 │   │   │   ├── filters.py             # Search filters
-│   │   │   ├── bom_utils.py           # BOM CSV column auto-detection and validation
+│   │   │   ├── bom_utils.py           # BOM CSV column auto-detection, validation, PCBTracer/KiCad aliases, datasheet_url field
 │   │   │   ├── tests/
 │   │   │   └── management/
 │   │   │       └── commands/
@@ -374,4 +374,4 @@ See `.env.example` for required environment variables including:
 
 ---
 
-**Last Updated**: February 15, 2026
+**Last Updated**: March 4, 2026

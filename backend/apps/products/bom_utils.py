@@ -94,6 +94,28 @@ AUTO_COLUMN_ALIASES = {
     'comments': 'notes',
     'remark': 'notes',
     'remarks': 'notes',
+
+    # Datasheet URL
+    'datasheet': 'datasheet_url',
+    'datasheet url': 'datasheet_url',
+    'datasheet_url': 'datasheet_url',
+    'datasheet link': 'datasheet_url',
+    'ds': 'datasheet_url',
+
+    # PCBTracer / KiCad specific
+    # KiCad groups refs as "R1, R2, R3" under "References" (plural)
+    'references': 'reference_designator',
+    # KiCad lib identifier — maps to part_number as best guess
+    'libref': 'part_number',
+    'lib ref': 'part_number',
+    'lib id': 'part_number',
+    # KiCad shortened value alias
+    'val': 'value',
+    # PCBTracer annotation label
+    'annotation': 'reference_designator',
+    'component name': 'part_number',
+    'component value': 'value',
+    'signal name': 'notes',
 }
 
 # Fields users can map to
@@ -106,6 +128,7 @@ BOM_FIELDS = [
     ('package_type', 'Package Type'),
     ('description', 'Description'),
     ('value', 'Value'),
+    ('datasheet_url', 'Datasheet URL'),
     ('location_description', 'Location'),
     ('notes', 'Notes'),
 ]
@@ -152,6 +175,15 @@ def validate_row(row, mapping):
         val = row.get(header, '').strip()
         if val:
             cleaned[field] = val
+
+    # Normalise KiCad-style reference designators ("R1, R2, R3" → "R1")
+    if 'reference_designator' in cleaned:
+        ref = cleaned['reference_designator']
+        # KiCad uses comma or semicolon separation; keep only the first token
+        for sep in (';', ','):
+            if sep in ref:
+                cleaned['reference_designator'] = ref.split(sep)[0].strip()
+                break
 
     # Required fields
     if not cleaned.get('part_number'):

@@ -21,6 +21,7 @@ Help people repair their devices by cataloging which consumer products contain s
 - **Smart Search**: Find products containing specific parts
 - **Community Moderation**: Report inaccuracies, build reputation
 - **Dual Submission Levels**: Basic (major components) or Advanced (everything)
+- **PCBTracer & KiCad BOM Import**: Export your BOM from [PCBTracer](https://pcbtracer.com) or KiCad and import it directly — column auto-detection, datasheet URL capture, KiCad grouped reference normalisation
 - **15 Languages**: Auto-detected from browser, switchable via globe icon, saved to profile
 
 ## 🌍 Languages
