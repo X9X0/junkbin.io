@@ -363,7 +363,7 @@ UNIQUE(user, content_type, object_id, item_type)
 
 #### Remaining / Ongoing
 - ⬜ **Community translation review** — all 14 non-English locales are machine-translated; native speaker corrections welcome via PR
-- ⬜ **CONTRIBUTING_TRANSLATIONS.md** — contributor guide for translation corrections
+- ✅ **CONTRIBUTING_TRANSLATIONS.md** — contributor guide added at `docs/CONTRIBUTING_TRANSLATIONS.md`, covering both JSON and .po workflows (Mar 4, 2026)
 - ✅ **Django .po / .mo files** — `makemessages` + `compilemessages` run for all 18 languages; 353 translatable strings extracted from templates and serializers (Mar 4, 2026)
 - ✅ **Additional languages** — `ro` (Romanian), `hu` (Hungarian), `tr` (Turkish) added (Mar 4, 2026)
 
@@ -386,9 +386,9 @@ UNIQUE(user, content_type, object_id, item_type)
 [PCBTracer](https://pcbtracer.com) is a free browser-based PCB analysis and reverse-engineering tool with AI-powered component identification and KiCad/BOM export. Integration points:
 
 - ✅ **PCBTracer BOM import** — BOM CSV export from PCBTracer (and KiCad) is accepted directly by the existing BOM import wizard. Added PCBTracer/KiCad column aliases (`References`, `Datasheet`, `Lib Ref`, `Val`, `Annotation`, `Component Name/Value`, `Signal Name`), `datasheet_url` as a new mappable field (saved to Component and backfilled on existing records), and KiCad-style comma/semicolon-delimited reference designator normalisation (Mar 4, 2026)
-- ⬜ **"Open in PCBTracer" button** — On product pages with PCB photo uploads, add a button that passes the image URL to PCBTracer via URL parameter, letting users jump straight into PCB analysis without re-uploading
-- ⬜ **PCBTracer → Swap Shop match** — After a user exports a BOM from PCBTracer and imports it, surface a one-click flow to check the Swap Shop for who has the required parts
-- ⬜ **Submission workflow guidance** — Surface PCBTracer as the recommended documentation tool when a user starts a new product submission ("Documenting a PCB? Use PCBTracer to identify components, then import the BOM here")
+- ✅ **"Open in PCBTracer" button** — Product pages with PCB images show an "Open in PCBTracer" link that passes the currently selected image URL; conditional on images existing (Mar 4, 2026)
+- ✅ **PCBTracer → Swap Shop match** — After a successful BOM import a "Check Swap Shop" link appears filtered to `/swap?content_type=component` (Mar 4, 2026)
+- ✅ **Submission workflow guidance** — PCBTracer hint banner shown on the Submit page when the product tab is active (Mar 4, 2026)
 
 #### Integration & Automation
 - ✅ Nexar/Octopart API integration — GraphQL MPN search with OAuth2, component pricing/availability/datasheets from 100+ distributors (DigiKey, Mouser, etc.), cached in specifications JSONField, "Lookup Pricing" button on ComponentDetail, Celery task for bulk enrichment (Feb 15, 2026)
@@ -806,4 +806,4 @@ npm run test:coverage  # Coverage report
 
 **Last Updated**: March 4, 2026
 **Version**: 2.2
-**Status**: MVP Complete - Phase 2 Complete - Phase 3 In Progress - Phase 4 Complete (18 languages) - Deployed & E2E Tested
+**Status**: MVP Complete - Phase 2 Complete - Phase 3 Largely Complete (2 items pending) - Phase 4 Complete (18 languages) - Deployed & E2E Tested - v0.9.3

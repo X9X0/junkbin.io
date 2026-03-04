@@ -106,7 +106,7 @@
   },
   "home": {
     "under_construction": "САЙТ У РОЗРОБЦІ",
-    "tagline_command": "cat /etc/warning.txt",
+    "tagline_command": "cat /etc/poperedzhennia.txt",
     "tagline_quote": "\"КОРИСТУВАЧ НЕ МОЖЕ САМОСТІЙНО ПРОВЕСТИ РЕМОНТ\"",
     "tagline_response": "Ми сприйняли це як виклик.",
     "description": "Спільна база даних електронних компонентів, схем та документації з ремонту.",
