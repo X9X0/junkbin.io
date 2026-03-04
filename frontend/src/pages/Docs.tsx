@@ -5,6 +5,7 @@ import {
   Shield, Star, Heart, Send, Bell, Globe,
 } from 'lucide-react';
 
+const WEBLATE_PROJECT = 'https://hosted.weblate.org/projects/junkbin-io';
 const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
 
 interface Section {
@@ -299,7 +300,7 @@ export default function Docs() {
                   ].map(({ code, label }) => (
                     <a
                       key={code}
-                      href={`${GITHUB_REPO}/blob/main/frontend/public/locales/${code}/translation.json`}
+                      href={`${WEBLATE_PROJECT}/frontend-ui/${code}/`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-2 py-1 text-xs font-mono border border-cyber-light/30 text-gray-500 hover:text-cyber-cyan hover:border-cyber-cyan/50 transition-colors"
@@ -323,13 +324,13 @@ export default function Docs() {
 
               <div className="flex gap-3 pt-1">
                 <a
-                  href={`${GITHUB_REPO}/blob/main/docs/CONTRIBUTING_TRANSLATIONS.md`}
+                  href={`${WEBLATE_PROJECT}/`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-1.5 text-xs font-mono text-cyber-green border border-cyber-green/40 px-3 py-1.5 hover:bg-cyber-green/10 transition-colors"
                 >
                   <Globe className="h-3.5 w-3.5" />
-                  Full contributor guide →
+                  Translate on Weblate →
                 </a>
               </div>
             </div>

@@ -1,0 +1,37 @@
+name: Sync locale files to junkbin-locales
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/public/locales/**'
+      - 'backend/locale/**'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Clone locales repo
+        run: |
+          git clone https://x-access-token:${{ secrets.LOCALES_REPO_TOKEN }}@github.com/X9X0/junkbin-locales.git /tmp/junkbin-locales
+
+      - name: Copy locale files
+        run: |
+          rsync -av --delete \
+            frontend/public/locales/ /tmp/junkbin-locales/frontend/locales/
+          rsync -av --delete \
+            --include="*.po" --exclude="*.mo" \
+            backend/locale/ /tmp/junkbin-locales/backend/locale/
+
+      - name: Commit and push
+        run: |
+          cd /tmp/junkbin-locales
+          git config user.name "junkbin-sync[bot]"
+          git config user.email "junkbin-sync[bot]@users.noreply.github.com"
+          git add .
+          git diff --staged --quiet && echo "No changes to sync." && exit 0
+          git commit -m "Sync locale files from main repo [skip ci]"
+          git push
