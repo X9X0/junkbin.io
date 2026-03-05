@@ -6,6 +6,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { search, auth as authApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { useUnreadCount } from '../../hooks/useUnreadCount';
+import { usePendingCount } from '../../hooks/usePendingCount';
 import clsx from 'clsx';
 
 const LANGUAGES = [
@@ -36,6 +37,7 @@ export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const queryClient = useQueryClient();
   const unreadCount = useUnreadCount();
+  const pendingCount = usePendingCount();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -164,10 +166,15 @@ export default function Header() {
               <>
                 <Link
                   to="/moderation"
-                  className="font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
+                  className="relative font-mono text-sm text-cyber-yellow hover:text-cyber-yellow/80 transition-colors flex items-center gap-1"
                 >
                   <Shield className="h-3.5 w-3.5" />
                   {t('nav.mod')}
+                  {pendingCount > 0 && (
+                    <span className="absolute -top-2 -right-2 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   to="/analytics"
@@ -563,6 +570,11 @@ export default function Header() {
                 >
                   <Shield className="h-3.5 w-3.5" />
                   {t('nav.moderation')}
+                  {pendingCount > 0 && (
+                    <span className="ml-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
+                      {pendingCount > 99 ? '99+' : pendingCount}
+                    </span>
+                  )}
                 </Link>
                 <Link
                   to="/analytics"

@@ -108,6 +108,8 @@
     "under_construction": "SITE EM CONSTRUÇÃO",
     "tagline_command": "cat /etc/aviso.txt",
     "tagline_quote": "\"NENHUMA PEÇA REPARÁVEL PELO USUÁRIO\"",
+    "no_user_serviceable": "NENHUMA PEÇA REPARÁVEL PELO USUÁRIO",
+    "beta_testers_cta": "Beta testers, cadastre-se abaixo",
     "tagline_response": "Levamos isso a sério.",
     "description": "Um banco de dados comunitário para componentes eletrônicos, esquemas e documentação de reparos.",
     "right_to_repair": "O DIREITO AO REPARO COMEÇA AQUI",

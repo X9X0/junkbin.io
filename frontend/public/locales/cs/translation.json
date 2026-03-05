@@ -108,6 +108,8 @@
     "under_construction": "WEB VE VÝSTAVBĚ",
     "tagline_command": "cat /etc/varovani.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "no_user_serviceable": "NO USER SERVICEABLE PARTS INSIDE",
+    "beta_testers_cta": "Betatesteři, zaregistrujte se níže",
     "tagline_response": "To jsme vzali osobně.",
     "description": "Komunitní databáze elektronických součástek, schémat a dokumentace k opravám.",
     "right_to_repair": "RIGHT TO REPAIR ZAČÍNÁ TADY",
