@@ -28,10 +28,18 @@ class SubmissionRateThrottle(UserRateThrottle):
     """
     Throttle for content submissions.
 
-    Prevents spam submissions.
+    Prevents spam submissions. Staff and moderators are exempt.
     """
 
     scope = 'submission'
+
+    def allow_request(self, request, view):
+        user = request.user
+        if user and user.is_authenticated and (
+            user.is_staff or getattr(user, 'is_moderator', False)
+        ):
+            return True
+        return super().allow_request(request, view)
 
 
 class ReportRateThrottle(UserRateThrottle):
