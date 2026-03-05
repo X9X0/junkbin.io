@@ -644,8 +644,8 @@ function PendingContentTab() {
     if (item.type === 'product') return `/products/${item.data.id}`;
     if (item.type === 'recipe') return `/recipes/${item.data.id}`;
     if (item.type === 'image') return `/products/${(item.data as ProductImage).product}`;
-    if (item.type === 'component_image') return `/components/${(item.data as any).component}`;
-    if (item.type === 'datasheet') return `/components/${(item.data as ComponentDatasheet).component}`;
+    if (item.type === 'component_image') return `/components/${(item.data as any).component}/products`;
+    if (item.type === 'datasheet') return `/components/${(item.data as ComponentDatasheet).component}/products`;
     return `/products/${(item.data as Schematic).product}`;
   };
 
