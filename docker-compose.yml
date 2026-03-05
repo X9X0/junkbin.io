@@ -224,6 +224,92 @@ services:
     networks:
       - junkbin_network
 
+  # Weblate Translation Platform
+  weblate:
+    image: weblate/weblate:5.10
+    container_name: junkbin_weblate
+    restart: unless-stopped
+    depends_on:
+      weblate_db:
+        condition: service_healthy
+      weblate_redis:
+        condition: service_healthy
+    environment:
+      - WEBLATE_SITE_DOMAIN=${WEBLATE_DOMAIN:-localhost:8082}
+      - WEBLATE_SITE_TITLE=Junkbin.io Translations
+      - WEBLATE_ADMIN_EMAIL=${WEBLATE_ADMIN_EMAIL}
+      - WEBLATE_ADMIN_PASSWORD=${WEBLATE_ADMIN_PASSWORD}
+      - WEBLATE_ADMIN_NAME=Admin
+      - WEBLATE_SECRET_KEY=${WEBLATE_SECRET_KEY}
+      - WEBLATE_ALLOWED_HOSTS=${WEBLATE_DOMAIN:-localhost}
+      - POSTGRES_HOST=weblate_db
+      - POSTGRES_DATABASE=weblate
+      - POSTGRES_USER=weblate
+      - POSTGRES_PASSWORD=${WEBLATE_DB_PASSWORD}
+      - REDIS_HOST=weblate_redis
+      - WEBLATE_EMAIL_HOST=${EMAIL_HOST:-}
+      - WEBLATE_EMAIL_PORT=${EMAIL_PORT:-587}
+      - WEBLATE_EMAIL_HOST_USER=${EMAIL_HOST_USER:-}
+      - WEBLATE_EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD:-}
+      - WEBLATE_EMAIL_USE_TLS=${EMAIL_USE_TLS:-True}
+      - WEBLATE_SERVER_EMAIL=${SERVER_EMAIL:-errors@junkbin.io}
+      - WEBLATE_DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-noreply@junkbin.io}
+    volumes:
+      - weblate_data:/app/data
+    ports:
+      - "127.0.0.1:8082:8080"
+    networks:
+      - junkbin_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  weblate_db:
+    image: postgres:15-alpine
+    container_name: junkbin_weblate_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: weblate
+      POSTGRES_USER: weblate
+      POSTGRES_PASSWORD: ${WEBLATE_DB_PASSWORD}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - weblate_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U weblate"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - junkbin_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  weblate_redis:
+    image: redis:7-alpine
+    container_name: junkbin_weblate_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - weblate_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - junkbin_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+
   # Nginx Reverse Proxy
   nginx:
     image: nginx:alpine
@@ -273,6 +359,12 @@ volumes:
   prometheus_data:
     driver: local
   grafana_data:
+    driver: local
+  weblate_data:
+    driver: local
+  weblate_db_data:
+    driver: local
+  weblate_redis_data:
     driver: local
 
 networks:
