@@ -8,6 +8,7 @@ import EditComponentModal from '../components/EditComponentModal';
 import PricingPanel from '../components/PricingPanel';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
 import DatasheetUpload from '../components/DatasheetUpload';
+import Lightbox from '../components/Lightbox';
 import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen, MessageSquare, Store } from 'lucide-react';
 import type { JunkbinItem } from '../types';
 
@@ -75,6 +76,7 @@ export default function ComponentDetail() {
   const { isAuthenticated, user } = useAuth();
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [showDatasheetUpload, setShowDatasheetUpload] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
 
@@ -236,16 +238,32 @@ export default function ComponentDetail() {
           {/* Image gallery */}
           {component.images && component.images.length > 0 && (
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {component.images.map((img) => (
-                <div key={img.id} className="aspect-video bg-cyber-black border border-cyber-light/20 overflow-hidden">
+              {component.images.map((img, idx) => (
+                <button
+                  key={img.id}
+                  onClick={() => setLightboxIndex(idx)}
+                  className="aspect-video bg-cyber-black border border-cyber-light/20 overflow-hidden hover:border-cyber-pink/50 transition-colors cursor-zoom-in"
+                >
                   <img
                     src={img.medium || img.image}
                     alt={img.caption || component.part_number}
                     className="w-full h-full object-cover"
                   />
-                </div>
+                </button>
               ))}
             </div>
+          )}
+
+          {/* Lightbox */}
+          {lightboxIndex !== null && component.images && (
+            <Lightbox
+              images={component.images.map((img) => ({
+                src: img.image,
+                caption: img.caption || img.image_type_display || '',
+              }))}
+              initialIndex={lightboxIndex}
+              onClose={() => setLightboxIndex(null)}
+            />
           )}
 
           {/* Image upload section */}

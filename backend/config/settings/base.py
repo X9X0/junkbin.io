@@ -215,7 +215,7 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour',
         'auth': '5/minute',
-        'submission': '10/hour',
+        'submission': '50/hour',
         'report': '10/hour',
         'search': '60/minute',
         'messaging': '30/minute',
