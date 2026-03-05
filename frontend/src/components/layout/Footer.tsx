@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Heart, Wrench, Globe } from 'lucide-react';
 
-const WEBLATE_PROJECT = 'https://hosted.weblate.org/projects/junkbin-io';
+const WEBLATE_PROJECT = 'https://translate.junkbin.io/projects/junkbin-io';
 
 export default function Footer() {
   const { t, i18n } = useTranslation();

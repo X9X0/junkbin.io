@@ -5,7 +5,7 @@ import {
   Shield, Star, Heart, Send, Bell, Globe,
 } from 'lucide-react';
 
-const WEBLATE_PROJECT = 'https://hosted.weblate.org/projects/junkbin-io';
+const WEBLATE_PROJECT = 'https://translate.junkbin.io/projects/junkbin-io';
 const GITHUB_REPO = 'https://github.com/X9X0/junkbin.io';
 
 interface Section {
