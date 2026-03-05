@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, Check, X, Download, ExternalLink } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, Check, X, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { reports, reviews, products, schematics, recipes, productImages, componentImages, componentDatasheets } from '../api/endpoints';
 import type { Report, UserReview, Product, ProductImage, Schematic, Recipe, ComponentDatasheet, ComponentImage } from '../types';
@@ -478,8 +478,6 @@ function PendingContentTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
-  const [previewFile, setPreviewFile] = useState<{ url: string; type: string; title: string } | null>(null);
-
   const getPreviewFile = (item: PendingItem): { url: string; type: string } | null => {
     if (item.type === 'schematic') {
       const s = item.data as Schematic;
@@ -780,13 +778,15 @@ function PendingContentTab() {
                           {(() => {
                             const pf = getPreviewFile(item);
                             return pf ? (
-                              <button
-                                onClick={() => setPreviewFile({ ...pf, title: getItemTitle(item) })}
+                              <a
+                                href={pf.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="text-cyber-yellow hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
                               >
-                                <FileText className="h-4 w-4" />
+                                <ExternalLink className="h-4 w-4" />
                                 PREVIEW
-                              </button>
+                              </a>
                             ) : null;
                           })()}
                           <button
@@ -821,97 +821,7 @@ function PendingContentTab() {
           <p className="text-gray-500">No pending content to review.</p>
         </div>
       )}
-      {previewFile && (
-        <FilePreviewModal
-          url={previewFile.url}
-          fileType={previewFile.type}
-          title={previewFile.title}
-          onClose={() => setPreviewFile(null)}
-        />
-      )}
     </>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* File Preview Modal                                                  */
-/* ------------------------------------------------------------------ */
-
-function FilePreviewModal({ url, fileType, title, onClose }: {
-  url: string;
-  fileType: string;
-  title: string;
-  onClose: () => void;
-}) {
-  const isPdf = fileType.toLowerCase() === 'pdf';
-  const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'image'].includes(fileType.toLowerCase());
-
-  return (
-    <div
-      className="fixed inset-0 z-50 bg-black/95 flex flex-col"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-cyber-light/30 bg-cyber-darker flex-shrink-0">
-        <span className="font-mono text-sm text-white truncate max-w-lg">{title}</span>
-        <div className="flex items-center gap-4 flex-shrink-0 ml-4">
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-cyber-cyan hover:text-white text-sm font-mono flex items-center gap-1.5 transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" />
-            OPEN
-          </a>
-          <a
-            href={url}
-            download
-            className="text-cyber-green hover:text-white text-sm font-mono flex items-center gap-1.5 transition-colors"
-          >
-            <Download className="h-4 w-4" />
-            DOWNLOAD
-          </a>
-          <button onClick={onClose} className="text-gray-500 hover:text-white transition-colors p-1 ml-2">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Preview */}
-      <div className="flex-1 overflow-hidden flex items-center justify-center p-4">
-        {isPdf && (
-          <iframe
-            src={url}
-            title={title}
-            className="w-full h-full border-0"
-            style={{ minHeight: 'calc(90vh - 80px)' }}
-          />
-        )}
-        {isImage && (
-          <img
-            src={url}
-            alt={title}
-            className="max-w-full max-h-full object-contain"
-            style={{ maxHeight: 'calc(90vh - 80px)' }}
-          />
-        )}
-        {!isPdf && !isImage && (
-          <div className="text-center text-gray-500 font-mono">
-            <FileText className="h-16 w-16 mx-auto mb-4 opacity-30" />
-            <p className="mb-4">No preview available for .{fileType} files</p>
-            <a
-              href={url}
-              download
-              className="text-cyber-cyan hover:text-white flex items-center gap-2 justify-center transition-colors"
-            >
-              <Download className="h-4 w-4" />
-              DOWNLOAD FILE
-            </a>
-          </div>
-        )}
-      </div>
-    </div>
   );
 }
 
