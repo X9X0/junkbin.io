@@ -3,12 +3,15 @@ import { useMutation } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle, ExternalLink, Camera, FileText, X, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
 import ModerationNotice from '../components/ModerationNotice';
 import { parseApiError } from '../utils/formErrors';
 import { PRODUCT_CATEGORIES, REGIONS, COMPONENT_TYPES } from '../utils/constants';
+import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
+import SchematicUpload from '../components/SchematicUpload';
+import { components as componentsApi } from '../api/endpoints';
 
 const CATEGORIES = PRODUCT_CATEGORIES;
 
@@ -48,6 +51,13 @@ export default function Submit() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
   const [submittedItem, setSubmittedItem] = useState<SubmittedItem | null>(null);
+  const [uploadsDone, setUploadsDone] = useState(false);
+  const [uploadTab, setUploadTab] = useState<'photos' | 'docs'>('photos');
+  // Component datasheet upload state
+  const [dsFile, setDsFile] = useState<File | null>(null);
+  const [dsTitle, setDsTitle] = useState('');
+  const [dsSourceType, setDsSourceType] = useState('official');
+  const [dsSourceUrl, setDsSourceUrl] = useState('');
 
   // Product form state
   const [productData, setProductData] = useState<ProductFormData>({
@@ -108,6 +118,23 @@ export default function Submit() {
     },
   });
 
+  const datasheetMutation = useMutation({
+    mutationFn: async () => {
+      if (!dsFile || !submittedItem) throw new Error('No file');
+      const formData = new FormData();
+      formData.append('file', dsFile);
+      formData.append('title', dsTitle || dsFile.name.replace(/\.[^/.]+$/, ''));
+      formData.append('source_type', dsSourceType);
+      if (dsSourceUrl) formData.append('source_url', dsSourceUrl);
+      return componentsApi.uploadDatasheet(submittedItem.id, formData);
+    },
+    onSuccess: () => {
+      setDsFile(null);
+      setDsTitle('');
+      setDsSourceUrl('');
+    },
+  });
+
   if (!isAuthenticated) {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
@@ -163,15 +190,223 @@ export default function Submit() {
     setSubmittedItem(null);
     setStep(1);
     setError(null);
+    setUploadsDone(false);
+    setUploadTab('photos');
+    setDsFile(null);
+    setDsTitle('');
+    setDsSourceUrl('');
     setProductData({ manufacturer: '', model_number: '', revision: '', region: 'global', category: '', year_manufactured: '', fcc_id: '', description: '', teardown_notes: '' });
     setComponentData({ part_number: '', manufacturer: '', component_type: '', package_type: '', description: '', typical_function: '', datasheet_url: '' });
   };
 
-  if (submittedItem) {
-    const viewLink =
-      submittedItem.type === 'product'
-        ? `/products/${submittedItem.id}`
-        : `/components/${submittedItem.id}/products`;
+  const viewLink = submittedItem
+    ? submittedItem.type === 'product'
+      ? `/products/${submittedItem.id}`
+      : `/components/${submittedItem.id}/products`
+    : '';
+
+  if (submittedItem && !uploadsDone) {
+    const dsInputRef = { current: null as HTMLInputElement | null };
+
+    const handleDsFileSelect = () => {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.png,.jpg,.jpeg,.zip';
+      input.onchange = (e) => {
+        const f = (e.target as HTMLInputElement).files?.[0];
+        if (f) setDsFile(f);
+      };
+      input.click();
+    };
+
+    return (
+      <div className="py-8">
+        <div className="mx-auto max-w-3xl px-4">
+          <div className="mb-8 text-center">
+            <h1 className="font-display text-3xl font-bold text-white mb-2">
+              SUBMIT <span className="text-cyber-green">DOCUMENTATION</span>
+            </h1>
+            <p className="text-gray-400">Step 4 of 4 — Upload Files</p>
+          </div>
+
+          <div className="card-cyber p-6">
+            <div className="mb-6">
+              <h2 className="font-display text-lg text-white mb-1">
+                ADD FILES
+                <span className="text-gray-500 text-sm font-sans font-normal ml-3">optional</span>
+              </h2>
+              <p className="text-sm text-gray-400">
+                Upload photos and documentation for{' '}
+                <span className="text-white font-mono">{submittedItem.label}</span>.
+                You can also add files later from the {submittedItem.type} page.
+              </p>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-0 mb-6 border-b border-cyber-light/30">
+              <button
+                onClick={() => setUploadTab('photos')}
+                className={clsx(
+                  'px-4 py-2 font-mono text-sm border-b-2 -mb-px transition-colors flex items-center gap-2',
+                  uploadTab === 'photos'
+                    ? 'border-cyber-cyan text-cyber-cyan'
+                    : 'border-transparent text-gray-500 hover:text-white'
+                )}
+              >
+                <Camera className="h-4 w-4" />
+                PHOTOS
+              </button>
+              <button
+                onClick={() => setUploadTab('docs')}
+                className={clsx(
+                  'px-4 py-2 font-mono text-sm border-b-2 -mb-px transition-colors flex items-center gap-2',
+                  uploadTab === 'docs'
+                    ? 'border-cyber-green text-cyber-green'
+                    : 'border-transparent text-gray-500 hover:text-white'
+                )}
+              >
+                <FileText className="h-4 w-4" />
+                {submitType === 'product' ? 'DOCUMENTATION' : 'DATASHEETS'}
+              </button>
+            </div>
+
+            {/* Photos tab */}
+            {uploadTab === 'photos' && submitType === 'product' && (
+              <ImageUpload productId={submittedItem.id} />
+            )}
+            {uploadTab === 'photos' && submitType === 'component' && (
+              <ImageUpload
+                uploadFn={(formData) => componentsApi.uploadImage(submittedItem.id, formData)}
+                invalidateKey={['component', submittedItem.id]}
+                imageTypes={COMPONENT_IMAGE_TYPES}
+                defaultImageType="package"
+              />
+            )}
+
+            {/* Documentation tab - product */}
+            {uploadTab === 'docs' && submitType === 'product' && (
+              <SchematicUpload productId={submittedItem.id} />
+            )}
+
+            {/* Datasheets tab - component */}
+            {uploadTab === 'docs' && submitType === 'component' && (
+              <div className="space-y-4">
+                {!dsFile ? (
+                  <div
+                    onClick={handleDsFileSelect}
+                    className="border-2 border-dashed border-cyber-light/50 hover:border-cyber-green/50 hover:bg-cyber-dark/50 p-8 text-center cursor-pointer transition-all"
+                  >
+                    <FileText className="h-10 w-10 mx-auto mb-3 text-gray-500" />
+                    <p className="text-gray-400 mb-1">
+                      <span className="text-cyber-green">Click to upload</span> a datasheet
+                    </p>
+                    <p className="text-xs text-gray-600 font-mono">PDF, PNG, JPG, ZIP up to 50MB</p>
+                  </div>
+                ) : (
+                  <div className="card-cyber p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-cyber-green/20 border border-cyber-green/30 flex items-center justify-center">
+                          <FileText className="h-5 w-5 text-cyber-green" />
+                        </div>
+                        <div>
+                          <div className="text-sm font-mono text-white truncate max-w-xs">{dsFile.name}</div>
+                          <div className="text-xs text-gray-500">{(dsFile.size / 1024 / 1024).toFixed(2)} MB</div>
+                        </div>
+                      </div>
+                      <button onClick={() => setDsFile(null)} className="text-cyber-pink hover:text-white transition-colors p-1">
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-mono text-gray-500 mb-1">TITLE</label>
+                      <input
+                        type="text"
+                        value={dsTitle}
+                        onChange={(e) => setDsTitle(e.target.value)}
+                        placeholder={dsFile.name.replace(/\.[^/.]+$/, '')}
+                        className="input-cyber w-full"
+                      />
+                    </div>
+                    <div className="grid sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-mono text-gray-500 mb-1">SOURCE</label>
+                        <select value={dsSourceType} onChange={(e) => setDsSourceType(e.target.value)} className="input-cyber w-full">
+                          <option value="official">Official/Manufacturer</option>
+                          <option value="community">Community</option>
+                          <option value="reverse_engineered">Reverse Engineered</option>
+                          <option value="fcc_filing">FCC Filing</option>
+                          <option value="leaked">Leaked</option>
+                          <option value="unknown">Unknown Source</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-mono text-gray-500 mb-1">SOURCE URL</label>
+                        <input
+                          type="url"
+                          value={dsSourceUrl}
+                          onChange={(e) => setDsSourceUrl(e.target.value)}
+                          placeholder="https://..."
+                          className="input-cyber w-full"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex justify-end">
+                      <button
+                        onClick={() => datasheetMutation.mutate()}
+                        disabled={datasheetMutation.isPending}
+                        className={clsx(
+                          'btn-cyber btn-cyber-green flex items-center gap-2',
+                          datasheetMutation.isPending && 'opacity-50 cursor-not-allowed'
+                        )}
+                      >
+                        {datasheetMutation.isPending ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" /> UPLOADING...</>
+                        ) : (
+                          <><Upload className="h-4 w-4" /> UPLOAD DATASHEET</>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {datasheetMutation.isSuccess && !dsFile && (
+                  <div className="flex items-center gap-2 p-3 border border-cyber-green/50 bg-cyber-green/10 text-cyber-green text-sm font-mono">
+                    <Check className="h-4 w-4" />
+                    Datasheet uploaded — pending moderator review.
+                  </div>
+                )}
+                {datasheetMutation.isError && (
+                  <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
+                    <AlertCircle className="h-4 w-4" />
+                    Upload failed. Please try again.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Skip / Done */}
+          <div className="flex justify-end gap-4 mt-6">
+            <button
+              onClick={() => setUploadsDone(true)}
+              className="text-gray-400 hover:text-white transition-colors font-mono text-sm"
+            >
+              SKIP
+            </button>
+            <button
+              onClick={() => setUploadsDone(true)}
+              className="btn-cyber flex items-center gap-2"
+            >
+              <Check className="h-4 w-4" />
+              DONE
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (submittedItem && uploadsDone) {
     return (
       <div className="py-8">
         <div className="mx-auto max-w-3xl px-4">

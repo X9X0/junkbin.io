@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { schematics } from '../api/endpoints';
+import { schematics, products as productsApi } from '../api/endpoints';
+import { useAuth } from '../context/AuthContext';
+import SchematicUpload from '../components/SchematicUpload';
 import {
   FileText,
   Grid,
@@ -18,6 +20,9 @@ import {
   Zap,
   Cable,
   ClipboardList,
+  Upload,
+  ArrowLeft,
+  X,
 } from 'lucide-react';
 import clsx from 'clsx';
 import Pagination from '../components/Pagination';
@@ -62,6 +67,18 @@ function getFileTypeIcon(fileType: string) {
 export default function Schematics() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+  const [contributeOpen, setContributeOpen] = useState(false);
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<{ id: string; label: string } | null>(null);
+
+  const { isAuthenticated } = useAuth();
+
+  const { data: productSearchResults } = useQuery({
+    queryKey: ['productSearch', productSearch],
+    queryFn: () => productsApi.list({ search: productSearch, page_size: 8 }),
+    enabled: productSearch.length >= 2,
+    staleTime: 30000,
+  });
 
   const search = searchParams.get('search') || '';
   const schematicType = searchParams.get('schematic_type') || '';
@@ -105,14 +122,105 @@ export default function Schematics() {
     <div className="py-8">
       <div className="mx-auto max-w-screen-2xl px-4">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display text-3xl font-bold text-white mb-2">
-            SCHEMATICS & <span className="text-cyber-green">DOCUMENTATION</span>
-          </h1>
-          <p className="text-gray-400">
-            Service manuals, block diagrams, PCB layouts, and technical documentation
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div>
+            <h1 className="font-display text-3xl font-bold text-white mb-2">
+              SCHEMATICS & <span className="text-cyber-green">DOCUMENTATION</span>
+            </h1>
+            <p className="text-gray-400">
+              Service manuals, block diagrams, PCB layouts, and technical documentation
+            </p>
+          </div>
+          <button
+            onClick={() => { setContributeOpen((v) => !v); setSelectedProduct(null); setProductSearch(''); }}
+            className="flex-shrink-0 flex items-center gap-2 btn-cyber btn-cyber-green text-sm"
+          >
+            <Upload className="h-4 w-4" />
+            CONTRIBUTE
+          </button>
         </div>
+
+        {/* Contribute Panel */}
+        {contributeOpen && (
+          <div className="card-cyber p-6 mb-6 border-cyber-green/30">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg text-white">
+                CONTRIBUTE A DOCUMENT
+              </h2>
+              <button onClick={() => setContributeOpen(false)} className="text-gray-500 hover:text-white transition-colors p-1">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {!isAuthenticated ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400 mb-4">You must be logged in to contribute documents.</p>
+                <a href="/login" className="btn-cyber">LOGIN TO CONTRIBUTE</a>
+              </div>
+            ) : selectedProduct ? (
+              <div>
+                <div className="flex items-center gap-3 mb-6 p-3 border border-cyber-green/30 bg-cyber-green/5">
+                  <Cpu className="h-4 w-4 text-cyber-green flex-shrink-0" />
+                  <span className="text-white font-mono text-sm flex-1 truncate">{selectedProduct.label}</span>
+                  <button
+                    onClick={() => { setSelectedProduct(null); setProductSearch(''); }}
+                    className="text-xs font-mono text-gray-500 hover:text-cyber-cyan flex items-center gap-1 flex-shrink-0 transition-colors"
+                  >
+                    <ArrowLeft className="h-3 w-3" />
+                    CHANGE
+                  </button>
+                </div>
+                <SchematicUpload
+                  productId={selectedProduct.id}
+                  onSuccess={() => setContributeOpen(false)}
+                />
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm text-gray-400 mb-4">
+                  Search for the product this document belongs to, then upload the file.
+                </p>
+                <div className="relative mb-4">
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={(e) => setProductSearch(e.target.value)}
+                    placeholder="Search for a product (e.g. Cisco RV340, iPhone 12)..."
+                    className="input-cyber pl-10"
+                    autoFocus
+                  />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
+                </div>
+                {productSearch.length >= 2 && productSearchResults && (
+                  <div className="space-y-1">
+                    {productSearchResults.results.length === 0 ? (
+                      <p className="text-sm text-gray-500 py-4 text-center font-mono">No products found. <Link to="/submit" className="text-cyber-cyan hover:underline">Submit it first?</Link></p>
+                    ) : (
+                      productSearchResults.results.map((product: any) => (
+                        <button
+                          key={product.id}
+                          onClick={() => setSelectedProduct({ id: product.id, label: `${product.manufacturer} ${product.model_number}` })}
+                          className="w-full text-left p-3 border border-cyber-light/20 hover:border-cyber-green/50 hover:bg-cyber-green/5 transition-all flex items-center gap-3"
+                        >
+                          <Cpu className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                          <div>
+                            <div className="text-white font-mono text-sm">{product.manufacturer} {product.model_number}</div>
+                            {product.category_display && (
+                              <div className="text-xs text-gray-500">{product.category_display}</div>
+                            )}
+                          </div>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                {productSearch.length < 2 && (
+                  <p className="text-xs text-gray-600 font-mono text-center py-2">Type at least 2 characters to search</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Filters Bar */}
         <div className="card-cyber p-4 mb-6">
@@ -376,7 +484,7 @@ export default function Schematics() {
             contributed by the repair community. All documents are provided for educational
             and repair purposes in support of the Right to Repair movement. If you have
             documentation to share, please{' '}
-            <Link to="/submit" className="text-cyber-green hover:underline">contribute</Link>.
+            <button onClick={() => { setContributeOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-cyber-green hover:underline">contribute</button>.
           </p>
         </div>
       </div>
