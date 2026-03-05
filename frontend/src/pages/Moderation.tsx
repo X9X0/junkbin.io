@@ -478,6 +478,22 @@ function PendingContentTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
+
+  const openPreview = (url: string, fileType: string) => {
+    const win = window.open('about:blank', '_blank');
+    if (!win) return;
+    const safeUrl = url.replace(/"/g, '%22');
+    const isPdf = fileType === 'pdf' || url.toLowerCase().endsWith('.pdf');
+    const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'image'].includes(fileType.toLowerCase());
+    const body = isPdf
+      ? `<embed src="${safeUrl}" type="application/pdf" style="position:fixed;inset:0;width:100%;height:100%;border:none">`
+      : isImage
+      ? `<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#111"><img src="${safeUrl}" style="max-width:100%;max-height:100vh;object-fit:contain"></div>`
+      : `<div style="padding:2rem;font-family:monospace;color:#fff;background:#111"><p style="margin-bottom:1rem">No preview for this file type.</p><a href="${safeUrl}" style="color:#00ffff">Download instead</a></div>`;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{margin:0;padding:0;box-sizing:border-box}body{background:#111}</style></head><body>${body}</body></html>`);
+    win.document.close();
+  };
+
   const getPreviewFile = (item: PendingItem): { url: string; type: string } | null => {
     if (item.type === 'schematic') {
       const s = item.data as Schematic;
@@ -778,15 +794,13 @@ function PendingContentTab() {
                           {(() => {
                             const pf = getPreviewFile(item);
                             return pf ? (
-                              <a
-                                href={pf.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                              <button
+                                onClick={() => openPreview(pf.url, pf.type)}
                                 className="text-cyber-yellow hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
                               >
                                 <ExternalLink className="h-4 w-4" />
                                 PREVIEW
-                              </a>
+                              </button>
                             ) : null;
                           })()}
                           <button
