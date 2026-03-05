@@ -211,12 +211,17 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     def get_images(self, obj):
         request = self.context.get('request')
         qs = obj.images.all()
-        if not (request and hasattr(request, 'user') and request.user.is_staff):
+        if not (request and hasattr(request, 'user') and
+                (request.user.is_staff or getattr(request.user, 'is_moderator', False))):
             qs = qs.filter(is_approved=True)
         return ComponentImageSerializer(qs, many=True, context=self.context).data
 
     def get_datasheets(self, obj):
-        qs = obj.datasheets.filter(is_approved=True)
+        request = self.context.get('request')
+        qs = obj.datasheets.all()
+        if not (request and hasattr(request, 'user') and
+                (request.user.is_staff or getattr(request.user, 'is_moderator', False))):
+            qs = qs.filter(is_approved=True)
         return ComponentDatasheetSerializer(qs, many=True, context=self.context).data
 
 

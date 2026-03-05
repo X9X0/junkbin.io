@@ -156,7 +156,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         component = self.get_object()
         images = component.images.all()
 
-        if not request.user.is_staff:
+        if not request.user.is_staff and not getattr(request.user, 'is_moderator', False):
             if request.user.is_authenticated:
                 images = images.filter(
                     models.Q(is_approved=True) |
