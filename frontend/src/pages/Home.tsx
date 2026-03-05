@@ -156,7 +156,7 @@ export default function Home() {
             <div className="flex items-center justify-center gap-3 mt-5 animate-yellow-pulse">
               <span className="text-[#f9f002] text-2xl leading-none">▼</span>
               <p className="font-bold text-[#f9f002] tracking-widest uppercase text-lg">
-                Beta Testers Register Below
+                {t('home.beta_testers_cta')}
               </p>
               <span className="text-[#f9f002] text-2xl leading-none">▼</span>
             </div>
@@ -339,11 +339,7 @@ export default function Home() {
             {/* Background decoration */}
             <div className="absolute inset-0 opacity-5">
               <div className="absolute top-4 left-4 font-mono text-[8px] text-cyber-cyan leading-tight whitespace-pre">
-{`╔══════════════════════════════════╗
-║  NO USER SERVICEABLE PARTS INSIDE ║
-║  NO USER SERVICEABLE PARTS INSIDE ║
-║  NO USER SERVICEABLE PARTS INSIDE ║
-╚══════════════════════════════════╝`}
+{"╔══════════════════════════════════╗\n║  " + t('home.no_user_serviceable') + " ║\n║  " + t('home.no_user_serviceable') + " ║\n║  " + t('home.no_user_serviceable') + " ║\n╚══════════════════════════════════╝"}
               </div>
             </div>
 

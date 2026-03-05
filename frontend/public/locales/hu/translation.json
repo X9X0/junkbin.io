@@ -107,6 +107,8 @@
     "under_construction": "SITE UNDER CONSTRUCTION",
     "tagline_command": "cat /etc/figyelmeztes.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "no_user_serviceable": "NO USER SERVICEABLE PARTS INSIDE",
+    "beta_testers_cta": "Béta tesztelők, regisztráljon alább",
     "tagline_response": "We took that personally.",
     "description": "A community-driven database for electronic components, schematics, and repair documentation.",
     "right_to_repair": "RIGHT TO REPAIR STARTS HERE",

@@ -46,11 +46,12 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        if not self.request.user.is_staff:
-            if self.request.user.is_authenticated:
+        user = self.request.user
+        if not user.is_staff and not getattr(user, 'is_moderator', False):
+            if user.is_authenticated:
                 queryset = queryset.filter(
                     models.Q(is_approved=True) |
-                    models.Q(created_by=self.request.user)
+                    models.Q(created_by=user)
                 )
             else:
                 queryset = queryset.filter(is_approved=True)

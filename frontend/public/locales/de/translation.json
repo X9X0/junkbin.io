@@ -107,7 +107,9 @@
   "home": {
     "under_construction": "SEITE IM AUFBAU",
     "tagline_command": "cat /etc/warnung.txt",
-    "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "tagline_quote": "\"KEINE VOM BENUTZER WARTBAREN TEILE IM INNEREN\"",
+    "no_user_serviceable": "KEINE VOM BENUTZER WARTBAREN TEILE IM INNEREN",
+    "beta_testers_cta": "Beta-Tester hier registrieren",
     "tagline_response": "Das haben wir persönlich genommen.",
     "description": "Eine Community-getriebene Datenbank für elektronische Bauteile, Schaltpläne und Reparaturdokumentation.",
     "right_to_repair": "RIGHT TO REPAIR BEGINNT HIER",
@@ -142,7 +144,7 @@
     "early_access_question": "?",
     "early_access_desc": "Wir suchen Beta-Tester und frühe Mitwirkende, die beim Aufbau der Datenbank helfen.",
     "create_account": "KONTO ERSTELLEN",
-    "r2r_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "r2r_quote": "\"KEINE VOM BENUTZER WARTBAREN TEILE IM INNEREN\"",
     "r2r_desc": "Hersteller wollen nicht, dass du deine Geräte reparierst. Wir bauen eine Datenbank, damit du es trotzdem kannst. Jedes dokumentierte Bauteil, jeder geteilte Schaltplan, jedes Teardown-Foto hilft unabhängigen Reparaturbetrieben, Hobbybastlern und Verbrauchern, für ihr Recht auf Reparatur zu kämpfen.",
     "learn_r2r": "MEHR ÜBER RIGHT TO REPAIR ERFAHREN →",
     "error_prefix": "FEHLER:"
@@ -663,7 +665,7 @@
   },
   "footer": {
     "tagline": "Eine Community-getriebene Datenbank für die Dokumentation elektronischer Bauteile. Unterstützung der Right-to-Repair-Bewegung durch freien Zugang zu Schaltplänen und Bauteilinformationen.",
-    "motto": "NO USER SERVICEABLE PARTS INSIDE",
+    "motto": "KEINE VOM BENUTZER WARTBAREN TEILE IM INNEREN",
     "motto_response": "Das haben wir persönlich genommen.",
     "explore": "ERKUNDEN",
     "explore_products": "Produkte",

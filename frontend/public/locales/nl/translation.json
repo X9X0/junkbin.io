@@ -108,6 +108,8 @@
     "under_construction": "SITE IN AANBOUW",
     "tagline_command": "cat /etc/waarschuwing.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "no_user_serviceable": "NO USER SERVICEABLE PARTS INSIDE",
+    "beta_testers_cta": "Beta testers registreren hieronder",
     "tagline_response": "Dat namen we persoonlijk op.",
     "description": "Een community-gedreven database voor elektronische componenten, schema's en reparatiedocumentatie.",
     "right_to_repair": "RIGHT TO REPAIR BEGINT HIER",

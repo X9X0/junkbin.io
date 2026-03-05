@@ -108,6 +108,8 @@
     "under_construction": "WEB VO VÝSTAVBE",
     "tagline_command": "cat /etc/varovanie.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "no_user_serviceable": "NO USER SERVICEABLE PARTS INSIDE",
+    "beta_testers_cta": "Beta testeri, zaregistrujte sa nižšie",
     "tagline_response": "Vzali sme to osobne.",
     "description": "Komunitná databáza elektronických súčiastok, schém a dokumentácie k opravám.",
     "right_to_repair": "RIGHT TO REPAIR ZAČÍNA TU",

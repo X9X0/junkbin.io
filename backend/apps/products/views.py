@@ -60,12 +60,13 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Non-staff users only see approved products (unless viewing their own)
-        if not self.request.user.is_staff:
-            if self.request.user.is_authenticated:
+        # Non-staff/moderator users only see approved products (unless viewing their own)
+        user = self.request.user
+        if not user.is_staff and not getattr(user, 'is_moderator', False):
+            if user.is_authenticated:
                 queryset = queryset.filter(
                     models.Q(is_approved=True) |
-                    models.Q(created_by=self.request.user)
+                    models.Q(created_by=user)
                 )
             else:
                 queryset = queryset.filter(is_approved=True)
@@ -770,12 +771,13 @@ class SchematicViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
 
-        # Non-staff users only see approved schematics (plus their own)
-        if not self.request.user.is_staff:
-            if self.request.user.is_authenticated:
+        # Non-staff/moderator users only see approved schematics (plus their own)
+        user = self.request.user
+        if not user.is_staff and not getattr(user, 'is_moderator', False):
+            if user.is_authenticated:
                 queryset = queryset.filter(
                     models.Q(is_approved=True) |
-                    models.Q(uploaded_by=self.request.user)
+                    models.Q(uploaded_by=user)
                 )
             else:
                 queryset = queryset.filter(is_approved=True)

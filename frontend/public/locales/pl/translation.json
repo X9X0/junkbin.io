@@ -108,6 +108,8 @@
     "under_construction": "STRONA W BUDOWIE",
     "tagline_command": "cat /etc/ostrzezenie.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "no_user_serviceable": "NO USER SERVICEABLE PARTS INSIDE",
+    "beta_testers_cta": "Testerzy beta, zarejestruj się poniżej",
     "tagline_response": "Wzięliśmy to do siebie.",
     "description": "Baza danych tworzona przez społeczność — komponenty elektroniczne, schematy i dokumentacja naprawcza.",
     "right_to_repair": "RIGHT TO REPAIR ZACZYNA SIĘ TUTAJ",

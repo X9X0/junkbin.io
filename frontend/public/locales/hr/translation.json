@@ -108,6 +108,8 @@
     "under_construction": "STRANICA U IZGRADNJI",
     "tagline_command": "cat /etc/upozorenje.txt",
     "tagline_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
+    "no_user_serviceable": "NO USER SERVICEABLE PARTS INSIDE",
+    "beta_testers_cta": "Beta testeri, registrirajte se dolje",
     "tagline_response": "To smo shvatili osobno.",
     "description": "Baza podataka koju vodi zajednica za elektroničke komponente, sheme i dokumentaciju za popravke.",
     "right_to_repair": "PRAVO NA POPRAVAK POČINJE OVDJE",
