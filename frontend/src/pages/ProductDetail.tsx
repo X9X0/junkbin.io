@@ -33,6 +33,7 @@ import type { JunkbinItem } from '../types';
 import clsx from 'clsx';
 import { useState } from 'react';
 import LazyImage from '../components/LazyImage';
+import Lightbox from '../components/Lightbox';
 
 function SwapItemCard({ item, currentUserId, isAuthenticated }: {
   item: JunkbinItem;
@@ -110,6 +111,7 @@ export default function ProductDetail() {
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
@@ -199,7 +201,9 @@ export default function ProductDetail() {
                   <img
                     src={product.images[selectedImage].image}
                     alt={product.model_number}
-                    className="max-w-full max-h-full object-contain bg-cyber-black"
+                    className="max-w-full max-h-full object-contain bg-cyber-black cursor-zoom-in"
+                    onClick={() => setLightboxIndex(selectedImage)}
+                    title="Click to enlarge"
                   />
                 ) : (
                   <div className="text-center text-gray-600">
@@ -1010,6 +1014,18 @@ export default function ProductDetail() {
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           isStaff={user?.is_staff || false}
+        />
+      )}
+
+      {/* Lightbox */}
+      {lightboxIndex !== null && product.images && product.images.length > 0 && (
+        <Lightbox
+          images={product.images.map((img) => ({
+            src: img.image,
+            caption: img.caption || img.image_type_display || '',
+          }))}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
         />
       )}
     </div>
