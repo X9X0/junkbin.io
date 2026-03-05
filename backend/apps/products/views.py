@@ -509,8 +509,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         product = self.get_object()
         images = product.images.all()
 
-        # Non-staff users only see approved images (plus their own)
-        if not request.user.is_staff:
+        # Non-staff/moderator users only see approved images (plus their own)
+        if not request.user.is_staff and not getattr(request.user, 'is_moderator', False):
             if request.user.is_authenticated:
                 images = images.filter(
                     models.Q(is_approved=True) |
@@ -601,11 +601,11 @@ class ProductViewSet(viewsets.ModelViewSet):
     def schematics(self, request, pk=None):
         """Get all schematics for this product."""
         product = self.get_object()
-        schematics = product.schematics.filter(is_approved=True)
-
-        # Staff can see unapproved schematics
-        if request.user.is_staff:
+        # Staff and moderators can see unapproved schematics
+        if request.user.is_staff or getattr(request.user, 'is_moderator', False):
             schematics = product.schematics.all()
+        else:
+            schematics = product.schematics.filter(is_approved=True)
 
         serializer = SchematicSerializer(
             schematics,
