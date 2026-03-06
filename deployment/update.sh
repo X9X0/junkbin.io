@@ -94,7 +94,11 @@ $DC exec backend python manage.py migrate --noinput
 log_step "Collecting static files..."
 $DC exec backend python manage.py collectstatic --noinput
 
-# 6. Seed data (optional)
+# 6. Compile translation files
+log_step "Compiling translation files..."
+$DC exec backend python manage.py compilemessages || true
+
+# 7. Seed data (optional)
 if [ "$RUN_SEED" = true ]; then
     log_step "Running seed_data..."
     $DC exec backend python manage.py seed_data

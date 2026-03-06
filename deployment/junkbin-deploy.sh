@@ -544,58 +544,69 @@ setup_ssl() {
         return
     fi
 
-    # Install certbot if not present
-    if ! command -v certbot &> /dev/null; then
-        log_info "Installing certbot..."
+    # Install certbot + certbot-dns-hostinger in a dedicated venv so the plugin
+    # is always visible to certbot regardless of the system Python environment.
+    # This is required on RHEL/AlmaLinux/Rocky where dnf-installed certbot uses
+    # a different Python env than pip3.
+    if [ ! -x /opt/certbot/bin/certbot ]; then
+        log_info "Installing certbot in /opt/certbot venv..."
         case "$OS" in
             ubuntu|debian)
-                apt-get install -y certbot
+                apt-get install -y python3 python3-venv python3-pip
                 ;;
             fedora|centos|rhel|almalinux|rocky)
-                dnf install -y certbot
+                dnf install -y python3 python3-pip
                 ;;
             arch)
-                pacman -S --noconfirm certbot
+                pacman -S --noconfirm python python-pip
                 ;;
         esac
+        python3 -m venv /opt/certbot
+        /opt/certbot/bin/pip install --quiet --upgrade pip
+        /opt/certbot/bin/pip install --quiet certbot certbot-dns-hostinger
+        ln -sf /opt/certbot/bin/certbot /usr/local/bin/certbot
+        log_info "certbot + certbot-dns-hostinger installed in /opt/certbot"
+    elif ! /opt/certbot/bin/pip show certbot-dns-hostinger &> /dev/null; then
+        log_info "Installing certbot-dns-hostinger plugin..."
+        /opt/certbot/bin/pip install --quiet certbot-dns-hostinger
     fi
 
-    # Stop nginx to free port 80 for standalone mode
-    log_info "Stopping nginx for certificate acquisition..."
-    docker compose stop nginx 2>/dev/null || true
+    # Create Hostinger DNS credentials file
+    if [ ! -f /etc/letsencrypt/hostinger.ini ]; then
+        if [ -z "${HOSTINGER_API_TOKEN:-}" ]; then
+            read -p "Enter Hostinger API token (for DNS challenge): " HOSTINGER_API_TOKEN
+        fi
+        mkdir -p /etc/letsencrypt
+        echo "dns_hostinger_api_token = ${HOSTINGER_API_TOKEN}" > /etc/letsencrypt/hostinger.ini
+        chmod 600 /etc/letsencrypt/hostinger.ini
+        log_info "Hostinger credentials saved to /etc/letsencrypt/hostinger.ini"
+    fi
 
-    # Get certificate using standalone mode
-    log_info "Requesting SSL certificate for ${DOMAIN}..."
-    certbot certonly --standalone \
+    # Get certificates using DNS challenge (works behind firewalls, supports auto-renewal)
+    log_info "Requesting SSL certificate for ${DOMAIN} via DNS challenge..."
+    /usr/local/bin/certbot certonly --authenticator dns-hostinger \
+        --dns-hostinger-credentials /etc/letsencrypt/hostinger.ini \
         -d ${DOMAIN} \
         -d www.${DOMAIN} \
         --email ${ADMIN_EMAIL} \
         --agree-tos \
         --non-interactive
 
+    # Get certificate for translate subdomain
+    log_info "Requesting SSL certificate for translate.${DOMAIN} via DNS challenge..."
+    /usr/local/bin/certbot certonly --authenticator dns-hostinger \
+        --dns-hostinger-credentials /etc/letsencrypt/hostinger.ini \
+        -d translate.${DOMAIN} \
+        --email ${ADMIN_EMAIL} \
+        --agree-tos \
+        --non-interactive
+
     if [ $? -eq 0 ]; then
         log_info "SSL certificates installed successfully"
-
-        # Setup auto-renewal with pre/post hooks to handle nginx
-        cat > /etc/letsencrypt/renewal-hooks/pre/stop-nginx.sh << 'HOOK'
-#!/bin/bash
-cd /root/junkbin.io && docker compose stop nginx
-HOOK
-        chmod +x /etc/letsencrypt/renewal-hooks/pre/stop-nginx.sh
-
-        cat > /etc/letsencrypt/renewal-hooks/post/start-nginx.sh << 'HOOK'
-#!/bin/bash
-cd /root/junkbin.io && docker compose start nginx
-HOOK
-        chmod +x /etc/letsencrypt/renewal-hooks/post/start-nginx.sh
-
-        log_info "Auto-renewal configured with nginx hooks"
+        log_info "Auto-renewal is handled by certbot's systemd timer (no nginx hooks needed)"
     else
         log_warn "SSL certificate acquisition failed - site will run on HTTP only"
     fi
-
-    # Restart nginx
-    docker compose start nginx 2>/dev/null || true
 }
 
 # Deploy application
