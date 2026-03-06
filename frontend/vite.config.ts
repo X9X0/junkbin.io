@@ -12,6 +12,20 @@ export default defineConfig({
     __APP_VERSION__: JSON.stringify(version),
     __BUILD_TIME__: JSON.stringify(buildTime),
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react':  ['react', 'react-dom'],
+          'vendor-router': ['react-router-dom'],
+          'vendor-query':  ['@tanstack/react-query'],
+          'vendor-i18n':   ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend'],
+          'vendor-icons':  ['lucide-react'],
+          'vendor-utils':  ['axios', 'clsx'],
+        },
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({
