@@ -1,42 +1,44 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/Layout';
-import Home from './pages/Home';
-import Products from './pages/Products';
-import ProductDetail from './pages/ProductDetail';
-import Components from './pages/Components';
-import ComponentDetail from './pages/ComponentDetail';
-import Submit from './pages/Submit';
-import Schematics from './pages/Schematics';
-import Profile from './pages/Profile';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import PasswordReset from './pages/PasswordReset';
-import PasswordResetConfirm from './pages/PasswordResetConfirm';
-import VerifyEmail from './pages/VerifyEmail';
-import Moderation from './pages/Moderation';
-import AnalyticsDashboard from './pages/AnalyticsDashboard';
-import Community from './pages/Community';
-import SwapShop from './pages/SwapShop';
-import Messages from './pages/Messages';
-import MessageThread from './pages/MessageThread';
-import NewConversation from './pages/NewConversation';
-import UserProfile from './pages/UserProfile';
-import Guidelines from './pages/Guidelines';
-import Docs from './pages/Docs';
-import News from './pages/News';
-import MyJunkbin from './pages/MyJunkbin';
-import MySubmissions from './pages/MySubmissions';
-import Recipes from './pages/Recipes';
-import RecipeDetail from './pages/RecipeDetail';
-import SubmitRecipe from './pages/SubmitRecipe';
-import Buildable from './pages/Buildable';
-import NotFound from './pages/NotFound';
-import Search from './pages/Search';
-import GitHubCallback from './pages/GitHubCallback';
 import ScrollToTop from './components/ScrollToTop';
 import ErrorBoundary from './components/ErrorBoundary';
+
+const Home = lazy(() => import('./pages/Home'));
+const Products = lazy(() => import('./pages/Products'));
+const ProductDetail = lazy(() => import('./pages/ProductDetail'));
+const Components = lazy(() => import('./pages/Components'));
+const ComponentDetail = lazy(() => import('./pages/ComponentDetail'));
+const Submit = lazy(() => import('./pages/Submit'));
+const Schematics = lazy(() => import('./pages/Schematics'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const PasswordReset = lazy(() => import('./pages/PasswordReset'));
+const PasswordResetConfirm = lazy(() => import('./pages/PasswordResetConfirm'));
+const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Moderation = lazy(() => import('./pages/Moderation'));
+const AnalyticsDashboard = lazy(() => import('./pages/AnalyticsDashboard'));
+const Community = lazy(() => import('./pages/Community'));
+const SwapShop = lazy(() => import('./pages/SwapShop'));
+const Messages = lazy(() => import('./pages/Messages'));
+const MessageThread = lazy(() => import('./pages/MessageThread'));
+const NewConversation = lazy(() => import('./pages/NewConversation'));
+const UserProfile = lazy(() => import('./pages/UserProfile'));
+const Guidelines = lazy(() => import('./pages/Guidelines'));
+const Docs = lazy(() => import('./pages/Docs'));
+const News = lazy(() => import('./pages/News'));
+const MyJunkbin = lazy(() => import('./pages/MyJunkbin'));
+const MySubmissions = lazy(() => import('./pages/MySubmissions'));
+const Recipes = lazy(() => import('./pages/Recipes'));
+const RecipeDetail = lazy(() => import('./pages/RecipeDetail'));
+const SubmitRecipe = lazy(() => import('./pages/SubmitRecipe'));
+const Buildable = lazy(() => import('./pages/Buildable'));
+const NotFound = lazy(() => import('./pages/NotFound'));
+const Search = lazy(() => import('./pages/Search'));
+const GitHubCallback = lazy(() => import('./pages/GitHubCallback'));
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -55,6 +57,7 @@ function App() {
         <BrowserRouter>
           <ScrollToTop />
           <ErrorBoundary>
+            <Suspense fallback={<div className="min-h-screen bg-cyber-black" />}>
             <Routes>
               <Route path="auth/github/callback" element={<GitHubCallback />} />
               <Route path="/" element={<Layout />}>
@@ -93,6 +96,7 @@ function App() {
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
+            </Suspense>
           </ErrorBoundary>
         </BrowserRouter>
       </AuthProvider>
