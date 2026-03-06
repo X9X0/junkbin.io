@@ -254,6 +254,7 @@ services:
       - WEBLATE_EMAIL_USE_TLS=${EMAIL_USE_TLS:-True}
       - WEBLATE_SERVER_EMAIL=${SERVER_EMAIL:-errors@junkbin.io}
       - WEBLATE_DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL:-noreply@junkbin.io}
+      - WEBLATE_ENABLE_HTTPS=1
     volumes:
       - weblate_data:/app/data
     ports:
