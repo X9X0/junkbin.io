@@ -7,20 +7,22 @@ import Pagination from '../components/Pagination';
 import RecipeCard from '../components/RecipeCard';
 import { Link } from 'react-router-dom';
 import { RECIPE_CATEGORIES, DIFFICULTIES } from '../utils/constants';
-
-const FALLBACK_CATEGORIES = [
-  { value: '', label: 'All Categories' },
-  ...RECIPE_CATEGORIES,
-];
-
-const FILTER_DIFFICULTIES = [
-  { value: '', label: 'All Difficulties' },
-  ...DIFFICULTIES,
-];
+import { useTranslation } from 'react-i18next';
 
 export default function Recipes() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
+
+  const FALLBACK_CATEGORIES = [
+    { value: '', label: t('recipes.all_categories') },
+    ...RECIPE_CATEGORIES,
+  ];
+
+  const FILTER_DIFFICULTIES = [
+    { value: '', label: t('recipes.all_difficulties') },
+    ...DIFFICULTIES,
+  ];
 
   const q = searchParams.get('q') || '';
   const category = searchParams.get('category') || '';
@@ -35,7 +37,7 @@ export default function Recipes() {
   });
 
   const categoryOptions = apiCategories
-    ? [{ value: '', label: 'All Categories' }, ...apiCategories.map((c) => ({ value: c.value, label: c.label }))]
+    ? [{ value: '', label: t('recipes.all_categories') }, ...apiCategories.map((c) => ({ value: c.value, label: c.label }))]
     : FALLBACK_CATEGORIES;
 
   const { data, isLoading } = useQuery({
@@ -77,15 +79,15 @@ export default function Recipes() {
         <div className="mb-8 flex items-center justify-between">
           <div>
             <h1 className="font-display text-3xl font-bold text-white mb-2">
-              PROJECT <span className="text-cyber-cyan">RECIPES</span>
+              {t('recipes.title')}
             </h1>
             <p className="text-gray-400">
-              Community electronics projects with parts lists
+              {t('recipes.subtitle')}
             </p>
           </div>
           {isAuthenticated && (
             <Link to="/recipes/submit" className="btn-cyber text-sm">
-              + SUBMIT RECIPE
+              {t('recipes.submit_btn')}
             </Link>
           )}
         </div>
@@ -99,7 +101,7 @@ export default function Recipes() {
                 type="text"
                 value={q}
                 onChange={(e) => updateFilter('q', e.target.value)}
-                placeholder="Search recipes..."
+                placeholder={t('recipes.search_placeholder')}
                 className="input-cyber pl-10"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -144,10 +146,10 @@ export default function Recipes() {
                 onChange={(e) => updateFilter('ordering', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
-                <option value="-created_at">Newest First</option>
-                <option value="created_at">Oldest First</option>
-                <option value="-view_count">Most Viewed</option>
-                <option value="name">Name A-Z</option>
+                <option value="-created_at">{t('recipes.newest_first')}</option>
+                <option value="created_at">{t('recipes.oldest_first')}</option>
+                <option value="-view_count">{t('recipes.most_viewed')}</option>
+                <option value="name">{t('recipes.name_az')}</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
             </div>
@@ -157,7 +159,7 @@ export default function Recipes() {
         {/* Results count */}
         {data && (
           <div className="mb-4 text-sm text-gray-500 font-mono">
-            {data.count} recipes found
+            {t('recipes.count_found', { count: data.count })}
           </div>
         )}
 
@@ -165,7 +167,7 @@ export default function Recipes() {
         {isLoading && (
           <div className="flex items-center justify-center py-20">
             <div className="text-cyber-cyan font-mono animate-pulse">
-              LOADING RECIPES...
+              {t('recipes.loading')}
             </div>
           </div>
         )}
@@ -187,13 +189,13 @@ export default function Recipes() {
         {data && data.results.length === 0 && (
           <div className="text-center py-20">
             <Cpu className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="font-display text-xl text-white mb-2">NO RECIPES FOUND</h3>
+            <h3 className="font-display text-xl text-white mb-2">{t('recipes.no_recipes_title')}</h3>
             <p className="text-gray-500 mb-6">
-              Try adjusting your search or filters
+              {t('recipes.no_recipes_desc')}
             </p>
             {isAuthenticated && (
               <Link to="/recipes/submit" className="btn-cyber">
-                SUBMIT A RECIPE
+                {t('recipes.submit_a_recipe')}
               </Link>
             )}
           </div>

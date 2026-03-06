@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { users, messaging } from '../api/endpoints';
 import type { PublicUser } from '../types';
 import {
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function NewConversation() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuth();
@@ -127,7 +129,7 @@ export default function NewConversation() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <h1 className="font-display text-xl font-bold text-white">
-            NEW <span className="text-cyber-cyan">MESSAGE</span>
+            {t('new_conversation.title')}
           </h1>
         </div>
 
@@ -135,7 +137,7 @@ export default function NewConversation() {
           {/* Recipient field */}
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-2">
-              TO:
+              {t('new_conversation.to_label')}
             </label>
 
             {selectedUser ? (
@@ -187,7 +189,7 @@ export default function NewConversation() {
                       setShowDropdown(true);
                     }}
                     onFocus={() => setShowDropdown(true)}
-                    placeholder="Search for a user..."
+                    placeholder={t('new_conversation.search_placeholder')}
                     className="input-cyber w-full pl-10"
                     autoFocus
                   />
@@ -239,7 +241,7 @@ export default function NewConversation() {
                       <div className="p-4 text-center">
                         <UserIcon className="h-6 w-6 text-gray-600 mx-auto mb-2" />
                         <p className="text-gray-500 text-sm font-mono">
-                          No users found
+                          {t('new_conversation.no_users_found')}
                         </p>
                       </div>
                     ) : null}
@@ -252,13 +254,13 @@ export default function NewConversation() {
           {/* Message compose area */}
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-2">
-              MESSAGE:
+              {t('new_conversation.message_label')}
             </label>
 
             {sendMutation.isError && (
               <div className="mb-3 p-3 bg-cyber-pink/10 border border-cyber-pink/30 text-sm text-cyber-pink font-mono">
                 {(sendMutation.error as any)?.response?.data?.detail ||
-                  'Failed to send message. Please try again.'}
+                  t('new_conversation.send_error')}
               </div>
             )}
 
@@ -269,8 +271,8 @@ export default function NewConversation() {
               onKeyDown={handleKeyDown}
               placeholder={
                 selectedUser
-                  ? `Write a message to ${selectedUser.display_name || selectedUser.username}...`
-                  : 'Select a recipient first...'
+                  ? t('new_conversation.write_message_to', { username: selectedUser.display_name || selectedUser.username })
+                  : t('new_conversation.select_recipient')
               }
               disabled={!selectedUser}
               rows={5}
@@ -280,7 +282,7 @@ export default function NewConversation() {
 
             <div className="flex items-center justify-between mt-2">
               <span className="text-xs text-gray-600 font-mono">
-                Ctrl+Enter to send
+                {t('new_conversation.ctrl_enter_to_send')}
               </span>
               <span className="text-xs text-gray-600 font-mono">
                 {content.length}/5000
@@ -302,7 +304,7 @@ export default function NewConversation() {
               ) : (
                 <Send className="h-4 w-4" />
               )}
-              SEND MESSAGE
+              {t('new_conversation.send')}
             </button>
           </div>
         </div>

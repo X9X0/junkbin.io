@@ -2,6 +2,7 @@ import { Link, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { messaging } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { MessageSquare, Plus, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -18,6 +19,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function Messages() {
+  const { t } = useTranslation();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
   const { data, isLoading } = useQuery({
@@ -43,10 +45,10 @@ export default function Messages() {
           </div>
           <div>
             <h1 className="font-display text-2xl font-bold tracking-wider text-white">
-              MESSAGES
+              {t('messages.title')}
             </h1>
             <p className="text-xs font-mono text-gray-500">
-              {data ? `${data.count} conversation${data.count !== 1 ? 's' : ''}` : ''}
+              {data ? t('messages.count_conversations', { count: data.count }) : ''}
             </p>
           </div>
         </div>
@@ -55,7 +57,7 @@ export default function Messages() {
           className="btn-cyber flex items-center gap-2 text-sm py-1.5"
         >
           <Plus className="h-4 w-4" />
-          NEW
+          {t('messages.new_btn')}
         </Link>
       </div>
 
@@ -78,9 +80,9 @@ export default function Messages() {
       ) : conversations.length === 0 ? (
         <div className="text-center py-16 card-cyber">
           <MessageSquare className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-          <h2 className="font-display text-lg text-gray-400 mb-2">NO CONVERSATIONS YET</h2>
+          <h2 className="font-display text-lg text-gray-400 mb-2">{t('messages.no_conversations')}</h2>
           <p className="text-sm text-gray-500 font-mono">
-            Start a conversation from a user's profile page.
+            {t('messages.no_conversations_desc')}
           </p>
         </div>
       ) : (

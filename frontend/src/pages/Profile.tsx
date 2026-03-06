@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { auth, messaging, reports } from '../api/endpoints';
 import api from '../api/client';
 import type { UserPreferences } from '../types';
@@ -27,6 +28,7 @@ import {
 } from 'lucide-react';
 
 export default function Profile() {
+  const { t } = useTranslation();
   const { user, isAuthenticated } = useAuth();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
@@ -100,12 +102,12 @@ export default function Profile() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
         <AlertCircle className="h-16 w-16 text-cyber-pink mb-4" />
-        <h2 className="font-display text-2xl text-white mb-2">NOT LOGGED IN</h2>
+        <h2 className="font-display text-2xl text-white mb-2">{t('profile.not_logged_in')}</h2>
         <p className="text-gray-400 mb-6 text-center">
-          Please log in to view your profile.
+          {t('profile.please_log_in')}
         </p>
         <Link to="/login" className="btn-cyber">
-          LOGIN
+          {t('auth.login.submit')}
         </Link>
       </div>
     );
@@ -140,13 +142,13 @@ export default function Profile() {
                   {user.is_trusted && (
                     <span className="badge-cyber text-cyber-green border-cyber-green flex items-center gap-1">
                       <Shield className="h-3 w-3" />
-                      TRUSTED
+                      {t('profile.trusted')}
                     </span>
                   )}
                   {user.is_moderator && (
                     <span className="badge-cyber text-cyber-yellow border-cyber-yellow flex items-center gap-1">
                       <Star className="h-3 w-3" />
-                      MODERATOR
+                      {t('profile.moderator')}
                     </span>
                   )}
                 </div>
@@ -170,7 +172,7 @@ export default function Profile() {
                 className="mt-3 inline-flex items-center gap-1.5 text-xs font-mono text-gray-400 hover:text-cyber-cyan border border-cyber-light/30 hover:border-cyber-cyan/50 px-3 py-1.5 transition-colors"
               >
                 <Pencil className="h-3 w-3" />
-                EDIT PROFILE
+                {t('profile.edit_profile')}
               </button>
             </div>
           </div>
@@ -184,7 +186,7 @@ export default function Profile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Award className="h-3.5 w-3.5" />
-              REPUTATION
+              {t('profile.reputation')}
             </div>
           </div>
 
@@ -194,7 +196,7 @@ export default function Profile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Package className="h-3.5 w-3.5" />
-              CONTRIBUTIONS
+              {t('profile.contributions')}
             </div>
           </div>
 
@@ -204,7 +206,7 @@ export default function Profile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Cpu className="h-3.5 w-3.5" />
-              PRODUCTS
+              {t('profile.products')}
             </div>
           </div>
 
@@ -214,7 +216,7 @@ export default function Profile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Package className="h-3.5 w-3.5" />
-              COMPONENTS
+              {t('profile.components')}
             </div>
           </div>
         </div>
@@ -224,7 +226,7 @@ export default function Profile() {
           <div className="flex items-center gap-2 mb-4">
             <Bell className="h-5 w-5 text-cyber-cyan" />
             <h2 className="font-display text-lg font-bold text-white">
-              NOTIFICATION <span className="text-cyber-cyan">SETTINGS</span>
+              {t('profile.notification_settings')}
             </h2>
           </div>
 
@@ -237,9 +239,9 @@ export default function Profile() {
               {/* Master toggle */}
               <div className="flex items-center justify-between py-2">
                 <div>
-                  <div className="text-sm text-white font-mono">Email Notifications</div>
+                  <div className="text-sm text-white font-mono">{t('profile.email_notifications')}</div>
                   <div className="text-xs text-gray-500">
-                    Controls all notification emails
+                    {t('profile.email_notifications_desc')}
                   </div>
                 </div>
                 <button
@@ -264,11 +266,11 @@ export default function Profile() {
 
               {/* Sub-toggles */}
               {[
-                { key: 'notify_messages' as const, label: 'New Messages', desc: 'When someone sends you a message' },
-                { key: 'notify_submissions' as const, label: 'Submission Updates', desc: 'When your submissions are approved or rejected' },
-                { key: 'notify_reports' as const, label: 'Report Updates', desc: 'When reports you filed are resolved' },
-                { key: 'notify_account' as const, label: 'Account Actions', desc: 'Warnings, restrictions, or other account changes' },
-                { key: 'notify_junkbin' as const, label: 'Junkbin Matches', desc: 'When someone lists an item on your want list' },
+                { key: 'notify_messages' as const, label: t('profile.notif_messages'), desc: t('profile.notif_messages_desc') },
+                { key: 'notify_submissions' as const, label: t('profile.notif_submissions'), desc: t('profile.notif_submissions_desc') },
+                { key: 'notify_reports' as const, label: t('profile.notif_reports'), desc: t('profile.notif_reports_desc') },
+                { key: 'notify_account' as const, label: t('profile.notif_account'), desc: t('profile.notif_account_desc') },
+                { key: 'notify_junkbin' as const, label: t('profile.notif_junkbin'), desc: t('profile.notif_junkbin_desc') },
               ].map(({ key, label, desc }) => (
                 <div
                   key={key}
@@ -301,7 +303,7 @@ export default function Profile() {
               ))}
 
               <div className="text-xs text-gray-600 pt-2 font-mono">
-                Security emails (password reset, email verification) are always sent.
+                {t('profile.security_email_note')}
               </div>
             </div>
           ) : null}
@@ -312,7 +314,7 @@ export default function Profile() {
           <div className="flex items-center gap-2 mb-4">
             <Ban className="h-5 w-5 text-cyber-pink" />
             <h2 className="font-display text-lg font-bold text-white">
-              BLOCKED <span className="text-cyber-pink">USERS</span>
+              {t('profile.blocked_users')}
             </h2>
           </div>
 
@@ -344,7 +346,7 @@ export default function Profile() {
                         {block.blocked_user.username}
                       </div>
                       <div className="text-xs text-gray-600">
-                        Blocked {new Date(block.created_at).toLocaleDateString()}
+                        {t('profile.blocked_on', { date: new Date(block.created_at).toLocaleDateString() })}
                       </div>
                     </div>
                   </div>
@@ -353,14 +355,14 @@ export default function Profile() {
                     disabled={unblockMutation.isPending}
                     className="text-xs font-mono text-cyber-pink hover:text-white border border-cyber-pink/50 px-3 py-1 hover:bg-cyber-pink/10 transition-colors disabled:opacity-50"
                   >
-                    UNBLOCK
+                    {t('profile.unblock')}
                   </button>
                 </div>
               ))}
             </div>
           ) : (
             <p className="text-sm text-gray-500 py-2">
-              You haven't blocked any users.
+              {t('profile.no_blocked')}
             </p>
           )}
         </div>
@@ -370,22 +372,22 @@ export default function Profile() {
           <div className="flex items-center gap-2 mb-4">
             <Lock className="h-5 w-5 text-cyber-green" />
             <h2 className="font-display text-lg font-bold text-white">
-              SECURITY <span className="text-cyber-green">SETTINGS</span>
+              {t('profile.security_settings')}
             </h2>
           </div>
 
           <div className="flex items-center justify-between py-2">
             <div>
-              <div className="text-sm text-white font-mono">Password</div>
+              <div className="text-sm text-white font-mono">{t('profile.password_label')}</div>
               <div className="text-xs text-gray-500">
-                Change your account password
+                {t('profile.change_password')}
               </div>
             </div>
             <button
               onClick={() => setShowChangePassword(true)}
               className="text-xs font-mono text-cyber-green hover:text-white border border-cyber-green/50 px-3 py-1.5 hover:bg-cyber-green/10 transition-colors"
             >
-              CHANGE PASSWORD
+              {t('profile.change_password_btn')}
             </button>
           </div>
         </div>
@@ -395,7 +397,7 @@ export default function Profile() {
           <div className="flex items-center gap-2 mb-4">
             <FileText className="h-5 w-5 text-cyber-yellow" />
             <h2 className="font-display text-lg font-bold text-white">
-              MY <span className="text-cyber-yellow">REPORTS</span>
+              {t('profile.my_reports')}
             </h2>
           </div>
 
@@ -439,7 +441,7 @@ export default function Profile() {
             </div>
           ) : (
             <p className="text-sm text-gray-500 py-2">
-              You haven't filed any reports.
+              {t('profile.no_reports')}
             </p>
           )}
         </div>
@@ -450,20 +452,20 @@ export default function Profile() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold text-white">
-                YOUR <span className="text-cyber-cyan">PRODUCTS</span>
+                {t('profile.your_products')}
               </h2>
               <Link
                 to="/my-submissions?type=products"
                 className="text-xs text-cyber-cyan hover:text-white transition-colors flex items-center gap-1"
               >
-                VIEW ALL <ChevronRight className="h-3.5 w-3.5" />
+                {t('profile.view_all')} <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {contributionsLoading ? (
               <div className="card-cyber p-8 text-center">
                 <div className="text-cyber-cyan font-mono animate-pulse">
-                  LOADING...
+                  {t('profile.loading')}
                 </div>
               </div>
             ) : contributions?.products?.length > 0 ? (
@@ -480,7 +482,7 @@ export default function Profile() {
                       </span>
                       {!product.is_approved && (
                         <span className="badge-cyber text-cyber-yellow border-cyber-yellow text-[10px]">
-                          PENDING
+                          {t('profile.pending')}
                         </span>
                       )}
                     </div>
@@ -497,10 +499,10 @@ export default function Profile() {
               <div className="card-cyber p-8 text-center">
                 <Cpu className="h-10 w-10 text-gray-600 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm mb-4">
-                  You haven't documented any products yet.
+                  {t('profile.no_products')}
                 </p>
                 <Link to="/submit" className="btn-cyber text-sm">
-                  ADD YOUR FIRST PRODUCT
+                  {t('profile.add_first_product')}
                 </Link>
               </div>
             )}
@@ -510,20 +512,20 @@ export default function Profile() {
           <div>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold text-white">
-                YOUR <span className="text-cyber-pink">COMPONENTS</span>
+                {t('profile.your_components')}
               </h2>
               <Link
                 to="/my-submissions?type=components"
                 className="text-xs text-cyber-pink hover:text-white transition-colors flex items-center gap-1"
               >
-                VIEW ALL <ChevronRight className="h-3.5 w-3.5" />
+                {t('profile.view_all')} <ChevronRight className="h-3.5 w-3.5" />
               </Link>
             </div>
 
             {contributionsLoading ? (
               <div className="card-cyber p-8 text-center">
                 <div className="text-cyber-pink font-mono animate-pulse">
-                  LOADING...
+                  {t('profile.loading')}
                 </div>
               </div>
             ) : contributions?.components?.length > 0 ? (
@@ -552,10 +554,10 @@ export default function Profile() {
               <div className="card-cyber p-8 text-center">
                 <Package className="h-10 w-10 text-gray-600 mx-auto mb-3" />
                 <p className="text-gray-500 text-sm mb-4">
-                  You haven't added any components yet.
+                  {t('profile.no_components')}
                 </p>
                 <Link to="/submit" className="btn-cyber text-sm">
-                  ADD YOUR FIRST COMPONENT
+                  {t('profile.add_first_component')}
                 </Link>
               </div>
             )}
@@ -564,11 +566,11 @@ export default function Profile() {
 
         {/* Badges/Achievements */}
         <div className="mt-8 p-4 border border-cyber-light/20 bg-cyber-dark/50">
-          <h3 className="font-mono text-sm text-gray-500 mb-3">ACHIEVEMENTS</h3>
+          <h3 className="font-mono text-sm text-gray-500 mb-3">{t('profile.achievements')}</h3>
           <BadgeGrid
             badges={user.badges || []}
             size="md"
-            emptyMessage="Start contributing to earn achievements!"
+            emptyMessage={t('profile.no_achievements')}
           />
         </div>
       </div>

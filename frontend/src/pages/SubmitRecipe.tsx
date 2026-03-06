@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { recipes, components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { Plus, Trash2, Search, ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Component } from '../types';
@@ -18,6 +19,7 @@ interface BomEntry {
 }
 
 export default function SubmitRecipe() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
@@ -87,7 +89,7 @@ export default function SubmitRecipe() {
 
   const handleSubmit = () => {
     if (bomEntries.length === 0) {
-      setError('Add at least one component to the BOM.');
+      setError(t('submit_recipe.bom_empty'));
       return;
     }
 
@@ -120,7 +122,7 @@ export default function SubmitRecipe() {
         <div className="mx-auto max-w-3xl px-4">
           <div className="mb-8">
             <h1 className="font-display text-3xl font-bold text-white mb-2">
-              SUBMIT <span className="text-cyber-cyan">RECIPE</span>
+              {t('submit_recipe.title')}
             </h1>
           </div>
           <ModerationNotice
@@ -149,10 +151,10 @@ export default function SubmitRecipe() {
     <div className="py-8">
       <div className="mx-auto max-w-3xl px-4">
         <h1 className="font-display text-3xl font-bold text-white mb-2">
-          SUBMIT <span className="text-cyber-cyan">RECIPE</span>
+          {t('submit_recipe.title')}
         </h1>
         <p className="text-gray-400 mb-8">
-          Share an electronics project with the community
+          {t('submit_recipe.subtitle')}
         </p>
 
         {/* Step indicator */}
@@ -171,7 +173,7 @@ export default function SubmitRecipe() {
             >
               1
             </span>
-            Details
+            {t('submit_recipe.step_details')}
           </div>
           <div className="flex-1 border-t border-cyber-light/30" />
           <div
@@ -188,7 +190,7 @@ export default function SubmitRecipe() {
             >
               2
             </span>
-            BOM
+            {t('submit_recipe.step_bom')}
           </div>
         </div>
 
@@ -203,7 +205,7 @@ export default function SubmitRecipe() {
           <div className="card-cyber p-6 space-y-4">
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-1">
-                Name *
+                {t('submit_recipe.name')} *
               </label>
               <input
                 type="text"
@@ -217,7 +219,7 @@ export default function SubmitRecipe() {
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-1">
-                Description *
+                {t('submit_recipe.description')} *
               </label>
               <textarea
                 value={description}
@@ -231,7 +233,7 @@ export default function SubmitRecipe() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-mono text-gray-400 mb-1">
-                  Difficulty *
+                  {t('submit_recipe.difficulty')} *
                 </label>
                 <select
                   value={difficulty}
@@ -248,7 +250,7 @@ export default function SubmitRecipe() {
 
               <div>
                 <label className="block text-sm font-mono text-gray-400 mb-1">
-                  Category *
+                  {t('submit_recipe.category')} *
                 </label>
                 <select
                   value={category}
@@ -266,7 +268,7 @@ export default function SubmitRecipe() {
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-1">
-                Tutorial/Instructions URL
+                {t('submit_recipe.tutorial_url')}
               </label>
               <input
                 type="url"
@@ -279,7 +281,7 @@ export default function SubmitRecipe() {
 
             <div>
               <label className="block text-sm font-mono text-gray-400 mb-1">
-                Estimated Build Time
+                {t('submit_recipe.estimated_build_time')}
               </label>
               <input
                 type="text"
@@ -309,7 +311,7 @@ export default function SubmitRecipe() {
                 disabled={!canProceed}
                 className="btn-cyber flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                NEXT: ADD PARTS
+                {t('submit_recipe.next_add_parts')}
                 <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -320,7 +322,7 @@ export default function SubmitRecipe() {
         {step === 2 && (
           <div className="card-cyber p-6">
             <h2 className="font-display text-lg text-white mb-4">
-              ADD COMPONENTS TO BOM
+              {t('submit_recipe.add_components_title')}
             </h2>
 
             {/* Component search */}
@@ -336,7 +338,7 @@ export default function SubmitRecipe() {
                       handleSearch();
                     }
                   }}
-                  placeholder="Search components by part number or name..."
+                  placeholder={t('submit_recipe.bom_search_placeholder')}
                   className="input-cyber pl-10"
                 />
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -349,7 +351,7 @@ export default function SubmitRecipe() {
                 {isSearching ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
-                  'SEARCH'
+                  t('common.search')
                 )}
               </button>
             </div>
@@ -394,19 +396,19 @@ export default function SubmitRecipe() {
                   <thead>
                     <tr className="border-b border-cyber-light/30">
                       <th className="text-left py-2 px-2 text-gray-500 font-mono text-xs">
-                        PART
+                        {t('submit_recipe.col_part')}
                       </th>
                       <th className="text-left py-2 px-2 text-gray-500 font-mono text-xs">
-                        MANUFACTURER
+                        {t('submit_recipe.col_manufacturer')}
                       </th>
                       <th className="text-center py-2 px-2 text-gray-500 font-mono text-xs w-20">
-                        QTY
+                        {t('submit_recipe.col_qty')}
                       </th>
                       <th className="text-left py-2 px-2 text-gray-500 font-mono text-xs">
-                        NOTES
+                        {t('submit_recipe.col_notes')}
                       </th>
                       <th className="text-center py-2 px-2 text-gray-500 font-mono text-xs w-20">
-                        OPT
+                        {t('submit_recipe.col_optional')}
                       </th>
                       <th className="w-10" />
                     </tr>
@@ -475,7 +477,7 @@ export default function SubmitRecipe() {
 
             {bomEntries.length === 0 && (
               <div className="text-center py-8 text-gray-500">
-                Search and add components to build your BOM
+                {t('submit_recipe.bom_empty')}
               </div>
             )}
 
@@ -485,7 +487,7 @@ export default function SubmitRecipe() {
                 className="text-gray-400 hover:text-white flex items-center gap-1 text-sm"
               >
                 <ArrowLeft className="h-4 w-4" />
-                BACK
+                {t('common.back')}
               </button>
               <button
                 onClick={handleSubmit}
@@ -497,7 +499,7 @@ export default function SubmitRecipe() {
                 ) : (
                   <Plus className="h-4 w-4" />
                 )}
-                SUBMIT RECIPE
+                {t('submit_recipe.submit')}
               </button>
             </div>
           </div>

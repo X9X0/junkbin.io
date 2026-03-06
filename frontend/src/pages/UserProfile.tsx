@@ -1,6 +1,7 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { users, junkbin } from '../api/endpoints';
 import { BadgeGrid } from '../components/BadgeDisplay';
 import {
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 
 export default function UserProfile() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user: currentUser, isAuthenticated } = useAuth();
@@ -69,12 +71,12 @@ export default function UserProfile() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
         <AlertCircle className="h-16 w-16 text-cyber-pink mb-4" />
-        <h2 className="font-display text-2xl text-white mb-2">USER NOT FOUND</h2>
+        <h2 className="font-display text-2xl text-white mb-2">{t('user_profile.not_found_title')}</h2>
         <p className="text-gray-400 mb-6 text-center">
-          This user doesn't exist or their account has been deactivated.
+          {t('user_profile.not_found_desc')}
         </p>
         <Link to="/leaderboard" className="btn-cyber">
-          BROWSE USERS
+          {t('user_profile.browse_users')}
         </Link>
       </div>
     );
@@ -109,7 +111,7 @@ export default function UserProfile() {
                   {profileUser.is_trusted && (
                     <span className="badge-cyber text-cyber-green border-cyber-green flex items-center gap-1">
                       <Shield className="h-3 w-3" />
-                      TRUSTED
+                      {t('user_profile.trusted')}
                     </span>
                   )}
                 </div>
@@ -126,7 +128,7 @@ export default function UserProfile() {
               <div className="flex items-center justify-center md:justify-start gap-4 text-xs text-gray-500 flex-wrap">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  Joined {new Date(profileUser.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                  {t('user_profile.joined', { date: new Date(profileUser.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) })}
                 </span>
                 {profileUser.location && (
                   <span className="flex items-center gap-1">
@@ -142,7 +144,7 @@ export default function UserProfile() {
                     className="flex items-center gap-1 text-cyber-cyan hover:underline"
                   >
                     <ExternalLink className="h-3.5 w-3.5" />
-                    Website
+                    {t('user_profile.website')}
                   </a>
                 )}
               </div>
@@ -155,7 +157,7 @@ export default function UserProfile() {
                 className="btn-cyber flex items-center gap-2 text-sm flex-shrink-0"
               >
                 <MessageSquare className="h-4 w-4" />
-                SEND MESSAGE
+                {t('user_profile.send_message')}
               </Link>
             )}
           </div>
@@ -169,7 +171,7 @@ export default function UserProfile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Award className="h-3.5 w-3.5" />
-              REPUTATION
+              {t('user_profile.reputation')}
             </div>
           </div>
 
@@ -179,7 +181,7 @@ export default function UserProfile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Package className="h-3.5 w-3.5" />
-              CONTRIBUTIONS
+              {t('user_profile.contributions')}
             </div>
           </div>
 
@@ -189,7 +191,7 @@ export default function UserProfile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Cpu className="h-3.5 w-3.5" />
-              PRODUCTS
+              {t('user_profile.products')}
             </div>
           </div>
 
@@ -199,7 +201,7 @@ export default function UserProfile() {
             </div>
             <div className="text-xs font-mono text-gray-500 flex items-center justify-center gap-1">
               <Package className="h-3.5 w-3.5" />
-              COMPONENTS
+              {t('user_profile.components')}
             </div>
           </div>
         </div>
@@ -209,7 +211,7 @@ export default function UserProfile() {
           <div className="card-cyber p-3 mb-8 flex items-center justify-center gap-2 text-sm">
             <Trophy className="h-4 w-4 text-cyber-yellow" />
             <span className="text-gray-400 font-mono">
-              Ranked <span className="text-cyber-yellow font-bold">#{stats.reputation_rank}</span> by reputation
+              {t('user_profile.ranked', { rank: stats.reputation_rank })}
             </span>
           </div>
         )}
@@ -217,7 +219,7 @@ export default function UserProfile() {
         {/* Badges/Achievements */}
         {profileUser.badges && profileUser.badges.length > 0 && (
           <div className="mb-8 p-4 border border-cyber-light/20 bg-cyber-dark/50">
-            <h3 className="font-mono text-sm text-gray-500 mb-3">ACHIEVEMENTS</h3>
+            <h3 className="font-mono text-sm text-gray-500 mb-3">{t('user_profile.achievements')}</h3>
             <BadgeGrid badges={profileUser.badges} size="md" />
           </div>
         )}
@@ -228,13 +230,13 @@ export default function UserProfile() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
                 <Archive className="h-5 w-5 text-cyber-cyan" />
-                JUNKBIN
+                {t('user_profile.junkbin')}
               </h2>
               <div className="text-xs font-mono text-gray-500">
-                {junkbinSummary?.have_count} items
+                {junkbinSummary?.have_count} {t('user_profile.items')}
                 {(junkbinSummary?.available_count ?? 0) > 0 && (
                   <span className="text-cyber-green ml-2">
-                    {junkbinSummary?.available_count} for trade
+                    {junkbinSummary?.available_count} {t('user_profile.for_trade')}
                   </span>
                 )}
               </div>
@@ -283,7 +285,7 @@ export default function UserProfile() {
                           className="mt-2 w-full flex items-center justify-center gap-1.5 text-[10px] font-mono py-1.5 border border-cyber-cyan/30 text-cyber-cyan hover:bg-cyber-cyan/10 transition-colors"
                         >
                           <MessageSquare className="h-3 w-3" />
-                          CONTACT OWNER
+                          {t('user_profile.contact_owner')}
                         </button>
                       )}
                     </Link>
@@ -299,7 +301,7 @@ export default function UserProfile() {
           {/* Products */}
           <div>
             <h2 className="font-display text-lg font-bold text-white mb-4">
-              RECENT <span className="text-cyber-cyan">PRODUCTS</span>
+              {t('user_profile.recent_products')}
             </h2>
             {contributions?.products && contributions.products.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -324,7 +326,7 @@ export default function UserProfile() {
             ) : (
               <div className="card-cyber p-8 text-center">
                 <Cpu className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm font-mono">No products yet</p>
+                <p className="text-gray-500 text-sm font-mono">{t('user_profile.no_products')}</p>
               </div>
             )}
           </div>
@@ -332,7 +334,7 @@ export default function UserProfile() {
           {/* Components */}
           <div>
             <h2 className="font-display text-lg font-bold text-white mb-4">
-              RECENT <span className="text-cyber-pink">COMPONENTS</span>
+              {t('user_profile.recent_components')}
             </h2>
             {contributions?.components && contributions.components.length > 0 ? (
               <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -357,7 +359,7 @@ export default function UserProfile() {
             ) : (
               <div className="card-cyber p-8 text-center">
                 <Package className="h-10 w-10 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm font-mono">No components yet</p>
+                <p className="text-gray-500 text-sm font-mono">{t('user_profile.no_components')}</p>
               </div>
             )}
           </div>
