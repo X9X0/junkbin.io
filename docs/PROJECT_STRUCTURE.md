@@ -194,18 +194,40 @@ junkbin.io/
 │       └── validators.py              # Custom validators
 │
 ├── frontend/                          # React frontend
-│   ├── package.json                   # NPM dependencies
+│   ├── package.json                   # NPM dependencies (v0.9.4)
 │   ├── package-lock.json
-│   ├── vite.config.ts                 # Vite configuration
+│   ├── vite.config.ts                 # Vite configuration (manualChunks vendor splitting)
 │   ├── tailwind.config.js             # Tailwind + cyberpunk theme
 │   ├── tsconfig.json                  # TypeScript configuration
 │   ├── .nvmrc                         # Node version (22)
 │   ├── Dockerfile                     # Multi-stage frontend container
 │   ├── nginx.conf                     # Nginx config for production
 │   │
+│   ├── public/
+│   │   └── locales/                   # i18n locale files (loaded at runtime by i18next-http-backend)
+│   │       ├── en/translation.json    # English — source/authoritative (1,044 keys)
+│   │       ├── fr/translation.json    # Français
+│   │       ├── es/translation.json    # Español
+│   │       ├── de/translation.json    # Deutsch
+│   │       ├── pt/translation.json    # Português
+│   │       ├── it/translation.json    # Italiano
+│   │       ├── nl/translation.json    # Nederlands
+│   │       ├── pl/translation.json    # Polski
+│   │       ├── cs/translation.json    # Čeština
+│   │       ├── sk/translation.json    # Slovenčina
+│   │       ├── hr/translation.json    # Hrvatski
+│   │       ├── sr/translation.json    # Srpski
+│   │       ├── sl/translation.json    # Slovenščina
+│   │       ├── ru/translation.json    # Русский
+│   │       ├── uk/translation.json    # Українська
+│   │       ├── ro/translation.json    # Română
+│   │       ├── hu/translation.json    # Magyar
+│   │       └── tr/translation.json    # Türkçe
+│   │
 │   └── src/                           # Source code
 │       ├── main.tsx                   # Application entry point
-│       ├── App.tsx                    # Root component (routes, providers)
+│       ├── App.tsx                    # Root component (routes, providers — all pages React.lazy() for code splitting)
+│       ├── vite-env.d.ts              # Vite/env type declarations (__APP_VERSION__, __BUILD_TIME__)
 │       ├── index.css                  # Tailwind + cyberpunk CSS effects
 │       │
 │       ├── api/                       # API layer
@@ -262,7 +284,9 @@ junkbin.io/
 │       │   ├── NewConversation.tsx    # Start new conversation with user search
 │       │   ├── UserProfile.tsx        # Public user profile page
 │       │   ├── Guidelines.tsx         # Community guidelines
-│       │   ├── Leaderboard.tsx        # User contribution rankings (clickable)
+│       │   ├── News.tsx               # What's New — development timeline by week
+│       │   ├── MySubmissions.tsx      # Track user's contributions and review status
+│       │   ├── GitHubCallback.tsx     # GitHub OAuth Authorization Code relay page
 │       │   ├── Moderation.tsx         # Moderation dashboard (pending content, user reviews, reports)
 │       │   ├── AnalyticsDashboard.tsx # Staff-only analytics (DAU, search, trending, activity)
 │       │   ├── Recipes.tsx            # Recipe listing + search/filter
@@ -354,7 +378,7 @@ junkbin.io/
 - `tailwind.config.js` - Cyberpunk theme colors/fonts
 
 ### Infrastructure
-- `docker-compose.yml` - Multi-container definitions (9 services: backend, postgres, redis, celery, celery-beat, frontend, nginx, prometheus, grafana)
+- `docker-compose.yml` - Multi-container definitions (10 services: backend, postgres, redis, celery, celery-beat, frontend, nginx, prometheus, grafana, weblate)
 - `docker-compose.override.yml` - Local dev overrides (no SSL)
 - `.env` - Environment variables (NOT committed to git)
 - `deployment/nginx/sites-available/junkbin.conf` - Production web server config
@@ -374,4 +398,4 @@ See `.env.example` for required environment variables including:
 
 ---
 
-**Last Updated**: March 4, 2026
+**Last Updated**: March 6, 2026

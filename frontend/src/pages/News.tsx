@@ -12,6 +12,26 @@ interface WeekEntry {
 
 const weeks: WeekEntry[] = [
   {
+    id: 'week-6',
+    label: 'Week 6',
+    dates: 'Mar 5–6, 2026',
+    color: 'cyber-green',
+    icon: <Globe className="h-5 w-5" />,
+    intro:
+      "Version 0.9.4. The translation completion release. Every last page and form — all 14 remaining pages and 2 form components — got wired to the i18n system, bringing the total to 1,044 translation keys across 37 namespace sections. Then Weblate went live at translate.junkbin.io, giving community translators a proper home with automated sync back to the main repo. Meanwhile, the JavaScript bundle got a full code-splitting treatment: the 862 KB monolith became a 232 KB app shell with lazy-loaded per-page chunks and cacheable vendor libraries. Faster first loads, better caching, zero visual change.",
+    items: [
+      'i18n Phase 2 complete — 14 pages wired: Recipes, Schematics, Messages, Profile, ProductDetail, ComponentDetail, Submit, SubmitRecipe, RecipeDetail, UserProfile, MessageThread, NewConversation, MyJunkbin, MySubmissions',
+      'SchematicUpload and AddComponentForm components wired — all form dropdowns, labels, and error messages now translated',
+      '1,044 translation keys total across 37 namespace sections — new additions include schematics.upload.*, components.add.*, common.condition.*, product_detail condition/status badges',
+      'All 17 non-English locale files normalised to 1,044 keys — English fallback populated for Phase 2 additions so no raw key strings are ever shown',
+      'Weblate community translation portal launched at translate.junkbin.io — contribute or improve translations in your language, no git required',
+      'Automated Weblate→main repo sync — translations committed to the locales repo automatically open a pull request on the main repo via GitHub Actions',
+      'MyMemory machine translation bootstrapped — 8 languages auto-translated (200+ strings each) as a starting point for community review',
+      'JS bundle split — vite.config.ts manualChunks + React.lazy() in App.tsx; vendor libraries (React, Router, TanStack Query, i18next, Lucide, Axios) now in separate cacheable chunks',
+      'Version bumped to 0.9.4',
+    ],
+  },
+  {
     id: 'week-5',
     label: 'Week 5',
     dates: 'Mar 3–4, 2026',

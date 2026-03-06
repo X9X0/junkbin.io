@@ -1,6 +1,6 @@
 # Junkbin.io
 
-![Version](https://img.shields.io/badge/version-0.9.3-05d9e8?style=flat-square&labelColor=0a0a0f)
+![Version](https://img.shields.io/badge/version-0.9.4-05d9e8?style=flat-square&labelColor=0a0a0f)
 ![Status](https://img.shields.io/badge/status-beta-f72585?style=flat-square&labelColor=0a0a0f)
 ![Stack](https://img.shields.io/badge/stack-Django%20%2B%20React-44cf6c?style=flat-square&labelColor=0a0a0f)
 ![Languages](https://img.shields.io/badge/languages-18-f9f002?style=flat-square&labelColor=0a0a0f)
@@ -24,7 +24,9 @@ Help people repair their devices by cataloging which consumer products contain s
 - **PCBTracer & KiCad BOM Import**: Export your BOM from [PCBTracer](https://pcbtracer.com) or KiCad and import it directly — column auto-detection, datasheet URL capture, KiCad grouped reference normalisation
 - **PCBTracer Integration**: Open any product's PCB image directly in PCBTracer for component identification; post-import shortcut links to the Swap Shop
 - **GitHub OAuth**: Sign in or register with GitHub alongside Google
-- **18 Languages**: Auto-detected from browser, switchable via globe icon, saved to profile
+- **18 Languages**: Auto-detected from browser, switchable via globe icon, saved to profile — every page and form fully wired to react-i18next with 1,044 translation keys
+- **Weblate Translation Portal**: Community translation at [translate.junkbin.io](https://translate.junkbin.io) — contribute or improve translations in your language
+- **Optimised JS Bundle**: Code-split into a 232 KB app shell + lazy-loaded per-page chunks; vendor libraries cached separately for fast repeat visits
 
 ## 🌍 Languages
 
@@ -49,7 +51,7 @@ Help people repair their devices by cataloging which consumer products contain s
 | `hu` | Magyar | Machine-translated |
 | `tr` | Türkçe | Machine-translated |
 
-Translation files live in `frontend/public/locales/{lang}/translation.json`. Native speaker corrections are welcome — see [CONTRIBUTING_TRANSLATIONS.md](docs/CONTRIBUTING_TRANSLATIONS.md) for a full guide on editing JSON locale files and Django `.po` files.
+Translation files live in `frontend/public/locales/{lang}/translation.json`. The easiest way to contribute is via the community portal at **[translate.junkbin.io](https://translate.junkbin.io)** — no git knowledge required. For direct file edits see [CONTRIBUTING_TRANSLATIONS.md](docs/CONTRIBUTING_TRANSLATIONS.md).
 
 ## 🚀 Quick Start
 
@@ -130,7 +132,7 @@ We welcome contributions! Areas we need help with:
 - ⬜ Documentation
 - ⬜ UI/UX design
 - ⬜ Testing
-- ⬜ Translation review — 14 non-English locales are machine-translated and need native speaker corrections (`frontend/public/locales/{lang}/translation.json`)
+- ⬜ Translation review — 17 non-English locales need native speaker review; easiest via [translate.junkbin.io](https://translate.junkbin.io)
 
 ## 📜 License
 
