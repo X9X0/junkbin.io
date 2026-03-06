@@ -626,6 +626,9 @@ deploy_app() {
     # Collect static files
     docker compose exec -T backend python manage.py collectstatic --noinput
 
+    # Compile translation files (.po -> .mo)
+    docker compose exec -T backend python manage.py compilemessages || true
+
     log_info "Application deployed successfully"
 }
 
