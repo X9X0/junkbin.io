@@ -361,13 +361,18 @@ UNIQUE(user, content_type, object_id, item_type)
 | `hu` | Magyar | Latin | Machine-translated (Mar 2026) |
 | `tr` | Türkçe | Latin | Machine-translated (Mar 2026) |
 
+#### i18n Phase 2 (Mar 6, 2026) ✅ COMPLETE
+- ✅ **All pages wired** — 14 remaining pages (Recipes, Schematics, Messages, Profile, ProductDetail, ComponentDetail, Submit, SubmitRecipe, RecipeDetail, UserProfile, MessageThread, NewConversation, MyJunkbin, MySubmissions) and 2 form components (SchematicUpload, AddComponentForm) connected to react-i18next; every user-visible string now uses `t()` calls
+- ✅ **1,044 translation keys** across 37 namespace sections — new additions include `schematics.upload.*` (30 keys), `components.add.*` (40 keys), `product_detail.condition.*`, `submit.*`, and more
+- ✅ **All 17 non-English locale files normalised** — populated with English fallback for 301 Phase 2 additions so i18next fallbackLng never shows raw key strings (Mar 6, 2026)
+- ✅ **Weblate community translation portal** — self-hosted Weblate 5.10.4 at [translate.junkbin.io](https://translate.junkbin.io); automated sync via GitHub Actions workflow (junkbin-locales repo → main repo PR on push); MyMemory MT engine configured for bootstrap translations (Mar 6, 2026)
+- ✅ **Locale filename normalisation** — sync-to-main.yml workflow includes defensive rename guard (`translations.json` → `translation.json`) for future Weblate syncs (Mar 6, 2026)
+
 #### Remaining / Ongoing
-- ⬜ **Community translation review** — all 14 non-English locales are machine-translated; native speaker corrections welcome via PR
+- ⬜ **Community translation review** — 17 non-English locales; Phase 1 strings (~743/lang) are machine-translated from Mar 2026; Phase 2 strings (~301/lang) being bootstrapped via MyMemory MT — native speaker review welcome at [translate.junkbin.io](https://translate.junkbin.io)
 - ✅ **CONTRIBUTING_TRANSLATIONS.md** — contributor guide added at `docs/CONTRIBUTING_TRANSLATIONS.md`, covering both JSON and .po workflows (Mar 4, 2026)
 - ✅ **Django .po / .mo files** — `makemessages` + `compilemessages` run for all 18 languages; 353 translatable strings extracted from templates and serializers (Mar 4, 2026)
 - ✅ **Additional languages** — `ro` (Romanian), `hu` (Hungarian), `tr` (Turkish) added (Mar 4, 2026)
-
-**Plan file:** `~/.claude/plans/swirling-shimmying-iverson.md`
 
 ---
 
@@ -643,11 +648,11 @@ The `junkbin-deploy.sh` script will handle:
 - Browser caching headers
 
 ### Frontend
-- Code splitting
-- Lazy loading images
-- Service worker for offline support
+- ✅ **JS bundle splitting** — `vite.config.ts` `manualChunks` + `React.lazy()` in `App.tsx`; 862 KB monolith → 232 KB app shell + lazy per-page chunks (0.6–70 KB each) + cacheable vendor chunks (react, router, query, i18n, icons, utils) (Mar 6, 2026)
+- ✅ Lazy loading images (LazyImage component)
+- ✅ Service worker for offline support (Workbox via VitePWA — 65 precached entries after split)
 - Optimized image formats (WebP)
-- Minification and compression
+- ✅ Minification and compression
 
 ---
 
@@ -804,6 +809,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: March 4, 2026
-**Version**: 2.2
-**Status**: MVP Complete - Phase 2 Complete - Phase 3 Largely Complete (2 items pending) - Phase 4 Complete (18 languages) - Deployed & E2E Tested - v0.9.3
+**Last Updated**: March 6, 2026
+**Version**: 2.3
+**Status**: MVP Complete - Phase 2 Complete - Phase 3 Largely Complete (2 items pending) - Phase 4 Complete (18 languages, all pages wired, Weblate portal live) - Deployed & E2E Tested - v0.9.4
