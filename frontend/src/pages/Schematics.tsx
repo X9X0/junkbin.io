@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { schematics, products as productsApi } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import SchematicUpload from '../components/SchematicUpload';
 import {
   FileText,
@@ -28,27 +29,6 @@ import clsx from 'clsx';
 import Pagination from '../components/Pagination';
 import { Skeleton } from '../components/Skeleton';
 
-const SCHEMATIC_TYPES = [
-  { value: '', label: 'All Types', icon: FileText },
-  { value: 'full_schematic', label: 'Full Schematic', icon: Zap },
-  { value: 'block_diagram', label: 'Block Diagram', icon: Layout },
-  { value: 'pcb_layout', label: 'PCB Layout', icon: Cpu },
-  { value: 'service_manual', label: 'Service Manual', icon: BookOpen },
-  { value: 'datasheet', label: 'Datasheet', icon: FileIcon },
-  { value: 'pinout', label: 'Pinout Diagram', icon: Cable },
-  { value: 'wiring_diagram', label: 'Wiring Diagram', icon: Cable },
-  { value: 'bom', label: 'Bill of Materials', icon: ClipboardList },
-  { value: 'other', label: 'Other', icon: FileText },
-];
-
-const SOURCE_TYPES = [
-  { value: '', label: 'All Sources' },
-  { value: 'official', label: 'Official/Manufacturer' },
-  { value: 'community', label: 'Community' },
-  { value: 'reverse_engineered', label: 'Reverse Engineered' },
-  { value: 'fcc_filing', label: 'FCC Filing' },
-  { value: 'leaked', label: 'Leaked' },
-];
 
 function formatFileSize(bytes?: number): string {
   if (!bytes) return '—';
@@ -65,6 +45,7 @@ function getFileTypeIcon(fileType: string) {
 }
 
 export default function Schematics() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [contributeOpen, setContributeOpen] = useState(false);
@@ -72,6 +53,28 @@ export default function Schematics() {
   const [selectedProduct, setSelectedProduct] = useState<{ id: string; label: string } | null>(null);
 
   const { isAuthenticated } = useAuth();
+
+  const SCHEMATIC_TYPES = [
+    { value: '', label: t('schematics.all_types'), icon: FileText },
+    { value: 'full_schematic', label: t('schematics.type_full_schematic'), icon: Zap },
+    { value: 'block_diagram', label: t('schematics.type_block_diagram'), icon: Layout },
+    { value: 'pcb_layout', label: t('schematics.type_pcb_layout'), icon: Cpu },
+    { value: 'service_manual', label: t('schematics.type_service_manual'), icon: BookOpen },
+    { value: 'datasheet', label: t('schematics.type_datasheet'), icon: FileIcon },
+    { value: 'pinout', label: t('schematics.type_pinout'), icon: Cable },
+    { value: 'wiring_diagram', label: t('schematics.type_wiring'), icon: Cable },
+    { value: 'bom', label: t('schematics.type_bom'), icon: ClipboardList },
+    { value: 'other', label: t('schematics.type_other'), icon: FileText },
+  ];
+
+  const SOURCE_TYPES = [
+    { value: '', label: t('schematics.all_sources') },
+    { value: 'official', label: t('schematics.source_official') },
+    { value: 'community', label: t('schematics.source_community') },
+    { value: 'reverse_engineered', label: t('schematics.source_reverse') },
+    { value: 'fcc_filing', label: t('schematics.source_fcc') },
+    { value: 'leaked', label: t('schematics.source_leaked') },
+  ];
 
   const { data: productSearchResults } = useQuery({
     queryKey: ['productSearch', productSearch],
@@ -125,10 +128,10 @@ export default function Schematics() {
         <div className="mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 className="font-display text-3xl font-bold text-white mb-2">
-              SCHEMATICS & <span className="text-cyber-green">DOCUMENTATION</span>
+              {t('schematics.title')}
             </h1>
             <p className="text-gray-400">
-              Service manuals, block diagrams, PCB layouts, and technical documentation
+              {t('schematics.subtitle')}
             </p>
           </div>
           <button
@@ -136,7 +139,7 @@ export default function Schematics() {
             className="flex-shrink-0 flex items-center gap-2 btn-cyber btn-cyber-green text-sm"
           >
             <Upload className="h-4 w-4" />
-            CONTRIBUTE
+            {t('schematics.contribute_btn')}
           </button>
         </div>
 
@@ -145,7 +148,7 @@ export default function Schematics() {
           <div className="card-cyber p-6 mb-6 border-cyber-green/30">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg text-white">
-                CONTRIBUTE A DOCUMENT
+                {t('schematics.contribute')}
               </h2>
               <button onClick={() => setContributeOpen(false)} className="text-gray-500 hover:text-white transition-colors p-1">
                 <X className="h-5 w-5" />
@@ -154,8 +157,8 @@ export default function Schematics() {
 
             {!isAuthenticated ? (
               <div className="text-center py-8">
-                <p className="text-gray-400 mb-4">You must be logged in to contribute documents.</p>
-                <a href="/login" className="btn-cyber">LOGIN TO CONTRIBUTE</a>
+                <p className="text-gray-400 mb-4">{t('schematics.login_required')}</p>
+                <a href="/login" className="btn-cyber">{t('schematics.login_to_contribute')}</a>
               </div>
             ) : selectedProduct ? (
               <div>
@@ -167,7 +170,7 @@ export default function Schematics() {
                     className="text-xs font-mono text-gray-500 hover:text-cyber-cyan flex items-center gap-1 flex-shrink-0 transition-colors"
                   >
                     <ArrowLeft className="h-3 w-3" />
-                    CHANGE
+                    {t('schematics.change_product')}
                   </button>
                 </div>
                 <SchematicUpload
@@ -178,14 +181,14 @@ export default function Schematics() {
             ) : (
               <div>
                 <p className="text-sm text-gray-400 mb-4">
-                  Search for the product this document belongs to, then upload the file.
+                  {t('schematics.product_search_hint')}
                 </p>
                 <div className="relative mb-4">
                   <input
                     type="text"
                     value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
-                    placeholder="Search for a product (e.g. Cisco RV340, iPhone 12)..."
+                    placeholder={t('schematics.product_search_placeholder')}
                     className="input-cyber pl-10"
                     autoFocus
                   />
@@ -194,7 +197,7 @@ export default function Schematics() {
                 {productSearch.length >= 2 && productSearchResults && (
                   <div className="space-y-1">
                     {productSearchResults.results.length === 0 ? (
-                      <p className="text-sm text-gray-500 py-4 text-center font-mono">No products found. <Link to="/submit" className="text-cyber-cyan hover:underline">Submit it first?</Link></p>
+                      <p className="text-sm text-gray-500 py-4 text-center font-mono">{t('schematics.no_products_found')} <Link to="/submit" className="text-cyber-cyan hover:underline">{t('schematics.submit_first')}</Link></p>
                     ) : (
                       productSearchResults.results.map((product: any) => (
                         <button
@@ -215,7 +218,7 @@ export default function Schematics() {
                   </div>
                 )}
                 {productSearch.length < 2 && (
-                  <p className="text-xs text-gray-600 font-mono text-center py-2">Type at least 2 characters to search</p>
+                  <p className="text-xs text-gray-600 font-mono text-center py-2">{t('schematics.search_min_chars')}</p>
                 )}
               </div>
             )}
@@ -231,7 +234,7 @@ export default function Schematics() {
                 type="text"
                 value={search}
                 onChange={(e) => updateFilter('search', e.target.value)}
-                placeholder="Search by title, product, description..."
+                placeholder={t('schematics.search_placeholder')}
                 className="input-cyber pl-10"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500" />
@@ -276,10 +279,10 @@ export default function Schematics() {
                 onChange={(e) => updateFilter('ordering', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-44"
               >
-                <option value="-download_count">Most Downloaded</option>
-                <option value="-uploaded_at">Newest First</option>
-                <option value="uploaded_at">Oldest First</option>
-                <option value="title">Title A-Z</option>
+                <option value="-download_count">{t('schematics.most_downloaded')}</option>
+                <option value="-uploaded_at">{t('schematics.newest_first')}</option>
+                <option value="uploaded_at">{t('schematics.oldest_first')}</option>
+                <option value="title">{t('schematics.title_az')}</option>
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
             </div>
@@ -315,7 +318,7 @@ export default function Schematics() {
         {/* Results count */}
         {data && (
           <div className="mb-4 text-sm text-gray-500 font-mono">
-            {data.count} documents found
+            {t('schematics.count_found', { count: data.count })}
           </div>
         )}
 
@@ -423,7 +426,7 @@ export default function Schematics() {
                         className="text-xs font-mono text-cyber-green hover:text-white transition-colors flex items-center gap-1"
                       >
                         <Download className="h-3.5 w-3.5" />
-                        DOWNLOAD
+                        {t('schematics.download')}
                       </a>
                     )}
                     {schematic.source_url && (
@@ -434,7 +437,7 @@ export default function Schematics() {
                         className="text-xs font-mono text-gray-500 hover:text-cyber-cyan transition-colors flex items-center gap-1"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
-                        SOURCE
+                        {t('schematics.source_label')}
                       </a>
                     )}
                     <Link
@@ -442,7 +445,7 @@ export default function Schematics() {
                       className="text-xs font-mono text-gray-500 hover:text-cyber-cyan transition-colors flex items-center gap-1"
                     >
                       <Cpu className="h-3.5 w-3.5" />
-                      PRODUCT
+                      {t('schematics.product_label')}
                     </Link>
                   </div>
                 </div>
@@ -455,12 +458,12 @@ export default function Schematics() {
         {data && data.results.length === 0 && (
           <div className="text-center py-20">
             <FileText className="h-16 w-16 text-gray-600 mx-auto mb-4" />
-            <h3 className="font-display text-xl text-white mb-2">NO DOCUMENTS FOUND</h3>
+            <h3 className="font-display text-xl text-white mb-2">{t('schematics.no_docs_title')}</h3>
             <p className="text-gray-500 mb-6">
-              Try adjusting your search or filters
+              {t('schematics.no_docs_desc')}
             </p>
             <Link to="/submit" className="btn-cyber btn-cyber-green">
-              UPLOAD A SCHEMATIC
+              {t('schematics.upload_btn')}
             </Link>
           </div>
         )}
@@ -478,12 +481,9 @@ export default function Schematics() {
 
         {/* Info box */}
         <div className="mt-12 p-4 border border-cyber-light/20 bg-cyber-dark/50">
-          <h3 className="font-mono text-sm text-cyber-green mb-2">// ABOUT SCHEMATICS</h3>
+          <h3 className="font-mono text-sm text-cyber-green mb-2">{t('schematics.about_title')}</h3>
           <p className="text-xs text-gray-500 leading-relaxed">
-            This archive contains service manuals, schematics, and technical documentation
-            contributed by the repair community. All documents are provided for educational
-            and repair purposes in support of the Right to Repair movement. If you have
-            documentation to share, please{' '}
+            {t('schematics.about_text_intro')}{' '}
             <button onClick={() => { setContributeOpen(true); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="text-cyber-green hover:underline">contribute</button>.
           </p>
         </div>

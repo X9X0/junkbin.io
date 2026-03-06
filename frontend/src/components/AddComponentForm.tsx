@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { products, components } from '../api/endpoints';
+import { useTranslation } from 'react-i18next';
 import {
   Search,
   Plus,
@@ -22,34 +23,35 @@ interface AddComponentFormProps {
   onCancel?: () => void;
 }
 
-const COMPONENT_TYPES = [
-  { value: 'ic', label: 'Integrated Circuit' },
-  { value: 'mcu', label: 'Microcontroller' },
-  { value: 'transistor', label: 'Transistor' },
-  { value: 'mosfet', label: 'MOSFET' },
-  { value: 'diode', label: 'Diode' },
-  { value: 'regulator', label: 'Voltage Regulator' },
-  { value: 'opamp', label: 'Op-Amp' },
-  { value: 'resistor', label: 'Resistor' },
-  { value: 'capacitor', label: 'Capacitor' },
-  { value: 'inductor', label: 'Inductor' },
-  { value: 'transformer', label: 'Transformer' },
-  { value: 'crystal', label: 'Crystal/Oscillator' },
-  { value: 'relay', label: 'Relay' },
-  { value: 'connector', label: 'Connector' },
-  { value: 'led', label: 'LED' },
-  { value: 'display', label: 'Display' },
-  { value: 'sensor', label: 'Sensor' },
-  { value: 'module', label: 'Module' },
-  { value: 'other', label: 'Other' },
-];
-
 export default function AddComponentForm({
   productId,
   onSuccess,
   onCancel,
 }: AddComponentFormProps) {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
+
+  const COMPONENT_TYPES = [
+    { value: 'ic', label: t('components.add.type_ic') },
+    { value: 'mcu', label: t('components.add.type_mcu') },
+    { value: 'transistor', label: t('components.add.type_transistor') },
+    { value: 'mosfet', label: t('components.add.type_mosfet') },
+    { value: 'diode', label: t('components.add.type_diode') },
+    { value: 'regulator', label: t('components.add.type_regulator') },
+    { value: 'opamp', label: t('components.add.type_opamp') },
+    { value: 'resistor', label: t('components.add.type_resistor') },
+    { value: 'capacitor', label: t('components.add.type_capacitor') },
+    { value: 'inductor', label: t('components.add.type_inductor') },
+    { value: 'transformer', label: t('components.add.type_transformer') },
+    { value: 'crystal', label: t('components.add.type_crystal') },
+    { value: 'relay', label: t('components.add.type_relay') },
+    { value: 'connector', label: t('components.add.type_connector') },
+    { value: 'led', label: t('components.add.type_led') },
+    { value: 'display', label: t('components.add.type_display') },
+    { value: 'sensor', label: t('components.add.type_sensor') },
+    { value: 'module', label: t('components.add.type_module') },
+    { value: 'other', label: t('components.add.type_other') },
+  ];
   const [mode, setMode] = useState<'search' | 'new'>('search');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
@@ -130,7 +132,7 @@ export default function AddComponentForm({
           )}
         >
           <Search className="h-4 w-4" />
-          <span>SEARCH EXISTING</span>
+          <span>{t('components.add.mode_search')}</span>
         </button>
         <button
           onClick={() => {
@@ -145,7 +147,7 @@ export default function AddComponentForm({
           )}
         >
           <Plus className="h-4 w-4" />
-          <span>ADD NEW</span>
+          <span>{t('components.add.mode_new')}</span>
         </button>
       </div>
 
@@ -154,14 +156,14 @@ export default function AddComponentForm({
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              SEARCH COMPONENTS
+              {t('components.add.search_label')}
             </label>
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by part number or manufacturer..."
+                placeholder={t('components.add.search_placeholder')}
                 className="input-cyber pl-10"
               />
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500" />
@@ -197,12 +199,12 @@ export default function AddComponentForm({
 
           {searchQuery.length >= 2 && searchResults?.length === 0 && (
             <div className="text-center py-4 text-gray-500 text-sm">
-              No components found. Try{' '}
+              {t('components.add.no_results_prefix')}{' '}
               <button
                 onClick={() => setMode('new')}
                 className="text-cyber-pink hover:underline"
               >
-                adding a new one
+                {t('components.add.no_results_link')}
               </button>
               .
             </div>
@@ -236,7 +238,7 @@ export default function AddComponentForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                PART NUMBER <span className="text-cyber-pink">*</span>
+                {t('components.add.part_number_label')} <span className="text-cyber-pink">*</span>
               </label>
               <input
                 type="text"
@@ -244,13 +246,13 @@ export default function AddComponentForm({
                 onChange={(e) =>
                   setNewComponent((prev) => ({ ...prev, part_number: e.target.value }))
                 }
-                placeholder="e.g., LM7805"
+                placeholder={t('components.add.part_number_placeholder')}
                 className="input-cyber"
               />
             </div>
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                MANUFACTURER <span className="text-cyber-pink">*</span>
+                {t('components.add.manufacturer_label')} <span className="text-cyber-pink">*</span>
               </label>
               <input
                 type="text"
@@ -258,7 +260,7 @@ export default function AddComponentForm({
                 onChange={(e) =>
                   setNewComponent((prev) => ({ ...prev, manufacturer: e.target.value }))
                 }
-                placeholder="e.g., Texas Instruments"
+                placeholder={t('components.add.manufacturer_placeholder')}
                 className="input-cyber"
               />
             </div>
@@ -267,7 +269,7 @@ export default function AddComponentForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                TYPE <span className="text-cyber-pink">*</span>
+                {t('components.add.type_label')} <span className="text-cyber-pink">*</span>
               </label>
               <select
                 value={newComponent.component_type}
@@ -276,7 +278,7 @@ export default function AddComponentForm({
                 }
                 className="input-cyber"
               >
-                <option value="">Select type...</option>
+                <option value="">{t('components.add.select_type')}</option>
                 {COMPONENT_TYPES.map((type) => (
                   <option key={type.value} value={type.value}>
                     {type.label}
@@ -286,7 +288,7 @@ export default function AddComponentForm({
             </div>
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                PACKAGE
+                {t('components.add.package_label')}
               </label>
               <input
                 type="text"
@@ -294,7 +296,7 @@ export default function AddComponentForm({
                 onChange={(e) =>
                   setNewComponent((prev) => ({ ...prev, package_type: e.target.value }))
                 }
-                placeholder="e.g., SOT-23, SOIC-8"
+                placeholder={t('components.add.package_placeholder')}
                 className="input-cyber"
               />
             </div>
@@ -302,7 +304,7 @@ export default function AddComponentForm({
 
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              DATASHEET URL
+              {t('components.add.datasheet_label')}
             </label>
             <input
               type="url"
@@ -317,7 +319,7 @@ export default function AddComponentForm({
 
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              DESCRIPTION
+              {t('components.add.description_label')}
             </label>
             <input
               type="text"
@@ -325,7 +327,7 @@ export default function AddComponentForm({
               onChange={(e) =>
                 setNewComponent((prev) => ({ ...prev, description: e.target.value }))
               }
-              placeholder="Brief description..."
+              placeholder={t('components.add.description_placeholder')}
               className="input-cyber"
             />
           </div>
@@ -334,24 +336,24 @@ export default function AddComponentForm({
 
       {/* Location details (both modes) */}
       <div className="border-t border-cyber-light/30 pt-4 space-y-4">
-        <h4 className="font-mono text-sm text-gray-400">LOCATION ON PRODUCT</h4>
+        <h4 className="font-mono text-sm text-gray-400">{t('components.add.location_section')}</h4>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              REFERENCE DESIGNATOR
+              {t('components.add.ref_designator_label')}
             </label>
             <input
               type="text"
               value={referenceDesignator}
               onChange={(e) => setReferenceDesignator(e.target.value)}
-              placeholder="e.g., U1, R5, C12"
+              placeholder={t('components.add.ref_placeholder')}
               className="input-cyber"
             />
           </div>
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              QUANTITY
+              {t('components.add.quantity_label')}
             </label>
             <input
               type="number"
@@ -365,25 +367,25 @@ export default function AddComponentForm({
 
         <div>
           <label className="block text-xs font-mono text-gray-500 mb-1">
-            LOCATION DESCRIPTION
+            {t('components.add.location_label')}
           </label>
           <input
             type="text"
             value={locationDescription}
             onChange={(e) => setLocationDescription(e.target.value)}
-            placeholder="e.g., Near HDMI port, on power board"
+            placeholder={t('components.add.location_placeholder')}
             className="input-cyber"
           />
         </div>
 
         <div>
           <label className="block text-xs font-mono text-gray-500 mb-1">
-            NOTES
+            {t('components.add.notes_label')}
           </label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Additional notes..."
+            placeholder={t('components.add.notes_placeholder')}
             rows={2}
             className="input-cyber resize-none"
           />
@@ -394,7 +396,7 @@ export default function AddComponentForm({
       <div className="flex items-center justify-between pt-4 border-t border-cyber-light/30">
         {onCancel && (
           <button onClick={onCancel} className="text-gray-400 hover:text-white text-sm font-mono">
-            CANCEL
+            {t('components.add.cancel')}
           </button>
         )}
         <button
@@ -408,12 +410,12 @@ export default function AddComponentForm({
           {addMutation.isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
-              ADDING...
+              {t('components.add.submitting')}
             </>
           ) : (
             <>
               <Package className="h-4 w-4" />
-              ADD COMPONENT
+              {t('components.add.submit')}
             </>
           )}
         </button>
@@ -423,27 +425,22 @@ export default function AddComponentForm({
       {addMutation.isSuccess && mode === 'search' && (
         <div className="flex items-center gap-2 p-3 border border-cyber-green/50 bg-cyber-green/10 text-cyber-green text-sm font-mono">
           <CheckCircle className="h-4 w-4" />
-          Component linked to product successfully!
+          {t('components.add.success_linked')}
         </div>
       )}
       {addMutation.isSuccess && mode === 'new' && (
         <div className="border border-cyber-green/50 bg-cyber-green/10 p-3 space-y-2">
           <div className="flex items-center gap-2 text-cyber-green text-sm font-mono">
             <CheckCircle className="h-4 w-4 shrink-0" />
-            New component submitted — pending moderator review.
+            {t('components.add.success_new')}
           </div>
           <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
             <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
-            <span>It will appear once approved, usually within a few hours.</span>
+            <span>{t('components.add.success_review_time')}</span>
           </div>
           <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
             <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
-            <span>
-              After{' '}
-              <span className="text-white font-mono">25 contributions</span> and{' '}
-              <span className="text-white font-mono">50 reputation</span>,
-              submissions publish instantly.
-            </span>
+            <span>{t('components.add.success_trusted', { contributions: 25, reputation: 50 })}</span>
           </div>
         </div>
       )}
@@ -452,7 +449,7 @@ export default function AddComponentForm({
       {addMutation.isError && (
         <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
           <AlertCircle className="h-4 w-4" />
-          {parseApiError(addMutation.error, 'Failed to add component. Please try again.')}
+          {parseApiError(addMutation.error, t('components.add.error'))}
         </div>
       )}
     </div>

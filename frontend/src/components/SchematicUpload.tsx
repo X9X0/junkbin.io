@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
+import { useTranslation } from 'react-i18next';
 import { Upload, X, Loader2, CheckCircle, AlertCircle, FileText, Clock, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
 
@@ -20,26 +21,6 @@ interface PreviewFile {
   pageCount: string;
 }
 
-const SCHEMATIC_TYPES = [
-  { value: 'full_schematic', label: 'Full Schematic' },
-  { value: 'block_diagram', label: 'Block Diagram' },
-  { value: 'pcb_layout', label: 'PCB Layout' },
-  { value: 'service_manual', label: 'Service Manual' },
-  { value: 'datasheet', label: 'Component Datasheet' },
-  { value: 'pinout', label: 'Pinout Diagram' },
-  { value: 'wiring_diagram', label: 'Wiring Diagram' },
-  { value: 'bom', label: 'Bill of Materials' },
-  { value: 'other', label: 'Other Documentation' },
-];
-
-const SOURCE_TYPES = [
-  { value: 'community', label: 'Community Contributed' },
-  { value: 'official', label: 'Official/Manufacturer' },
-  { value: 'reverse_engineered', label: 'Reverse Engineered' },
-  { value: 'fcc_filing', label: 'FCC Filing' },
-  { value: 'leaked', label: 'Leaked Document' },
-  { value: 'unknown', label: 'Unknown Source' },
-];
 
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -54,10 +35,32 @@ const ALLOWED_TYPES = [
 const ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'zip'];
 
 export default function SchematicUpload({ productId, onSuccess }: SchematicUploadProps) {
+  const { t } = useTranslation();
   const [file, setFile] = useState<PreviewFile | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+
+  const SCHEMATIC_TYPES = [
+    { value: 'full_schematic', label: t('schematics.upload.type_full_schematic') },
+    { value: 'block_diagram', label: t('schematics.upload.type_block_diagram') },
+    { value: 'pcb_layout', label: t('schematics.upload.type_pcb_layout') },
+    { value: 'service_manual', label: t('schematics.upload.type_service_manual') },
+    { value: 'datasheet', label: t('schematics.upload.type_datasheet') },
+    { value: 'pinout', label: t('schematics.upload.type_pinout') },
+    { value: 'wiring_diagram', label: t('schematics.upload.type_wiring_diagram') },
+    { value: 'bom', label: t('schematics.upload.type_bom') },
+    { value: 'other', label: t('schematics.upload.type_other') },
+  ];
+
+  const SOURCE_TYPES = [
+    { value: 'community', label: t('schematics.upload.source_community') },
+    { value: 'official', label: t('schematics.upload.source_official') },
+    { value: 'reverse_engineered', label: t('schematics.upload.source_reverse') },
+    { value: 'fcc_filing', label: t('schematics.upload.source_fcc') },
+    { value: 'leaked', label: t('schematics.upload.source_leaked') },
+    { value: 'unknown', label: t('schematics.upload.source_unknown') },
+  ];
 
   const uploadMutation = useMutation({
     mutationFn: async (previewFile: PreviewFile) => {
@@ -187,10 +190,10 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
             )}
           />
           <p className="text-gray-400 mb-1">
-            <span className="text-cyber-green">Click to upload</span> or drag and drop
+            {t('schematics.upload.drop_hint')}
           </p>
           <p className="text-xs text-gray-600 font-mono">
-            PDF, PNG, JPG, ZIP up to 50MB
+            {t('schematics.upload.drop_accept')}
           </p>
         </div>
       )}
@@ -226,13 +229,13 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
           {/* Title (required) */}
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              TITLE <span className="text-cyber-pink">*</span>
+              {t('schematics.upload.title_label')} <span className="text-cyber-pink">*</span>
             </label>
             <input
               type="text"
               value={file.title}
               onChange={(e) => updateFile({ title: e.target.value })}
-              placeholder="e.g., Main PCB Schematic Rev 2"
+              placeholder={t('schematics.upload.title_placeholder')}
               className="input-cyber w-full"
             />
           </div>
@@ -241,7 +244,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                SCHEMATIC TYPE
+                {t('schematics.upload.type_label')}
               </label>
               <select
                 value={file.schematicType}
@@ -257,7 +260,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
             </div>
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                SOURCE
+                {t('schematics.upload.source_label')}
               </label>
               <select
                 value={file.sourceType}
@@ -277,25 +280,25 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                VERSION
+                {t('schematics.upload.version_label')}
               </label>
               <input
                 type="text"
                 value={file.version}
                 onChange={(e) => updateFile({ version: e.target.value })}
-                placeholder="e.g., 1.2, Rev A"
+                placeholder={t('schematics.upload.version_placeholder')}
                 className="input-cyber w-full"
               />
             </div>
             <div>
               <label className="block text-xs font-mono text-gray-500 mb-1">
-                PAGE COUNT
+                {t('schematics.upload.page_count_label')}
               </label>
               <input
                 type="number"
                 value={file.pageCount}
                 onChange={(e) => updateFile({ pageCount: e.target.value })}
-                placeholder="For PDFs"
+                placeholder={t('schematics.upload.page_count_placeholder')}
                 min="1"
                 className="input-cyber w-full"
               />
@@ -305,7 +308,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
           {/* Source URL */}
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              SOURCE URL
+              {t('schematics.upload.source_url_label')}
             </label>
             <input
               type="url"
@@ -319,12 +322,12 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
           {/* Description */}
           <div>
             <label className="block text-xs font-mono text-gray-500 mb-1">
-              DESCRIPTION
+              {t('schematics.upload.description_label')}
             </label>
             <textarea
               value={file.description}
               onChange={(e) => updateFile({ description: e.target.value })}
-              placeholder="Additional notes about this schematic..."
+              placeholder={t('schematics.upload.description_placeholder')}
               rows={3}
               className="input-cyber w-full resize-none"
             />
@@ -343,12 +346,12 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
               {uploadMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  UPLOADING...
+                  {t('schematics.upload.submitting')}
                 </>
               ) : (
                 <>
                   <Upload className="h-4 w-4" />
-                  UPLOAD SCHEMATIC
+                  {t('schematics.upload.submit')}
                 </>
               )}
             </button>
@@ -361,20 +364,15 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
         <div className="border border-cyber-green/50 bg-cyber-green/10 p-3 space-y-2">
           <div className="flex items-center gap-2 text-cyber-green text-sm font-mono">
             <CheckCircle className="h-4 w-4 shrink-0" />
-            Schematic uploaded — pending moderator review.
+            {t('schematics.upload.success')}
           </div>
           <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
             <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
-            <span>It will appear once approved, usually within a few hours.</span>
+            <span>{t('schematics.upload.success_review_time')}</span>
           </div>
           <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
             <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
-            <span>
-              After{' '}
-              <span className="text-white font-mono">25 contributions</span> and{' '}
-              <span className="text-white font-mono">50 reputation</span>,
-              uploads publish instantly.
-            </span>
+            <span>{t('schematics.upload.success_trusted', { contributions: 25, reputation: 50 })}</span>
           </div>
         </div>
       )}
@@ -383,7 +381,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
       {uploadMutation.isError && (
         <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
           <AlertCircle className="h-4 w-4" />
-          Failed to upload schematic. Please try again.
+          {t('schematics.upload.error')}
         </div>
       )}
     </div>

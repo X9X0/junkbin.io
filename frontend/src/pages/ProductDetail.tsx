@@ -1,5 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { products, schematics, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import ImageUpload from '../components/ImageUpload';
@@ -35,13 +36,20 @@ import { useState } from 'react';
 import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
 
-function SwapItemCard({ item, currentUserId, isAuthenticated }: {
+function SwapItemCard({ item, currentUserId, isAuthenticated, t }: {
   item: JunkbinItem;
   currentUserId?: string;
   isAuthenticated: boolean;
+  t: (key: string, options?: Record<string, unknown>) => string;
 }) {
   const canContact =
     isAuthenticated && currentUserId !== item.user.id && item.item_type === 'have' && item.status === 'available';
+  const conditionLabels: Record<string, string> = {
+    new: t('common.condition.new'),
+    working: t('common.condition.working'),
+    broken: t('common.condition.broken'),
+    unknown: t('common.condition.unknown'),
+  };
   return (
     <div className="card-cyber p-4 flex flex-col gap-2">
       <div className="flex items-center justify-between gap-2">
@@ -50,12 +58,12 @@ function SwapItemCard({ item, currentUserId, isAuthenticated }: {
             ? 'badge-cyber text-[10px] text-cyber-green border-cyber-green'
             : 'badge-cyber text-[10px] text-gray-500 border-gray-600'
           }>
-            {item.status === 'available' ? 'AVAILABLE' : 'NOT FOR TRADE'}
+            {item.status === 'available' ? t('product_detail.available') : t('product_detail.not_for_trade')}
           </span>
         )}
         {item.item_type === 'have' && (
           <span className="badge-cyber text-[10px] text-gray-400 border-gray-600">
-            {{ new: 'New', working: 'Working', broken: 'Broken', unknown: 'Unknown' }[item.condition] || item.condition}
+            {conditionLabels[item.condition] || item.condition}
           </span>
         )}
         {item.quantity > 1 && (
@@ -89,7 +97,7 @@ function SwapItemCard({ item, currentUserId, isAuthenticated }: {
             className="flex items-center gap-1 text-xs text-cyber-cyan hover:text-white transition-colors font-mono flex-shrink-0 ml-2"
           >
             <MessageSquare className="h-3.5 w-3.5" />
-            CONTACT
+            {t('product_detail.contact')}
           </Link>
         )}
       </div>
@@ -100,6 +108,7 @@ function SwapItemCard({ item, currentUserId, isAuthenticated }: {
 export default function ProductDetail() {
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments' | 'swap'>('overview');
@@ -161,7 +170,7 @@ export default function ProductDetail() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-cyber-cyan font-mono animate-pulse">
-          LOADING PRODUCT DATA...
+          {t('product_detail.loading_data')}
         </div>
       </div>
     );
@@ -170,9 +179,9 @@ export default function ProductDetail() {
   if (!product) {
     return (
       <div className="py-20 text-center">
-        <h2 className="font-display text-2xl text-white mb-4">PRODUCT NOT FOUND</h2>
+        <h2 className="font-display text-2xl text-white mb-4">{t('product_detail.not_found_title')}</h2>
         <Link to="/products" className="btn-cyber">
-          BACK TO DATABASE
+          {t('product_detail.back_db')}
         </Link>
       </div>
     );
@@ -184,7 +193,7 @@ export default function ProductDetail() {
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-sm font-mono text-gray-500 mb-6">
           <Link to="/products" className="hover:text-cyber-cyan">
-            Products
+            {t('product_detail.breadcrumb_products')}
           </Link>
           <ChevronRight className="h-4 w-4" />
           <span className="text-gray-400">{product.manufacturer}</span>
@@ -208,7 +217,7 @@ export default function ProductDetail() {
                 ) : (
                   <div className="text-center text-gray-600">
                     <Image className="h-16 w-16 mx-auto mb-2" />
-                    <p className="font-mono text-sm">NO IMAGES</p>
+                    <p className="font-mono text-sm">{t('product_detail.no_images')}</p>
                   </div>
                 )}
               </div>
@@ -240,7 +249,7 @@ export default function ProductDetail() {
                   className="w-20 h-20 flex-shrink-0 border border-dashed border-cyber-cyan/50 hover:border-cyber-cyan hover:bg-cyber-cyan/10 transition-all flex flex-col items-center justify-center text-cyber-cyan"
                 >
                   <Upload className="h-5 w-5 mb-1" />
-                  <span className="text-[10px] font-mono">ADD</span>
+                  <span className="text-[10px] font-mono">{t('product_detail.add_image_btn')}</span>
                 </button>
               )}
             </div>
@@ -255,7 +264,7 @@ export default function ProductDetail() {
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-green transition-colors font-mono"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
-                  OPEN IN PCBTRACER
+                  {t('product_detail.open_in_pcbtracer')}
                 </a>
               </div>
             )}
@@ -273,13 +282,13 @@ export default function ProductDetail() {
                 </h1>
                 {product.revision && (
                   <div className="text-gray-500 font-mono text-sm mt-1">
-                    Revision: {product.revision}
+                    {t('product_detail.revision')} {product.revision}
                   </div>
                 )}
               </div>
               {product.is_featured && (
                 <span className="badge-cyber text-cyber-yellow border-cyber-yellow">
-                  FEATURED
+                  {t('product_detail.featured')}
                 </span>
               )}
             </div>
@@ -310,26 +319,26 @@ export default function ProductDetail() {
             <div className="card-cyber p-6 space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-gray-500">Category</span>
+                  <span className="text-gray-500">{t('product_detail.label_category')}</span>
                   <p className="text-white font-mono">
                     {product.category_display || product.category}
                   </p>
                 </div>
                 {product.region && (
                   <div>
-                    <span className="text-gray-500">Region</span>
+                    <span className="text-gray-500">{t('product_detail.label_region')}</span>
                     <p className="text-white font-mono">{product.region}</p>
                   </div>
                 )}
                 {product.year_manufactured && (
                   <div>
-                    <span className="text-gray-500">Year</span>
+                    <span className="text-gray-500">{t('product_detail.label_year')}</span>
                     <p className="text-white font-mono">{product.year_manufactured}</p>
                   </div>
                 )}
                 {product.fcc_id && (
                   <div>
-                    <span className="text-gray-500">FCC ID</span>
+                    <span className="text-gray-500">{t('product_detail.label_fcc_id')}</span>
                     <p className="text-cyber-cyan font-mono">
                       <a
                         href={`https://fccid.io/${product.fcc_id}`}
@@ -345,13 +354,13 @@ export default function ProductDetail() {
                 )}
                 {product.ic_id && (
                   <div>
-                    <span className="text-gray-500">IC ID</span>
+                    <span className="text-gray-500">{t('product_detail.label_ic_id')}</span>
                     <p className="text-white font-mono">{product.ic_id}</p>
                   </div>
                 )}
                 {product.part_number && (
                   <div>
-                    <span className="text-gray-500">Part Number</span>
+                    <span className="text-gray-500">{t('product_detail.label_part_number')}</span>
                     <p className="text-white font-mono">{product.part_number}</p>
                   </div>
                 )}
@@ -359,7 +368,7 @@ export default function ProductDetail() {
 
               {product.description && (
                 <div className="border-t border-cyber-light/30 pt-4">
-                  <span className="text-gray-500 text-sm">Description</span>
+                  <span className="text-gray-500 text-sm">{t('product_detail.label_description')}</span>
                   <p className="text-gray-300 mt-1">{product.description}</p>
                 </div>
               )}
@@ -372,7 +381,7 @@ export default function ProductDetail() {
                     className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
                   >
                     <Pencil className="h-3 w-3" />
-                    Edit
+                    {t('product_detail.edit')}
                   </button>
                 )}
                 {isAuthenticated && (user?.is_staff || product.created_by?.id === user?.id) && (
@@ -386,19 +395,19 @@ export default function ProductDetail() {
                     </button>
                   ) : (
                     <span className="inline-flex items-center gap-2 text-xs">
-                      <span className="text-cyber-pink">Are you sure?</span>
+                      <span className="text-cyber-pink">{t('product_detail.are_you_sure')}</span>
                       <button
                         onClick={() => deleteMutation.mutate()}
                         disabled={deleteMutation.isPending}
                         className="text-cyber-pink hover:text-white font-mono text-xs border border-cyber-pink/50 px-2 py-0.5"
                       >
-                        {deleteMutation.isPending ? 'DELETING...' : 'YES'}
+                        {deleteMutation.isPending ? t('product_detail.deleting') : t('product_detail.confirm_yes')}
                       </button>
                       <button
                         onClick={() => setConfirmDelete(false)}
                         className="text-gray-500 hover:text-white font-mono text-xs"
                       >
-                        CANCEL
+                        {t('common.cancel')}
                       </button>
                     </span>
                   )
@@ -423,7 +432,7 @@ export default function ProductDetail() {
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
                 >
                   <Share2 className="h-3 w-3" />
-                  Export JSON
+                  {t('product_detail.share')}
                 </button>
                 <button
                   onClick={() => {
@@ -443,7 +452,7 @@ export default function ProductDetail() {
                   className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-green transition-colors"
                 >
                   <Download className="h-3 w-3" />
-                  Export BOM
+                  {t('product_detail.export_bom')}
                 </button>
                 {isAuthenticated && (
                   <button
@@ -451,7 +460,7 @@ export default function ProductDetail() {
                     className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
                   >
                     <Archive className="h-3 w-3" />
-                    Add to My Junkbin
+                    {t('product_detail.add_to_junkbin')}
                   </button>
                 )}
                 {isAuthenticated && (
@@ -460,7 +469,7 @@ export default function ProductDetail() {
                     className="flex items-center gap-2 text-xs text-gray-500 hover:text-cyber-yellow transition-colors"
                   >
                     <Flag className="h-3 w-3" />
-                    Report an issue
+                    {t('product_detail.report')}
                   </button>
                 )}
               </div>
@@ -472,12 +481,12 @@ export default function ProductDetail() {
         <div className="border-b border-cyber-light/30 mb-6 -mx-4 sm:mx-0">
           <div className="flex gap-1 sm:gap-6 overflow-x-auto scrollbar-hide px-4 sm:px-0">
             {[
-              { key: 'overview', label: 'Overview', icon: Cpu },
-              { key: 'images', label: 'Images', icon: Camera },
-              { key: 'components', label: 'Parts', icon: Cpu },
-              { key: 'schematics', label: 'Docs', icon: FileText },
-              { key: 'comments', label: 'Comments', icon: MessageSquare, count: product.comment_count },
-              { key: 'swap', label: 'Swap', icon: ArrowLeftRight, count: swapCount?.count },
+              { key: 'overview', label: t('product_detail.tab_overview'), icon: Cpu },
+              { key: 'images', label: t('product_detail.tab_images'), icon: Camera },
+              { key: 'components', label: t('product_detail.tab_parts'), icon: Cpu },
+              { key: 'schematics', label: t('product_detail.tab_docs'), icon: FileText },
+              { key: 'comments', label: t('product_detail.tab_comments'), icon: MessageSquare, count: product.comment_count },
+              { key: 'swap', label: t('product_detail.tab_swap'), icon: ArrowLeftRight, count: swapCount?.count },
             ].map(({ key, label, icon: Icon, count }) => (
               <button
                 key={key}
@@ -507,7 +516,7 @@ export default function ProductDetail() {
             {product.teardown_notes ? (
               <div>
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
-                  TEARDOWN NOTES
+                  {t('product_detail.teardown_title')}
                 </h3>
                 <div className="prose prose-invert max-w-none text-gray-300">
                   {product.teardown_notes}
@@ -516,9 +525,9 @@ export default function ProductDetail() {
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <Cpu className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No teardown notes available yet.</p>
+                <p>{t('product_detail.no_teardown')}</p>
                 <Link to="/submit" className="text-cyber-cyan hover:underline text-sm mt-2 inline-block">
-                  Contribute notes
+                  {t('product_detail.contribute_notes')}
                 </Link>
               </div>
             )}
@@ -531,7 +540,7 @@ export default function ProductDetail() {
             {product.images && product.images.length > 0 && (
               <div>
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
-                  PRODUCT IMAGES ({product.images.length})
+                  {t('product_detail.images_title')} ({product.images.length})
                 </h3>
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {product.images.map((img, idx) => (
@@ -571,7 +580,7 @@ export default function ProductDetail() {
               <div className="card-cyber p-6">
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
                   <Upload className="h-5 w-5 inline mr-2 text-cyber-cyan" />
-                  UPLOAD IMAGES
+                  {t('product_detail.upload_images_title')}
                 </h3>
                 <ImageUpload
                   productId={id!}
@@ -584,23 +593,23 @@ export default function ProductDetail() {
               <div className="card-cyber p-8 text-center">
                 <Camera className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 mb-4">
-                  Log in to upload images for this product.
+                  {t('product_detail.login_to_upload_images')}
                 </p>
                 <Link to="/login" className="btn-cyber">
-                  LOGIN TO CONTRIBUTE
+                  {t('product_detail.login_to_contribute')}
                 </Link>
               </div>
             )}
 
             {/* Guidelines */}
             <div className="p-4 border border-cyber-light/20 bg-cyber-dark/50">
-              <h4 className="font-mono text-sm text-cyber-cyan mb-2">// IMAGE GUIDELINES</h4>
+              <h4 className="font-mono text-sm text-cyber-cyan mb-2">{t('product_detail.img_guidelines_title')}</h4>
               <ul className="text-xs text-gray-500 space-y-1">
-                <li>• High resolution photos preferred (min 1024px width)</li>
-                <li>• Include PCB front/back, labels, and internal components</li>
-                <li>• Well-lit photos with minimal blur</li>
-                <li>• Add descriptive captions to help others</li>
-                <li>• Max file size: 10MB per image</li>
+                <li>• {t('product_detail.img_guideline_1')}</li>
+                <li>• {t('product_detail.img_guideline_2')}</li>
+                <li>• {t('product_detail.img_guideline_3')}</li>
+                <li>• {t('product_detail.img_guideline_4')}</li>
+                <li>• {t('product_detail.img_guideline_5')}</li>
               </ul>
             </div>
           </div>
@@ -613,7 +622,7 @@ export default function ProductDetail() {
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-display text-lg font-semibold text-white">
-                    DOCUMENTED COMPONENTS ({componentList.length})
+                    {t('product_detail.documented_components')} ({componentList.length})
                   </h3>
                   {isAuthenticated && !showAddComponent && !showBomImport && !showBatchAdd && (
                     <div className="flex items-center gap-2">
@@ -621,19 +630,19 @@ export default function ProductDetail() {
                         onClick={() => setShowBomImport(true)}
                         className="btn-cyber btn-cyber-green text-sm py-1.5"
                       >
-                        IMPORT BOM
+                        {t('product_detail.import_bom')}
                       </button>
                       <button
                         onClick={() => setShowBatchAdd(true)}
                         className="btn-cyber text-sm py-1.5"
                       >
-                        BATCH ADD
+                        {t('product_detail.batch_add')}
                       </button>
                       <button
                         onClick={() => setShowAddComponent(true)}
                         className="btn-cyber text-sm py-1.5"
                       >
-                        + ADD
+                        {t('product_detail.add_plus')}
                       </button>
                     </div>
                   )}
@@ -643,13 +652,13 @@ export default function ProductDetail() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-cyber-light/30 text-left">
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">DESIGNATOR</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">PART NUMBER</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">VALUE</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">MANUFACTURER</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">TYPE</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">QTY</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">STATUS</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_ref')}</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_part')}</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_value')}</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_manufacturer')}</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_type')}</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_qty')}</th>
+                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_notes')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -737,7 +746,7 @@ export default function ProductDetail() {
               <div className="card-cyber p-6">
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
                   <Cpu className="h-5 w-5 inline mr-2 text-cyber-pink" />
-                  ADD COMPONENT
+                  {t('product_detail.add_component')}
                 </h3>
                 <AddComponentForm
                   productId={id!}
@@ -782,31 +791,31 @@ export default function ProductDetail() {
             {(!componentList || componentList.length === 0) && !showAddComponent && !showBomImport && !showBatchAdd && (
               <div className="card-cyber p-8 text-center">
                 <Cpu className="h-12 w-12 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 mb-4">No components documented yet.</p>
+                <p className="text-gray-400 mb-4">{t('product_detail.bom_empty')}</p>
                 {isAuthenticated ? (
                   <div className="flex items-center justify-center gap-3">
                     <button
                       onClick={() => setShowBomImport(true)}
                       className="btn-cyber btn-cyber-green"
                     >
-                      IMPORT BOM
+                      {t('product_detail.import_bom')}
                     </button>
                     <button
                       onClick={() => setShowBatchAdd(true)}
                       className="btn-cyber"
                     >
-                      BATCH ADD
+                      {t('product_detail.batch_add')}
                     </button>
                     <button
                       onClick={() => setShowAddComponent(true)}
                       className="btn-cyber"
                     >
-                      ADD COMPONENT
+                      {t('product_detail.add_component')}
                     </button>
                   </div>
                 ) : (
                   <Link to="/login" className="btn-cyber">
-                    LOGIN TO ADD COMPONENTS
+                    {t('product_detail.login_to_add_components')}
                   </Link>
                 )}
               </div>
@@ -819,12 +828,12 @@ export default function ProductDetail() {
 
             {/* Guidelines */}
             <div className="p-4 border border-cyber-light/20 bg-cyber-dark/50">
-              <h4 className="font-mono text-sm text-cyber-pink mb-2">// COMPONENT GUIDELINES</h4>
+              <h4 className="font-mono text-sm text-cyber-pink mb-2">{t('product_detail.comp_guidelines_title')}</h4>
               <ul className="text-xs text-gray-500 space-y-1">
-                <li>• Include reference designators (U1, R5, C12) when visible</li>
-                <li>• Search for existing components before adding new ones</li>
-                <li>• Add datasheet links when available</li>
-                <li>• Document major ICs, regulators, and interesting components</li>
+                <li>• {t('product_detail.comp_guideline_1')}</li>
+                <li>• {t('product_detail.comp_guideline_2')}</li>
+                <li>• {t('product_detail.comp_guideline_3')}</li>
+                <li>• {t('product_detail.comp_guideline_4')}</li>
               </ul>
             </div>
           </div>
@@ -836,7 +845,7 @@ export default function ProductDetail() {
             {schematicList && schematicList.length > 0 && (
               <div>
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
-                  AVAILABLE SCHEMATICS ({schematicList.length})
+                  {t('product_detail.available_schematics')} ({schematicList.length})
                 </h3>
                 <div className="grid md:grid-cols-2 gap-4">
                   {schematicList.map((schematic) => (
@@ -884,7 +893,7 @@ export default function ProductDetail() {
               <div className="card-cyber p-6">
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
                   <Upload className="h-5 w-5 inline mr-2 text-cyber-green" />
-                  UPLOAD SCHEMATIC
+                  {t('product_detail.add_schematic')}
                 </h3>
                 <SchematicUpload
                   productId={id!}
@@ -897,10 +906,10 @@ export default function ProductDetail() {
               <div className="card-cyber p-8 text-center">
                 <FileText className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 mb-4">
-                  Log in to upload schematics for this product.
+                  {t('product_detail.login_to_upload_schematics')}
                 </p>
                 <Link to="/login" className="btn-cyber">
-                  LOGIN TO CONTRIBUTE
+                  {t('product_detail.login_to_contribute')}
                 </Link>
               </div>
             )}
@@ -909,19 +918,19 @@ export default function ProductDetail() {
             {(!schematicList || schematicList.length === 0) && !isAuthenticated && (
               <div className="card-cyber p-8 text-center text-gray-500">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>No schematics available yet.</p>
+                <p>{t('product_detail.no_schematics')}</p>
               </div>
             )}
 
             {/* Guidelines */}
             <div className="p-4 border border-cyber-light/20 bg-cyber-dark/50">
-              <h4 className="font-mono text-sm text-cyber-green mb-2">// SCHEMATIC GUIDELINES</h4>
+              <h4 className="font-mono text-sm text-cyber-green mb-2">{t('product_detail.sch_guidelines_title')}</h4>
               <ul className="text-xs text-gray-500 space-y-1">
-                <li>• PDFs preferred for multi-page schematics</li>
-                <li>• Include version/revision info when known</li>
-                <li>• Provide source attribution when possible</li>
-                <li>• Max file size: 50MB per schematic</li>
-                <li>• Supported formats: PDF, PNG, JPG, ZIP</li>
+                <li>• {t('product_detail.sch_guideline_1')}</li>
+                <li>• {t('product_detail.sch_guideline_2')}</li>
+                <li>• {t('product_detail.sch_guideline_3')}</li>
+                <li>• {t('product_detail.sch_guideline_4')}</li>
+                <li>• {t('product_detail.sch_guideline_5')}</li>
               </ul>
             </div>
           </div>
@@ -935,7 +944,7 @@ export default function ProductDetail() {
             {/* HAVE section */}
             <div>
               <h3 className="font-display text-lg font-semibold text-white mb-4">
-                HAVE <span className="text-cyber-cyan text-sm font-mono">({swapHave?.count ?? 0})</span>
+                {t('product_detail.have')} <span className="text-cyber-cyan text-sm font-mono">({swapHave?.count ?? 0})</span>
               </h3>
               {swapHave?.results?.length ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -945,18 +954,19 @@ export default function ProductDetail() {
                       item={item}
                       currentUserId={user?.id}
                       isAuthenticated={isAuthenticated}
+                      t={t}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="card-cyber p-8 text-center">
-                  <p className="text-gray-500 font-mono text-sm">No one has listed this yet.</p>
+                  <p className="text-gray-500 font-mono text-sm">{t('product_detail.swap_no_items')}</p>
                   {isAuthenticated && (
                     <button
                       onClick={() => setShowJunkbinModal(true)}
                       className="text-cyber-cyan hover:underline text-sm mt-2 font-mono"
                     >
-                      Add to your junkbin
+                      {t('product_detail.add_to_junkbin')}
                     </button>
                   )}
                 </div>
@@ -966,7 +976,7 @@ export default function ProductDetail() {
             {/* WANT section */}
             <div>
               <h3 className="font-display text-lg font-semibold text-white mb-4">
-                WANT <span className="text-cyber-yellow text-sm font-mono">({swapWant?.count ?? 0})</span>
+                {t('product_detail.want')} <span className="text-cyber-yellow text-sm font-mono">({swapWant?.count ?? 0})</span>
               </h3>
               {swapWant?.results?.length ? (
                 <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -976,12 +986,13 @@ export default function ProductDetail() {
                       item={item}
                       currentUserId={user?.id}
                       isAuthenticated={isAuthenticated}
+                      t={t}
                     />
                   ))}
                 </div>
               ) : (
                 <div className="card-cyber p-8 text-center">
-                  <p className="text-gray-500 font-mono text-sm">Nobody is looking for this.</p>
+                  <p className="text-gray-500 font-mono text-sm">{t('product_detail.swap_no_items')}</p>
                 </div>
               )}
             </div>

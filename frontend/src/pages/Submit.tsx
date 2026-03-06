@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle, ExternalLink, Camera, FileText, X, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
@@ -46,6 +47,7 @@ interface SubmittedItem {
 }
 
 export default function Submit() {
+  const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const [submitType, setSubmitType] = useState<SubmitType>('product');
   const [step, setStep] = useState(1);
@@ -97,7 +99,7 @@ export default function Submit() {
       });
     },
     onError: (err: any) => {
-      setError(parseApiError(err, 'Failed to create product. Please try again.'));
+      setError(parseApiError(err, t('submit.error_product')));
     },
   });
 
@@ -114,7 +116,7 @@ export default function Submit() {
       });
     },
     onError: (err: any) => {
-      setError(parseApiError(err, 'Failed to create component. Please try again.'));
+      setError(parseApiError(err, t('submit.error_component')));
     },
   });
 
@@ -139,12 +141,12 @@ export default function Submit() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
         <AlertCircle className="h-16 w-16 text-cyber-pink mb-4" />
-        <h2 className="font-display text-2xl text-white mb-2">AUTHENTICATION REQUIRED</h2>
+        <h2 className="font-display text-2xl text-white mb-2">{t('submit.auth_required_title')}</h2>
         <p className="text-gray-400 mb-6 text-center">
-          You must be logged in to submit products or components.
+          {t('submit.auth_required_desc')}
         </p>
         <a href="/login" className="btn-cyber">
-          LOGIN TO CONTINUE
+          {t('submit.login_to_continue')}
         </a>
       </div>
     );
@@ -226,19 +228,17 @@ export default function Submit() {
             <h1 className="font-display text-3xl font-bold text-white mb-2">
               SUBMIT <span className="text-cyber-green">DOCUMENTATION</span>
             </h1>
-            <p className="text-gray-400">Step 4 of 4 — Upload Files</p>
+            <p className="text-gray-400">{t('submit.step4_subtitle')}</p>
           </div>
 
           <div className="card-cyber p-6">
             <div className="mb-6">
               <h2 className="font-display text-lg text-white mb-1">
-                ADD FILES
-                <span className="text-gray-500 text-sm font-sans font-normal ml-3">optional</span>
+                {t('submit.add_files_title')}
+                <span className="text-gray-500 text-sm font-sans font-normal ml-3">{t('submit.add_files_optional')}</span>
               </h2>
               <p className="text-sm text-gray-400">
-                Upload photos and documentation for{' '}
-                <span className="text-white font-mono">{submittedItem.label}</span>.
-                You can also add files later from the {submittedItem.type} page.
+                {t('submit.add_files_desc', { label: submittedItem.label, type: submittedItem.type })}
               </p>
             </div>
 
@@ -254,7 +254,7 @@ export default function Submit() {
                 )}
               >
                 <Camera className="h-4 w-4" />
-                PHOTOS
+                {t('submit.photos')}
               </button>
               <button
                 onClick={() => setUploadTab('docs')}
@@ -266,7 +266,7 @@ export default function Submit() {
                 )}
               >
                 <FileText className="h-4 w-4" />
-                {submitType === 'product' ? 'DOCUMENTATION' : 'DATASHEETS'}
+                {submitType === 'product' ? t('submit.documentation') : t('submit.datasheets_tab')}
               </button>
             </div>
 
@@ -298,9 +298,9 @@ export default function Submit() {
                   >
                     <FileText className="h-10 w-10 mx-auto mb-3 text-gray-500" />
                     <p className="text-gray-400 mb-1">
-                      <span className="text-cyber-green">Click to upload</span> a datasheet
+                      <span className="text-cyber-green">{t('submit.ds_click_upload')}</span>
                     </p>
-                    <p className="text-xs text-gray-600 font-mono">PDF, PNG, JPG, ZIP up to 50MB</p>
+                    <p className="text-xs text-gray-600 font-mono">{t('submit.ds_accept')}</p>
                   </div>
                 ) : (
                   <div className="card-cyber p-4 space-y-4">
@@ -319,7 +319,7 @@ export default function Submit() {
                       </button>
                     </div>
                     <div>
-                      <label className="block text-xs font-mono text-gray-500 mb-1">TITLE</label>
+                      <label className="block text-xs font-mono text-gray-500 mb-1">{t('submit.ds_title_label')}</label>
                       <input
                         type="text"
                         value={dsTitle}
@@ -330,18 +330,18 @@ export default function Submit() {
                     </div>
                     <div className="grid sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="block text-xs font-mono text-gray-500 mb-1">SOURCE</label>
+                        <label className="block text-xs font-mono text-gray-500 mb-1">{t('submit.ds_source_label')}</label>
                         <select value={dsSourceType} onChange={(e) => setDsSourceType(e.target.value)} className="input-cyber w-full">
-                          <option value="official">Official/Manufacturer</option>
-                          <option value="community">Community</option>
-                          <option value="reverse_engineered">Reverse Engineered</option>
-                          <option value="fcc_filing">FCC Filing</option>
-                          <option value="leaked">Leaked</option>
-                          <option value="unknown">Unknown Source</option>
+                          <option value="official">{t('schematics.upload.source_official')}</option>
+                          <option value="community">{t('schematics.upload.source_community')}</option>
+                          <option value="reverse_engineered">{t('schematics.upload.source_reverse')}</option>
+                          <option value="fcc_filing">{t('schematics.upload.source_fcc')}</option>
+                          <option value="leaked">{t('schematics.upload.source_leaked')}</option>
+                          <option value="unknown">{t('schematics.upload.source_unknown')}</option>
                         </select>
                       </div>
                       <div>
-                        <label className="block text-xs font-mono text-gray-500 mb-1">SOURCE URL</label>
+                        <label className="block text-xs font-mono text-gray-500 mb-1">{t('submit.ds_source_url_label')}</label>
                         <input
                           type="url"
                           value={dsSourceUrl}
@@ -361,9 +361,9 @@ export default function Submit() {
                         )}
                       >
                         {datasheetMutation.isPending ? (
-                          <><Loader2 className="h-4 w-4 animate-spin" /> UPLOADING...</>
+                          <><Loader2 className="h-4 w-4 animate-spin" /> {t('submit.ds_uploading')}</>
                         ) : (
-                          <><Upload className="h-4 w-4" /> UPLOAD DATASHEET</>
+                          <><Upload className="h-4 w-4" /> {t('submit.ds_upload_btn')}</>
                         )}
                       </button>
                     </div>
@@ -372,13 +372,13 @@ export default function Submit() {
                 {datasheetMutation.isSuccess && !dsFile && (
                   <div className="flex items-center gap-2 p-3 border border-cyber-green/50 bg-cyber-green/10 text-cyber-green text-sm font-mono">
                     <Check className="h-4 w-4" />
-                    Datasheet uploaded — pending moderator review.
+                    {t('submit.ds_success')}
                   </div>
                 )}
                 {datasheetMutation.isError && (
                   <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
                     <AlertCircle className="h-4 w-4" />
-                    Upload failed. Please try again.
+                    {t('submit.ds_error')}
                   </div>
                 )}
               </div>
@@ -391,14 +391,14 @@ export default function Submit() {
               onClick={() => setUploadsDone(true)}
               className="text-gray-400 hover:text-white transition-colors font-mono text-sm"
             >
-              SKIP
+              {t('submit.skip')}
             </button>
             <button
               onClick={() => setUploadsDone(true)}
               className="btn-cyber flex items-center gap-2"
             >
               <Check className="h-4 w-4" />
-              DONE
+              {t('submit.done')}
             </button>
           </div>
         </div>
@@ -434,7 +434,7 @@ export default function Submit() {
             SUBMIT <span className="text-cyber-green">DOCUMENTATION</span>
           </h1>
           <p className="text-gray-400">
-            Help build the e-waste salvage database
+            {t('submit.subtitle')}
           </p>
         </div>
 
@@ -454,8 +454,8 @@ export default function Submit() {
             )}
           >
             <Cpu className="h-8 w-8" />
-            <span className="font-display font-bold">PRODUCT</span>
-            <span className="text-xs text-gray-500">Document a device</span>
+            <span className="font-display font-bold">{t('submit.tab_product')}</span>
+            <span className="text-xs text-gray-500">{t('submit.tab_product_desc')}</span>
           </button>
           <button
             onClick={() => {
@@ -471,8 +471,8 @@ export default function Submit() {
             )}
           >
             <Package className="h-8 w-8" />
-            <span className="font-display font-bold">COMPONENT</span>
-            <span className="text-xs text-gray-500">Add a part</span>
+            <span className="font-display font-bold">{t('submit.tab_component')}</span>
+            <span className="text-xs text-gray-500">{t('submit.tab_component_desc')}</span>
           </button>
         </div>
 
@@ -480,8 +480,7 @@ export default function Submit() {
         {submitType === 'product' && (
           <div className="mb-6 px-4 py-3 border border-cyber-green/30 bg-cyber-green/5 flex items-center justify-between gap-3 text-sm">
             <span className="text-gray-400">
-              Documenting a PCB?{' '}
-              <span className="text-cyber-green">Use PCBTracer to identify components, then import the BOM here.</span>
+              {t('submit.pcbtracer_hint')}
             </span>
             <a
               href="https://pcbtracer.com"
@@ -490,7 +489,7 @@ export default function Submit() {
               className="flex-shrink-0 flex items-center gap-1 text-xs font-mono text-cyber-green hover:text-white transition-colors"
             >
               <ExternalLink className="h-3 w-3" />
-              OPEN PCBTRACER
+              {t('submit.pcbtracer_link')}
             </a>
           </div>
         )}
@@ -538,12 +537,12 @@ export default function Submit() {
             {step === 1 && (
               <div className="space-y-6">
                 <h2 className="font-display text-lg text-white mb-4">
-                  BASIC INFORMATION
+                  {t('submit.step_basic')}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      MANUFACTURER *
+                      {t('submit.manufacturer')} *
                     </label>
                     <input
                       type="text"
@@ -555,7 +554,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      MODEL NUMBER *
+                      {t('submit.model_number')} *
                     </label>
                     <input
                       type="text"
@@ -567,7 +566,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      CATEGORY *
+                      {t('submit.category')} *
                     </label>
                     <select
                       value={productData.category}
@@ -583,7 +582,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      REGION
+                      {t('submit.region')}
                     </label>
                     <select
                       value={productData.region}
@@ -604,12 +603,12 @@ export default function Submit() {
             {step === 2 && (
               <div className="space-y-6">
                 <h2 className="font-display text-lg text-white mb-4">
-                  ADDITIONAL DETAILS
+                  {t('submit.step_additional')}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      REVISION
+                      {t('submit.revision')}
                     </label>
                     <input
                       type="text"
@@ -621,7 +620,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      YEAR MANUFACTURED
+                      {t('submit.year')}
                     </label>
                     <input
                       type="number"
@@ -635,7 +634,7 @@ export default function Submit() {
                   </div>
                   <div className="md:col-span-2">
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      FCC ID
+                      {t('submit.fcc_id')}
                     </label>
                     <input
                       type="text"
@@ -645,13 +644,13 @@ export default function Submit() {
                       className="input-cyber"
                     />
                     <p className="text-xs text-gray-600 mt-1">
-                      Found on device label. Search at fcc.gov/oet/ea/fccid
+                      {t('submit.fcc_hint')}
                     </p>
                   </div>
                 </div>
                 <div>
                   <label className="block text-sm font-mono text-gray-400 mb-2">
-                    DESCRIPTION
+                    {t('submit.description')}
                   </label>
                   <textarea
                     value={productData.description}
@@ -667,53 +666,53 @@ export default function Submit() {
             {step === 3 && (
               <div className="space-y-6">
                 <h2 className="font-display text-lg text-white mb-4">
-                  REVIEW & SUBMIT
+                  {t('submit.step_review')}
                 </h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">Manufacturer:</span>
+                      <span className="text-gray-500">{t('submit.review_manufacturer')}</span>
                       <p className="text-white font-mono">{productData.manufacturer}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Model:</span>
+                      <span className="text-gray-500">{t('submit.review_model')}</span>
                       <p className="text-white font-mono">{productData.model_number}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Category:</span>
+                      <span className="text-gray-500">{t('submit.review_category')}</span>
                       <p className="text-white font-mono">
                         {CATEGORIES.find((c) => c.value === productData.category)?.label}
                       </p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Region:</span>
+                      <span className="text-gray-500">{t('submit.review_region')}</span>
                       <p className="text-white font-mono">
                         {REGIONS.find((r) => r.value === productData.region)?.label}
                       </p>
                     </div>
                     {productData.revision && (
                       <div>
-                        <span className="text-gray-500">Revision:</span>
+                        <span className="text-gray-500">{t('submit.review_revision')}</span>
                         <p className="text-white font-mono">{productData.revision}</p>
                       </div>
                     )}
                     {productData.fcc_id && (
                       <div>
-                        <span className="text-gray-500">FCC ID:</span>
+                        <span className="text-gray-500">{t('submit.review_fcc_id')}</span>
                         <p className="text-white font-mono">{productData.fcc_id}</p>
                       </div>
                     )}
                   </div>
                   {productData.description && (
                     <div>
-                      <span className="text-gray-500 text-sm">Description:</span>
+                      <span className="text-gray-500 text-sm">{t('submit.review_description')}</span>
                       <p className="text-gray-300 text-sm mt-1">{productData.description}</p>
                     </div>
                   )}
                 </div>
                 <div className="border-t border-cyber-light/30 pt-4">
                   <p className="text-xs text-gray-500">
-                    After submission, you can add images and component documentation to this product.
+                    {t('submit.after_submission')}
                   </p>
                 </div>
               </div>
@@ -727,7 +726,7 @@ export default function Submit() {
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  BACK
+                  {t('submit.back')}
                 </button>
               ) : (
                 <div />
@@ -741,7 +740,7 @@ export default function Submit() {
                     step === 1 && !isProductStep1Valid && 'opacity-50 cursor-not-allowed'
                   )}
                 >
-                  NEXT
+                  {t('submit.next')}
                   <ChevronRight className="h-4 w-4" />
                 </button>
               ) : (
@@ -751,11 +750,11 @@ export default function Submit() {
                   className="btn-cyber flex items-center gap-2"
                 >
                   {productMutation.isPending ? (
-                    'SUBMITTING...'
+                    t('submit.submitting')
                   ) : (
                     <>
                       <Upload className="h-4 w-4" />
-                      SUBMIT PRODUCT
+                      {t('submit.submit_product')}
                     </>
                   )}
                 </button>
@@ -770,12 +769,12 @@ export default function Submit() {
             {step === 1 && (
               <div className="space-y-6">
                 <h2 className="font-display text-lg text-white mb-4">
-                  COMPONENT IDENTIFICATION
+                  {t('submit.step_identification')}
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      MANUFACTURER *
+                      {t('submit.manufacturer')} *
                     </label>
                     <input
                       type="text"
@@ -787,7 +786,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      PART NUMBER *
+                      {t('submit.part_number')} *
                     </label>
                     <input
                       type="text"
@@ -799,7 +798,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      COMPONENT TYPE *
+                      {t('submit.component_type')} *
                     </label>
                     <select
                       value={componentData.component_type}
@@ -815,7 +814,7 @@ export default function Submit() {
                   </div>
                   <div>
                     <label className="block text-sm font-mono text-gray-400 mb-2">
-                      PACKAGE TYPE
+                      {t('submit.package_type')}
                     </label>
                     <input
                       type="text"
@@ -832,11 +831,11 @@ export default function Submit() {
             {step === 2 && (
               <div className="space-y-6">
                 <h2 className="font-display text-lg text-white mb-4">
-                  ADDITIONAL DETAILS
+                  {t('submit.step_additional')}
                 </h2>
                 <div>
                   <label className="block text-sm font-mono text-gray-400 mb-2">
-                    TYPICAL FUNCTION
+                    {t('submit.typical_function')}
                   </label>
                   <input
                     type="text"
@@ -848,7 +847,7 @@ export default function Submit() {
                 </div>
                 <div>
                   <label className="block text-sm font-mono text-gray-400 mb-2">
-                    DATASHEET URL
+                    {t('submit.datasheet_url')}
                   </label>
                   <input
                     type="url"
@@ -860,7 +859,7 @@ export default function Submit() {
                 </div>
                 <div>
                   <label className="block text-sm font-mono text-gray-400 mb-2">
-                    DESCRIPTION
+                    {t('submit.description')}
                   </label>
                   <textarea
                     value={componentData.description}
@@ -876,40 +875,40 @@ export default function Submit() {
             {step === 3 && (
               <div className="space-y-6">
                 <h2 className="font-display text-lg text-white mb-4">
-                  REVIEW & SUBMIT
+                  {t('submit.step_review')}
                 </h2>
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">Manufacturer:</span>
+                      <span className="text-gray-500">{t('submit.review_manufacturer')}</span>
                       <p className="text-white font-mono">{componentData.manufacturer}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Part Number:</span>
+                      <span className="text-gray-500">{t('submit.review_part_number')}</span>
                       <p className="text-white font-mono">{componentData.part_number}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Type:</span>
+                      <span className="text-gray-500">{t('submit.review_type')}</span>
                       <p className="text-white font-mono">
-                        {COMPONENT_TYPES.find((t) => t.value === componentData.component_type)?.label}
+                        {COMPONENT_TYPES.find((ct) => ct.value === componentData.component_type)?.label}
                       </p>
                     </div>
                     {componentData.package_type && (
                       <div>
-                        <span className="text-gray-500">Package:</span>
+                        <span className="text-gray-500">{t('submit.review_package')}</span>
                         <p className="text-white font-mono">{componentData.package_type}</p>
                       </div>
                     )}
                   </div>
                   {componentData.typical_function && (
                     <div>
-                      <span className="text-gray-500 text-sm">Function:</span>
+                      <span className="text-gray-500 text-sm">{t('submit.review_function')}</span>
                       <p className="text-gray-300 text-sm mt-1">{componentData.typical_function}</p>
                     </div>
                   )}
                   {componentData.description && (
                     <div>
-                      <span className="text-gray-500 text-sm">Description:</span>
+                      <span className="text-gray-500 text-sm">{t('submit.review_description')}</span>
                       <p className="text-gray-300 text-sm mt-1">{componentData.description}</p>
                     </div>
                   )}
@@ -925,7 +924,7 @@ export default function Submit() {
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                  BACK
+                  {t('submit.back')}
                 </button>
               ) : (
                 <div />
@@ -939,7 +938,7 @@ export default function Submit() {
                     step === 1 && !isComponentStep1Valid && 'opacity-50 cursor-not-allowed'
                   )}
                 >
-                  NEXT
+                  {t('submit.next')}
                   <ChevronRight className="h-4 w-4" />
                 </button>
               ) : (
@@ -949,11 +948,11 @@ export default function Submit() {
                   className="btn-cyber flex items-center gap-2"
                 >
                   {componentMutation.isPending ? (
-                    'SUBMITTING...'
+                    t('submit.submitting')
                   ) : (
                     <>
                       <Upload className="h-4 w-4" />
-                      SUBMIT COMPONENT
+                      {t('submit.submit_component')}
                     </>
                   )}
                 </button>
@@ -964,12 +963,12 @@ export default function Submit() {
 
         {/* Info box */}
         <div className="mt-8 p-4 border border-cyber-light/20 bg-cyber-dark/50">
-          <h3 className="font-mono text-sm text-cyber-cyan mb-2">CONTRIBUTION GUIDELINES</h3>
+          <h3 className="font-mono text-sm text-cyber-cyan mb-2">{t('submit.guidelines_title')}</h3>
           <ul className="text-xs text-gray-500 space-y-1">
-            <li>• Ensure accuracy - double-check part numbers and specifications</li>
-            <li>• Include FCC IDs when available - they help with identification</li>
-            <li>• High-quality photos will be requested after initial submission</li>
-            <li>• Contributions may be reviewed before appearing publicly</li>
+            <li>• {t('submit.guideline_accuracy')}</li>
+            <li>• {t('submit.guideline_fcc')}</li>
+            <li>• {t('submit.guideline_photos')}</li>
+            <li>• {t('submit.guideline_review')}</li>
           </ul>
         </div>
 

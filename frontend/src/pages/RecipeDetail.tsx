@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { recipes, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import EditRecipeModal from '../components/EditRecipeModal';
 import MatchPercentageBar from '../components/MatchPercentageBar';
 import {
@@ -28,6 +29,7 @@ const DIFFICULTY_COLORS: Record<string, string> = {
 };
 
 export default function RecipeDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
@@ -72,7 +74,7 @@ export default function RecipeDetail() {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-cyber-cyan font-mono animate-pulse">
-          LOADING RECIPE...
+          {t('recipe_detail.loading')}
         </div>
       </div>
     );
@@ -81,9 +83,9 @@ export default function RecipeDetail() {
   if (!recipe) {
     return (
       <div className="py-20 text-center">
-        <h2 className="font-display text-2xl text-white mb-4">RECIPE NOT FOUND</h2>
+        <h2 className="font-display text-2xl text-white mb-4">{t('recipe_detail.not_found_title')}</h2>
         <Link to="/recipes" className="btn-cyber">
-          BACK TO RECIPES
+          {t('recipe_detail.back_recipes')}
         </Link>
       </div>
     );
@@ -102,7 +104,7 @@ export default function RecipeDetail() {
           className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-cyber-cyan mb-6 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Recipes
+          {t('recipe_detail.back')}
         </Link>
 
         {/* Hero Section */}
@@ -136,12 +138,12 @@ export default function RecipeDetail() {
                 </span>
                 {recipe.is_featured && (
                   <span className="badge-cyber text-cyber-yellow border-cyber-yellow">
-                    FEATURED
+                    {t('recipe_detail.featured')}
                   </span>
                 )}
                 {!recipe.is_approved && (
                   <span className="badge-cyber text-cyber-pink border-cyber-pink">
-                    PENDING APPROVAL
+                    {t('recipe_detail.pending')}
                   </span>
                 )}
               </div>
@@ -157,7 +159,7 @@ export default function RecipeDetail() {
               <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                 <span className="flex items-center gap-1">
                   <Cpu className="h-4 w-4" />
-                  {recipe.component_count} parts required
+                  {t('recipe_detail.parts_count', { count: recipe.component_count })}
                 </span>
                 {recipe.estimated_time && (
                   <span className="flex items-center gap-1">
@@ -167,7 +169,7 @@ export default function RecipeDetail() {
                 )}
                 <span className="flex items-center gap-1">
                   <Eye className="h-4 w-4" />
-                  {recipe.view_count} views
+                  {recipe.view_count} {t('recipe_detail.views')}
                 </span>
                 {recipe.created_by && (
                   <Link
@@ -187,7 +189,7 @@ export default function RecipeDetail() {
                   className="inline-flex items-center gap-1 mt-4 text-cyber-cyan hover:text-cyber-cyan/80 text-sm"
                 >
                   <ExternalLink className="h-4 w-4" />
-                  View Tutorial / Instructions
+                  {t('recipe_detail.view_tutorial')}
                 </a>
               )}
 
@@ -198,7 +200,7 @@ export default function RecipeDetail() {
                     className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                   >
                     <Pencil className="h-4 w-4" />
-                    Edit
+                    {t('recipe_detail.edit_recipe')}
                   </button>
                   {!confirmDelete ? (
                     <button
@@ -206,23 +208,23 @@ export default function RecipeDetail() {
                       className="inline-flex items-center gap-1 text-sm text-gray-400 hover:text-cyber-pink transition-colors"
                     >
                       <Trash2 className="h-4 w-4" />
-                      Delete
+                      {t('recipe_detail.delete_recipe')}
                     </button>
                   ) : (
                     <span className="inline-flex items-center gap-2 text-sm">
-                      <span className="text-cyber-pink">Are you sure?</span>
+                      <span className="text-cyber-pink">{t('recipe_detail.are_you_sure')}</span>
                       <button
                         onClick={() => deleteMutation.mutate()}
                         disabled={deleteMutation.isPending}
                         className="text-cyber-pink hover:text-white font-mono text-xs border border-cyber-pink/50 px-2 py-0.5"
                       >
-                        {deleteMutation.isPending ? 'DELETING...' : 'YES'}
+                        {deleteMutation.isPending ? t('recipe_detail.deleting') : t('recipe_detail.confirm_yes')}
                       </button>
                       <button
                         onClick={() => setConfirmDelete(false)}
                         className="text-gray-500 hover:text-white font-mono text-xs"
                       >
-                        CANCEL
+                        {t('common.cancel')}
                       </button>
                     </span>
                   )}
@@ -236,7 +238,7 @@ export default function RecipeDetail() {
             <div className="mt-6 pt-6 border-t border-cyber-light/20">
               <div className="flex items-center gap-4 mb-2">
                 <span className="text-sm font-mono text-gray-400">
-                  You have {matchData.matched_count} of {matchData.total_required} required parts
+                  {t('recipe_detail.match_count', { matched: matchData.matched_count, total: matchData.total_required })}
                 </span>
               </div>
               <MatchPercentageBar percentage={matchData.match_percentage} />
@@ -247,9 +249,9 @@ export default function RecipeDetail() {
             <div className="mt-6 pt-6 border-t border-cyber-light/20">
               <p className="text-sm text-gray-500">
                 <Link to="/login" className="text-cyber-cyan hover:underline">
-                  Log in
+                  {t('common.log_in')}
                 </Link>{' '}
-                to see which parts you already have in your junkbin.
+                {t('recipe_detail.login_for_junkbin')}
               </p>
             </div>
           )}
@@ -258,7 +260,7 @@ export default function RecipeDetail() {
         {/* BOM Table */}
         <div className="card-cyber p-6">
           <h2 className="font-display text-xl font-bold text-white mb-4">
-            BILL OF <span className="text-cyber-cyan">MATERIALS</span>
+            {t('recipe_detail.bom_title')}
           </h2>
 
           <div className="overflow-x-auto">
@@ -267,30 +269,30 @@ export default function RecipeDetail() {
                 <tr className="border-b border-cyber-light/30">
                   {isAuthenticated && matchData && (
                     <th className="text-left py-3 px-2 text-gray-500 font-mono text-xs w-10">
-                      HAVE
+                      {t('recipe_detail.col_have')}
                     </th>
                   )}
                   <th className="text-left py-3 px-2 text-gray-500 font-mono text-xs">
-                    PART
+                    {t('recipe_detail.col_part')}
                   </th>
                   <th className="text-left py-3 px-2 text-gray-500 font-mono text-xs">
-                    MANUFACTURER
+                    {t('recipe_detail.col_manufacturer')}
                   </th>
                   <th className="text-left py-3 px-2 text-gray-500 font-mono text-xs">
-                    TYPE
+                    {t('recipe_detail.col_type')}
                   </th>
                   <th className="text-left py-3 px-2 text-gray-500 font-mono text-xs">
-                    VALUE
+                    {t('recipe_detail.col_value')}
                   </th>
                   <th className="text-center py-3 px-2 text-gray-500 font-mono text-xs">
-                    QTY
+                    {t('recipe_detail.col_qty')}
                   </th>
                   <th className="text-left py-3 px-2 text-gray-500 font-mono text-xs">
-                    NOTES
+                    {t('recipe_detail.col_notes')}
                   </th>
                   {isAuthenticated && matchData && (
                     <th className="text-right py-3 px-2 text-gray-500 font-mono text-xs">
-                      ACTION
+                      {t('recipe_detail.col_action')}
                     </th>
                   )}
                 </tr>
@@ -327,7 +329,7 @@ export default function RecipeDetail() {
                         </Link>
                         {item.is_optional && (
                           <span className="ml-2 text-[10px] text-gray-500 border border-gray-600 px-1">
-                            OPTIONAL
+                            {t('recipe_detail.optional')}
                           </span>
                         )}
                       </td>
@@ -360,11 +362,11 @@ export default function RecipeDetail() {
                                 className="text-[10px] text-cyber-cyan hover:text-cyber-cyan/80 border border-cyber-cyan/30 px-2 py-0.5 hover:bg-cyber-cyan/10 transition-colors"
                               >
                                 <Plus className="h-3 w-3 inline mr-0.5" />
-                                WANT
+                                {t('recipe_detail.want_btn')}
                               </button>
                               {availableFrom.length > 0 && (
                                 <span className="text-[10px] text-cyber-green">
-                                  {availableFrom.length} available
+                                  {t('recipe_detail.available_count', { count: availableFrom.length })}
                                 </span>
                               )}
                             </div>
@@ -386,7 +388,7 @@ export default function RecipeDetail() {
                 .length > 0 && (
                 <div className="border-t border-cyber-light/20 pt-4">
                   <h3 className="text-sm font-mono text-gray-400 mb-3">
-                    MISSING PARTS AVAILABLE FROM OTHER USERS
+                    {t('recipe_detail.missing_parts')}
                   </h3>
                   <div className="space-y-2">
                     {matchData.components
@@ -399,7 +401,7 @@ export default function RecipeDetail() {
                           <span className="text-gray-400 font-mono min-w-[120px]">
                             {c.part_number}
                           </span>
-                          <span className="text-gray-500">available from:</span>
+                          <span className="text-gray-500">{t('recipe_detail.available_from')}</span>
                           {c.available_from.map((u) => (
                             <Link
                               key={u.user_id}

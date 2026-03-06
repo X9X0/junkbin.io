@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { messaging } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Send, Loader2, Flag, Ban, ShieldOff, ChevronUp, Paperclip, X, FileText, Download } from 'lucide-react';
 import ReportModal from '../components/ReportModal';
 import clsx from 'clsx';
@@ -31,6 +32,7 @@ function timeAgo(dateStr: string): string {
 }
 
 export default function MessageThread() {
+  const { t } = useTranslation();
   const { conversationId } = useParams<{ conversationId: string }>();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -223,10 +225,10 @@ export default function MessageThread() {
                   {otherParticipant.username}
                 </span>
                 {otherParticipant.is_trusted && (
-                  <span className="ml-1 text-[10px] text-cyber-green">[TRUSTED]</span>
+                  <span className="ml-1 text-[10px] text-cyber-green">[{t('profile.trusted')}]</span>
                 )}
                 {otherParticipant.is_moderator && (
-                  <span className="ml-1 text-[10px] text-cyber-yellow">[MOD]</span>
+                  <span className="ml-1 text-[10px] text-cyber-yellow">[{t('profile.moderator')}]</span>
                 )}
               </div>
             </div>
@@ -242,7 +244,7 @@ export default function MessageThread() {
                 title="Unblock user"
               >
                 <ShieldOff className="h-3.5 w-3.5" />
-                UNBLOCK
+                {t('messages.unblock')}
               </button>
             ) : (
               <button
@@ -256,7 +258,7 @@ export default function MessageThread() {
                 title="Block user"
               >
                 <Ban className="h-3.5 w-3.5" />
-                BLOCK
+                {t('messages.block')}
               </button>
             )}
             <button
@@ -265,7 +267,7 @@ export default function MessageThread() {
               title="Report user"
             >
               <Flag className="h-3.5 w-3.5" />
-              REPORT
+              {t('messages.report')}
             </button>
           </div>
         )}
@@ -280,7 +282,7 @@ export default function MessageThread() {
             className="w-full py-2 text-center text-xs font-mono text-gray-500 hover:text-cyber-cyan transition-colors flex items-center justify-center gap-1"
           >
             <ChevronUp className="h-3 w-3" />
-            Load older messages
+            {t('messages.load_older')}
           </button>
         )}
 
@@ -290,7 +292,7 @@ export default function MessageThread() {
           </div>
         ) : messages.length === 0 ? (
           <div className="text-center py-16 text-gray-500 text-sm font-mono">
-            No messages yet. Say hello!
+            {t('messages.no_messages')}
           </div>
         ) : (
           messages.map((msg) => {
@@ -385,7 +387,7 @@ export default function MessageThread() {
       <div className="border-t border-cyber-light/30 pt-4">
         {(sendMutation.isError || fileError) && (
           <div className="mb-3 p-2 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-xs font-mono">
-            {fileError ?? 'Failed to send message. Please try again.'}
+            {fileError ?? t('messages.send_error')}
           </div>
         )}
         {/* Pending file previews */}
@@ -447,7 +449,7 @@ export default function MessageThread() {
               value={content}
               onChange={(e) => setContent(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Type a message..."
+              placeholder={t('messages.type_message')}
               rows={4}
               maxLength={5000}
               className="input-cyber w-full resize-none text-sm"
@@ -481,7 +483,7 @@ export default function MessageThread() {
         </div>
         <div className="flex items-center justify-between mt-1">
           <span className="text-[10px] text-gray-600 font-mono">
-            Ctrl+Enter to send · {pendingFiles.length}/{MAX_FILES} files
+            {t('messages.ctrl_enter_to_send')} · {pendingFiles.length}/{MAX_FILES} {t('messages.files')}
           </span>
           <span className="text-[10px] text-gray-600 font-mono">
             {content.length}/5000
@@ -541,7 +543,7 @@ export default function MessageThread() {
                 className="btn-cyber text-xs px-3 py-1 flex items-center gap-1.5"
               >
                 <Download className="h-3 w-3" />
-                Download
+                {t('messages.download')}
               </a>
             </div>
           </div>

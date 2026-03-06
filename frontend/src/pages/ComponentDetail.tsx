@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { components, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
+import { useTranslation } from 'react-i18next';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import EditComponentModal from '../components/EditComponentModal';
 import PricingPanel from '../components/PricingPanel';
@@ -12,13 +13,20 @@ import Lightbox from '../components/Lightbox';
 import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen, MessageSquare, Store } from 'lucide-react';
 import type { JunkbinItem } from '../types';
 
-function CompactSwapCard({ item, currentUserId, isAuthenticated }: {
+function CompactSwapCard({ item, currentUserId, isAuthenticated, t }: {
   item: JunkbinItem;
   currentUserId?: string;
   isAuthenticated: boolean;
+  t: (key: string) => string;
 }) {
   const canContact =
     isAuthenticated && currentUserId !== item.user.id && item.item_type === 'have' && item.status === 'available';
+  const conditionLabels: Record<string, string> = {
+    new: t('common.condition.new'),
+    working: t('common.condition.working'),
+    broken: t('common.condition.broken'),
+    unknown: t('common.condition.unknown'),
+  };
   return (
     <div className="card-cyber p-3 flex flex-col gap-2 min-w-[180px]">
       <div className="flex items-center gap-2 flex-wrap">
@@ -27,12 +35,12 @@ function CompactSwapCard({ item, currentUserId, isAuthenticated }: {
             ? 'badge-cyber text-[10px] text-cyber-green border-cyber-green'
             : 'badge-cyber text-[10px] text-gray-500 border-gray-600'
           }>
-            {item.status === 'available' ? 'AVAIL' : 'NOT FOR TRADE'}
+            {item.status === 'available' ? t('common.condition.available') : t('common.condition.not_for_trade')}
           </span>
         )}
         {item.item_type === 'have' && (
           <span className="badge-cyber text-[10px] text-gray-400 border-gray-600">
-            {{ new: 'New', working: 'Working', broken: 'Broken', unknown: 'Unknown' }[item.condition] || item.condition}
+            {conditionLabels[item.condition] || item.condition}
           </span>
         )}
         {item.quantity > 1 && (
@@ -72,6 +80,7 @@ function CompactSwapCard({ item, currentUserId, isAuthenticated }: {
 }
 
 export default function ComponentDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
@@ -104,7 +113,7 @@ export default function ComponentDetail() {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="text-cyber-pink font-mono animate-pulse">
-          LOADING CROSS-REFERENCE DATA...
+          {t('component_detail.loading')}
         </div>
       </div>
     );
@@ -114,9 +123,9 @@ export default function ComponentDetail() {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center">
         <Package className="h-16 w-16 text-gray-600 mb-4" />
-        <h2 className="font-display text-xl text-white mb-2">COMPONENT NOT FOUND</h2>
+        <h2 className="font-display text-xl text-white mb-2">{t('component_detail.not_found_title')}</h2>
         <Link to="/components" className="text-cyber-pink hover:text-white transition-colors">
-          ← Back to Components
+          {t('component_detail.back')}
         </Link>
       </div>
     );
@@ -131,7 +140,7 @@ export default function ComponentDetail() {
           className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-6"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Components
+          {t('component_detail.back')}
         </Link>
 
         {/* Component Info Card */}
@@ -159,7 +168,7 @@ export default function ComponentDetail() {
                 {component.is_verified && (
                   <span className="flex items-center gap-1 text-xs text-cyber-green">
                     <CheckCircle className="h-3.5 w-3.5" />
-                    Verified
+                    {t('component_detail.verified')}
                   </span>
                 )}
               </div>
@@ -192,7 +201,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-2 text-cyber-cyan hover:text-white transition-colors"
                   >
                     <ExternalLink className="h-4 w-4" />
-                    View Datasheet
+                    {t('component_detail.view_datasheet')}
                   </a>
                 )}
                 {isAuthenticated && (
@@ -201,7 +210,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
                   >
                     <Archive className="h-4 w-4" />
-                    Add to My Junkbin
+                    {t('component_detail.add_to_junkbin')}
                   </button>
                 )}
                 {isAuthenticated && (
@@ -210,7 +219,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
                   >
                     <ImagePlus className="h-4 w-4" />
-                    {showUpload ? 'Hide Upload' : 'Upload Image'}
+                    {showUpload ? t('component_detail.hide_upload') : t('component_detail.upload_image')}
                   </button>
                 )}
                 {isAuthenticated && (
@@ -219,7 +228,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
                   >
                     <BookOpen className="h-4 w-4" />
-                    {showDatasheetUpload ? 'Hide Upload' : 'Upload Datasheet'}
+                    {showDatasheetUpload ? t('component_detail.hide_upload') : t('component_detail.upload_datasheet')}
                   </button>
                 )}
                 {isAuthenticated && (user?.is_staff || component.created_by?.id === user?.id) && (
@@ -228,7 +237,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-2 text-gray-400 hover:text-cyber-cyan transition-colors text-sm"
                   >
                     <Pencil className="h-4 w-4" />
-                    Edit
+                    {t('component_detail.edit')}
                   </button>
                 )}
               </div>
@@ -281,7 +290,7 @@ export default function ComponentDetail() {
           {/* Datasheet upload section */}
           {showDatasheetUpload && isAuthenticated && (
             <div className="mt-6">
-              <h3 className="font-display text-sm font-bold text-white mb-3">UPLOAD DATASHEET</h3>
+              <h3 className="font-display text-sm font-bold text-white mb-3">{t('component_detail.upload_datasheet_title')}</h3>
               <DatasheetUpload
                 uploadFn={(formData) => components.uploadDatasheet(id!, formData)}
                 invalidateKey={['component', id!]}
@@ -304,7 +313,7 @@ export default function ComponentDetail() {
         {component.datasheets && component.datasheets.length > 0 && (
           <div className="mb-8">
             <h2 className="font-display text-xl font-bold text-white mb-4">
-              DATASHEETS
+              {t('component_detail.datasheets_title')}
             </h2>
             <div className="space-y-2">
               {component.datasheets.map((ds) => (
@@ -341,7 +350,7 @@ export default function ComponentDetail() {
                     className="inline-flex items-center gap-1.5 text-cyber-cyan hover:text-white transition-colors text-sm flex-shrink-0"
                   >
                     <Download className="h-4 w-4" />
-                    Download
+                    {t('component_detail.download')}
                   </a>
                 </div>
               ))}
@@ -358,17 +367,17 @@ export default function ComponentDetail() {
               <div className="flex items-center gap-3 mb-4">
                 <Store className="h-5 w-5 text-cyber-cyan" />
                 <h2 className="font-display text-xl font-bold text-white">
-                  WHO HAS THIS?
+                  {t('component_detail.swap_who_has')}
                 </h2>
                 <Link to={`/swap?content_type=component`} className="text-xs text-gray-500 hover:text-cyber-cyan font-mono transition-colors">
-                  → SWAP SHOP
+                  → {t('component_detail.swap_shop_link')}
                 </Link>
               </div>
 
               {haveItems.length > 0 && (
                 <div className="mb-4">
                   <h3 className="font-mono text-xs text-cyber-cyan uppercase mb-2">
-                    HAVE ({haveItems.length})
+                    {t('component_detail.swap_have')} ({haveItems.length})
                   </h3>
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                     {haveItems.map((item) => (
@@ -377,6 +386,7 @@ export default function ComponentDetail() {
                         item={item}
                         currentUserId={user?.id}
                         isAuthenticated={isAuthenticated}
+                        t={t}
                       />
                     ))}
                   </div>
@@ -386,7 +396,7 @@ export default function ComponentDetail() {
               {wantItems.length > 0 && (
                 <div>
                   <h3 className="font-mono text-xs text-cyber-yellow uppercase mb-2">
-                    WANT ({wantItems.length})
+                    {t('component_detail.swap_want')} ({wantItems.length})
                   </h3>
                   <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                     {wantItems.map((item) => (
@@ -395,6 +405,7 @@ export default function ComponentDetail() {
                         item={item}
                         currentUserId={user?.id}
                         isAuthenticated={isAuthenticated}
+                        t={t}
                       />
                     ))}
                   </div>
@@ -407,11 +418,11 @@ export default function ComponentDetail() {
         {/* Products containing this component */}
         <div>
           <h2 className="font-display text-xl font-bold text-white mb-4">
-            PRODUCTS CONTAINING <span className="text-cyber-pink">{component.part_number}</span>
+            {t('component_detail.products_title')} <span className="text-cyber-pink">{component.part_number}</span>
           </h2>
 
           <p className="text-gray-500 text-sm mb-6 font-mono">
-            {products?.length || 0} products found
+            {t('component_detail.products_found', { count: products?.length || 0 })}
           </p>
 
           {products && products.length > 0 ? (
@@ -464,10 +475,10 @@ export default function ComponentDetail() {
             <div className="text-center py-12 card-cyber">
               <Cpu className="h-12 w-12 text-gray-600 mx-auto mb-4" />
               <p className="text-gray-500">
-                No products documented with this component yet.
+                {t('component_detail.no_products')}
               </p>
               <Link to="/submit" className="btn-cyber mt-4 inline-block">
-                ADD A PRODUCT
+                {t('component_detail.add_product')}
               </Link>
             </div>
           )}
