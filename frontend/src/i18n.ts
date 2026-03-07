@@ -20,6 +20,7 @@ i18n
       caches: ['localStorage'],
       lookupLocalStorage: 'junkbin_lang',
     },
+    returnEmptyString: false,
     interpolation: {
       escapeValue: false,
     },
