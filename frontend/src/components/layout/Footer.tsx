@@ -120,6 +120,22 @@ export default function Footer() {
               </li>
               <li>
                 <Link
+                  to="/about"
+                  className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
+                >
+                  Contact
+                </Link>
+              </li>
+              <li>
+                <Link
                   to="/guidelines"
                   className="text-sm text-gray-400 hover:text-cyber-cyan transition-colors"
                 >
@@ -158,6 +174,13 @@ export default function Footer() {
             <span className="text-gray-600 font-mono text-xs hidden sm:inline">·</span>
             <span className="text-xs text-gray-600 font-mono">
               v{__APP_VERSION__} · {new Date(__BUILD_TIME__).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })} {new Date(__BUILD_TIME__).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC', hour12: false })} UTC
+            </span>
+            {/* PCB silkscreen manufacturer mark */}
+            <span
+              className="hidden sm:inline-block text-[9px] font-mono tracking-[0.3em] text-gray-800 border border-gray-800/50 px-1 py-px select-none hover:text-gray-700 hover:border-gray-700/50 transition-colors"
+              aria-hidden="true"
+            >
+              KONAMI
             </span>
           </div>
           <div className="flex items-center gap-4 sm:gap-6">

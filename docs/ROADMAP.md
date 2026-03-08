@@ -793,6 +793,29 @@ npm run test:coverage  # Coverage report
 
 ---
 
+## Backlog / Upcoming
+
+### CI/CD Pipeline
+- Automate dev → prod deployment path via GitHub Actions
+- Validate locale JSON files (structure, no empty strings) on every push
+- Build and test frontend in pipeline before deploy
+- Auto-deploy to prod on merge to `main` (with optional manual approval gate)
+- Consider `dev` branch for staging deploys to this VM, `main` reserved for prod
+- Backend: Django test suite, migration checks in pipeline
+
+### About & Contact Pages
+- **About page**: Project mission, right-to-repair philosophy, contributor acknowledgement, SEO value
+- **Contact page**: Structured channels — DMCA/legal, bug reports/feedback, press/partnerships
+- Add links to both in the footer Community column alongside Guidelines and Docs
+- Requires content decisions: what to say, preferred contact method (form vs. email vs. GitHub issues)
+
+### Voice Interface for Development
+- Explore voice-to-text input for communicating with Claude during development sessions
+- Goal: reduce context lost in text-only back-and-forth, especially during debugging
+- Options to evaluate: browser-based speech recognition, local Whisper instance, or OS-level dictation
+
+---
+
 ## Next Steps
 
 1. ~~**Add schematic upload form**~~ ✅ - Schematic upload added to Product detail schematics tab
