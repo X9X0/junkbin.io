@@ -39,6 +39,8 @@ const Buildable = lazy(() => import('./pages/Buildable'));
 const NotFound = lazy(() => import('./pages/NotFound'));
 const Search = lazy(() => import('./pages/Search'));
 const GitHubCallback = lazy(() => import('./pages/GitHubCallback'));
+const About = lazy(() => import('./pages/About'));
+const Contact = lazy(() => import('./pages/Contact'));
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -82,6 +84,8 @@ function App() {
                 <Route path="buildable" element={<Buildable />} />
                 <Route path="my-junkbin" element={<MyJunkbin />} />
                 <Route path="my-submissions" element={<MySubmissions />} />
+                <Route path="about" element={<About />} />
+                <Route path="contact" element={<Contact />} />
                 <Route path="guidelines" element={<Guidelines />} />
                 <Route path="docs" element={<Docs />} />
                 <Route path="news" element={<News />} />
