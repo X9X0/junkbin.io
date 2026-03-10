@@ -1,0 +1,138 @@
+{
+  "cs": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 46
+  },
+  "de": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 757
+  },
+  "es": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 754
+  },
+  "fr": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 769
+  },
+  "hr": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 29
+  },
+  "hu": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 148
+  },
+  "it": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 732
+  },
+  "nl": {
+    "last_run": "2026-03-07",
+    "percent": null,
+    "status": "complete",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 719
+  },
+  "pl": {
+    "last_run": "2026-03-10",
+    "percent": 0,
+    "status": "partial",
+    "strings_total": 1044,
+    "strings_translated": 0,
+    "strings_updated": 0
+  },
+  "pt": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "ro": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "ru": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "sk": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "sl": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "sr": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "tr": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  },
+  "uk": {
+    "last_run": null,
+    "percent": null,
+    "status": "pending",
+    "strings_total": null,
+    "strings_translated": null,
+    "strings_updated": 0
+  }
+}
