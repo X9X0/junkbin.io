@@ -65,11 +65,11 @@
   },
   "pl": {
     "last_run": "2026-03-10",
-    "percent": 0,
+    "percent": 37,
     "status": "partial",
     "strings_total": 1044,
-    "strings_translated": 0,
-    "strings_updated": 0
+    "strings_translated": 384,
+    "strings_updated": 384
   },
   "pt": {
     "last_run": null,
