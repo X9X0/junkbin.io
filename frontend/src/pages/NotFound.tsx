@@ -8,13 +8,23 @@ export default function NotFound() {
   return (
     <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
       <div className="text-center">
+        {/* NUSPI main headline with glitch */}
+        <div className="mb-4">
+          <p
+            className="font-display text-lg md:text-2xl font-bold text-cyber-yellow tracking-widest glitch"
+            data-text="NO USER SERVICEABLE PARTS INSIDE"
+          >
+            NO USER SERVICEABLE PARTS INSIDE
+          </p>
+        </div>
+
         {/* Glitchy 404 */}
-        <div className="relative mb-8">
-          <h1 className="font-display text-[150px] md:text-[200px] font-bold text-cyber-dark leading-none">
+        <div className="relative mb-6">
+          <h1 className="font-display text-[120px] md:text-[160px] font-bold text-cyber-dark leading-none">
             404
           </h1>
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="font-display text-[150px] md:text-[200px] font-bold text-cyber-cyan opacity-50 animate-pulse">
+            <span className="font-display text-[120px] md:text-[160px] font-bold text-cyber-cyan opacity-50 animate-pulse">
               404
             </span>
           </div>

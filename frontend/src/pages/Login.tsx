@@ -31,8 +31,24 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center py-12 px-4 relative overflow-hidden">
+      {/* NUSPI diagonal watermark */}
+      <div
+        className="absolute inset-0 pointer-events-none select-none"
+        aria-hidden="true"
+        style={{ transform: 'rotate(-35deg) scale(3)', transformOrigin: 'center center' }}
+      >
+        {Array.from({ length: 30 }).map((_, i) => (
+          <div
+            key={i}
+            className="font-display font-black text-xl text-white tracking-[0.4em] whitespace-nowrap py-4"
+            style={{ opacity: 0.028 }}
+          >
+            NO USER SERVICEABLE PARTS INSIDE &nbsp;&nbsp;&nbsp; NO USER SERVICEABLE PARTS INSIDE &nbsp;&nbsp;&nbsp; NO USER SERVICEABLE PARTS INSIDE
+          </div>
+        ))}
+      </div>
+      <div className="w-full max-w-md relative">
         <div className="text-center mb-8">
           <h1 className="font-display text-3xl font-bold text-white mb-2">
             {t('auth.login.title')}
