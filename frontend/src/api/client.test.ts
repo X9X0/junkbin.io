@@ -3,32 +3,16 @@ import { server } from '../test/mocks/server';
 import { http, HttpResponse } from 'msw';
 import api from './client';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://localhost/api';
 
 describe('API Client', () => {
   beforeEach(() => {
-    localStorage.clear();
     vi.clearAllMocks();
+    document.cookie = 'csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT';
   });
 
-  describe('authorization header', () => {
-    it('adds Authorization header when token exists', async () => {
-      localStorage.setItem('access_token', 'my-access-token');
-
-      let capturedHeaders: Headers | undefined;
-      server.use(
-        http.get(`${API_URL}/test/`, ({ request }) => {
-          capturedHeaders = request.headers;
-          return HttpResponse.json({ success: true });
-        })
-      );
-
-      await api.get('/test/');
-
-      expect(capturedHeaders!.get('Authorization')).toBe('Bearer my-access-token');
-    });
-
-    it('does not add Authorization header when no token', async () => {
+  describe('request headers', () => {
+    it('does not add Authorization header (uses cookie auth)', async () => {
       let capturedHeaders: Headers | undefined;
       server.use(
         http.get(`${API_URL}/test/`, ({ request }) => {
@@ -41,126 +25,132 @@ describe('API Client', () => {
 
       expect(capturedHeaders!.get('Authorization')).toBeNull();
     });
+
+    it('adds X-CSRFToken header when csrftoken cookie is set', async () => {
+      document.cookie = 'csrftoken=test-csrf-token';
+
+      let capturedHeaders: Headers | undefined;
+      server.use(
+        http.get(`${API_URL}/test/`, ({ request }) => {
+          capturedHeaders = request.headers;
+          return HttpResponse.json({ success: true });
+        })
+      );
+
+      await api.get('/test/');
+
+      expect(capturedHeaders!.get('X-CSRFToken')).toBe('test-csrf-token');
+    });
+
+    it('adds Accept-Language header', async () => {
+      let capturedHeaders: Headers | undefined;
+      server.use(
+        http.get(`${API_URL}/test/`, ({ request }) => {
+          capturedHeaders = request.headers;
+          return HttpResponse.json({ success: true });
+        })
+      );
+
+      await api.get('/test/');
+
+      expect(capturedHeaders!.get('Accept-Language')).toBeTruthy();
+    });
   });
 
   describe('token refresh', () => {
-    it('attempts token refresh on 401 response', async () => {
-      localStorage.setItem('access_token', 'expired-token');
-      localStorage.setItem('refresh_token', 'valid-refresh-token');
-
+    it('attempts cookie refresh on 401 response', async () => {
+      let refreshCalled = false;
       let requestCount = 0;
+
       server.use(
-        http.get(`${API_URL}/protected/`, ({ request }) => {
+        http.get(`${API_URL}/protected/`, () => {
           requestCount++;
-          const auth = request.headers.get('Authorization');
-
-          // First request fails, retry after refresh succeeds
-          if (auth === 'Bearer expired-token') {
-            return HttpResponse.json(
-              { detail: 'Token expired' },
-              { status: 401 }
-            );
+          if (requestCount === 1) {
+            return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 });
           }
-
           return HttpResponse.json({ data: 'success' });
         }),
         http.post(`${API_URL}/auth/token/refresh/`, () => {
-          return HttpResponse.json({ access: 'new-access-token' });
+          refreshCalled = true;
+          return HttpResponse.json({});
         })
       );
 
       const response = await api.get('/protected/');
 
+      expect(refreshCalled).toBe(true);
       expect(response.data).toEqual({ data: 'success' });
-      expect(localStorage.getItem('access_token')).toBe('new-access-token');
-      expect(requestCount).toBe(2); // Original + retry
+      expect(requestCount).toBe(2);
     });
 
-    it('redirects to login when refresh fails', async () => {
-      localStorage.setItem('access_token', 'expired-token');
-      localStorage.setItem('refresh_token', 'invalid-refresh-token');
-
-      // Mock window.location
-      const originalHref = window.location.href;
-      Object.defineProperty(window, 'location', {
-        value: { href: '' },
-        writable: true,
-      });
-
+    it('rejects without redirect when refresh fails', async () => {
       server.use(
         http.get(`${API_URL}/protected/`, () => {
-          return HttpResponse.json(
-            { detail: 'Token expired' },
-            { status: 401 }
-          );
+          return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 });
         }),
         http.post(`${API_URL}/auth/token/refresh/`, () => {
-          return HttpResponse.json(
-            { detail: 'Invalid token' },
-            { status: 401 }
-          );
+          return HttpResponse.json({ detail: 'Invalid token' }, { status: 401 });
         })
       );
 
+      let threw = false;
       try {
         await api.get('/protected/');
-      } catch (error) {
-        // Expected to throw
+      } catch {
+        threw = true;
       }
 
-      expect(localStorage.getItem('access_token')).toBeNull();
-      expect(localStorage.getItem('refresh_token')).toBeNull();
-      expect(window.location.href).toBe('/login');
-
-      // Restore window.location
-      Object.defineProperty(window, 'location', {
-        value: { href: originalHref },
-        writable: true,
-      });
+      expect(threw).toBe(true);
+      // Cookie auth never redirects to /login
+      expect(window.location.pathname).not.toBe('/login');
     });
 
-    it('does not retry if no refresh token exists', async () => {
-      localStorage.setItem('access_token', 'expired-token');
-      // No refresh token set
+    it('does not retry auth endpoints on 401', async () => {
+      let refreshCalled = false;
 
-      let requestCount = 0;
       server.use(
-        http.get(`${API_URL}/protected/`, () => {
-          requestCount++;
-          return HttpResponse.json(
-            { detail: 'Token expired' },
-            { status: 401 }
-          );
-        })
-      );
-
-      await expect(api.get('/protected/')).rejects.toThrow();
-
-      expect(requestCount).toBe(1); // No retry without refresh token
-    });
-
-    it('does not retry same request twice', async () => {
-      localStorage.setItem('access_token', 'expired-token');
-      localStorage.setItem('refresh_token', 'valid-refresh-token');
-
-      let requestCount = 0;
-      server.use(
-        http.get(`${API_URL}/protected/`, () => {
-          requestCount++;
-          return HttpResponse.json(
-            { detail: 'Token expired' },
-            { status: 401 }
-          );
+        http.get(`${API_URL}/auth/me/`, () => {
+          return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 });
         }),
         http.post(`${API_URL}/auth/token/refresh/`, () => {
-          return HttpResponse.json({ access: 'still-bad-token' });
+          refreshCalled = true;
+          return HttpResponse.json({});
         })
       );
 
-      await expect(api.get('/protected/')).rejects.toThrow();
+      let threw = false;
+      try {
+        await api.get('/auth/me/');
+      } catch {
+        threw = true;
+      }
 
-      // Should only try twice: original + one retry
-      expect(requestCount).toBe(2);
+      expect(threw).toBe(true);
+      expect(refreshCalled).toBe(false);
+    });
+
+    it('does not retry the same request twice', async () => {
+      let requestCount = 0;
+
+      server.use(
+        http.get(`${API_URL}/protected/`, () => {
+          requestCount++;
+          return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 });
+        }),
+        http.post(`${API_URL}/auth/token/refresh/`, () => {
+          return HttpResponse.json({});
+        })
+      );
+
+      let threw = false;
+      try {
+        await api.get('/protected/');
+      } catch {
+        threw = true;
+      }
+
+      expect(threw).toBe(true);
+      expect(requestCount).toBe(2); // original + one retry
     });
   });
 
@@ -172,7 +162,14 @@ describe('API Client', () => {
         })
       );
 
-      await expect(api.get('/error/')).rejects.toThrow();
+      let threw = false;
+      try {
+        await api.get('/error/');
+      } catch {
+        threw = true;
+      }
+
+      expect(threw).toBe(true);
     });
 
     it('rejects on 500 server error', async () => {
@@ -185,7 +182,14 @@ describe('API Client', () => {
         })
       );
 
-      await expect(api.get('/server-error/')).rejects.toThrow();
+      let threw = false;
+      try {
+        await api.get('/server-error/');
+      } catch {
+        threw = true;
+      }
+
+      expect(threw).toBe(true);
     });
   });
 });
