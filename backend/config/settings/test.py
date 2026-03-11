@@ -21,13 +21,14 @@ PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.MD5PasswordHasher',
 ]
 
-# Use SQLite for faster tests
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
+# Use SQLite for local test runs; PostgreSQL when DATABASE_URL is set (e.g. CI)
+if os.environ.get('DATABASE_URL', '').startswith('sqlite'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
     }
-}
 
 # Disable migrations for faster tests
 class DisableMigrations:
