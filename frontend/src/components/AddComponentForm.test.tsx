@@ -268,7 +268,7 @@ describe('AddComponentForm', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/added successfully/i)).toBeInTheDocument();
+        expect(screen.getByText(/Component linked to product successfully/i)).toBeInTheDocument();
       });
     });
   });
