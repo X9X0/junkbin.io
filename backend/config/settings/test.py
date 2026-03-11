@@ -48,9 +48,16 @@ CACHES = {
     }
 }
 
-# Disable throttling in tests
+# Disable throttling in tests (keep rate keys defined to avoid ImproperlyConfigured)
 REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
-REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {}
+REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'anon': '1000/hour',
+    'user': '1000/hour',
+    'submission': '1000/hour',
+    'search': '1000/hour',
+    'message': '1000/hour',
+    'report': '1000/hour',
+}
 
 # Use console email backend
 EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'

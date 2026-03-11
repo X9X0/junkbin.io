@@ -2,6 +2,20 @@ import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, afterAll } from 'vitest';
 import { server } from './mocks/server';
+import i18n from 'i18next';
+import { initReactI18next } from 'react-i18next';
+import enTranslation from '../../public/locales/en/translation.json';
+
+// Initialise i18n with static English resources — no HTTP backend in tests
+i18n.use(initReactI18next).init({
+  lng: 'en',
+  fallbackLng: 'en',
+  ns: ['translation'],
+  defaultNS: 'translation',
+  resources: { en: { translation: enTranslation } },
+  returnEmptyString: false,
+  interpolation: { escapeValue: false },
+});
 
 // Establish API mocking before all tests
 beforeAll(() => {
