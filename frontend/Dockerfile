@@ -12,9 +12,13 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Pass Google OAuth client ID for Vite build
+# Pass OAuth client IDs and dev tools flag for Vite build
 ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
+ARG VITE_GITHUB_CLIENT_ID
+ENV VITE_GITHUB_CLIENT_ID=$VITE_GITHUB_CLIENT_ID
+ARG VITE_DEV_TOOLS
+ENV VITE_DEV_TOOLS=$VITE_DEV_TOOLS
 
 # Build the application
 RUN npm run build

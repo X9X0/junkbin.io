@@ -165,6 +165,7 @@ services:
         - NODE_ENV=production
         - VITE_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
         - VITE_GITHUB_CLIENT_ID=${OAUTH_GITHUB_CLIENT_ID:-}
+        - VITE_DEV_TOOLS=${VITE_DEV_TOOLS:-}
     container_name: junkbin_frontend
     restart: unless-stopped
     volumes:
