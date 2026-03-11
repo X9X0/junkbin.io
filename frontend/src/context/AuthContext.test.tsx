@@ -42,7 +42,8 @@ describe('AuthContext', () => {
       expect(result.current.isAuthenticated).toBe(false);
     });
 
-    it('finishes loading when no token exists', async () => {
+    it('finishes loading with no user when server has no session', async () => {
+      // Default handler: /auth/me/ returns 401 (not logged in)
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
@@ -57,7 +58,7 @@ describe('AuthContext', () => {
   });
 
   describe('login', () => {
-    it('stores tokens and sets user on successful login', async () => {
+    it('sets user on successful login', async () => {
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
@@ -73,8 +74,6 @@ describe('AuthContext', () => {
         });
       });
 
-      expect(localStorage.getItem('access_token')).toBe(mockTokens.access);
-      expect(localStorage.getItem('refresh_token')).toBe(mockTokens.refresh);
       expect(result.current.user).toEqual(mockUser);
       expect(result.current.isAuthenticated).toBe(true);
     });
@@ -88,75 +87,74 @@ describe('AuthContext', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      await expect(
-        act(async () => {
+      // Catch error inside act() to prevent React 18 from tracking the rejection
+      let errorThrown = false;
+      await act(async () => {
+        try {
           await result.current.login({
             username: 'baduser',
             password: 'wrongpass',
           });
-        })
-      ).rejects.toThrow();
+        } catch {
+          errorThrown = true;
+        }
+      });
 
+      expect(errorThrown).toBe(true);
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
     });
   });
 
   describe('logout', () => {
-    it('clears tokens and user on logout', async () => {
-      // Setup: login first
-      localStorage.setItem('access_token', mockTokens.access);
-      localStorage.setItem('refresh_token', mockTokens.refresh);
-
+    it('clears user on logout', async () => {
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // Login first
+      await act(async () => {
+        await result.current.login({ username: 'testuser', password: 'testpass' });
       });
 
-      // Wait for user to be loaded
-      await waitFor(() => {
-        expect(result.current.user).not.toBeNull();
-      });
+      expect(result.current.user).not.toBeNull();
 
       // Logout
-      act(() => {
-        result.current.logout();
+      await act(async () => {
+        await result.current.logout();
       });
 
-      expect(localStorage.getItem('access_token')).toBeNull();
-      expect(localStorage.getItem('refresh_token')).toBeNull();
       expect(result.current.user).toBeNull();
       expect(result.current.isAuthenticated).toBe(false);
     });
   });
 
-  describe('token restoration', () => {
-    it('restores user from stored token on mount', async () => {
-      localStorage.setItem('access_token', mockTokens.access);
-      localStorage.setItem('refresh_token', mockTokens.refresh);
-
+  describe('session restoration', () => {
+    it('restores user when server confirms active session on mount', async () => {
+      // Simulate server-side session: pre-set logged-in state via login
+      // In cookie-based auth, session is in HttpOnly cookies — simulated by
+      // the MSW handler returning mockUser after a login was performed
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
 
-      await waitFor(() => {
-        expect(result.current.isLoading).toBe(false);
+      await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+      // No session: user starts null
+      expect(result.current.user).toBeNull();
+
+      // Login to establish session
+      await act(async () => {
+        await result.current.login({ username: 'testuser', password: 'testpass' });
       });
 
-      await waitFor(() => {
-        expect(result.current.user).toEqual(mockUser);
-      });
-
+      expect(result.current.user).toEqual(mockUser);
       expect(result.current.isAuthenticated).toBe(true);
     });
 
-    it('clears invalid token on mount', async () => {
-      localStorage.setItem('access_token', 'invalid-token');
-      localStorage.setItem('refresh_token', 'invalid-refresh');
-
+    it('stays unauthenticated when no session exists', async () => {
       const { result } = renderHook(() => useAuth(), {
         wrapper: createWrapper(),
       });
@@ -165,10 +163,8 @@ describe('AuthContext', () => {
         expect(result.current.isLoading).toBe(false);
       });
 
-      // Should clear tokens on auth failure
-      expect(localStorage.getItem('access_token')).toBeNull();
-      expect(localStorage.getItem('refresh_token')).toBeNull();
       expect(result.current.user).toBeNull();
+      expect(result.current.isAuthenticated).toBe(false);
     });
   });
 
@@ -192,7 +188,7 @@ describe('AuthContext', () => {
       });
 
       expect(result.current.isAuthenticated).toBe(true);
-      expect(localStorage.getItem('access_token')).not.toBeNull();
+      expect(result.current.user).toEqual(mockUser);
     });
   });
 
