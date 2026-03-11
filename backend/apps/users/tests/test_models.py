@@ -80,10 +80,10 @@ class TestTrustedUserPromotion:
         assert user.is_trusted is True
 
     def test_no_promotion_below_contribution_threshold(self, user_factory):
-        """User is not promoted if below contribution threshold."""
+        """User is not promoted if below contribution threshold (25)."""
         user = user_factory(
-            contribution_count=30,
-            reputation_score=150,
+            contribution_count=23,  # after increment: 24, still < 25
+            reputation_score=100,
             is_trusted=False
         )
 
@@ -93,17 +93,17 @@ class TestTrustedUserPromotion:
         assert user.is_trusted is False
 
     def test_no_promotion_below_reputation_threshold(self, user_factory):
-        """User is not promoted if below reputation threshold."""
+        """User is not promoted if below reputation threshold (50)."""
         user = user_factory(
-            contribution_count=49,
-            reputation_score=80,
+            contribution_count=24,  # after increment: 25, meets contribution threshold
+            reputation_score=30,    # after increment: +10 = 40, still < 50
             is_trusted=False
         )
 
         user.increment_contribution()
 
         user.refresh_from_db()
-        # contribution_count=50 but reputation_score=90 (still below 100)
+        # contribution_count=25 but reputation_score=40 (still below 50)
         assert user.is_trusted is False
 
     def test_already_trusted_stays_trusted(self, user_factory):
