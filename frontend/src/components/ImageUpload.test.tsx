@@ -247,7 +247,8 @@ describe('ImageUpload', () => {
 
     it('calls onSuccess after successful upload', async () => {
       const user = userEvent.setup();
-      render(<ImageUpload productId="test-product" onSuccess={mockOnSuccess} />);
+      const mockUploadFn = vi.fn().mockResolvedValue({ id: 'img-1' });
+      render(<ImageUpload uploadFn={mockUploadFn} onSuccess={mockOnSuccess} />);
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const validFile = new File(['test'], 'success.jpg', { type: 'image/jpeg' });
@@ -267,7 +268,8 @@ describe('ImageUpload', () => {
 
     it('shows success message after upload', async () => {
       const user = userEvent.setup();
-      render(<ImageUpload productId="test-product" onSuccess={mockOnSuccess} />);
+      const mockUploadFn = vi.fn().mockResolvedValue({ id: 'img-1' });
+      render(<ImageUpload uploadFn={mockUploadFn} onSuccess={mockOnSuccess} />);
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
       const validFile = new File(['test'], 'success.jpg', { type: 'image/jpeg' });
@@ -281,7 +283,7 @@ describe('ImageUpload', () => {
       await user.click(screen.getByRole('button', { name: /UPLOAD ALL/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/uploaded successfully/i)).toBeInTheDocument();
+        expect(screen.getByText(/Images uploaded/i)).toBeInTheDocument();
       });
     });
   });

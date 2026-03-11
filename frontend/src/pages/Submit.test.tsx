@@ -93,7 +93,7 @@ describe('Submit Page', () => {
       // Fill required fields
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'Test Manufacturer');
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'TEST-001');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
 
       // Click next
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
@@ -116,7 +116,7 @@ describe('Submit Page', () => {
       // Fill required fields and advance
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'Test Manufacturer');
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'TEST-001');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
 
       // Go back
@@ -132,7 +132,7 @@ describe('Submit Page', () => {
       render(<Submit />);
 
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'TEST-001');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
 
       const nextButton = screen.getByRole('button', { name: /NEXT/i });
       expect(nextButton).toHaveClass('opacity-50');
@@ -143,7 +143,7 @@ describe('Submit Page', () => {
       render(<Submit />);
 
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'Test Manufacturer');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
 
       const nextButton = screen.getByRole('button', { name: /NEXT/i });
       expect(nextButton).toHaveClass('opacity-50');
@@ -169,7 +169,7 @@ describe('Submit Page', () => {
       // Step 1
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'ACME Corp');
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'Widget-9000');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
 
       // Step 2
@@ -186,14 +186,14 @@ describe('Submit Page', () => {
   });
 
   describe('product submission', () => {
-    it('submits product and navigates on success', async () => {
+    it('submits product and shows upload step on success', async () => {
       const user = userEvent.setup();
       render(<Submit />);
 
       // Step 1
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'ACME Corp');
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'Widget-9000');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
 
       // Step 2
@@ -202,14 +202,15 @@ describe('Submit Page', () => {
       // Submit
       await user.click(screen.getByRole('button', { name: /SUBMIT PRODUCT/i }));
 
+      // After submission, shows the file upload step
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith(expect.stringMatching(/\/products\//));
+        expect(screen.getByRole('heading', { name: /ADD FILES/i })).toBeInTheDocument();
       });
     });
 
     it('shows error on submission failure', async () => {
       server.use(
-        http.post('http://localhost:8000/api/products/', () => {
+        http.post('http://localhost/api/products/', () => {
           return HttpResponse.json(
             { detail: 'Submission failed' },
             { status: 400 }
@@ -223,7 +224,7 @@ describe('Submit Page', () => {
       // Fill and submit
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'ACME Corp');
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'Widget-9000');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
       await user.click(screen.getByRole('button', { name: /SUBMIT PRODUCT/i }));
@@ -298,7 +299,7 @@ describe('Submit Page', () => {
       // Fill and advance
       await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'Test');
       await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'Test');
-      await user.selectOptions(screen.getByRole('combobox', { name: '' }), 'router');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
       await user.click(screen.getByRole('button', { name: /NEXT/i }));
 
       // Step 1 should now show checkmark (completed)

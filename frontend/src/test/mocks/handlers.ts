@@ -1,6 +1,11 @@
 import { http, HttpResponse } from 'msw';
 
-const API_URL = 'http://localhost:8000/api';
+const API_URL = 'http://localhost/api';
+
+// Shared auth state — tracks whether a login has occurred in the current test
+// Reset via resetAuthState() in afterEach (setup.ts)
+let _isLoggedIn = false;
+export function resetAuthState() { _isLoggedIn = false; }
 
 // Test data
 export const mockUser = {
@@ -47,12 +52,17 @@ export const mockComponent = {
 // Request handlers
 export const handlers = [
   // Auth endpoints
+  http.get(`${API_URL}/auth/csrf/`, () => {
+    return new HttpResponse(null, { status: 204 });
+  }),
+
+  http.post(`${API_URL}/auth/logout/`, () => {
+    _isLoggedIn = false;
+    return new HttpResponse(null, { status: 204 });
+  }),
+
   http.post(`${API_URL}/auth/token/`, async ({ request }) => {
     const body = await request.json() as { username: string; password: string };
-
-    if (body.username === 'testuser' && body.password === 'testpass') {
-      return HttpResponse.json(mockTokens);
-    }
 
     if (body.username === 'baduser') {
       return HttpResponse.json(
@@ -61,6 +71,7 @@ export const handlers = [
       );
     }
 
+    _isLoggedIn = true;
     return HttpResponse.json(mockTokens);
   }),
 
@@ -90,16 +101,13 @@ export const handlers = [
     return HttpResponse.json(mockUser, { status: 201 });
   }),
 
-  http.get(`${API_URL}/auth/me/`, ({ request }) => {
-    const authHeader = request.headers.get('Authorization');
-
-    if (!authHeader || authHeader === 'Bearer invalid-token') {
+  http.get(`${API_URL}/auth/me/`, () => {
+    if (!_isLoggedIn) {
       return HttpResponse.json(
         { detail: 'Authentication credentials were not provided.' },
         { status: 401 }
       );
     }
-
     return HttpResponse.json(mockUser);
   }),
 

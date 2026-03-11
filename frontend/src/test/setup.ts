@@ -2,6 +2,7 @@ import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, afterAll } from 'vitest';
 import { server } from './mocks/server';
+import { resetAuthState } from './mocks/handlers';
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import enTranslation from '../../public/locales/en/translation.json';
@@ -15,6 +16,7 @@ i18n.use(initReactI18next).init({
   resources: { en: { translation: enTranslation } },
   returnEmptyString: false,
   interpolation: { escapeValue: false },
+  initImmediate: false, // synchronous init — translations ready before first render
 });
 
 // Establish API mocking before all tests
@@ -29,6 +31,8 @@ afterEach(() => {
   cleanup();
   // Clear localStorage
   localStorage.clear();
+  // Reset auth state between tests
+  resetAuthState();
 });
 
 // Clean up after the tests are finished
