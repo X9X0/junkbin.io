@@ -1,0 +1,99 @@
+name: CI/CD
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ============================================================
+  # 1. Backend tests (SQLite in-memory, no services needed)
+  # ============================================================
+  backend-tests:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r backend/requirements.txt
+
+      - name: Run pytest
+        working-directory: backend
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+        run: pytest -v --tb=short
+
+  # ============================================================
+  # 2. Frontend tests + build check
+  # ============================================================
+  frontend-tests:
+    name: Frontend Tests + Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run vitest
+        working-directory: frontend
+        run: npm run test -- --run
+
+      - name: Build (verify no compile errors)
+        working-directory: frontend
+        run: npm run build
+
+  # ============================================================
+  # 3. Validate locale JSON files
+  # ============================================================
+  validate-locales:
+    name: Validate Locale JSON
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check all locale files are valid JSON
+        run: |
+          python3 -c "
+          import json, sys, pathlib
+          errors = []
+          files = list(pathlib.Path('frontend/public/locales').rglob('*.json'))
+          for f in files:
+              try:
+                  json.loads(f.read_text())
+              except json.JSONDecodeError as e:
+                  errors.append(f'{f}: {e}')
+          if errors:
+              for e in errors:
+                  print(e)
+              sys.exit(1)
+          print(f'All {len(files)} locale files are valid JSON.')
+          "
+
+  # ============================================================
+  # 4. Deploy to dev VM (self-hosted runner — push to dev only)
+  # ============================================================
+  deploy-dev:
+    name: Deploy to Dev VM
+    needs: [backend-tests, frontend-tests, validate-locales]
+    runs-on: [self-hosted, dev-vm]
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    steps:
+      - name: Deploy
+        working-directory: /home/scap/junkbin.io
+        run: ./deployment/update.sh --dev
