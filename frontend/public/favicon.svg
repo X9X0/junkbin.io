@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Dark background fill -->
+  <polygon points="50,6 94,88 6,88" fill="#0d0d14"/>
+  <!-- Warning triangle border -->
+  <polygon points="50,6 94,88 6,88" fill="none" stroke="#f9f002" stroke-width="5" stroke-linejoin="round"/>
+  <!-- Exclamation body -->
+  <rect x="47" y="30" width="6" height="28" rx="3" fill="#f9f002"/>
+  <!-- Exclamation dot -->
+  <circle cx="50" cy="72" r="4" fill="#f9f002"/>
+  <!-- PCB corner nodes -->
+  <circle cx="6" cy="88" r="2.5" fill="#05d9e8"/>
+  <circle cx="94" cy="88" r="2.5" fill="#05d9e8"/>
+  <circle cx="50" cy="6" r="2.5" fill="#05d9e8"/>
+</svg>

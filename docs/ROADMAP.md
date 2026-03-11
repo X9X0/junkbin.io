@@ -476,12 +476,12 @@ The `junkbin-deploy.sh` script will handle:
 - HTTPS redirect configuration
 
 ### Backup Configuration ✅ COMPLETE
-- ~~Daily PostgreSQL dumps~~ — `deployment/backup.sh` (Docker + `--dev` mode)
-- ~~Image file backups~~ — media backed up from Docker volume
-- ~~Retention policy (30 days)~~ — auto-cleanup of old backups
-- ~~Backup restoration testing~~ — `deployment/restore.sh` with interactive menu, selective restore (Feb 11, 2026)
-- ~~Automated daily backups~~ — cron on production runs `backup.sh` at 2 AM daily (Feb 15, 2026)
-- ~~Automated off-site retrieval~~ — cron on dev machine runs `Docs/autotransfer.sh` at 3 AM daily, pulls latest backup from production via SCP to `Docs/Prod_Backups/` (Feb 15, 2026)
+- ✅ **Daily PostgreSQL dumps** — `deployment/backup.sh` (Docker + `--dev` mode)
+- ✅ **Image file backups** — media backed up from Docker volume
+- ✅ **Retention policy (30 days)** — auto-cleanup of old backups
+- ✅ **Backup restoration testing** — `deployment/restore.sh` with interactive menu, selective restore (Feb 11, 2026)
+- ✅ **Automated daily backups** — cron on production runs `backup.sh` at 2 AM daily (Feb 15, 2026)
+- ✅ **Automated off-site retrieval** — cron on dev machine runs `Docs/autotransfer.sh` at 3 AM daily, pulls latest backup from production via SCP to `Docs/Prod_Backups/` (Feb 15, 2026)
 
 ### Monitoring Setup
 - ✅ Health check endpoints (`/api/health/`, nginx `/health`)
@@ -529,16 +529,16 @@ The `junkbin-deploy.sh` script will handle:
 - ✅ Static noise overlay (.noise)
 
 ### "NO USER SERVICEABLE PARTS INSIDE" Placement
-1. **Background watermark** - Ghosted on main pages
-2. **Login page** - Diagonal across background
-3. **404 page** - Featured prominently with glitch effect
-4. **Favicon** - Stylized "NUSPI" or warning symbol
-5. **Page source comments** - ASCII art version
-6. **Footer** - Small text with strikethrough
-7. **About page** - Ironic mission statement
-8. **Loading screens** - Animated text
-9. **Error messages** - "WARNING: NO USER SERVICEABLE PARTS INSIDE... just kidding, tear it apart!"
-10. **Easter egg** - Konami code reveals full manifesto
+1. ✅ **Background watermark** - Ghosted on Home page Early Access section (opacity-5)
+2. ✅ **Login page** - Diagonal NUSPI watermark across background (opacity 0.028, rotate -35deg scale 3)
+3. ✅ **404 page** - NUSPI headline with glitch effect above the 404 number
+4. ✅ **Favicon** - Custom warning triangle SVG with cyber-yellow/cyan PCB nodes
+5. ✅ **Page source comments** - ASCII art box in HTML `<!-- -->` with exact 58-char inner width
+6. ✅ **Footer** - "KONAMI" PCB silkscreen text (9px, hidden on mobile)
+7. ✅ **About page** - Ironic mission statement tagline implemented
+8. ✅ **Loading screens** - NUSPI-themed SuspenseFallback with ⚠ WARNING ⚠ + blinking cursor
+9. ✅ **Error messages** - ErrorBoundary: "NO USER SERVICEABLE PARTS INSIDE... just kidding. Tear it apart."
+10. ✅ **Easter egg** - Konami code triggers DontShitYourPants text adventure; "KONAMI" hint in footer; `psst: try the old code` in browser console
 
 ---
 
@@ -803,11 +803,10 @@ npm run test:coverage  # Coverage report
 - Consider `dev` branch for staging deploys to this VM, `main` reserved for prod
 - Backend: Django test suite, migration checks in pipeline
 
-### About & Contact Pages
-- **About page**: Project mission, right-to-repair philosophy, contributor acknowledgement, SEO value
-- **Contact page**: Structured channels — DMCA/legal, bug reports/feedback, press/partnerships
-- Add links to both in the footer Community column alongside Guidelines and Docs
-- Requires content decisions: what to say, preferred contact method (form vs. email vs. GitHub issues)
+### About & Contact Pages ✅ COMPLETE
+- ✅ **About page** (`/about`) — project mission, right-to-repair philosophy
+- ✅ **Contact page** (`/contact`) — structured contact channels
+- ✅ Footer links in Community column
 
 ### Voice Interface for Development
 - Explore voice-to-text input for communicating with Claude during development sessions
@@ -818,15 +817,15 @@ npm run test:coverage  # Coverage report
 
 ## Next Steps
 
-1. ~~**Add schematic upload form**~~ ✅ - Schematic upload added to Product detail schematics tab
-2. ~~**Test infrastructure**~~ ✅ - Backend (pytest) and frontend (vitest) testing complete
-3. ~~**Implement global search**~~ ✅ - Global search page with tabbed results
-4. ~~**Add pagination**~~ ✅ - Products, components, and schematics list pages
-5. ~~**Run tests and fix issues**~~ ✅ - All tests passing
-6. ~~**Mobile responsive polish**~~ ✅ - Tested via Chrome DevTools mobile emulation (Feb 10)
-7. ~~**User documentation**~~ ✅ - In-app docs page (`/docs`), `docs/USER_GUIDE.md`, `Docs/DEVELOPER_GUIDE.md` (Feb 17, 2026)
-8. ~~**Security audit**~~ ✅ - Completed Feb 3 (see `Docs/SECURITY_AUDIT.md`)
-9. ~~**Production deployment**~~ ✅ - Live at https://junkbin.io with TLS 1.3, HSTS, auto-renewal
+1. ✅ **Add schematic upload form** — Schematic upload added to Product detail schematics tab
+2. ✅ **Test infrastructure** — Backend (pytest) and frontend (vitest) testing complete
+3. ✅ **Implement global search** — Global search page with tabbed results
+4. ✅ **Add pagination** — Products, components, and schematics list pages
+5. ✅ **Run tests and fix issues** — All tests passing
+6. ✅ **Mobile responsive polish** — Tested via Chrome DevTools mobile emulation (Feb 10)
+7. ✅ **User documentation** — In-app docs page (`/docs`), `docs/USER_GUIDE.md`, `Docs/DEVELOPER_GUIDE.md` (Feb 17, 2026)
+8. ✅ **Security audit** — Completed Feb 3 (see `Docs/SECURITY_AUDIT.md`)
+9. ✅ **Production deployment** — Live at https://junkbin.io with TLS 1.3, HSTS, auto-renewal
 
 ---
 

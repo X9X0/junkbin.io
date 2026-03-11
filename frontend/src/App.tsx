@@ -5,6 +5,7 @@ import { AuthProvider } from './context/AuthContext';
 import Layout from './components/layout/Layout';
 import ScrollToTop from './components/ScrollToTop';
 import ErrorBoundary from './components/ErrorBoundary';
+import SuspenseFallback from './components/SuspenseFallback';
 
 const Home = lazy(() => import('./pages/Home'));
 const Products = lazy(() => import('./pages/Products'));
@@ -59,7 +60,7 @@ function App() {
         <BrowserRouter>
           <ScrollToTop />
           <ErrorBoundary>
-            <Suspense fallback={<div className="min-h-screen bg-cyber-black" />}>
+            <Suspense fallback={<SuspenseFallback />}>
             <Routes>
               <Route path="auth/github/callback" element={<GitHubCallback />} />
               <Route path="/" element={<Layout />}>
