@@ -120,12 +120,12 @@
     "strings_updated": 231
   },
   "tr": {
-    "last_run": null,
-    "percent": null,
-    "status": "pending",
-    "strings_total": null,
-    "strings_translated": null,
-    "strings_updated": 0
+    "last_run": "2026-03-16",
+    "percent": 68,
+    "status": "partial",
+    "strings_total": 1044,
+    "strings_translated": 715,
+    "strings_updated": 715
   },
   "uk": {
     "last_run": null,
