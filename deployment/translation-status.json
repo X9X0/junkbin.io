@@ -1,10 +1,10 @@
 {
   "cs": {
     "last_run": "2026-03-07",
-    "percent": null,
+    "percent": 100,
     "status": "complete",
-    "strings_total": null,
-    "strings_translated": null,
+    "strings_total": 1044,
+    "strings_translated": 1044,
     "strings_updated": 46
   },
   "de": {
@@ -33,18 +33,18 @@
   },
   "hr": {
     "last_run": "2026-03-07",
-    "percent": null,
+    "percent": 100,
     "status": "complete",
-    "strings_total": null,
-    "strings_translated": null,
+    "strings_total": 1044,
+    "strings_translated": 1044,
     "strings_updated": 29
   },
   "hu": {
     "last_run": "2026-03-07",
-    "percent": null,
+    "percent": 100,
     "status": "complete",
-    "strings_total": null,
-    "strings_translated": null,
+    "strings_total": 1044,
+    "strings_translated": 1044,
     "strings_updated": 148
   },
   "it": {
