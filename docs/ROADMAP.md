@@ -327,7 +327,7 @@ UNIQUE(user, content_type, object_id, item_type)
 - ImageUpload: File validation, drag/drop, upload
 - Submit wizard: Step progression, form validation
 
-### Phase 4: Internationalisation ✅ COMPLETE (March 2, 2026)
+### Phase 4: Internationalisation ✅ COMPLETE (March 21, 2026)
 
 #### Multi-Language Support
 - ✅ **react-i18next** integration with lazy-loaded locale files (`/locales/{lang}/translation.json`) — i18next-browser-languagedetector reads `localStorage` key `junkbin_lang` first, then `navigator.language`
@@ -343,33 +343,35 @@ UNIQUE(user, content_type, object_id, item_type)
 | Code | Language | Script | Status |
 |------|----------|--------|--------|
 | `en` | English | Latin | Source / Authoritative |
-| `fr` | Français | Latin | Machine-translated (Mar 2026) |
-| `es` | Español | Latin | Machine-translated (Mar 2026) |
-| `pt` | Português | Latin | Machine-translated (Mar 2026) |
-| `de` | Deutsch | Latin | Machine-translated (Mar 2026) |
-| `it` | Italiano | Latin | Machine-translated (Mar 2026) |
-| `nl` | Nederlands | Latin | Machine-translated (Mar 2026) |
-| `pl` | Polski | Latin | Machine-translated (Mar 2026) |
-| `cs` | Čeština | Latin | Machine-translated (Mar 2026) |
-| `sk` | Slovenčina | Latin | Machine-translated (Mar 2026) |
-| `hr` | Hrvatski | Latin | Machine-translated (Mar 2026) |
-| `sr` | Srpski | Latin | Machine-translated (Mar 2026) |
-| `sl` | Slovenščina | Latin | Machine-translated (Mar 2026) |
-| `ru` | Русский | Cyrillic | Machine-translated (Mar 2026) |
-| `uk` | Українська | Cyrillic | Machine-translated (Mar 2026) |
-| `ro` | Română | Latin | Machine-translated (Mar 2026) |
-| `hu` | Magyar | Latin | Machine-translated (Mar 2026) |
-| `tr` | Türkçe | Latin | Machine-translated (Mar 2026) |
+| `fr` | Français | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `es` | Español | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `pt` | Português | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `de` | Deutsch | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `it` | Italiano | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `nl` | Nederlands | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `pl` | Polski | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `cs` | Čeština | Latin | 100% — pre-existing + MyMemory (Mar 2026) |
+| `sk` | Slovenčina | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `hr` | Hrvatski | Latin | 100% — pre-existing + MyMemory (Mar 2026) |
+| `sr` | Srpski | Latin | 100% — pre-existing + DeepL (Mar 2026) |
+| `sl` | Slovenščina | Latin | 100% — pre-existing + DeepL (Mar 2026) |
+| `ru` | Русский | Cyrillic | 100% — MyMemory + DeepL (Mar 2026) |
+| `uk` | Українська | Cyrillic | 100% — MyMemory + DeepL (Mar 2026) |
+| `ro` | Română | Latin | 100% — MyMemory + DeepL (Mar 2026) |
+| `hu` | Magyar | Latin | 100% — pre-existing + MyMemory (Mar 2026) |
+| `tr` | Türkçe | Latin | 100% — MyMemory + DeepL (Mar 2026) |
 
 #### i18n Phase 2 (Mar 6, 2026) ✅ COMPLETE
 - ✅ **All pages wired** — 14 remaining pages (Recipes, Schematics, Messages, Profile, ProductDetail, ComponentDetail, Submit, SubmitRecipe, RecipeDetail, UserProfile, MessageThread, NewConversation, MyJunkbin, MySubmissions) and 2 form components (SchematicUpload, AddComponentForm) connected to react-i18next; every user-visible string now uses `t()` calls
 - ✅ **1,044 translation keys** across 37 namespace sections — new additions include `schematics.upload.*` (30 keys), `components.add.*` (40 keys), `product_detail.condition.*`, `submit.*`, and more
 - ✅ **All 17 non-English locale files normalised** — populated with English fallback for 301 Phase 2 additions so i18next fallbackLng never shows raw key strings (Mar 6, 2026)
-- ✅ **Weblate community translation portal** — self-hosted Weblate 5.10.4 at [translate.junkbin.io](https://translate.junkbin.io); automated sync via GitHub Actions workflow (junkbin-locales repo → main repo PR on push); MyMemory MT engine configured for bootstrap translations (Mar 6, 2026)
+- ✅ **Weblate community translation portal** — self-hosted Weblate 5.10.4 at [translate.junkbin.io](https://translate.junkbin.io); automated sync via GitHub Actions workflow (junkbin-locales repo → main repo PR on push); MyMemory + DeepL MT engines configured (Mar 2026)
 - ✅ **Locale filename normalisation** — sync-to-main.yml workflow includes defensive rename guard (`translations.json` → `translation.json`) for future Weblate syncs (Mar 6, 2026)
+- ✅ **DeepL integration** — DeepL API Free configured in Weblate; filled MyMemory ceiling (~65-70%) to 100% for all 17 languages (Mar 21, 2026)
+- ✅ **`deployment/sync-translations.sh`** — automated per-language sync script: unlock → MyMemory → DeepL → pull → commit → Weblate reset; tracks status in `deployment/translation-status.json` (Mar 2026)
 
 #### Remaining / Ongoing
-- ⬜ **Community translation review** — 17 non-English locales; Phase 1 strings (~743/lang) are machine-translated from Mar 2026; Phase 2 strings (~301/lang) being bootstrapped via MyMemory MT — native speaker review welcome at [translate.junkbin.io](https://translate.junkbin.io)
+- ⬜ **Community translation review** — all 1,044 strings per language are machine-translated (MyMemory + DeepL); native speaker review welcome at [translate.junkbin.io](https://translate.junkbin.io)
 - ✅ **CONTRIBUTING_TRANSLATIONS.md** — contributor guide added at `docs/CONTRIBUTING_TRANSLATIONS.md`, covering both JSON and .po workflows (Mar 4, 2026)
 - ✅ **Django .po / .mo files** — `makemessages` + `compilemessages` run for all 18 languages; 353 translatable strings extracted from templates and serializers (Mar 4, 2026)
 - ✅ **Additional languages** — `ro` (Romanian), `hu` (Hungarian), `tr` (Turkish) added (Mar 4, 2026)
