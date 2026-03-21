@@ -797,13 +797,13 @@ npm run test:coverage  # Coverage report
 
 ## Backlog / Upcoming
 
-### CI/CD Pipeline
-- Automate dev → prod deployment path via GitHub Actions
-- Validate locale JSON files (structure, no empty strings) on every push
-- Build and test frontend in pipeline before deploy
-- Auto-deploy to prod on merge to `main` (with optional manual approval gate)
-- Consider `dev` branch for staging deploys to this VM, `main` reserved for prod
-- Backend: Django test suite, migration checks in pipeline
+### CI/CD Pipeline ✅ COMPLETE (March 21, 2026)
+- ✅ GitHub Actions workflow (`.github/workflows/ci-cd.yml`) — self-hosted runner on dev VM
+- ✅ Backend: Django test suite + migration checks on every push
+- ✅ Frontend: vitest test suite + Vite build check on every push
+- ✅ Locale JSON structure validated in pipeline
+- ✅ `dev` branch for staging, `main` reserved for prod-ready code
+- ⬜ Auto-deploy to prod on merge to `main` (currently manual via `./deployment/update.sh`)
 
 ### About & Contact Pages ✅ COMPLETE
 - ✅ **About page** (`/about`) — project mission, right-to-repair philosophy
@@ -833,6 +833,6 @@ npm run test:coverage  # Coverage report
 
 *"They said 'NO USER SERVICEABLE PARTS INSIDE'... We took that personally."*
 
-**Last Updated**: March 6, 2026
-**Version**: 2.3
-**Status**: MVP Complete - Phase 2 Complete - Phase 3 Largely Complete (2 items pending) - Phase 4 Complete (18 languages, all pages wired, Weblate portal live) - Deployed & E2E Tested - v0.9.4
+**Last Updated**: March 21, 2026
+**Version**: 2.4
+**Status**: MVP Complete - Phase 2 Complete - Phase 3 Largely Complete (2 items pending) - Phase 4 Complete (18 languages, all pages wired, Weblate portal live) - CI/CD Pipeline Live - Deployed & E2E Tested - v0.9.5
