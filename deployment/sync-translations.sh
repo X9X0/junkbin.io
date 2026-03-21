@@ -91,14 +91,21 @@ else
 fi
 
 # 2. Run autotranslate
-# filter_type "todo" = untranslated/empty strings only. "all" is not valid in
-# Weblate 5.10.4 and silently returns 0. Pending language files are empty so
-# "todo" correctly targets all 1044 strings.
+# Run MyMemory first (free, no quota concern for top-up runs), then DeepL for
+# any strings MyMemory couldn't handle. filter_type "todo" targets only empty/
+# untranslated strings. "all" is not valid in Weblate 5.10.4.
 log_step "Running MyMemory autotranslate for $LANG..."
-RESULT=$(curl -s -X POST \
+curl -s -X POST \
     -H "Authorization: Token $WEBLATE_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{"mode":"translate","filter_type":"todo","auto_source":"mt","engines":["mymemory"],"threshold":80}' \
+    "$WEBLATE_BASE/translations/$COMPONENT/$LANG/autotranslate/" > /dev/null
+
+log_step "Running DeepL autotranslate for $LANG..."
+RESULT=$(curl -s -X POST \
+    -H "Authorization: Token $WEBLATE_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{"mode":"translate","filter_type":"todo","auto_source":"mt","engines":["deepl"],"threshold":75}' \
     "$WEBLATE_BASE/translations/$COMPONENT/$LANG/autotranslate/")
 
 COUNT=0
