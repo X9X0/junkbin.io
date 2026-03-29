@@ -98,7 +98,7 @@ if [ "$DEV_MODE" = true ]; then
     # Dev mode: media is on disk at ./backend/media
     MEDIA_DIR="$PROJECT_DIR/backend/media"
     if [ -d "$MEDIA_DIR" ] && [ "$(ls -A "$MEDIA_DIR" 2>/dev/null)" ]; then
-        tar -czf "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz" -C "$PROJECT_DIR/backend" media
+        nice -n 15 tar -czf "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz" -C "$PROJECT_DIR/backend" media
         MEDIA_SIZE=$(du -h "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz" | cut -f1)
         log_success "Media backup complete ($MEDIA_SIZE)"
     else
@@ -114,7 +114,7 @@ else
     # Check if media directory has files
     FILE_COUNT=$(docker exec junkbin_backend find /app/media -type f 2>/dev/null | wc -l)
     if [ "$FILE_COUNT" -gt 0 ]; then
-        docker exec junkbin_backend tar -czf /tmp/media_backup.tar.gz -C /app media
+        docker exec junkbin_backend bash -c 'nice -n 15 tar -czf /tmp/media_backup.tar.gz -C /app media'
         docker cp junkbin_backend:/tmp/media_backup.tar.gz "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz"
         docker exec junkbin_backend rm /tmp/media_backup.tar.gz
         MEDIA_SIZE=$(du -h "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz" | cut -f1)
@@ -154,7 +154,7 @@ EOF
 # --- Compress ---
 log_info "Compressing backup archive..."
 cd "$BACKUP_DIR"
-tar -czf "${BACKUP_NAME}.tar.gz" "$BACKUP_NAME"
+nice -n 15 tar -czf "${BACKUP_NAME}.tar.gz" "$BACKUP_NAME"
 rm -rf "$BACKUP_NAME"
 
 FINAL_SIZE=$(du -h "${BACKUP_NAME}.tar.gz" | cut -f1)
