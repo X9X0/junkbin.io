@@ -129,13 +129,20 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
         check_and_award_badges(self.request.user)
 
     def perform_update(self, serializer):
+        old = self.get_object()
+        was_available = (
+            old.item_type == 'have'
+            and old.status == 'available'
+            and old.visibility == 'public'
+        )
         instance = serializer.save()
-        # Trigger want-list matching when item becomes publicly available
-        if (
+        # Only trigger want-list matching when item *transitions* to publicly available
+        is_available = (
             instance.item_type == 'have'
             and instance.status == 'available'
             and instance.visibility == 'public'
-        ):
+        )
+        if is_available and not was_available:
             from .tasks import match_want_lists
             match_want_lists.delay(str(instance.id))
 

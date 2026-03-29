@@ -42,7 +42,7 @@ def on_component_created(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender='submissions.Submission')
 def on_submission_pending(sender, instance, created, **kwargs):
-    if instance.status == 'pending':
+    if created and instance.status == 'pending':
         from .tasks import notify_pending_submission
         notify_pending_submission.delay(str(instance.id))
 
