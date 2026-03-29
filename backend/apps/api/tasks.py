@@ -43,10 +43,9 @@ def _check_cooldown(category, identifier='default'):
     if cooldown == 0:
         return False
     key = f'notif_cd:{category}:{identifier}'
-    if cache.get(key):
-        return True
-    cache.set(key, 1, cooldown)
-    return False
+    # cache.add() is atomic: sets the key only if absent, returns False if it already existed
+    added = cache.add(key, 1, cooldown)
+    return not added
 
 
 def _log_notification(category, subject, recipients, status='sent', error=''):
