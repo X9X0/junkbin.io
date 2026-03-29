@@ -73,7 +73,7 @@ def _check_celery_beat():
 
 
 def _get_system_metrics():
-    cpu = psutil.cpu_percent(interval=0.5)
+    cpu = psutil.cpu_percent(interval=2)
     mem = psutil.virtual_memory()
     disk = psutil.disk_usage('/app')
     return {
