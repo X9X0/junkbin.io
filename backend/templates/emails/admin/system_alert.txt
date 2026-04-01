@@ -6,7 +6,16 @@ Junkbin.io - ADMIN ALERT
 {% for name, detail in failed_services.items %}- {{ name }}: {{ detail }}
 {% endfor %}{% endif %}
 {% if exceeded_metrics %}RESOURCE USAGE HIGH:
-{% for name, value in exceeded_metrics.items %}- {{ name }}: {{ value }}
+{% for name, info in exceeded_metrics.items %}- {{ name }}: {{ info.value }}
+{% if info.top_processes %}  Top processes by {{ name|lower }}:
+{% for p in info.top_processes %}    {{ p.name }} (pid {{ p.pid }})  cpu={{ p.cpu }}%  mem={{ p.mem_mb }}MB{% if p.cmd %}  [{{ p.cmd }}]{% endif %}
+
+{% endfor %}{% endif %}{% if info.active_celery_tasks %}  Active Celery tasks:
+{% for t in info.active_celery_tasks %}    - {{ t }}
+{% endfor %}{% endif %}{% if info.swap %}  Swap: {{ info.swap.used }} / {{ info.swap.total }} ({{ info.swap.percent }}%)
+{% endif %}{% if info.recent_large_files %}  Recent large files (last 24h, >= 50MB):
+{% for f in info.recent_large_files %}    {{ f.path }}  {{ f.size }}  {{ f.age }}
+{% endfor %}{% endif %}
 {% endfor %}{% endif %}
 {% if task_error %}TASK FAILURE:
 Task: {{ task_error.name }}
