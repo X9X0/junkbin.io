@@ -99,6 +99,124 @@ def _fmt_bytes(n):
     return f'{n:.1f} PB'
 
 
+def _fmt_age(seconds):
+    if seconds < 3600:
+        return f"{int(seconds / 60)}m ago"
+    if seconds < 86400:
+        return f"{int(seconds / 3600)}h ago"
+    return f"{int(seconds / 86400)}d ago"
+
+
+def _summarize_cmd(cmdline):
+    if not cmdline:
+        return ''
+    cmd = ' '.join(cmdline)
+    return cmd[:80] + ('...' if len(cmd) > 80 else '')
+
+
+def _get_top_cpu_processes(n=5):
+    """Return top N processes by CPU%, sampled over 1 second."""
+    import time
+    candidates = list(psutil.process_iter(['pid', 'name', 'cmdline', 'memory_info']))
+    for p in candidates:
+        try:
+            p.cpu_percent()
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    time.sleep(1)
+    results = []
+    for p in candidates:
+        try:
+            cpu = p.cpu_percent()
+            info = p.info
+            results.append({
+                'pid': p.pid,
+                'name': info['name'] or '?',
+                'cpu': round(cpu, 1),
+                'mem_mb': round(info['memory_info'].rss / 1024 / 1024, 1) if info.get('memory_info') else 0,
+                'cmd': _summarize_cmd(info.get('cmdline') or []),
+            })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    return sorted(results, key=lambda x: x['cpu'], reverse=True)[:n]
+
+
+def _get_active_celery_tasks():
+    """Return active Celery task names, excluding the health check itself."""
+    try:
+        active = current_app.control.inspect(timeout=1).active() or {}
+        tasks = []
+        for worker_tasks in active.values():
+            for task in worker_tasks:
+                name = task.get('name', '')
+                if 'check_system_health' not in name:
+                    tasks.append(name)
+        return tasks
+    except Exception:
+        return []
+
+
+def _get_top_mem_processes(n=5):
+    """Return top N processes by RSS memory."""
+    results = []
+    for p in psutil.process_iter(['pid', 'name', 'cmdline', 'memory_info']):
+        try:
+            info = p.info
+            if not info.get('memory_info'):
+                continue
+            results.append({
+                'pid': p.pid,
+                'name': info['name'] or '?',
+                'mem_mb': round(info['memory_info'].rss / 1024 / 1024, 1),
+                'cmd': _summarize_cmd(info.get('cmdline') or []),
+            })
+        except (psutil.NoSuchProcess, psutil.AccessDenied):
+            pass
+    return sorted(results, key=lambda x: x['mem_mb'], reverse=True)[:n]
+
+
+def _get_swap_info():
+    """Return swap usage dict, or None if no swap configured."""
+    swap = psutil.swap_memory()
+    if swap.total == 0:
+        return None
+    return {
+        'used': _fmt_bytes(swap.used),
+        'total': _fmt_bytes(swap.total),
+        'percent': round(swap.percent, 1),
+    }
+
+
+def _get_recent_large_files(search_dirs=None, min_size_mb=50, hours=24):
+    """Return files >= min_size_mb modified in the last `hours` hours, largest first."""
+    import os
+    import time as _time
+    if search_dirs is None:
+        search_dirs = ['/app', '/tmp']
+    cutoff = _time.time() - hours * 3600
+    results = []
+    for base in search_dirs:
+        if not os.path.isdir(base):
+            continue
+        for root, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in {'.git', '__pycache__', 'node_modules'}]
+            for fname in files:
+                fpath = os.path.join(root, fname)
+                try:
+                    st = os.stat(fpath)
+                    size_mb = st.st_size / 1024 / 1024
+                    if size_mb >= min_size_mb and st.st_mtime >= cutoff:
+                        results.append({
+                            'path': fpath,
+                            'size': _fmt_bytes(st.st_size),
+                            'size_mb': size_mb,
+                            'age': _fmt_age(_time.time() - st.st_mtime),
+                        })
+                except OSError:
+                    pass
+    return sorted(results, key=lambda x: x['size_mb'], reverse=True)[:10]
+
+
 def _get_recent_tasks():
     try:
         from django_celery_results.models import TaskResult

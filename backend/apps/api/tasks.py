@@ -97,7 +97,8 @@ def check_system_health():
     """Check service health and alert on state transitions (OK → error)."""
     from .admin_views import (
         _check_database, _check_redis, _check_celery, _check_celery_beat,
-        _get_system_metrics,
+        _get_system_metrics, _get_top_cpu_processes, _get_active_celery_tasks,
+        _get_top_mem_processes, _get_swap_info, _get_recent_large_files,
     )
 
     checks = {
@@ -136,12 +137,26 @@ def check_system_health():
         metrics = _get_system_metrics()
         exceeded = {}
         threshold = 80
+
         if metrics['cpu']['percent'] > threshold:
-            exceeded['CPU'] = f"{metrics['cpu']['percent']}%"
+            exceeded['CPU'] = {
+                'value': f"{metrics['cpu']['percent']}%",
+                'top_processes': _get_top_cpu_processes(),
+                'active_celery_tasks': _get_active_celery_tasks(),
+            }
+
         if metrics['memory']['percent'] > threshold:
-            exceeded['Memory'] = f"{metrics['memory']['percent']}% ({metrics['memory']['used']} / {metrics['memory']['total']})"
+            exceeded['Memory'] = {
+                'value': f"{metrics['memory']['percent']}% ({metrics['memory']['used']} / {metrics['memory']['total']})",
+                'swap': _get_swap_info(),
+                'top_processes': _get_top_mem_processes(),
+            }
+
         if metrics['disk']['percent'] > threshold:
-            exceeded['Disk'] = f"{metrics['disk']['percent']}% ({metrics['disk']['used']} / {metrics['disk']['total']})"
+            exceeded['Disk'] = {
+                'value': f"{metrics['disk']['percent']}% ({metrics['disk']['used']} / {metrics['disk']['total']})",
+                'recent_large_files': _get_recent_large_files(),
+            }
 
         if exceeded:
             _send(
