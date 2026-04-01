@@ -34,12 +34,19 @@
                 {% if info.top_processes %}
                 <div style="margin-top: 8px; font-size: 12px; color: #aaa;">Top processes by {{ name|lower }}:</div>
                 <table style="width: 100%; font-size: 12px; margin-top: 4px; border-collapse: collapse;">
+                    <tr style="border-bottom: 1px solid #3a3e57;">
+                        <td style="padding: 3px 6px; color: #666;">Process</td>
+                        <td style="padding: 3px 6px; color: #666;">PID</td>
+                        <td style="padding: 3px 6px; color: {% if name == 'CPU' %}#ffdc00{% else %}#666{% endif %};">CPU</td>
+                        <td style="padding: 3px 6px; color: {% if name == 'Memory' %}#ffdc00{% else %}#666{% endif %};">RAM</td>
+                        <td style="padding: 3px 6px; color: #666;">Command</td>
+                    </tr>
                     {% for p in info.top_processes %}
                     <tr style="border-bottom: 1px solid #2a2e47;">
                         <td style="padding: 3px 6px; color: #00f0ff;">{{ p.name }}</td>
-                        <td style="padding: 3px 6px; color: #888;">pid {{ p.pid }}</td>
-                        <td style="padding: 3px 6px; color: #ffdc00;">{{ p.cpu }}%</td>
-                        <td style="padding: 3px 6px; color: #c0c0c0;">{{ p.mem_mb }} MB</td>
+                        <td style="padding: 3px 6px; color: #888;">{{ p.pid }}</td>
+                        <td style="padding: 3px 6px; color: {% if name == 'CPU' %}#ffdc00{% else %}#c0c0c0{% endif %};">{{ p.cpu }}%</td>
+                        <td style="padding: 3px 6px; color: {% if name == 'Memory' %}#ffdc00{% else %}#c0c0c0{% endif %};">{{ p.mem_mb }} MB ({{ p.mem_percent }}%)</td>
                         <td style="padding: 3px 6px; color: #666; font-size: 11px;">{{ p.cmd }}</td>
                     </tr>
                     {% endfor %}

@@ -114,9 +114,10 @@ def _summarize_cmd(cmdline):
     return cmd[:80] + ('...' if len(cmd) > 80 else '')
 
 
-def _get_top_cpu_processes(n=5):
-    """Return top N processes by CPU%, sampled over 1 second."""
+def _sample_processes():
+    """Sample all processes: CPU% over 1s window + memory. Returns list of dicts."""
     import time
+    total_ram = psutil.virtual_memory().total
     candidates = list(psutil.process_iter(['pid', 'name', 'cmdline', 'memory_info']))
     for p in candidates:
         try:
@@ -129,16 +130,23 @@ def _get_top_cpu_processes(n=5):
         try:
             cpu = p.cpu_percent()
             info = p.info
+            rss = info['memory_info'].rss if info.get('memory_info') else 0
             results.append({
                 'pid': p.pid,
                 'name': info['name'] or '?',
                 'cpu': round(cpu, 1),
-                'mem_mb': round(info['memory_info'].rss / 1024 / 1024, 1) if info.get('memory_info') else 0,
+                'mem_mb': round(rss / 1024 / 1024, 1),
+                'mem_percent': round(rss / total_ram * 100, 1),
                 'cmd': _summarize_cmd(info.get('cmdline') or []),
             })
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             pass
-    return sorted(results, key=lambda x: x['cpu'], reverse=True)[:n]
+    return results
+
+
+def _get_top_cpu_processes(n=5):
+    """Return top N processes sorted by CPU%."""
+    return sorted(_sample_processes(), key=lambda x: x['cpu'], reverse=True)[:n]
 
 
 def _get_active_celery_tasks():
@@ -157,22 +165,8 @@ def _get_active_celery_tasks():
 
 
 def _get_top_mem_processes(n=5):
-    """Return top N processes by RSS memory."""
-    results = []
-    for p in psutil.process_iter(['pid', 'name', 'cmdline', 'memory_info']):
-        try:
-            info = p.info
-            if not info.get('memory_info'):
-                continue
-            results.append({
-                'pid': p.pid,
-                'name': info['name'] or '?',
-                'mem_mb': round(info['memory_info'].rss / 1024 / 1024, 1),
-                'cmd': _summarize_cmd(info.get('cmdline') or []),
-            })
-        except (psutil.NoSuchProcess, psutil.AccessDenied):
-            pass
-    return sorted(results, key=lambda x: x['mem_mb'], reverse=True)[:n]
+    """Return top N processes sorted by RSS memory."""
+    return sorted(_sample_processes(), key=lambda x: x['mem_mb'], reverse=True)[:n]
 
 
 def _get_swap_info():
