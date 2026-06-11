@@ -603,9 +603,31 @@ setup_ssl() {
 
     if [ $? -eq 0 ]; then
         log_info "SSL certificates installed successfully"
-        log_info "Auto-renewal is handled by certbot's systemd timer (no nginx hooks needed)"
     else
         log_warn "SSL certificate acquisition failed - site will run on HTTP only"
+    fi
+}
+
+# Setup certbot auto-renewal cron job
+# Note: certbot's systemd timer only renews the cert files — it does NOT reload
+# nginx inside Docker. This cron job handles both: renewal + nginx reload.
+setup_cert_renewal() {
+    log_step "Setting up SSL certificate auto-renewal..."
+
+    if [ "$DEV_MODE" = true ]; then
+        log_warn "Development mode - skipping cert renewal setup"
+        return
+    fi
+
+    DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    RENEWAL_CMD="certbot renew --quiet && docker compose -f ${DEPLOY_DIR}/docker-compose.yml exec -T nginx nginx -s reload"
+
+    # Add only if not already present
+    if crontab -l 2>/dev/null | grep -q "certbot renew"; then
+        log_info "Cert renewal cron already exists — skipping"
+    else
+        (crontab -l 2>/dev/null; echo "0 3,15 * * * ${RENEWAL_CMD}") | crontab -
+        log_info "Cert renewal cron added (runs at 03:00 and 15:00 daily)"
     fi
 }
 
@@ -797,6 +819,7 @@ main() {
     build_frontend
     init_database
     setup_ssl
+    setup_cert_renewal
     deploy_app
     setup_logrotate
     setup_systemd
