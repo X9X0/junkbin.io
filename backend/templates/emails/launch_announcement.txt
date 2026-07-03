@@ -11,8 +11,11 @@ What you can do now:
 
 Check it out: {{ site_url }}
 
+We'll be at OpenSauce 2026!
+Come find us in person -- July 17-19. Launch day is day one of the con.
+
 Thanks for believing in the right to repair. We built this for people like you.
 
 ---
-You received this because you subscribed to launch updates on Junkbin.io.
+You're receiving this because you're a Junkbin.io member or subscribed to launch updates.
 Junkbin.io

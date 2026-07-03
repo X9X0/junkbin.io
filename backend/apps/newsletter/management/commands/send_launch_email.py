@@ -3,11 +3,12 @@ import time
 from django.core.management.base import BaseCommand
 
 from apps.newsletter.models import Subscriber
+from apps.users.models import User
 from utils.email import send_templated_email
 
 
 class Command(BaseCommand):
-    help = 'Send launch announcement email to all active newsletter subscribers'
+    help = 'Send launch announcement email to all active newsletter subscribers and opted-in registered users'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,21 +23,37 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        subscribers = Subscriber.objects.filter(is_active=True)
-        count = subscribers.count()
+        subscriber_emails = set(
+            Subscriber.objects.filter(is_active=True).values_list('email', flat=True)
+        )
+
+        user_emails = set()
+        for user in User.objects.filter(is_active=True).exclude(email=''):
+            prefs = getattr(user, 'preferences', None) or {}
+            if prefs.get('email_notifications', True):
+                user_emails.add(user.email)
+
+        recipients = sorted(subscriber_emails | user_emails)
+        count = len(recipients)
 
         if count == 0:
-            self.stdout.write(self.style.WARNING('No active subscribers found.'))
+            self.stdout.write(self.style.WARNING('No recipients found.'))
             return
 
         if options['dry_run']:
-            self.stdout.write(self.style.NOTICE(f'DRY RUN — {count} subscribers would receive the launch email:\n'))
-            for sub in subscribers:
-                self.stdout.write(f'  {sub.email}')
+            self.stdout.write(self.style.NOTICE(
+                f'DRY RUN — {count} recipient(s) would receive the launch email '
+                f'({len(subscriber_emails)} subscribers, {len(user_emails)} members):\n'
+            ))
+            for email in recipients:
+                self.stdout.write(f'  {email}')
             return
 
         if not options['yes']:
-            self.stdout.write(f'\nAbout to send launch email to {count} subscriber(s).')
+            self.stdout.write(
+                f'\nAbout to send launch email to {count} recipient(s) '
+                f'({len(subscriber_emails)} subscribers, {len(user_emails)} members).'
+            )
             confirm = input('Type "yes" to continue: ')
             if confirm.strip().lower() != 'yes':
                 self.stdout.write(self.style.WARNING('Aborted.'))
@@ -45,14 +62,14 @@ class Command(BaseCommand):
         sent = 0
         failed = 0
 
-        for sub in subscribers:
-            self.stdout.write(f'Sending to {sub.email}... ', ending='')
+        for email in recipients:
+            self.stdout.write(f'Sending to {email}... ', ending='')
             try:
                 send_templated_email(
-                    subject='Junkbin.io is live',
+                    subject="Junkbin.io is live — and we'll be at OpenSauce 2026",
                     template_name='launch_announcement',
                     context={},
-                    recipient_list=[sub.email],
+                    recipient_list=[email],
                 )
                 self.stdout.write(self.style.SUCCESS('OK'))
                 sent += 1
