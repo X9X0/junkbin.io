@@ -40,7 +40,7 @@ export default function LaunchCountdown() {
   ];
 
   return (
-    <div className="flex items-start gap-3 md:gap-4 justify-center md:justify-start font-mono">
+    <div className="flex items-start gap-3 md:gap-4 justify-center font-mono">
       {units.map((unit, i) => (
         <div key={unit.label} className="flex items-start gap-3 md:gap-4">
           <div className="text-center">
