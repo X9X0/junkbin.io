@@ -11,10 +11,10 @@ import {
   Zap,
   Mail,
   ArrowRight,
-  AlertTriangle,
   ChevronRight,
 } from 'lucide-react';
 import { parseApiError } from '../utils/formErrors';
+import LaunchCountdown from '../components/LaunchCountdown';
 
 export default function Home() {
   const { t } = useTranslation();
@@ -53,6 +53,55 @@ export default function Home() {
 
   return (
     <div className="noise">
+      {/* OpenSauce Launch Section */}
+      <section className="relative py-6 border-b border-cyber-pink/20 bg-cyber-darker/60 overflow-hidden">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
+            {/* Canted OpenSauce stamp with APPROVED overlay */}
+            <div className="relative flex-shrink-0">
+              <div className="-rotate-6 select-none">
+                <div className="border-4 border-double border-cyber-pink/80 px-6 py-3 text-center bg-cyber-black/40 shadow-neon-pink">
+                  <div className="font-display text-xl md:text-2xl font-black tracking-wider text-cyber-pink leading-tight">
+                    OPEN<br />SAUCE
+                  </div>
+                  <div className="font-mono text-[11px] tracking-[0.3em] text-cyber-pink/70 mt-1">
+                    {t('home.opensauce_dates')}
+                  </div>
+                </div>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center rotate-12 pointer-events-none opacity-50">
+                <div className="border-4 border-cyber-green px-4 py-1 bg-cyber-black/30 shadow-neon-green">
+                  <span className="font-display text-lg md:text-xl font-black tracking-[0.2em] text-cyber-green">
+                    {t('home.opensauce_approved')}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Countdown + statement */}
+            <div className="flex-1 text-center md:text-left max-w-md">
+              <h2 className="font-display text-lg md:text-xl font-bold text-white mb-1">
+                {t('home.opensauce_title')}{' '}
+                <span className="text-cyber-pink">{t('home.opensauce_title_highlight')}</span>
+              </h2>
+              <p className="text-gray-400 text-sm mb-3">
+                {t('home.opensauce_statement')}
+              </p>
+              <LaunchCountdown />
+            </div>
+
+            {/* Official OpenSauce 2026 logo */}
+            <div className="flex-shrink-0">
+              <img
+                src="/images/opensauce-2026-logo.webp"
+                alt="OpenSauce 2026"
+                className="w-28 md:w-40 drop-shadow-[0_0_20px_rgba(255,42,109,0.35)]"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16 md:py-24 scanlines">
         {/* Background effects */}
@@ -61,14 +110,6 @@ export default function Home() {
         <div className="absolute bottom-20 right-1/4 w-96 h-96 bg-cyber-pink/10 rounded-full blur-3xl animate-pulse" />
 
         <div className="relative mx-auto max-w-7xl px-4 text-center">
-          {/* Warning badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 mb-8 border border-cyber-yellow/50 bg-cyber-yellow/5">
-            <AlertTriangle className="h-4 w-4 text-cyber-yellow" />
-            <span className="text-cyber-yellow font-mono text-sm tracking-wider">
-              {t('home.under_construction')}
-            </span>
-          </div>
-
           {/* Glitch title */}
           <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold text-white mb-4">
             <span

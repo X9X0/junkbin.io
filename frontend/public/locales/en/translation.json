@@ -146,7 +146,17 @@
     "r2r_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERROR:"
+    "error_prefix": "ERROR:",
+    "opensauce_title": "WE'RE LAUNCHING AT",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "We will be at OpenSauce 2026! Come find us there on launch day!",
+    "opensauce_dates": "2026 · JUL 17–19",
+    "opensauce_approved": "APPROVED",
+    "countdown_days": "DAYS",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "WE'RE LIVE"
   },
 
   "products": {
