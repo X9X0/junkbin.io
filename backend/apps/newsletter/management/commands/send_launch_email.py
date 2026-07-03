@@ -1,10 +1,14 @@
 import time
+from datetime import datetime, timedelta, timezone
 
 from django.core.management.base import BaseCommand
 
 from apps.newsletter.models import Subscriber
 from apps.users.models import User
 from utils.email import send_templated_email
+
+# Day one of OpenSauce 2026 is also our launch day (Pacific time).
+OPENSAUCE_START = datetime(2026, 7, 17, 0, 0, 0, tzinfo=timezone(timedelta(hours=-7)))
 
 
 class Command(BaseCommand):
@@ -59,6 +63,9 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING('Aborted.'))
                 return
 
+        days_until_opensauce = max((OPENSAUCE_START - datetime.now(timezone.utc)).days, 0)
+        context = {'days_until_opensauce': days_until_opensauce}
+
         sent = 0
         failed = 0
 
@@ -68,7 +75,7 @@ class Command(BaseCommand):
                 send_templated_email(
                     subject="Junkbin.io is live — and we'll be at OpenSauce 2026",
                     template_name='launch_announcement',
-                    context={},
+                    context=context,
                     recipient_list=[email],
                 )
                 self.stdout.write(self.style.SUCCESS('OK'))

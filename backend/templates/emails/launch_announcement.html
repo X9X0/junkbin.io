@@ -3,16 +3,55 @@
 <head>
     <meta charset="UTF-8">
 </head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0e27; color: #e0e0e0; margin: 0; padding: 20px;">
-    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #1a1e37; padding: 30px; border-radius: 8px; border: 1px solid #00f0ff; box-sizing: border-box;">
-        <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
-        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0f; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #0d0d14; padding: 30px; border-radius: 8px; border: 1px solid #05d9e8; box-sizing: border-box;">
 
-        <h1 style="color: #00f0ff; font-size: 24px;">We're live.</h1>
+        <!-- Brand header -->
+        <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px;">
+            <span style="color: #ffffff;">JUNK</span><span style="color: #05d9e8;">BIN</span><span style="color: #666b7a;">.IO</span>
+        </div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px; letter-spacing: 2px;">NO USER SERVICEABLE PARTS INSIDE</div>
+
+        <h1 style="color: #05d9e8; font-size: 24px; margin-bottom: 10px;">We're live.</h1>
 
         <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Junkbin.io is officially up and running. You asked us to let you know &mdash; so here it is.</p>
 
-        <div style="background-color: #17334b; border-left: 4px solid #00f0ff; padding: 15px; margin: 20px 0;">
+        <p style="color: #ff2a6d; font-weight: bold; font-size: 15px; letter-spacing: 1px; margin: 20px 0;">&#9889; RIGHT TO REPAIR STARTS HERE &#9889;</p>
+
+        <!-- OpenSauce launch banner -->
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 30px 0; border-top: 1px solid #2a2a3a; border-bottom: 1px solid #2a2a3a;">
+            <tr>
+                <td align="center" style="padding: 28px 10px;">
+
+                    <!-- Canted stamp with APPROVED overlay (static image — CSS transforms don't survive most email clients) -->
+                    <img src="{{ site_url }}/images/opensauce-stamp.png" alt="OPEN SAUCE 2026 — APPROVED" width="280" style="width: 280px; max-width: 80%; height: auto; display: inline-block;">
+
+                    <!-- Countdown -->
+                    <div style="margin-top: 26px;">
+                        {% if days_until_opensauce > 0 %}
+                        <div style="font-size: 40px; font-weight: 900; color: #05d9e8; line-height: 1;">{{ days_until_opensauce }}</div>
+                        <div style="font-size: 11px; letter-spacing: 3px; color: #8a8a9a; margin-top: 4px;">DAYS UNTIL WE'RE THERE</div>
+                        {% else %}
+                        <div style="font-size: 22px; font-weight: 900; color: #39ff14;">HAPPENING NOW</div>
+                        {% endif %}
+                    </div>
+
+                    <h2 style="color: #ffffff; font-size: 18px; margin: 22px 0 8px;">
+                        We're launching at <span style="color: #ff2a6d;">OPEN SAUCE 2026</span>
+                    </h2>
+                    <p style="color: #c0c0c0; font-size: 14px; line-height: 1.5; max-width: 420px; margin: 0 auto;">
+                        We will be at OpenSauce 2026! Come find us there on launch day &mdash; July 17&ndash;19.
+                    </p>
+
+                    <!-- Official logo -->
+                    <div style="margin-top: 22px;">
+                        <img src="{{ site_url }}/images/opensauce-2026-logo.png" alt="OpenSauce 2026" width="160" style="width: 160px; max-width: 60%; height: auto; display: inline-block;">
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="background-color: #12121a; border-left: 4px solid #05d9e8; padding: 15px; margin: 20px 0;">
             <strong style="color: #e0e0e0;">What you can do now:</strong><br>
             <ul style="margin: 10px 0; padding-left: 20px; color: #c0c0c0;">
                 <li style="color: #c0c0c0; margin-bottom: 5px;">Browse schematics and component data for popular devices</li>
@@ -21,16 +60,11 @@
             </ul>
         </div>
 
-        <a href="{{ site_url }}" style="display: inline-block; background-color: #00f0ff; color: #0a0e27 !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Check it out</a>
-
-        <div style="background-color: #17334b; border-left: 4px solid #ff2a6d; padding: 15px; margin: 20px 0;">
-            <strong style="color: #e0e0e0;">We'll be at OpenSauce 2026!</strong><br>
-            <span style="color: #c0c0c0; font-size: 14px;">Come find us in person &mdash; July 17&ndash;19. Launch day is day one of the con.</span>
-        </div>
+        <a href="{{ site_url }}" style="display: inline-block; background-color: #05d9e8; color: #0a0a0f !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 20px 0;">Check it out</a>
 
         <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">Thanks for believing in the right to repair. We built this for people like you.</p>
 
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #2a2a3a; color: #666b7a; font-size: 12px;">
             <p style="color: #666b7a; font-size: 12px;">You're receiving this because you're a Junkbin.io member or subscribed to launch updates.</p>
             <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
         </div>
