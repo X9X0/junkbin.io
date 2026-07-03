@@ -79,9 +79,9 @@ export default function Home() {
             </div>
 
             {/* Countdown + statement */}
-            <div className="flex-1 text-center md:text-left max-w-md">
+            <div className="flex-1 text-center max-w-md">
               <h2 className="font-display text-lg md:text-xl font-bold text-white mb-1">
-                {t('home.opensauce_title')}{' '}
+                {t('home.opensauce_title')}<br />
                 <span className="text-cyber-pink">{t('home.opensauce_title_highlight')}</span>
               </h2>
               <p className="text-gray-400 text-sm mb-3">
