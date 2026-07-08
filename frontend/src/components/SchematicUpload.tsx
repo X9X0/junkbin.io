@@ -47,6 +47,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
     { value: 'block_diagram', label: t('schematics.upload.type_block_diagram') },
     { value: 'pcb_layout', label: t('schematics.upload.type_pcb_layout') },
     { value: 'service_manual', label: t('schematics.upload.type_service_manual') },
+    { value: 'user_manual', label: t('schematics.upload.type_user_manual') },
     { value: 'datasheet', label: t('schematics.upload.type_datasheet') },
     { value: 'pinout', label: t('schematics.upload.type_pinout') },
     { value: 'wiring_diagram', label: t('schematics.upload.type_wiring_diagram') },
@@ -77,8 +78,15 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
       if (status === 429) {
         return t('schematics.upload.error_rate_limited');
       }
-      if (status === 401 || status === 403) {
+      // A 401 always means "not authenticated" here. A 403, by contrast, means
+      // the user IS authenticated but a specific permission check failed for a
+      // real reason (unverified email, not a moderator, not the owner, etc.) —
+      // show that actual reason instead of implying re-login will help.
+      if (status === 401) {
         return t('schematics.upload.error_session_expired');
+      }
+      if (status === 403 && typeof data?.detail === 'string') {
+        return data.detail;
       }
       if (data && typeof data === 'object') {
         const fieldError = Object.values(data).flat().find((v) => typeof v === 'string');
