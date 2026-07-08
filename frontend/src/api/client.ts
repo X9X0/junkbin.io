@@ -46,7 +46,15 @@ api.interceptors.response.use(
     const skipRefreshUrls = ['/auth/me/', '/auth/token/', '/auth/token/refresh/', '/auth/csrf/'];
     const shouldSkipRefresh = skipRefreshUrls.some(url => originalRequest.url?.includes(url));
 
-    if (error.response?.status === 401 && !originalRequest._retry && !shouldSkipRefresh) {
+    // The access-token cookie is short-lived (30min). A request submitted long
+    // after the cookie was set (e.g. a multi-field upload form left open) can
+    // reach the backend with no valid cookie at all, which is sometimes reported
+    // as 403 rather than 401 — so a silent-refresh retry is attempted for both.
+    // A genuinely permission-denied 403 just costs one harmless extra round trip
+    // before the same error surfaces, since the retry will fail identically.
+    const isAuthError = error.response?.status === 401 || error.response?.status === 403;
+
+    if (isAuthError && !originalRequest._retry && !shouldSkipRefresh) {
       originalRequest._retry = true;
 
       try {

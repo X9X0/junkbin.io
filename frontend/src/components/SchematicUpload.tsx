@@ -4,6 +4,7 @@ import { products } from '../api/endpoints';
 import { useTranslation } from 'react-i18next';
 import { Upload, X, Loader2, CheckCircle, AlertCircle, FileText, Clock, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
+import axios from 'axios';
 
 interface SchematicUploadProps {
   productId: string;
@@ -61,6 +62,33 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
     { value: 'leaked', label: t('schematics.upload.source_leaked') },
     { value: 'unknown', label: t('schematics.upload.source_unknown') },
   ];
+
+  const getUploadErrorMessage = (error: unknown): string => {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+
+      // A failed silent token-refresh surfaces here as the refresh endpoint's
+      // own error (e.g. a 400 "This field is required." for a missing refresh
+      // cookie), not the original request's status — still a session issue.
+      if (error.config?.url?.includes('/auth/token/refresh/')) {
+        return t('schematics.upload.error_session_expired');
+      }
+      if (status === 429) {
+        return t('schematics.upload.error_rate_limited');
+      }
+      if (status === 401 || status === 403) {
+        return t('schematics.upload.error_session_expired');
+      }
+      if (data && typeof data === 'object') {
+        const fieldError = Object.values(data).flat().find((v) => typeof v === 'string');
+        if (fieldError) {
+          return fieldError;
+        }
+      }
+    }
+    return t('schematics.upload.error');
+  };
 
   const uploadMutation = useMutation({
     mutationFn: async (previewFile: PreviewFile) => {
@@ -381,7 +409,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
       {uploadMutation.isError && (
         <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
           <AlertCircle className="h-4 w-4" />
-          {t('schematics.upload.error')}
+          {getUploadErrorMessage(uploadMutation.error)}
         </div>
       )}
     </div>
