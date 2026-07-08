@@ -328,6 +328,8 @@
       "success_review_time": "It will appear once approved, usually within a few hours.",
       "success_trusted": "After {{contributions}} contributions and {{reputation}} reputation, uploads publish instantly.",
       "error": "Failed to upload schematic. Please try again.",
+      "error_session_expired": "Your session expired. Please try uploading again.",
+      "error_rate_limited": "Too many uploads — please wait a bit before trying again.",
       "type_full_schematic": "Full Schematic",
       "type_block_diagram": "Block Diagram",
       "type_pcb_layout": "PCB Layout",
