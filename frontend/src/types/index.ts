@@ -546,4 +546,5 @@ export interface ProductFilters {
   has_components?: boolean;
   ordering?: string;
   page?: number;
+  page_size?: number;
 }
