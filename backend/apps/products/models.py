@@ -356,6 +356,7 @@ class Schematic(models.Model):
         BLOCK_DIAGRAM = 'block_diagram', _('Block Diagram')
         PCB_LAYOUT = 'pcb_layout', _('PCB Layout')
         SERVICE_MANUAL = 'service_manual', _('Service Manual')
+        USER_MANUAL = 'user_manual', _('User Manual')
         DATASHEET = 'datasheet', _('Component Datasheet')
         PINOUT = 'pinout', _('Pinout Diagram')
         WIRING_DIAGRAM = 'wiring_diagram', _('Wiring Diagram')
