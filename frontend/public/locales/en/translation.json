@@ -143,6 +143,7 @@
     "early_access_question": "?",
     "early_access_desc": "We're looking for beta testers and early contributors to help build the database.",
     "create_account": "CREATE ACCOUNT",
+    "mascot_caption": "found nailed up somewhere in the junkyard — right to repair, no user serviceable parts inside",
     "r2r_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",

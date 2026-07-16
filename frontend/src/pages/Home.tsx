@@ -403,6 +403,24 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Mascot Poster */}
+      <section className="relative py-16 md:py-20 px-4">
+        <div className="mx-auto max-w-3xl flex justify-center">
+          <div className="poster-frame w-full">
+            <div className="poster-tape poster-tape-tl" />
+            <div className="poster-tape poster-tape-tr" />
+            <img
+              src="/images/junkbin-mascot-banner.webp"
+              alt="Junkbin.io mascot — a punk raccoon with a red mohawk holding a glowing wrench, captioned Right to Repair Database"
+              className="block w-full h-auto"
+            />
+          </div>
+        </div>
+        <p className="text-center mt-5 text-gray-500 font-mono text-xs tracking-wide">
+          {t('home.mascot_caption')}
+        </p>
+      </section>
+
       {/* Right to Repair Message */}
       <section className="py-16">
         <div className="mx-auto max-w-3xl px-4 text-center">
