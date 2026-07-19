@@ -154,10 +154,6 @@ export default function Home() {
 
           {/* Coming Soon CTA */}
           <div className="max-w-lg mx-auto">
-            <h2 className="font-display text-xl text-white mb-4">
-              {t('home.launching_soon')} <span className="text-cyber-green">{t('home.soon')}</span>
-            </h2>
-
             {!submitted ? (
               <form onSubmit={handleNotify} className="flex flex-col gap-3">
                 <div className="flex flex-col sm:flex-row gap-3">
