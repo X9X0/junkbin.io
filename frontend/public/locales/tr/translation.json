@@ -117,7 +117,7 @@
     "email_placeholder": "enter_email@domain.com",
     "notify_me": "BANA BİLDİR",
     "subscribing": "ABONE OLUNUYOR...",
-    "subscription_confirmed": "ABONELİK_ONAYLANDI — Uygulama yayınlandığında size bildirim gönderilecek.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Abone oldunuz! Yeni özellikler veya etkinlikler olduğunda sizi bilgilendireceğiz.",
     "db_status": "// VERİ TABANININ DURUMU:",
     "db_online": "ÇEVRİMİÇİ",
     "stats_products": "ÜRÜNLER",
@@ -146,7 +146,18 @@
     "r2r_quote": "\"İÇİNDE KULLANICI TARAFINDAN ONARILAMAYACAK PARÇALAR BULUNMAKTADIR\"",
     "r2r_desc": "Üreticiler, cihazlarınızı tamir etmenizi istemiyor. Biz ise yine de tamir etmenize yardımcı olmak için bir veritabanı oluşturuyoruz. Kaydedilen her parça, paylaşılan her şema ve her söküm fotoğrafı, bağımsız tamir atölyelerinin, hobi meraklılarının ve tüketicilerin tamir hakkı için mücadele etmesine yardımcı oluyor.",
     "learn_r2r": "ONARIM HAKKI HAKKINDA DAHA FAZLA BİLGİ EDİNİN →",
-    "error_prefix": "HATA:"
+    "error_prefix": "HATA:",
+    "opensauce_title": "ŞU ADRESTE HİZMETE BAŞLIYORUZ",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "OpenSauce 2026'da olacağız! Etkinliğin açılış gününde bizi orada ziyaret edin!",
+    "opensauce_dates": "2026 · 17–19 Temmuz",
+    "opensauce_approved": "ONAYLANDI",
+    "countdown_days": "GÜNLER",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "CANLI YAYINDAYIZ",
+    "mascot_caption": "hurda yığınının bir köşesinde çivilenmiş halde bulundu — onarım hakkı, içinde kullanıcı tarafından değiştirilebilecek parça yok"
   },
   "products": {
     "title": "ÜRÜN",
@@ -329,8 +340,12 @@
       "source_reverse": "Tersine Mühendislik",
       "source_fcc": "FCC Başvurusu",
       "source_leaked": "Sızdırılan belge",
-      "source_unknown": "Kaynak bilinmiyor"
-    }
+      "source_unknown": "Kaynak bilinmiyor",
+      "error_session_expired": "Oturumunuzun süresi doldu. Lütfen yüklemeyi tekrar deneyin.",
+      "error_rate_limited": "Çok fazla dosya yüklendi — lütfen biraz bekledikten sonra tekrar deneyin.",
+      "type_user_manual": "Kullanım Kılavuzu"
+    },
+    "type_user_manual": "Kullanım Kılavuzu"
   },
   "recipes": {
     "title": "PROJE TARİFLERİ",
