@@ -117,7 +117,7 @@
     "email_placeholder": "correo@dominio.com.",
     "notify_me": "RECIBIR NOTIFICACIÓN",
     "subscribing": "Anular suscripción",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — ¡Ya estás suscrito! Te avisaremos cuando haya novedades o eventos.",
     "db_status": "estado de una base de datos",
     "db_online": "EN LÍNEA",
     "stats_products": "PRODUCTOS",
@@ -146,7 +146,18 @@
     "r2r_quote": "En su interior no hay piezas que se puedan reparar o reemplazar.",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERROR:"
+    "error_prefix": "ERROR:",
+    "mascot_caption": "Encontrado clavado en algún rincón del desguace — derecho a la reparación; no contiene piezas que el usuario pueda reparar por sí mismo",
+    "opensauce_approved": "APROBADO",
+    "countdown_days": "DÍAS",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "ESTAMOS EN DIRECTO",
+    "opensauce_statement": "¡Estaremos en OpenSauce 2026! ¡Ven a vernos allí el día del lanzamiento!",
+    "opensauce_dates": "2026 · 17-19 de julio",
+    "opensauce_title": "NOS ESTAMOS LANZANDO EN",
+    "opensauce_title_highlight": "OPEN SAUCE 2026"
   },
   "products": {
     "title": "PRODUCTO",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "Fuente desconocida"
-    }
+      "source_unknown": "Fuente desconocida",
+      "error_session_expired": "Tu sesión ha caducado. Intenta volver a subir el archivo.",
+      "error_rate_limited": "Se han realizado demasiadas subidas; espera un momento antes de volver a intentarlo.",
+      "type_user_manual": "Manual de usuario"
+    },
+    "type_user_manual": "Manual de usuario"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
