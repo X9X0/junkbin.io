@@ -117,7 +117,7 @@
     "email_placeholder": "enter_email@domain.com",
     "notify_me": "NOTIFY ME",
     "subscribing": "SUBSCRIBING...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Jste přihlášeni k odběru! Budeme vás informovat o nových funkcích nebo akcích.",
     "db_status": "// DATABASE STATUS:",
     "db_online": "ONLINE",
     "stats_products": "PRODUCTS",
@@ -146,7 +146,18 @@
     "r2r_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERROR:"
+    "error_prefix": "ERROR:",
+    "mascot_caption": "nalezeno přibité někde na smetišti — právo na opravu, uvnitř nejsou žádné součásti, které by mohl uživatel opravit sám",
+    "opensauce_title": "ZAČÍNÁME NA",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Budeme na OpenSauce 2026! Přijďte nás tam navštívit v den zahájení!",
+    "opensauce_dates": "2026 · 17.–19. července",
+    "opensauce_approved": "SCHVÁLENO",
+    "countdown_days": "DNY",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "VYSÍLÁME ŽIVĚ"
   },
   "products": {
     "title": "PRODUCT",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "Unknown Source"
-    }
+      "source_unknown": "Unknown Source",
+      "error_session_expired": "Vaše relace vypršela. Zkuste prosím nahrát soubor znovu.",
+      "error_rate_limited": "Bylo odesláno příliš mnoho souborů – počkejte prosím chvíli a zkuste to znovu.",
+      "type_user_manual": "Návod k použití"
+    },
+    "type_user_manual": "Návod k použití"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
