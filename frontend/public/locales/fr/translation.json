@@ -117,7 +117,7 @@
     "email_placeholder": "email@domain.com",
     "notify_me": "ME TENIR AU COURANT",
     "subscribing": "Souscrire...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Vous êtes désormais abonné ! Nous vous tiendrons informé dès que de nouvelles fonctionnalités ou de nouveaux événements seront disponibles.",
     "db_status": "État de la base de données",
     "db_online": "EN LIGNE",
     "stats_products": "PRODUITS",
@@ -146,7 +146,18 @@
     "r2r_quote": "Aucune pièce réparable par l’utilisateur à l’intérieur.",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERREUR:"
+    "error_prefix": "ERREUR:",
+    "mascot_caption": "trouvé cloué quelque part dans la casse — droit à la réparation, aucune pièce réparable par l'utilisateur à l'intérieur",
+    "countdown_live": "NOUS SOMMES EN DIRECT",
+    "countdown_seconds": "SEC",
+    "opensauce_title": "NOUS LANCONS NOTRE PROJET À",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Nous serons présents à OpenSauce 2026 ! Venez nous rendre visite le jour du lancement !",
+    "opensauce_dates": "2026 · 17-19 juillet",
+    "opensauce_approved": "APPROUVÉ",
+    "countdown_days": "JOURS",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN"
   },
   "products": {
     "title": "PRODUIT",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "Source inconnue"
-    }
+      "source_unknown": "Source inconnue",
+      "error_session_expired": "Votre session a expiré. Veuillez réessayer de télécharger le fichier.",
+      "error_rate_limited": "Trop de fichiers envoyés — veuillez patienter un instant avant de réessayer.",
+      "type_user_manual": "Manuel d'utilisation"
+    },
+    "type_user_manual": "Manuel d'utilisation"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
