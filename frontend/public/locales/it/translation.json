@@ -117,7 +117,7 @@
     "email_placeholder": "email@dominio.com.",
     "notify_me": "INVIAMI UNA NOTIFICA",
     "subscribing": "Sottoscrizione in corso...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Ti sei iscritto! Ti informeremo non appena saranno disponibili nuove funzionalità o eventi.",
     "db_status": "stato della base di dati",
     "db_online": "ONLINE",
     "stats_products": "PRODOTTI",
@@ -146,7 +146,18 @@
     "r2r_quote": "Non contiene parti riparabili dall'utente.",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERRORE:"
+    "error_prefix": "ERRORE:",
+    "mascot_caption": "ritrovato inchiodato da qualche parte nella discarica — diritto alla riparazione, nessuna parte riparabile dall’utente all’interno",
+    "countdown_live": "SIAMO IN DIRETTA",
+    "opensauce_title": "IL LANCIO AVRÀ LUOGO AL",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Saremo presenti all’OpenSauce 2026! Venite a trovarci il giorno del lancio!",
+    "opensauce_dates": "2026 · 17-19 luglio",
+    "opensauce_approved": "APPROVATO",
+    "countdown_days": "GIORNI",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC"
   },
   "products": {
     "title": "PRODOTTO",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "Origine sconosciuta"
-    }
+      "source_unknown": "Origine sconosciuta",
+      "error_session_expired": "La tua sessione è scaduta. Prova a caricare nuovamente il file.",
+      "error_rate_limited": "Troppi caricamenti: attendi qualche istante prima di riprovare.",
+      "type_user_manual": "Manuale d'uso"
+    },
+    "type_user_manual": "Manuale d'uso"
   },
   "recipes": {
     "title": "PROJECT RECIPES",

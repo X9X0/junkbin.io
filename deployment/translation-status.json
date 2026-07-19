@@ -48,12 +48,12 @@
     "strings_updated": 148
   },
   "it": {
-    "last_run": "2026-03-07",
-    "percent": null,
+    "last_run": "2026-07-19",
+    "percent": 100,
     "status": "complete",
-    "strings_total": null,
-    "strings_translated": null,
-    "strings_updated": 732
+    "strings_total": 1059,
+    "strings_translated": 1059,
+    "strings_updated": 16
   },
   "nl": {
     "last_run": "2026-03-07",
