@@ -117,7 +117,7 @@
     "email_placeholder": "enter_email@domain.com",
     "notify_me": "NOTIFY ME",
     "subscribing": "SUBSCRIBING...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Feliratkoztál! Értesítünk, ha új funkciók vagy események jelennek meg.",
     "db_status": "// DATABASE STATUS:",
     "db_online": "ONLINE",
     "stats_products": "PRODUCTS",
@@ -146,7 +146,18 @@
     "r2r_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERROR:"
+    "error_prefix": "ERROR:",
+    "opensauce_dates": "2026 · július 17–19.",
+    "opensauce_approved": "JÓVÁHAGYVA",
+    "countdown_days": "NAPOK",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "ÉLŐBEN VAGYUNK",
+    "mascot_caption": "valahol a roncstelepen szögezve találtam — javítási jog, a készülékben nincsenek a felhasználó által cserélhető alkatrészek",
+    "opensauce_title": "A KINDENZÁRÓ ESEMÉNYT A KÖVETKEZŐ HELYEN TARTJUK:",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Ott leszünk az OpenSauce 2026-on! Gyere el hozzánk a rendezvény nyitónapján!"
   },
   "products": {
     "title": "PRODUCT",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "Iktatás",
       "source_leaked": "Leaked Document",
-      "source_unknown": "Ismeretlen forrás"
-    }
+      "source_unknown": "Ismeretlen forrás",
+      "type_user_manual": "Használati útmutató",
+      "error_session_expired": "A munkamenet lejárt. Kérjük, próbálja meg újra feltölteni.",
+      "error_rate_limited": "Túl sok feltöltés történt — kérjük, várjon egy kicsit, mielőtt újra megpróbálná."
+    },
+    "type_user_manual": "Használati útmutató"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
