@@ -117,7 +117,7 @@
     "email_placeholder": "email@domain.com",
     "notify_me": "LAAT HET ME WETEN.",
     "subscribing": "Abonneren...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Je bent nu geabonneerd! We houden je op de hoogte van nieuwe functies of evenementen.",
     "db_status": "Database status",
     "db_online": "ONLINE",
     "stats_products": "PRODUCTEN",
@@ -146,7 +146,18 @@
     "r2r_quote": "ER ZIJN GEEN INTERNE ONDERDELEN DIE DOOR DE GEBRUIKER KUNNEN WORDEN VERVANGEN OF ONDERHOUDEN.",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "FOUT:"
+    "error_prefix": "FOUT:",
+    "mascot_caption": "ergens op de schroothoop aangetroffen — recht op reparatie, geen onderdelen die door de gebruiker kunnen worden vervangen",
+    "opensauce_statement": "We zijn aanwezig op OpenSauce 2026! Kom ons daar op de lanceringsdag opzoeken!",
+    "opensauce_dates": "2026 · 17–19 juli",
+    "opensauce_approved": "GOEDGEKEURD",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "WE ZIJN LIVE",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_title": "WE GAAN VAN START OP",
+    "countdown_days": "DAGEN"
   },
   "products": {
     "title": "PRODUCT",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "onbekende bron"
-    }
+      "source_unknown": "onbekende bron",
+      "type_user_manual": "Gebruikershandleiding",
+      "error_session_expired": "Je sessie is verlopen. Probeer het uploaden nog eens.",
+      "error_rate_limited": "Er zijn te veel bestanden geüpload — wacht even voordat je het opnieuw probeert."
+    },
+    "type_user_manual": "Gebruikershandleiding"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
