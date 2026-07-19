@@ -117,7 +117,7 @@
     "email_placeholder": "unesite_email@domen.com",
     "notify_me": "OBAVESTI ME",
     "subscribing": "PRETPLATA U TOKU...",
-    "subscription_confirmed": "PRETPLATA_POTVRĐENA — Bićete obavešteni pri pokretanju.",
+    "subscription_confirmed": "Потврђена претплата — претплаћени сте! Обавестићемо вас када буду доступне нове функције или догађаји.",
     "db_status": "// STATUS BAZE PODATAKA:",
     "db_online": "Онлајн",
     "stats_products": "PROIZVODI",
@@ -146,7 +146,18 @@
     "r2r_quote": "У унутрашњости нема делова које корисник може да сервисира",
     "r2r_desc": "Proizvođači ne žele da popravite svoje uređaje. Mi gradimo bazu podataka koja vam u tome pomaže. Svaka dokumentovana komponenta, svaka podeljena šema, svaka fotografija rastavljanja pomaže nezavisnim servisima, hobistima i potrošačima u borbi za pravo na popravku.",
     "learn_r2r": "SAZNAJTE VIŠE O PRAVU NA POPRAVKU →",
-    "error_prefix": "GREŠKA:"
+    "error_prefix": "GREŠKA:",
+    "opensauce_title": "Лансирамо у",
+    "opensauce_title_highlight": "Опен Соус 2026",
+    "opensauce_statement": "Бићемо на OpenSauce 2026! Потражите нас тамо на дан лансирања!",
+    "opensauce_dates": "2026 · 17–19 јул",
+    "mascot_caption": "пронађен забоден негде на депонији — само за поправку, унутра нема делова које корисник може сам заменити",
+    "opensauce_approved": "ОДОБРЕНО",
+    "countdown_days": "Дани",
+    "countdown_hours": "ХРС",
+    "countdown_minutes": "МИН",
+    "countdown_seconds": "SEC",
+    "countdown_live": "Уживо"
   },
   "products": {
     "title": "BAZA",
@@ -329,8 +340,12 @@
       "source_reverse": "Реверзно инжењеринг",
       "source_fcc": "Поднесак FCC-у",
       "source_leaked": "Процурели документ",
-      "source_unknown": "Непознат извор"
-    }
+      "source_unknown": "Непознат извор",
+      "error_session_expired": "Ваша сесија је истекла. Молимо поново покушајте да отпремите.",
+      "error_rate_limited": "Превише отпремања — молимо сачекајте мало пре него што поново покушате.",
+      "type_user_manual": "Упутство за коришћење"
+    },
+    "type_user_manual": "Упутство за коришћење"
   },
   "recipes": {
     "title": "RECEPTI ZA PROJEKTE",
