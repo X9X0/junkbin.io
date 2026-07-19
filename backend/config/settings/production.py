@@ -219,6 +219,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'search': '60/minute',
     'messaging': '30/minute',
     'lookup': '20/hour',
+    'subscribe': '10/hour',
 }
 
 # =============================================================================
