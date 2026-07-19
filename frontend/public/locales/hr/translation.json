@@ -117,7 +117,7 @@
     "email_placeholder": "enter_email@domain.com",
     "notify_me": "NOTIFY ME",
     "subscribing": "SUBSCRIBING...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Pretplata je potvrđena! Obavijestit ćemo vas kad budu dostupne nove značajke ili događaji.",
     "db_status": "// DATABASE STATUS:",
     "db_online": "ONLINE",
     "stats_products": "PRODUCTS",
@@ -146,7 +146,18 @@
     "r2r_quote": "\"NO USER SERVICEABLE PARTS INSIDE\"",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "ERROR:"
+    "error_prefix": "ERROR:",
+    "mascot_caption": "nađen negdje na otpadu — samo za popravak, nema dijelova pogodnih za korisničku zamjenu",
+    "countdown_live": "Prijenos uživo",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "opensauce_title": "Pokrećemo u",
+    "opensauce_title_highlight": "OTVORENI UMAC 2026",
+    "opensauce_statement": "Bit ćemo na OpenSauceu 2026! Dođite nas potražiti tamo na dan lansiranja!",
+    "opensauce_dates": "2026 · 17.–19. srpnja",
+    "opensauce_approved": "ODOBRENO",
+    "countdown_days": "DANI"
   },
   "products": {
     "title": "PRODUCT",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "Unknown Source"
-    }
+      "source_unknown": "Unknown Source",
+      "type_user_manual": "Upute za uporabu",
+      "error_session_expired": "Vaša sesija je istekla. Molimo pokušajte ponovno prenijeti.",
+      "error_rate_limited": "Previše otpremljenih datoteka — molimo pričekajte malo prije nego što ponovno pokušate."
+    },
+    "type_user_manual": "Upute za uporabu"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
