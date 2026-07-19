@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 class SubscribeRateThrottle(AnonRateThrottle):
     """Rate limit for newsletter subscriptions: 10 per hour per IP."""
-    rate = '10/hour'
+    scope = 'subscribe'
 
 
 class SubscribeView(APIView):

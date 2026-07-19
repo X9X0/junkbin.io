@@ -220,6 +220,7 @@ REST_FRAMEWORK = {
         'search': '60/minute',
         'messaging': '30/minute',
         'lookup': '20/hour',
+        'subscribe': '10/hour',
     },
 }
 
