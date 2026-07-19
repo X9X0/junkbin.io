@@ -117,7 +117,7 @@
     "email_placeholder": "enter_email@domain.com",
     "notify_me": "NOTIFICĂ-MĂ",
     "subscribing": "ABONARE...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Vei primi o notificare la lansare.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Te-ai abonat! Te vom anunța când vor apărea noi funcții sau evenimente.",
     "db_status": "// STATUSUL BAZEI DE DATE:",
     "db_online": "ONLINE",
     "stats_products": "PRODUSE",
@@ -146,7 +146,18 @@
     "r2r_quote": "„NU CONȚINE PIESE CARE POT FI REPARATE DE UTILIZATOR”",
     "r2r_desc": "Producătorii nu vor ca tu să-ți repari dispozitivele. Noi construim o bază de date pentru a te ajuta să le repari oricum. Fiecare componentă documentată, fiecare schemă tehnică partajată, fiecare fotografie de dezasamblare ajută atelierele independente de reparații, pasionații și consumatorii să lupte pentru dreptul lor la reparație.",
     "learn_r2r": "AFLAȚI MAI MULTE DESPRE DREPTUL LA REPARAȚIE →",
-    "error_prefix": "EROARE:"
+    "error_prefix": "EROARE:",
+    "mascot_caption": "găsit bătut în cuie undeva în groapa de gunoi — dreptul la reparație, nu conține piese care pot fi reparate de utilizator",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Vom fi prezenți la OpenSauce 2026! Veniți să ne căutați acolo în ziua lansării!",
+    "opensauce_dates": "2026 · 17–19 iulie",
+    "opensauce_approved": "APROBAT",
+    "countdown_days": "ZILE",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "SUNTEM ÎN DIRECT",
+    "opensauce_title": "LANSAM LA"
   },
   "products": {
     "title": "PRODUS",
@@ -329,8 +340,12 @@
       "source_reverse": "Realizat prin inginerie inversă",
       "source_fcc": "Depunere la FCC",
       "source_leaked": "Document scurs în presă",
-      "source_unknown": "Sursă necunoscută"
-    }
+      "source_unknown": "Sursă necunoscută",
+      "error_session_expired": "Sesiunea dumneavoastră a expirat. Vă rugăm să încercați din nou să încărcați fișierul.",
+      "error_rate_limited": "S-au încărcat prea multe fișiere — te rugăm să aștepți puțin înainte de a încerca din nou.",
+      "type_user_manual": "Manual de utilizare"
+    },
+    "type_user_manual": "Manual de utilizare"
   },
   "recipes": {
     "title": "REȚETE DE PROIECT",
