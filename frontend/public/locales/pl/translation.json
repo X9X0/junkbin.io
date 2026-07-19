@@ -117,7 +117,7 @@
     "email_placeholder": "enter_email@domain.com",
     "notify_me": "POWIADOM MNIE",
     "subscribing": "TRWA REJESTRACJA...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Otrzymasz powiadomienie w momencie premiery.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Subskrypcja została potwierdzona! Poinformujemy Cię o nowych funkcjach lub wydarzeniach.",
     "db_status": "// STAN BAZY DANYCH:",
     "db_online": "W&#xA0;LINII",
     "stats_products": "PRODUKTY",
@@ -146,7 +146,18 @@
     "r2r_quote": "Wewnątrz nie ma części nadających się do naprawy przez użytkownika.",
     "r2r_desc": "Producenci nie chcą, żebyś samodzielnie naprawiał swoje urządzenia. Tworzymy bazę danych, która pomoże Ci to zrobić mimo wszystko. Każdy udokumentowany element, każdy udostępniony schemat, każde zdjęcie z demontażu pomaga niezależnym warsztatom naprawczym, hobbystom i konsumentom walczyć o swoje prawo do naprawy.",
     "learn_r2r": "DOWIEDZ SIĘ WIĘCEJ O PRAWIE DO NAPRAWY →",
-    "error_prefix": "BŁĄD:"
+    "error_prefix": "BŁĄD:",
+    "opensauce_approved": "ZATWIERDZONE",
+    "countdown_days": "DNI",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "JESTEŚMY NA ŻYWO",
+    "opensauce_title": "ROZPOCZYNAMY DZIAŁALNOŚĆ W",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Będziemy na OpenSauce 2026! Zapraszamy do odwiedzenia nas w dniu premiery!",
+    "mascot_caption": "znalezione przybite gwoździami gdzieś na złomowisku — prawo do naprawy, brak części, które użytkownik mógłby samodzielnie naprawić",
+    "opensauce_dates": "2026 · 17–19 lipca"
   },
   "products": {
     "title": "PRODUKT",
@@ -329,8 +340,12 @@
       "source_reverse": "Opracowane na podstawie istniejącego rozwiązania",
       "source_fcc": "Wniosek złożony w FCC",
       "source_leaked": "Wyciekły dokumenty",
-      "source_unknown": "Nieznane źródło"
-    }
+      "source_unknown": "Nieznane źródło",
+      "error_session_expired": "Twoja sesja wygasła. Spróbuj przesłać plik ponownie.",
+      "error_rate_limited": "Zbyt wiele plików przesłano — proszę chwilę poczekać i spróbować ponownie.",
+      "type_user_manual": "Instrukcja obsługi"
+    },
+    "type_user_manual": "Instrukcja obsługi"
   },
   "recipes": {
     "title": "PRZEPISY PROJEKTOWE",
