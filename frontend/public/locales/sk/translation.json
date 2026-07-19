@@ -117,7 +117,7 @@
     "email_placeholder": "email@domena.sk",
     "notify_me": "Upozornite ma",
     "subscribing": "Subscribing",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Pri spustení dostanete upozornenie.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Ste prihlásený na odber! Dáme vám vedieť, keď sa objavia nové funkcie alebo podujatia.",
     "db_status": "// STAV DATABÁZY:",
     "db_online": "ONLINE",
     "stats_products": "Žiadne produkty",
@@ -146,7 +146,18 @@
     "r2r_quote": "SÚČASTI ZARIADENIA NIE SÚ URČENÉ NA OPRAVU BEŽNÝM POUŽÍVATEĽOM.",
     "r2r_desc": "Výrobcovia nechcú, aby ste si svoje zariadenia opravovali sami. Vytvárame databázu, ktorá vám v tom aj tak pomôže. Každá zdokumentovaná súčiastka, každý zdieľaný schématický nákres a každá fotografia z rozobratia pomáha nezávislým opravárňam, nadšencom a spotrebiteľom bojovať za svoje právo na opravu.",
     "learn_r2r": "ZISTITE VIAC O PRÁVE NA OPRAVU →",
-    "error_prefix": "CHYBA:"
+    "error_prefix": "CHYBA:",
+    "countdown_minutes": "MIN",
+    "opensauce_title": "ZAČÍNAME NA",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Budeme na OpenSauce 2026! Príďte nás tam navštíviť v deň spustenia!",
+    "opensauce_dates": "2026 · 17.–19. júla",
+    "opensauce_approved": "SCHVÁLENÉ",
+    "countdown_days": "DNI",
+    "countdown_hours": "HRS",
+    "countdown_live": "VYSÍLAME NAŽIVO",
+    "mascot_caption": "nájdené niekde na smetisku – právo na opravu, vo vnútri sa nenachádzajú žiadne diely, ktoré by mohol používateľ sám opraviť",
+    "countdown_seconds": "SEC"
   },
   "products": {
     "title": "VÝROBOK",
@@ -329,8 +340,12 @@
       "source_reverse": "Získané spätnou analýzou",
       "source_fcc": "Podanie prihlášky",
       "source_leaked": "Uniknutý dokument",
-      "source_unknown": "Neznámy zdroj"
-    }
+      "source_unknown": "Neznámy zdroj",
+      "error_session_expired": "Vaša relácia vypršala. Skúste prosím nahrať súbor znovu.",
+      "error_rate_limited": "Príliš veľa nahratých súborov — prosím, chvíľu počkajte a potom to skúste znova.",
+      "type_user_manual": "Návod na použitie"
+    },
+    "type_user_manual": "Návod na použitie"
   },
   "recipes": {
     "title": "RECEPTY Z PROJEKTU",
