@@ -117,7 +117,7 @@
     "email_placeholder": "vnesite_email@domena.com",
     "notify_me": "OBVESTITE ME",
     "subscribing": "NAROČANJE...",
-    "subscription_confirmed": "NAROČNINA_POTRJENA — Obveščeni boste ob zagonu.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Naročili ste se! Obvestili vas bomo, ko bodo na voljo nove funkcije ali dogodki.",
     "db_status": "// STATUS BAZE PODATKOV:",
     "db_online": "SPLETNO",
     "stats_products": "IZDELKI",
@@ -146,7 +146,18 @@
     "r2r_quote": "\"V notranjosti ni delov, ki jih lahko popravi uporabnik\"",
     "r2r_desc": "Proizvajalci ne želijo, da popravite svoje naprave. Mi gradimo bazo podatkov, ki vam pri tem pomaga. Vsaka dokumentirana komponenta, vsaka deljena shema, vsaka fotografija razstavitve pomaga neodvisnim servisom, hobbistom in potrošnikom v boju za pravico do popravila.",
     "learn_r2r": "IZVEDI VEČ O PRAVICI DO POPRAVILA →",
-    "error_prefix": "NAPAKA:"
+    "error_prefix": "NAPAKA:",
+    "opensauce_title": "ZAČENJAMO OB",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Udeležili se bomo dogodka OpenSauce 2026! Pridite nas tam obiskat na dan otvoritve!",
+    "opensauce_dates": "2026 · 17.–19. julij",
+    "opensauce_approved": "ODOBRENO",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "PRENOS V ŽIVO",
+    "mascot_caption": "najdeno pritrjeno nekje na smetišču — pravica do popravila, v notranjosti ni delov, ki bi jih lahko popravil uporabnik",
+    "countdown_days": "DNEVI"
   },
   "products": {
     "title": "BAZA",
@@ -329,8 +340,12 @@
       "source_reverse": "Razvit z uporabo tehnike povratnega inženirstva",
       "source_fcc": "Vloga pri FCC",
       "source_leaked": "Dokument, ki je pricurljal v javnost",
-      "source_unknown": "Neznan vir"
-    }
+      "source_unknown": "Neznan vir",
+      "error_session_expired": "Vaša seja je potekla. Poskusite ponovno naložiti datoteko.",
+      "error_rate_limited": "Preveč naloženih datotek — prosimo, počakajte nekaj časa, preden poskusite znova.",
+      "type_user_manual": "Navodila za uporabo"
+    },
+    "type_user_manual": "Navodila za uporabo"
   },
   "recipes": {
     "title": "RECEPTI ZA PROJEKTE",
