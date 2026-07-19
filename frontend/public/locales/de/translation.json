@@ -117,7 +117,7 @@
     "email_placeholder": "email@domain.com",
     "notify_me": "BENACHRICHTIGE MICH.",
     "subscribing": "Abonniere...",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — You'll be notified at launch.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED – Du bist jetzt angemeldet! Wir informieren dich, sobald es neue Funktionen oder Veranstaltungen gibt.",
     "db_status": "Status der Datenbank:",
     "db_online": "ONLINE",
     "stats_products": "PRODUKTE",
@@ -146,7 +146,18 @@
     "r2r_quote": "KEINE REPARATURFÄHIGEN TEILE IM INNEREN.",
     "r2r_desc": "Manufacturers don't want you to fix your devices. We're building a database to help you fix it anyway. Every documented component, every shared schematic, every teardown photo helps independent repair shops, hobbyists, and consumers fight for their right to repair.",
     "learn_r2r": "LEARN MORE ABOUT RIGHT TO REPAIR →",
-    "error_prefix": "Fehler:"
+    "error_prefix": "Fehler:",
+    "mascot_caption": "irgendwo auf dem Schrottplatz festgenagelt gefunden – Recht auf Reparatur, keine vom Benutzer austauschbaren Teile im Inneren",
+    "opensauce_title": "WIR STARTEN AM",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Wir sind auf der OpenSauce 2026 dabei! Kommt am Tag der Eröffnung vorbei und besucht uns dort!",
+    "opensauce_dates": "2026 · 17.–19. Juli",
+    "opensauce_approved": "GENEHMIGT",
+    "countdown_days": "TAGE",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC",
+    "countdown_live": "WIR SIND LIVE"
   },
   "products": {
     "title": "PRODUKT",
@@ -329,8 +340,12 @@
       "source_reverse": "Reverse Engineered",
       "source_fcc": "FCC Filing",
       "source_leaked": "Leaked Document",
-      "source_unknown": "unbekannte Quelle"
-    }
+      "source_unknown": "unbekannte Quelle",
+      "error_session_expired": "Ihre Sitzung ist abgelaufen. Bitte versuchen Sie den Upload erneut.",
+      "error_rate_limited": "Zu viele Uploads – bitte warten Sie einen Moment, bevor Sie es erneut versuchen.",
+      "type_user_manual": "Bedienungsanleitung"
+    },
+    "type_user_manual": "Bedienungsanleitung"
   },
   "recipes": {
     "title": "PROJECT RECIPES",
@@ -445,7 +460,7 @@
     "login_to_continue": "Vielen Dank für's Registrieren. Bitte melde Dich an um fortzufahren.",
     "step4_subtitle": "Schritt 4: Dateien hochladen",
     "add_files_title": "Datei Anhängen",
-    "add_files_optional": "",
+    "add_files_optional": "optional",
     "add_files_desc": "Upload photos and documentation for {{label}}. You can also add files later from the {{type}} page.",
     "photos": "FOTOS",
     "documentation": "DOKUMENTATION",

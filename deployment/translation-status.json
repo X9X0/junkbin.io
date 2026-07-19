@@ -8,12 +8,12 @@
     "strings_updated": 46
   },
   "de": {
-    "last_run": "2026-03-07",
-    "percent": null,
+    "last_run": "2026-07-19",
+    "percent": 100,
     "status": "complete",
-    "strings_total": null,
-    "strings_translated": null,
-    "strings_updated": 757
+    "strings_total": 1059,
+    "strings_translated": 1059,
+    "strings_updated": 17
   },
   "es": {
     "last_run": "2026-07-19",
