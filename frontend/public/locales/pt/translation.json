@@ -117,7 +117,7 @@
     "email_placeholder": "email@dominio.com",
     "notify_me": "Notificar-me",
     "subscribing": "Subscrevendo",
-    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Receberá uma notificação assim que for lançado.",
+    "subscription_confirmed": "SUBSCRIPTION_CONFIRMED — Já estás inscrito! Iremos avisar-te quando surgirem novas funcionalidades ou eventos.",
     "db_status": "estado da base de dados",
     "db_online": "ONLINE",
     "stats_products": "PRODUTOS",
@@ -146,7 +146,18 @@
     "r2r_quote": "Não existem peças internas que possam ser mantidas pelo utilizador.",
     "r2r_desc": "Os fabricantes não querem que repare os seus dispositivos. Estamos a criar uma base de dados para o ajudar a repará-los na mesma. Cada componente documentado, cada esquema partilhado, cada fotografia de desmontagem ajuda as oficinas de reparação independentes, os amadores e os consumidores a lutar pelo seu direito à reparação.",
     "learn_r2r": "SABER MAIS SOBRE O DIREITO À REPARAÇÃO →",
-    "error_prefix": "ERRO:"
+    "error_prefix": "ERRO:",
+    "countdown_live": "ESTAMOS AO VIVO",
+    "mascot_caption": "encontrado pregado algures no ferro-velho — direito à reparação, sem peças que possam ser reparadas pelo utilizador no interior",
+    "opensauce_title": "VAMOS LANÇAR EM",
+    "opensauce_title_highlight": "OPEN SAUCE 2026",
+    "opensauce_statement": "Estaremos no OpenSauce 2026! Vem encontrar-nos lá no dia do lançamento!",
+    "opensauce_dates": "2026 · 17 a 19 de julho",
+    "opensauce_approved": "APROVADO",
+    "countdown_days": "DIAS",
+    "countdown_hours": "HRS",
+    "countdown_minutes": "MIN",
+    "countdown_seconds": "SEC"
   },
   "products": {
     "title": "PRODUTO",
@@ -329,8 +340,12 @@
       "source_reverse": "Recriado a partir de modelos existentes",
       "source_fcc": "Pedido apresentado à FCC",
       "source_leaked": "Documento divulgado",
-      "source_unknown": "Origem desconhecida"
-    }
+      "source_unknown": "Origem desconhecida",
+      "error_session_expired": "A sua sessão expirou. Por favor, tente fazer o upload novamente.",
+      "error_rate_limited": "Demasiados envios — por favor, aguarde um pouco antes de tentar novamente.",
+      "type_user_manual": "Manual do Utilizador"
+    },
+    "type_user_manual": "Manual do Utilizador"
   },
   "recipes": {
     "title": "RECEITAS DO PROJETO",
