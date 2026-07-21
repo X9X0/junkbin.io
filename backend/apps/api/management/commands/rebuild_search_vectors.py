@@ -17,7 +17,8 @@ class Command(BaseCommand):
                 SearchVector('manufacturer', weight='A') +
                 SearchVector('model_number', weight='A') +
                 SearchVector('fcc_id', weight='B') +
-                SearchVector('description', weight='C')
+                SearchVector('description', weight='C') +
+                SearchVector('teardown_notes', weight='D')
             )
         )
         self.stdout.write(self.style.SUCCESS(

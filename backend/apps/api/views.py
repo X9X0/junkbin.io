@@ -125,28 +125,45 @@ class SearchView(APIView):
         if search_type in ['all', 'products']:
             if len(query) > 2:
                 search_q = SearchQuery(query, search_type='plain')
-                products = Product.objects.filter(
+                products = list(Product.objects.filter(
                     search_vector=search_q, is_approved=True
                 ).annotate(
                     rank=SearchRank('search_vector', search_q)
-                ).order_by('-rank', '-view_count')[:limit]
+                ).order_by('-rank', '-view_count')[:limit])
 
                 # Fall back to icontains if FTS returns nothing
-                if not products.exists():
-                    products = Product.objects.filter(
+                if not products:
+                    products = list(Product.objects.filter(
                         Q(manufacturer__icontains=query) |
                         Q(model_number__icontains=query) |
                         Q(description__icontains=query) |
                         Q(fcc_id__icontains=query),
                         is_approved=True
-                    ).order_by('-view_count')[:limit]
+                    ).order_by('-view_count')[:limit])
             else:
-                products = Product.objects.filter(
+                products = list(Product.objects.filter(
                     Q(manufacturer__icontains=query) |
                     Q(model_number__icontains=query) |
                     Q(fcc_id__icontains=query),
                     is_approved=True
-                ).order_by('-view_count')[:limit]
+                ).order_by('-view_count')[:limit])
+
+            # Also surface products whose teardown notes, schematic notes
+            # (e.g. "this manual also covers the SN23x"), or comments
+            # mention the query, even when the product's own fields don't.
+            # Appended after the primary matches above since a direct
+            # manufacturer/model match should outrank an incidental mention.
+            remaining = limit - len(products)
+            if remaining > 0:
+                seen_ids = {p.id for p in products}
+                note_matches = Product.objects.filter(
+                    Q(teardown_notes__icontains=query) |
+                    Q(schematics__repair_relevance__icontains=query) |
+                    Q(schematics__description__icontains=query) |
+                    Q(comments__content__icontains=query),
+                    is_approved=True
+                ).exclude(id__in=seen_ids).distinct().order_by('-view_count')[:remaining]
+                products = products + list(note_matches)
 
             results['products'] = {
                 'count': len(products),
