@@ -29,6 +29,39 @@ class AlphaToBlack:
         return image
 
 
+class AdaptiveThumbnail:
+    """
+    ImageKit processor for product thumbnails.
+
+    Hard-crops to fill the target box when the source is reasonably close to
+    the target aspect ratio, which looks natural. Photos with a much
+    different aspect ratio (tall portrait shots, wide panorama/box scans,
+    etc.) would have a hard crop zoom in on a thin sliver of the subject, so
+    those are letterboxed onto a padded canvas instead, keeping the whole
+    photo visible.
+    """
+
+    def __init__(self, width, height, max_ratio_deviation=0.3, pad_color=(10, 10, 15)):
+        self.width = width
+        self.height = height
+        self.max_ratio_deviation = max_ratio_deviation
+        self.pad_color = pad_color
+
+    def process(self, image):
+        target_ratio = self.width / self.height
+        src_ratio = image.width / image.height
+        deviation = abs(src_ratio - target_ratio) / target_ratio
+
+        if deviation <= self.max_ratio_deviation:
+            return ResizeToFill(self.width, self.height).process(image)
+
+        fitted = ResizeToFit(self.width, self.height).process(image)
+        canvas = Image.new('RGB', (self.width, self.height), self.pad_color)
+        offset = ((self.width - fitted.width) // 2, (self.height - fitted.height) // 2)
+        canvas.paste(fitted, offset)
+        return canvas
+
+
 # Allowed file extensions for uploads
 ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
@@ -266,7 +299,7 @@ class ProductImage(models.Model):
     # Generated thumbnails
     thumbnail = ImageSpecField(
         source='image',
-        processors=[AlphaToBlack(), ResizeToFill(480, 360)],
+        processors=[AlphaToBlack(), AdaptiveThumbnail(480, 360)],
         format='JPEG',
         options={'quality': 85}
     )

@@ -161,7 +161,7 @@ export default function Lightbox({ images, initialIndex = 0, onClose }: Lightbox
             <button
               key={i}
               onClick={() => goTo(i)}
-              className={`w-14 h-14 flex-shrink-0 border-2 overflow-hidden transition-all ${
+              className={`w-16 aspect-[4/3] flex-shrink-0 border-2 overflow-hidden transition-all ${
                 i === index ? 'border-cyber-cyan' : 'border-white/20 hover:border-white/50'
               }`}
             >

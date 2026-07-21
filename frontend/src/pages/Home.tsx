@@ -268,7 +268,7 @@ export default function Home() {
                   to={`/products/${product.id}`}
                   className="card-cyber p-4 min-w-[220px] max-w-[220px] flex-shrink-0 hover:border-cyber-cyan/50 transition-all group"
                 >
-                  <div className="aspect-video mb-3 bg-cyber-black flex items-center justify-center border border-cyber-light/20 overflow-hidden">
+                  <div className="aspect-[4/3] mb-3 bg-cyber-black flex items-center justify-center border border-cyber-light/20 overflow-hidden">
                     {product.primary_image ? (
                       <img
                         src={product.primary_image.thumbnail || product.primary_image.image}

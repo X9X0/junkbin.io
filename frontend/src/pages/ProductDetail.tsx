@@ -230,7 +230,7 @@ export default function ProductDetail() {
                   key={img.id}
                   onClick={() => setSelectedImage(idx)}
                   className={clsx(
-                    'w-20 h-20 flex-shrink-0 border',
+                    'w-24 aspect-[4/3] flex-shrink-0 border',
                     idx === selectedImage
                       ? 'border-cyber-cyan'
                       : 'border-cyber-light/30 hover:border-cyber-light'
@@ -246,7 +246,7 @@ export default function ProductDetail() {
               {isAuthenticated && (
                 <button
                   onClick={() => setActiveTab('images')}
-                  className="w-20 h-20 flex-shrink-0 border border-dashed border-cyber-cyan/50 hover:border-cyber-cyan hover:bg-cyber-cyan/10 transition-all flex flex-col items-center justify-center text-cyber-cyan"
+                  className="w-24 aspect-[4/3] flex-shrink-0 border border-dashed border-cyber-cyan/50 hover:border-cyber-cyan hover:bg-cyber-cyan/10 transition-all flex flex-col items-center justify-center text-cyber-cyan"
                 >
                   <Upload className="h-5 w-5 mb-1" />
                   <span className="text-[10px] font-mono">{t('product_detail.add_image_btn')}</span>
@@ -526,9 +526,20 @@ export default function ProductDetail() {
               <div className="text-center py-8 text-gray-500">
                 <Cpu className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>{t('product_detail.no_teardown')}</p>
-                <Link to="/submit" className="text-cyber-cyan hover:underline text-sm mt-2 inline-block">
-                  {t('product_detail.contribute_notes')}
-                </Link>
+                {isAuthenticated ? (
+                  (user?.is_staff || product.created_by?.id === user?.id) && (
+                    <button
+                      onClick={() => setShowEditModal(true)}
+                      className="text-cyber-cyan hover:underline text-sm mt-2 inline-block"
+                    >
+                      {t('product_detail.contribute_notes')}
+                    </button>
+                  )
+                ) : (
+                  <Link to="/login" className="text-cyber-cyan hover:underline text-sm mt-2 inline-block">
+                    {t('product_detail.login_to_contribute')}
+                  </Link>
+                )}
               </div>
             )}
           </div>

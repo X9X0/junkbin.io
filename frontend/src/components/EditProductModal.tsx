@@ -30,6 +30,7 @@ export default function EditProductModal({
   const [yearManufactured, setYearManufactured] = useState('');
   const [fccId, setFccId] = useState('');
   const [description, setDescription] = useState('');
+  const [teardownNotes, setTeardownNotes] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -41,6 +42,7 @@ export default function EditProductModal({
       setYearManufactured(product.year_manufactured ? String(product.year_manufactured) : '');
       setFccId(product.fcc_id || '');
       setDescription(product.description || '');
+      setTeardownNotes(product.teardown_notes || '');
       setError('');
     }
   }, [isOpen, product]);
@@ -70,6 +72,7 @@ export default function EditProductModal({
     if (yearManufactured) data.year_manufactured = parseInt(yearManufactured, 10);
     if (fccId) data.fcc_id = fccId;
     if (description) data.description = description;
+    data.teardown_notes = teardownNotes;
     mutation.mutate(data);
   };
 
@@ -208,6 +211,19 @@ export default function EditProductModal({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
+              className="input-cyber resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
+              Teardown Notes
+            </label>
+            <textarea
+              value={teardownNotes}
+              onChange={(e) => setTeardownNotes(e.target.value)}
+              rows={5}
+              placeholder="Disassembly steps, component locations, repair tips..."
               className="input-cyber resize-none"
             />
           </div>

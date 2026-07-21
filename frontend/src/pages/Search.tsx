@@ -202,7 +202,7 @@ export default function Search() {
                           to={`/products/${product.id}`}
                           className="card-cyber p-4 flex items-center gap-4 hover:border-cyber-cyan/50 transition-all group"
                         >
-                          <div className="w-16 h-16 bg-cyber-black flex items-center justify-center flex-shrink-0">
+                          <div className="w-16 aspect-[4/3] bg-cyber-black flex items-center justify-center flex-shrink-0">
                             {product.primary_image?.thumbnail ? (
                               <img
                                 src={product.primary_image.thumbnail}
