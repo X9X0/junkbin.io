@@ -191,6 +191,17 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         return obj.comments.count()
 
 
+def _product_duplicate_thumbnail(product, request):
+    """Best-approved image URL for a product, for the duplicate-suggestion UI."""
+    image = product.images.filter(is_approved=True, image_type='overview').first()
+    if not image:
+        image = product.images.filter(is_approved=True).first()
+    if image and image.thumbnail:
+        url = image.thumbnail.url
+        return request.build_absolute_uri(url) if request else url
+    return None
+
+
 class ProductCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating new products."""
 
@@ -202,6 +213,10 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'fcc_id', 'ic_id', 'part_number', 'description', 'teardown_notes'
         ]
         read_only_fields = ['id', 'slug']
+        # Disable DRF's auto-generated UniqueTogetherValidator (from the model's
+        # UniqueConstraint) — it would run before validate() below and short-circuit
+        # with a generic message, never attaching duplicate_of for the frontend.
+        validators = []
         extra_kwargs = {
             'revision': {'required': False, 'default': ''},
             'region': {'required': False, 'default': 'global'},
@@ -224,10 +239,26 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
 
-        if queryset.exists():
-            raise serializers.ValidationError(
-                _('A product with this manufacturer, model, revision, and region already exists.')
-            )
+        existing = queryset.first()
+        if existing:
+            request = self.context.get('request')
+            description = existing.description or ''
+            raise serializers.ValidationError({
+                'non_field_errors': [
+                    _('A product with this manufacturer, model, revision, and region already exists.')
+                ],
+                'duplicate_of': {
+                    'type': 'product',
+                    'id': str(existing.id),
+                    'slug': existing.slug,
+                    'manufacturer': existing.manufacturer,
+                    'model_number': existing.model_number,
+                    'category_display': existing.get_category_display(),
+                    'year_manufactured': existing.year_manufactured,
+                    'description': description[:200] + ('…' if len(description) > 200 else ''),
+                    'thumbnail': _product_duplicate_thumbnail(existing, request),
+                },
+            })
         return attrs
 
     def create(self, validated_data):

@@ -8,7 +8,7 @@ import { Cpu, Package, Upload, ChevronRight, ChevronLeft, Check, AlertCircle, Ex
 import clsx from 'clsx';
 import BomTemplateDownload from '../components/BomTemplateDownload';
 import ModerationNotice from '../components/ModerationNotice';
-import { parseApiError } from '../utils/formErrors';
+import { parseApiError, getDuplicateOf, type DuplicateOf } from '../utils/formErrors';
 import { PRODUCT_CATEGORIES, REGIONS, COMPONENT_TYPES } from '../utils/constants';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
 import SchematicUpload from '../components/SchematicUpload';
@@ -52,6 +52,7 @@ export default function Submit() {
   const [submitType, setSubmitType] = useState<SubmitType>('product');
   const [step, setStep] = useState(1);
   const [error, setError] = useState<string | null>(null);
+  const [duplicate, setDuplicate] = useState<DuplicateOf | null>(null);
   const [submittedItem, setSubmittedItem] = useState<SubmittedItem | null>(null);
   const [uploadsDone, setUploadsDone] = useState(false);
   const [uploadTab, setUploadTab] = useState<'photos' | 'docs'>('photos');
@@ -100,6 +101,7 @@ export default function Submit() {
     },
     onError: (err: any) => {
       setError(parseApiError(err, t('submit.error_product')));
+      setDuplicate(getDuplicateOf(err));
     },
   });
 
@@ -117,6 +119,7 @@ export default function Submit() {
     },
     onError: (err: any) => {
       setError(parseApiError(err, t('submit.error_component')));
+      setDuplicate(getDuplicateOf(err));
     },
   });
 
@@ -155,11 +158,13 @@ export default function Submit() {
   const handleProductChange = (field: keyof ProductFormData, value: string) => {
     setProductData((prev) => ({ ...prev, [field]: value }));
     setError(null);
+    setDuplicate(null);
   };
 
   const handleComponentChange = (field: keyof ComponentFormData, value: string) => {
     setComponentData((prev) => ({ ...prev, [field]: value }));
     setError(null);
+    setDuplicate(null);
   };
 
   const handleSubmitProduct = () => {
@@ -192,6 +197,7 @@ export default function Submit() {
     setSubmittedItem(null);
     setStep(1);
     setError(null);
+    setDuplicate(null);
     setUploadsDone(false);
     setUploadTab('photos');
     setDsFile(null);
@@ -527,7 +533,47 @@ export default function Submit() {
         {/* Error Display */}
         {error && (
           <div className="mb-6 p-4 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm">
-            {error}
+            <p>{duplicate ? t('submit.duplicate_desc') : error}</p>
+            {duplicate && (
+              <a
+                href={
+                  duplicate.type === 'product'
+                    ? `/products/${duplicate.id}`
+                    : `/components/${duplicate.id}/products`
+                }
+                className="mt-3 flex items-start gap-3 p-3 border border-cyber-cyan/40 bg-cyber-dark/60 text-left hover:border-cyber-cyan transition-colors"
+              >
+                {duplicate.thumbnail ? (
+                  <img
+                    src={duplicate.thumbnail}
+                    alt=""
+                    className="h-14 w-14 object-cover shrink-0 border border-cyber-light/30"
+                  />
+                ) : (
+                  <div className="h-14 w-14 shrink-0 border border-cyber-light/30 flex items-center justify-center text-gray-500">
+                    <Package className="h-6 w-6" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1 font-mono text-cyber-cyan">
+                    <span className="truncate">
+                      {duplicate.type === 'product'
+                        ? `${duplicate.manufacturer} ${duplicate.model_number}`
+                        : `${duplicate.manufacturer} ${duplicate.part_number}`}
+                    </span>
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {duplicate.type === 'product'
+                      ? [duplicate.category_display, duplicate.year_manufactured].filter(Boolean).join(' • ')
+                      : [duplicate.component_type_display, duplicate.package_type].filter(Boolean).join(' • ')}
+                  </div>
+                  {duplicate.description && (
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{duplicate.description}</p>
+                  )}
+                </div>
+              </a>
+            )}
           </div>
         )}
 

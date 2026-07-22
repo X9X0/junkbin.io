@@ -41,7 +41,11 @@ class AdaptiveThumbnail:
     photo visible.
     """
 
-    def __init__(self, width, height, max_ratio_deviation=0.3, pad_color=(10, 10, 15)):
+    def __init__(self, width, height, max_ratio_deviation=0.2, pad_color=(10, 10, 15)):
+        # 0.2 keeps common photography ratios (3:2, 5:4) hard-cropped, but pushes
+        # square (1:1) images into letterbox — 1:1 vs. this class's 480x360 (4:3)
+        # target deviates ~0.25, which used to sit just under a 0.3 threshold and
+        # still got hard-cropped, clipping the subject on square vendor/stock photos.
         self.width = width
         self.height = height
         self.max_ratio_deviation = max_ratio_deviation
@@ -64,7 +68,7 @@ class AdaptiveThumbnail:
 
 # Allowed file extensions for uploads
 ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
-ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
+ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'avif']
 
 
 def product_image_path(instance, filename):

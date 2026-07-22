@@ -103,6 +103,7 @@ export function parseApiError(err: any, fallback = 'Something went wrong. Please
   if (typeof data === 'object') {
     const parts: string[] = [];
     for (const [field, value] of Object.entries(data)) {
+      if (field === 'duplicate_of') continue; // structured metadata, not a message — see getDuplicateOf()
       const label = getFieldLabel(field);
       const messages = flattenErrors(value);
       if (!label) {
@@ -116,4 +117,33 @@ export function parseApiError(err: any, fallback = 'Something went wrong. Please
   }
 
   return fallback;
+}
+
+export interface DuplicateOf {
+  type: 'product' | 'component';
+  id: string;
+  slug?: string;
+  manufacturer: string;
+  model_number?: string;
+  part_number?: string;
+  category_display?: string;
+  year_manufactured?: number | null;
+  component_type_display?: string;
+  package_type?: string;
+  description?: string;
+  thumbnail?: string | null;
+}
+
+/**
+ * Extract the "duplicate_of" pointer a create serializer attaches when a
+ * submission collides with an existing Product/Component, so the UI can
+ * link to the existing entry instead of just showing an error string.
+ *
+ * Checks both the top level (Product/Component create) and nested under
+ * `new_component` (inline component creation via ProductComponentCreateSerializer).
+ */
+export function getDuplicateOf(err: any): DuplicateOf | null {
+  const data = err?.response?.data;
+  if (!data || typeof data !== 'object') return null;
+  return data.duplicate_of ?? data.new_component?.duplicate_of ?? null;
 }

@@ -225,6 +225,24 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         return ComponentDatasheetSerializer(qs, many=True, context=self.context).data
 
 
+def _component_duplicate_thumbnail(component, request):
+    """Best available image URL for a component (own image, else type default)."""
+    image = component.images.filter(is_approved=True).first()
+    if image and image.thumbnail:
+        url = image.thumbnail.url
+        return request.build_absolute_uri(url) if request else url
+
+    type_img = ComponentTypeImage.objects.filter(
+        component_type=component.component_type, package_type=component.package_type
+    ).first() or ComponentTypeImage.objects.filter(
+        component_type=component.component_type, package_type=''
+    ).first()
+    if type_img and type_img.thumbnail:
+        url = type_img.thumbnail.url
+        return request.build_absolute_uri(url) if request else url
+    return None
+
+
 class ComponentCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating/updating components."""
 
@@ -237,6 +255,10 @@ class ComponentCreateSerializer(serializers.ModelSerializer):
             'octopart_url', 'alternative_part_numbers'
         ]
         read_only_fields = ['id']
+        # Disable DRF's auto-generated UniqueTogetherValidator (from the model's
+        # UniqueConstraint) — it would run before validate() below and short-circuit
+        # with a generic message, never attaching duplicate_of for the frontend.
+        validators = []
 
     def validate(self, attrs):
         # Check for duplicate
@@ -247,10 +269,25 @@ class ComponentCreateSerializer(serializers.ModelSerializer):
         if self.instance:
             queryset = queryset.exclude(pk=self.instance.pk)
 
-        if queryset.exists():
-            raise serializers.ValidationError(
-                'A component with this manufacturer and part number already exists.'
-            )
+        existing = queryset.first()
+        if existing:
+            request = self.context.get('request')
+            description = existing.description or ''
+            raise serializers.ValidationError({
+                'non_field_errors': [
+                    'A component with this manufacturer and part number already exists.'
+                ],
+                'duplicate_of': {
+                    'type': 'component',
+                    'id': str(existing.id),
+                    'manufacturer': existing.manufacturer,
+                    'part_number': existing.part_number,
+                    'component_type_display': existing.get_component_type_display(),
+                    'package_type': existing.package_type,
+                    'description': description[:200] + ('…' if len(description) > 200 else ''),
+                    'thumbnail': _component_duplicate_thumbnail(existing, request),
+                },
+            })
         return attrs
 
     def create(self, validated_data):

@@ -42,6 +42,7 @@ django-celery-results>=2.5.0
 # Image Processing
 # ========================================
 Pillow>=10.0.0
+pillow-avif-plugin>=1.4.3
 django-imagekit>=5.0.0
 
 # ========================================

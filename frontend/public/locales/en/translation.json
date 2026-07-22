@@ -242,6 +242,7 @@
       "success_review_time": "It will appear once approved, usually within a few hours.",
       "success_trusted": "After {{contributions}} contributions and {{reputation}} reputation, submissions publish instantly.",
       "error": "Failed to add component. Please try again.",
+      "duplicate_desc": "This component already exists. View it below to add it to this product instead of creating a duplicate.",
       "type_ic": "Integrated Circuit",
       "type_mcu": "Microcontroller",
       "type_transistor": "Transistor",
@@ -496,7 +497,8 @@
     "review_package": "Package:",
     "review_function": "Function:",
     "error_product": "Failed to create product. Please try again.",
-    "error_component": "Failed to create component. Please try again."
+    "error_component": "Failed to create component. Please try again.",
+    "duplicate_desc": "This already exists in the database. View it below to contribute photos, schematics, or details instead of creating a duplicate."
   },
 
   "submit_recipe": {

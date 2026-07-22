@@ -404,7 +404,12 @@ if STORAGE_BACKEND == 's3':
 # =============================================================================
 # Image Processing
 # =============================================================================
-IMAGEKIT_DEFAULT_CACHEFILE_STRATEGY = 'imagekit.cachefiles.strategies.Optimistic'
+# JustInTime verifies the cache file exists (cheap: local storage stat, cached
+# indefinitely in Redis once confirmed) and regenerates it if missing — e.g.
+# after a processor logic change, or a lost/incomplete media volume restore.
+# Optimistic only generates once at upload time and never re-checks, so a
+# missing/stale cache file stays broken until someone manually regenerates it.
+IMAGEKIT_DEFAULT_CACHEFILE_STRATEGY = 'imagekit.cachefiles.strategies.JustInTime'
 IMAGEKIT_CACHEFILE_DIR = 'cache'
 
 # Maximum upload sizes
@@ -548,7 +553,7 @@ PRODUCT_CATEGORIES = [
     ('doorbell', 'Smart Doorbell'),
     ('security_cam', 'Security Camera'),
     # Appliances
-    ('appliance', 'Home Appliance'),
+    ('appliance', 'Appliance'),
     ('hvac', 'HVAC/Climate Control'),
     ('kitchen', 'Kitchen Appliance'),
     # Automotive

@@ -21,6 +21,7 @@ export const PRODUCT_CATEGORIES = [
   { value: 'smart_home', label: 'Smart Home Hub' },
   { value: 'camera', label: 'Camera' },
   { value: 'printer', label: 'Printer' },
+  { value: 'appliance', label: 'Appliance' },
   { value: 'other', label: 'Other' },
 ];
 

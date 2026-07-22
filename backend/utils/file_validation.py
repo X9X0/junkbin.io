@@ -13,6 +13,7 @@ MIME_TO_EXTENSIONS = {
     'image/png': ['png'],
     'image/gif': ['gif'],
     'image/webp': ['webp'],
+    'image/avif': ['avif'],
     'image/svg+xml': ['svg'],
     'application/pdf': ['pdf'],
 }
@@ -24,6 +25,7 @@ EXTENSION_TO_MIMES = {
     'png': ['image/png'],
     'gif': ['image/gif'],
     'webp': ['image/webp'],
+    'avif': ['image/avif'],
     'svg': ['image/svg+xml', 'text/xml', 'application/xml'],
     'pdf': ['application/pdf'],
 }
@@ -98,7 +100,7 @@ def validate_image_file(file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif']
     return validate_file_magic(file, allowed_extensions)
 
 

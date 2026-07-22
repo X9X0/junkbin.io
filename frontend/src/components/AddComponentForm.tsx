@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Component } from '../types';
-import { parseApiError } from '../utils/formErrors';
+import { parseApiError, getDuplicateOf } from '../utils/formErrors';
 
 interface AddComponentFormProps {
   productId: string;
@@ -446,12 +446,46 @@ export default function AddComponentForm({
       )}
 
       {/* Error message */}
-      {addMutation.isError && (
-        <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
-          <AlertCircle className="h-4 w-4" />
-          {parseApiError(addMutation.error, t('components.add.error'))}
-        </div>
-      )}
+      {addMutation.isError && (() => {
+        const duplicate = getDuplicateOf(addMutation.error);
+        return (
+          <div className="flex flex-col gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              {duplicate ? t('components.add.duplicate_desc') : parseApiError(addMutation.error, t('components.add.error'))}
+            </div>
+            {duplicate && (
+              <a
+                href={`/components/${duplicate.id}/products`}
+                className="flex items-start gap-3 p-3 border border-cyber-cyan/40 bg-cyber-dark/60 text-left hover:border-cyber-cyan transition-colors"
+              >
+                {duplicate.thumbnail ? (
+                  <img
+                    src={duplicate.thumbnail}
+                    alt=""
+                    className="h-12 w-12 object-cover shrink-0 border border-cyber-light/30"
+                  />
+                ) : (
+                  <div className="h-12 w-12 shrink-0 border border-cyber-light/30 flex items-center justify-center text-gray-500">
+                    <Package className="h-5 w-5" />
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1 text-cyber-cyan">
+                    <span className="truncate">{duplicate.manufacturer} {duplicate.part_number}</span>
+                  </div>
+                  <div className="text-xs text-gray-400 mt-0.5">
+                    {[duplicate.component_type_display, duplicate.package_type].filter(Boolean).join(' • ')}
+                  </div>
+                  {duplicate.description && (
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{duplicate.description}</p>
+                  )}
+                </div>
+              </a>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }
