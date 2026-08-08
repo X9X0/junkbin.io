@@ -102,8 +102,17 @@ class ProductViewSet(viewsets.ModelViewSet):
                 return [SubmissionRateThrottle()]
         return super().get_throttles()
 
-    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
     def list(self, request, *args, **kwargs):
+        # Staff/moderators need real-time results (e.g. the moderation queue) -
+        # page caching would keep showing just-approved/rejected products as
+        # pending until the cache entry expires.
+        user = request.user
+        if user.is_authenticated and (user.is_staff or getattr(user, 'is_moderator', False)):
+            return super().list(request, *args, **kwargs)
+        return self._cached_list(request, *args, **kwargs)
+
+    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
+    def _cached_list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
