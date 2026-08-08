@@ -5,7 +5,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
-from .models import Product, ProductImage, ProductComment, Schematic
+from .models import Product, ProductImage, ProductComment, Schematic, Firmware
 from utils.file_validation import validate_image_file, validate_schematic_file
 from utils.image_processing import strip_exif
 
@@ -88,6 +88,7 @@ class ProductListSerializer(serializers.ModelSerializer):
     primary_image = serializers.SerializerMethodField()
     image_count = serializers.SerializerMethodField()
     schematic_count = serializers.SerializerMethodField()
+    firmware_count = serializers.SerializerMethodField()
     category_display = serializers.CharField(
         source='get_category_display',
         read_only=True
@@ -105,7 +106,7 @@ class ProductListSerializer(serializers.ModelSerializer):
             'id', 'slug', 'manufacturer', 'model_number', 'revision',
             'region', 'region_display', 'category', 'category_display',
             'year_manufactured', 'component_count', 'image_count',
-            'schematic_count', 'comment_count', 'primary_image',
+            'schematic_count', 'firmware_count', 'comment_count', 'primary_image',
             'created_by', 'created_at', 'is_approved', 'is_featured'
         ]
 
@@ -129,6 +130,9 @@ class ProductListSerializer(serializers.ModelSerializer):
     def get_schematic_count(self, obj):
         return obj.schematics.filter(is_approved=True).count()
 
+    def get_firmware_count(self, obj):
+        return obj.firmware_files.filter(is_approved=True).count()
+
     def get_comment_count(self, obj):
         return obj.comments.count()
 
@@ -140,6 +144,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     image_count = serializers.SerializerMethodField()
     schematic_count = serializers.SerializerMethodField()
+    firmware_count = serializers.SerializerMethodField()
     category_display = serializers.CharField(
         source='get_category_display',
         read_only=True
@@ -158,7 +163,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'region', 'region_display', 'category', 'category_display',
             'subcategory', 'year_manufactured', 'fcc_id', 'ic_id',
             'part_number', 'description', 'teardown_notes',
-            'component_count', 'image_count', 'schematic_count',
+            'component_count', 'image_count', 'schematic_count', 'firmware_count',
             'comment_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
             'is_approved', 'is_featured'
@@ -186,6 +191,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_schematic_count(self, obj):
         return obj.schematics.filter(is_approved=True).count()
+
+    def get_firmware_count(self, obj):
+        return obj.firmware_files.filter(is_approved=True).count()
 
     def get_comment_count(self, obj):
         return obj.comments.count()
@@ -300,6 +308,53 @@ class SchematicUploadSerializer(serializers.ModelSerializer):
         """Validate schematic file content matches extension using magic bytes."""
         validate_schematic_file(value)
         return value
+
+    def create(self, validated_data):
+        validated_data['uploaded_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+
+class FirmwareSerializer(serializers.ModelSerializer):
+    """Serializer for firmware."""
+
+    uploaded_by = CreatedBySerializer(read_only=True)
+    source_type_display = serializers.CharField(
+        source='get_source_type_display',
+        read_only=True
+    )
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Firmware
+        fields = [
+            'id', 'product', 'title', 'description', 'version', 'chip_architecture',
+            'file', 'file_url', 'file_type', 'file_size',
+            'source_type', 'source_type_display', 'source_url', 'source_notes',
+            'download_count', 'uploaded_by', 'uploaded_at', 'is_approved'
+        ]
+        read_only_fields = [
+            'id', 'product', 'file_type', 'file_size', 'download_count',
+            'uploaded_by', 'uploaded_at', 'is_approved'
+        ]
+
+    def get_file_url(self, obj):
+        if obj.file:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.file.url)
+            return obj.file.url
+        return None
+
+
+class FirmwareUploadSerializer(serializers.ModelSerializer):
+    """Serializer for uploading firmware."""
+
+    class Meta:
+        model = Firmware
+        fields = [
+            'file', 'title', 'description', 'version', 'chip_architecture',
+            'source_type', 'source_url', 'source_notes'
+        ]
 
     def create(self, validated_data):
         validated_data['uploaded_by'] = self.context['request'].user

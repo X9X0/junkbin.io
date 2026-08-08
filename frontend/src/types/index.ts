@@ -86,6 +86,7 @@ export interface Product {
   component_count: number;
   image_count: number;
   schematic_count: number;
+  firmware_count: number;
   comment_count?: number;
   created_by?: CreatedBy;
   created_at: string;
@@ -226,6 +227,27 @@ export interface Schematic {
   source_notes?: string;
   page_count?: number;
   repair_relevance?: string;
+  download_count: number;
+  is_approved: boolean;
+  uploaded_by?: CreatedBy;
+  uploaded_at: string;
+}
+
+// Firmware types
+export interface Firmware {
+  id: string;
+  product?: string;
+  title: string;
+  description?: string;
+  version?: string;
+  chip_architecture?: string;
+  file_url: string;
+  file_type: string;
+  file_size?: number;
+  source_type: string;
+  source_type_display?: string;
+  source_url?: string;
+  source_notes?: string;
   download_count: number;
   is_approved: boolean;
   uploaded_by?: CreatedBy;

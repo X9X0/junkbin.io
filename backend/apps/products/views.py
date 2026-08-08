@@ -19,7 +19,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
 
-from .models import Product, ProductImage, ProductComment, Schematic
+from .models import Product, ProductImage, ProductComment, Schematic, Firmware
 from .serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
@@ -30,6 +30,8 @@ from .serializers import (
     ProductCommentCreateSerializer,
     SchematicSerializer,
     SchematicUploadSerializer,
+    FirmwareSerializer,
+    FirmwareUploadSerializer,
 )
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
@@ -82,7 +84,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['create', 'add_component', 'batch_add_components',
-                           'upload_image', 'upload_schematic',
+                           'upload_image', 'upload_schematic', 'upload_firmware',
                            'comments', 'parse_bom', 'import_bom']:
             if self.request.method == 'POST':
                 return [permissions.IsAuthenticated(), IsVerifiedEmail()]
@@ -97,7 +99,7 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def get_throttles(self):
         if self.action in ['create', 'add_component', 'batch_add_components',
-                           'comments', 'upload_image', 'upload_schematic']:
+                           'comments', 'upload_image', 'upload_schematic', 'upload_firmware']:
             if self.request.method == 'POST':
                 return [SubmissionRateThrottle()]
         return super().get_throttles()
@@ -623,6 +625,23 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'])
+    def firmware(self, request, pk=None):
+        """Get all firmware files for this product."""
+        product = self.get_object()
+        # Staff and moderators can see unapproved firmware
+        if request.user.is_staff or getattr(request.user, 'is_moderator', False):
+            firmware_files = product.firmware_files.all()
+        else:
+            firmware_files = product.firmware_files.filter(is_approved=True)
+
+        serializer = FirmwareSerializer(
+            firmware_files,
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get', 'post'])
     def comments(self, request, pk=None):
         """Get or add comments on a product."""
@@ -718,6 +737,53 @@ class ProductViewSet(viewsets.ModelViewSet):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    @action(
+        detail=True,
+        methods=['post'],
+        parser_classes=[MultiPartParser, FormParser]
+    )
+    def upload_firmware(self, request, pk=None):
+        """
+        Upload a recovered firmware binary for this product.
+
+        Preserving firmware images helps owners re-flash devices bricked
+        by a failed update or a swapped flash chip.
+        """
+        product = self.get_object()
+
+        serializer = FirmwareUploadSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            firmware = serializer.save(
+                product=product,
+                uploaded_by=request.user
+            )
+            submission_counter.labels(content_type='firmware').inc()
+
+            # Auto-approve for trusted users
+            if request.user.can_submit_without_review:
+                firmware.is_approved = True
+                firmware.save(update_fields=['is_approved'])
+                request.user.increment_contribution()
+
+            # Webhook notification
+            from apps.webhooks.tasks import dispatch_webhook_event
+            dispatch_webhook_event.delay('firmware.uploaded', {
+                'title': firmware.title,
+                'product_name': str(product),
+                'product_slug': str(product.pk),
+                'version': firmware.version,
+                'uploaded_by': request.user.username,
+            })
+
+            return Response(
+                FirmwareSerializer(firmware, context={'request': request}).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve a pending product (staff/moderator only)."""
@@ -764,6 +830,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response({
             'products': Product.objects.filter(is_approved=False).count(),
             'schematics': Schematic.objects.filter(is_approved=False).count(),
+            'firmware': Firmware.objects.filter(is_approved=False).count(),
             'recipes': Recipe.objects.filter(is_approved=False).count(),
             'images': ProductImage.objects.filter(is_approved=False).count(),
             'component_images': ComponentImage.objects.filter(is_approved=False).count(),
@@ -878,6 +945,116 @@ class SchematicViewSet(viewsets.ModelViewSet):
                 '', False, request.data.get('notes', ''),
             )
         schematic.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class FirmwareViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet for firmware operations.
+
+    Right to Repair: recovered firmware images let owners re-flash
+    devices bricked by a failed update or a swapped flash chip.
+    """
+
+    queryset = Firmware.objects.select_related('product', 'uploaded_by')
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['source_type', 'is_approved', 'product', 'uploaded_by']
+    search_fields = ['title', 'description', 'product__manufacturer', 'product__model_number']
+    ordering_fields = ['uploaded_at', 'download_count']
+    ordering = ['-uploaded_at']
+
+    def get_serializer_class(self):
+        if self.action in ['create', 'update', 'partial_update']:
+            return FirmwareUploadSerializer
+        return FirmwareSerializer
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Non-staff/moderator users only see approved firmware (plus their own)
+        user = self.request.user
+        if not user.is_staff and not getattr(user, 'is_moderator', False):
+            if user.is_authenticated:
+                queryset = queryset.filter(
+                    models.Q(is_approved=True) |
+                    models.Q(uploaded_by=user)
+                )
+            else:
+                queryset = queryset.filter(is_approved=True)
+
+        return queryset
+
+    def get_permissions(self):
+        if self.action in ['create']:
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
+        elif self.action in ['update', 'partial_update', 'destroy']:
+            return [permissions.IsAdminUser()]
+        elif self.action in ['approve', 'reject']:
+            return [IsModeratorOrAdmin()]
+        return [permissions.AllowAny()]
+
+    @action(detail=True, methods=['get'])
+    def download(self, request, pk=None):
+        """
+        Download a firmware file and increment download count.
+        """
+        firmware = self.get_object()
+        firmware.increment_download_count()
+
+        # Return file URL for client to download
+        return Response({
+            'download_url': request.build_absolute_uri(firmware.file.url),
+            'filename': firmware.file.name.split('/')[-1],
+            'file_type': firmware.file_type,
+            'file_size': firmware.file_size,
+        })
+
+    @action(detail=False, methods=['get'])
+    def recent(self, request):
+        """Get recently uploaded firmware."""
+        firmware_files = self.get_queryset().filter(is_approved=True)[:20]
+        serializer = FirmwareSerializer(
+            firmware_files,
+            many=True,
+            context={'request': request}
+        )
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Approve pending firmware (staff/moderator only)."""
+        from django.conf import settings
+        from apps.users.tasks import notify_contribution_reviewed
+
+        firmware = self.get_object()
+        if firmware.is_approved:
+            return Response({'detail': 'Firmware is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        firmware.is_approved = True
+        firmware.save(update_fields=['is_approved'])
+
+        if firmware.uploaded_by:
+            firmware.uploaded_by.increment_contribution()
+            notify_contribution_reviewed.delay(
+                str(firmware.uploaded_by.pk), 'Firmware', firmware.title,
+                f'{settings.FRONTEND_URL}/products/{firmware.product_id}', True,
+            )
+
+        return Response({'detail': 'Firmware approved.'})
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete pending firmware (staff/moderator only)."""
+        from apps.users.tasks import notify_contribution_reviewed
+
+        firmware = self.get_object()
+        if firmware.is_approved:
+            return Response({'detail': 'Cannot reject already-approved firmware.'}, status=status.HTTP_400_BAD_REQUEST)
+        if firmware.uploaded_by:
+            notify_contribution_reviewed.delay(
+                str(firmware.uploaded_by.pk), 'Firmware', firmware.title,
+                '', False, request.data.get('notes', ''),
+            )
+        firmware.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

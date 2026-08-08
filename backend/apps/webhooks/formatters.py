@@ -8,6 +8,7 @@ from django.utils import timezone
 COLORS = {
     'product.created':    {'discord': 0x22C55E, 'slack': '#22C55E'},   # green
     'schematic.uploaded': {'discord': 0x06B6D4, 'slack': '#06B6D4'},   # cyan
+    'firmware.uploaded':  {'discord': 0xA855F7, 'slack': '#A855F7'},   # purple
     'report.filed':       {'discord': 0xEF4444, 'slack': '#EF4444'},   # red
     'user.badge_earned':  {'discord': 0xEAB308, 'slack': '#EAB308'},   # yellow
     'recipe.created':     {'discord': 0xEC4899, 'slack': '#EC4899'},   # pink
@@ -130,6 +131,22 @@ def _common_parts(event_type, ctx, site_url):
             url,
             [
                 {'name': 'Type', 'value': ctx.get('schematic_type', '')},
+                {'name': 'Product', 'value': product_name},
+            ],
+        )
+
+    elif event_type == 'firmware.uploaded':
+        title_text = ctx.get('title', 'Untitled')
+        product_name = ctx.get('product_name', '')
+        user = ctx.get('uploaded_by', 'Someone')
+        slug = ctx.get('product_slug', '')
+        url = f'{site_url}/products/{slug}' if slug else ''
+        return (
+            'Firmware Uploaded',
+            f'**{title_text}** uploaded for {product_name} by {user}.',
+            url,
+            [
+                {'name': 'Version', 'value': ctx.get('version', '') or 'N/A'},
                 {'name': 'Product', 'value': product_name},
             ],
         )

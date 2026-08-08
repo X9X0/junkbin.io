@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
-from .models import Product, ProductImage, ProductComment, Schematic
+from .models import Product, ProductImage, ProductComment, Schematic, Firmware
 
 
 class ProductImageInline(admin.TabularInline):
@@ -39,6 +39,18 @@ class SchematicInline(admin.TabularInline):
     readonly_fields = ['uploaded_by', 'uploaded_at', 'download_count']
     fields = [
         'title', 'schematic_type', 'file', 'source_type',
+        'is_approved', 'download_count', 'uploaded_by', 'uploaded_at'
+    ]
+
+
+class FirmwareInline(admin.TabularInline):
+    """Inline admin for firmware."""
+
+    model = Firmware
+    extra = 0
+    readonly_fields = ['uploaded_by', 'uploaded_at', 'download_count']
+    fields = [
+        'title', 'version', 'file', 'source_type',
         'is_approved', 'download_count', 'uploaded_by', 'uploaded_at'
     ]
 
@@ -101,7 +113,7 @@ class ProductAdmin(admin.ModelAdmin):
         )}),
     )
 
-    inlines = [ProductImageInline, SchematicInline, ProductCommentInline]
+    inlines = [ProductImageInline, SchematicInline, FirmwareInline, ProductCommentInline]
 
     actions = ['approve_products', 'unapprove_products', 'feature_products', 'export_as_csv']
 
@@ -249,6 +261,72 @@ class SchematicAdmin(admin.ModelAdmin):
     def unapprove_schematics(self, request, queryset):
         updated = queryset.update(is_approved=False)
         self.message_user(request, f'{updated} schematics unapproved.')
+
+
+@admin.register(Firmware)
+class FirmwareAdmin(admin.ModelAdmin):
+    """
+    Admin for recovered firmware binaries.
+
+    Right to Repair: preserved firmware images let owners re-flash
+    devices bricked by a failed update or a swapped flash chip.
+    """
+
+    list_display = [
+        'title', 'product', 'version', 'source_type',
+        'file_type', 'download_count', 'is_approved',
+        'uploaded_by', 'uploaded_at'
+    ]
+    list_filter = [
+        'source_type', 'is_approved', 'file_type', 'uploaded_at'
+    ]
+    search_fields = [
+        'title', 'description', 'product__manufacturer',
+        'product__model_number', 'chip_architecture', 'source_notes'
+    ]
+    readonly_fields = [
+        'id', 'file_type', 'file_size', 'download_count',
+        'uploaded_by', 'uploaded_at', 'updated_at'
+    ]
+    ordering = ['-uploaded_at']
+    date_hierarchy = 'uploaded_at'
+    autocomplete_fields = ['product']
+
+    fieldsets = (
+        (None, {'fields': (
+            'id', 'product', 'title', 'version', 'chip_architecture'
+        )}),
+        ('File', {'fields': (
+            'file', 'file_type', 'file_size'
+        )}),
+        ('Description', {'fields': (
+            'description',
+        )}),
+        ('Source & Attribution', {
+            'fields': (
+                'source_type', 'source_url', 'source_notes'
+            ),
+            'description': 'Properly attribute sources to respect copyright while supporting Right to Repair.'
+        }),
+        ('Status', {'fields': (
+            'is_approved', 'download_count'
+        )}),
+        ('Metadata', {'fields': (
+            'uploaded_by', 'uploaded_at', 'updated_at'
+        )}),
+    )
+
+    actions = ['approve_firmware', 'unapprove_firmware']
+
+    @admin.action(description='Approve selected firmware')
+    def approve_firmware(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} firmware files approved.')
+
+    @admin.action(description='Unapprove selected firmware')
+    def unapprove_firmware(self, request, queryset):
+        updated = queryset.update(is_approved=False)
+        self.message_user(request, f'{updated} firmware files unapproved.')
 
 
 @admin.register(ProductComment)
