@@ -42,6 +42,7 @@ export const COMPONENT_TYPES = [
   { value: '', label: 'Select Type' },
   { value: 'ic', label: 'Integrated Circuit' },
   { value: 'mcu', label: 'Microcontroller' },
+  { value: 'eeprom', label: 'EEPROM/Memory' },
   { value: 'transistor', label: 'Transistor' },
   { value: 'mosfet', label: 'MOSFET' },
   { value: 'diode', label: 'Diode' },

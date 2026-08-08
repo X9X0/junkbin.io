@@ -6,6 +6,7 @@ import type {
   ProductComponent,
   Component,
   Schematic,
+  Firmware,
   User,
   PublicUser,
   UserStats,
@@ -146,6 +147,11 @@ export const products = {
     return response.data;
   },
 
+  firmware: async (id: string): Promise<Firmware[]> => {
+    const response = await api.get(`/products/${id}/firmware/`);
+    return response.data;
+  },
+
   uploadImage: async (id: string, formData: FormData): Promise<any> => {
     const response = await api.post(`/products/${id}/upload_image/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
@@ -169,6 +175,13 @@ export const products = {
 
   uploadSchematic: async (id: string, formData: FormData): Promise<Schematic> => {
     const response = await api.post(`/products/${id}/upload_schematic/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  uploadFirmware: async (id: string, formData: FormData): Promise<Firmware> => {
+    const response = await api.post(`/products/${id}/upload_firmware/`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
     return response.data;
@@ -207,7 +220,7 @@ export const products = {
     await api.post(`/products/${id}/reject/`);
   },
 
-  pendingCounts: async (): Promise<{ products: number; schematics: number; recipes: number; images: number; component_images: number; datasheets: number }> => {
+  pendingCounts: async (): Promise<{ products: number; schematics: number; firmware: number; recipes: number; images: number; component_images: number; datasheets: number }> => {
     const response = await api.get('/products/pending_counts/');
     return response.data;
   },
@@ -401,6 +414,38 @@ export const schematics = {
   },
 };
 
+// Firmware endpoints
+export const firmware = {
+  list: async (params?: any): Promise<PaginatedResponse<Firmware>> => {
+    const response = await api.get('/firmware/', { params });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<Firmware> => {
+    const response = await api.get(`/firmware/${id}/`);
+    return response.data;
+  },
+
+  download: async (id: string): Promise<{ download_url: string }> => {
+    const response = await api.get(`/firmware/${id}/download/`);
+    return response.data;
+  },
+
+  recent: async (): Promise<Firmware[]> => {
+    const response = await api.get('/firmware/recent/');
+    return response.data;
+  },
+
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/firmware/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/firmware/${id}/reject/`);
+  },
+};
+
 // Product images endpoints (moderation)
 export const productImages = {
   list: async (params?: any): Promise<PaginatedResponse<ProductImage>> => {
@@ -441,6 +486,7 @@ export const stats = {
     products: number;
     components: number;
     schematics: number;
+    firmware: number;
     contributors: number;
   }> => {
     const response = await api.get('/stats/');

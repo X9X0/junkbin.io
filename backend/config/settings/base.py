@@ -446,6 +446,7 @@ COMPONENT_TYPES = [
     # Active components
     ('ic', 'Integrated Circuit'),
     ('mcu', 'Microcontroller'),
+    ('eeprom', 'EEPROM/Memory'),
     ('transistor', 'Transistor'),
     ('mosfet', 'MOSFET'),
     ('diode', 'Diode'),

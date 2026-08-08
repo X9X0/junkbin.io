@@ -1,10 +1,11 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { products, schematics, junkbin } from '../api/endpoints';
+import { products, schematics, firmware, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import ImageUpload from '../components/ImageUpload';
 import SchematicUpload from '../components/SchematicUpload';
+import FirmwareUpload from '../components/FirmwareUpload';
 import AddComponentForm from '../components/AddComponentForm';
 import BomImport from '../components/BomImport';
 import BatchAddComponents from '../components/BatchAddComponents';
@@ -29,6 +30,7 @@ import {
   Pencil,
   Trash2,
   ArrowLeftRight,
+  HardDrive,
 } from 'lucide-react';
 import type { JunkbinItem } from '../types';
 import clsx from 'clsx';
@@ -111,7 +113,7 @@ export default function ProductDetail() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'comments' | 'swap'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'firmware' | 'comments' | 'swap'>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [showBomImport, setShowBomImport] = useState(false);
@@ -138,6 +140,12 @@ export default function ProductDetail() {
     queryKey: ['product', id, 'schematics'],
     queryFn: () => products.schematics(id!),
     enabled: !!id && activeTab === 'schematics',
+  });
+
+  const { data: firmwareList } = useQuery({
+    queryKey: ['product', id, 'firmware'],
+    queryFn: () => products.firmware(id!),
+    enabled: !!id && activeTab === 'firmware',
   });
 
   const { data: swapCount } = useQuery({
@@ -294,7 +302,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-6">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-6">
               <div className="card-cyber p-2 sm:p-4 text-center">
                 <div className="text-xl sm:text-2xl font-display font-bold text-cyber-cyan">
                   {product.component_count}
@@ -312,6 +320,12 @@ export default function ProductDetail() {
                   {product.schematic_count}
                 </div>
                 <div className="text-[10px] sm:text-xs font-mono text-gray-500">SCHEMATICS</div>
+              </div>
+              <div className="card-cyber p-2 sm:p-4 text-center">
+                <div className="text-xl sm:text-2xl font-display font-bold text-purple-400">
+                  {product.firmware_count}
+                </div>
+                <div className="text-[10px] sm:text-xs font-mono text-gray-500">FIRMWARE</div>
               </div>
             </div>
 
@@ -485,6 +499,7 @@ export default function ProductDetail() {
               { key: 'images', label: t('product_detail.tab_images'), icon: Camera },
               { key: 'components', label: t('product_detail.tab_parts'), icon: Cpu },
               { key: 'schematics', label: t('product_detail.tab_docs'), icon: FileText },
+              { key: 'firmware', label: t('product_detail.tab_firmware'), icon: HardDrive },
               { key: 'comments', label: t('product_detail.tab_comments'), icon: MessageSquare, count: product.comment_count },
               { key: 'swap', label: t('product_detail.tab_swap'), icon: ArrowLeftRight, count: swapCount?.count },
             ].map(({ key, label, icon: Icon, count }) => (
@@ -946,6 +961,108 @@ export default function ProductDetail() {
             </div>
           </div>
         )}
+
+        {activeTab === 'firmware' && (
+          <div className="space-y-6">
+            {/* Existing Firmware */}
+            {firmwareList && firmwareList.length > 0 && (
+              <div>
+                <h3 className="font-display text-lg font-semibold text-white mb-4">
+                  {t('product_detail.available_firmware')} ({firmwareList.length})
+                </h3>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {firmwareList.map((fw) => (
+                    <div key={fw.id} className="card-cyber p-4">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <span className="badge-cyber text-cyber-green border-cyber-green text-[10px] mb-2">
+                            {fw.source_type_display || fw.source_type}
+                          </span>
+                          <h4 className="font-semibold text-white">{fw.title}</h4>
+                          {fw.chip_architecture && (
+                            <p className="text-xs text-cyber-cyan font-mono mt-1">{fw.chip_architecture}</p>
+                          )}
+                          {fw.description && (
+                            <p className="text-sm text-gray-400 mt-1">{fw.description}</p>
+                          )}
+                          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                            <span>{fw.file_type?.toUpperCase()}</span>
+                            {fw.version && <span>v{fw.version}</span>}
+                            {fw.file_size && (
+                              <span>{(fw.file_size / 1024 / 1024).toFixed(1)} MB</span>
+                            )}
+                            <span>{fw.download_count} downloads</span>
+                          </div>
+                        </div>
+                        <button
+                          onClick={async () => {
+                            try {
+                              const { download_url } = await firmware.download(fw.id);
+                              window.open(download_url, '_blank', 'noopener,noreferrer');
+                            } catch {
+                              // Fallback to direct URL if tracking endpoint fails
+                              window.open(fw.file_url, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          className="btn-cyber btn-cyber-green py-2 px-3"
+                        >
+                          <Download className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Upload Section */}
+            {isAuthenticated ? (
+              <div className="card-cyber p-6">
+                <h3 className="font-display text-lg font-semibold text-white mb-4">
+                  <Upload className="h-5 w-5 inline mr-2 text-cyber-green" />
+                  {t('product_detail.add_firmware')}
+                </h3>
+                <FirmwareUpload
+                  productId={id!}
+                  onSuccess={() => {
+                    queryClient.invalidateQueries({ queryKey: ['product', id, 'firmware'] });
+                  }}
+                />
+              </div>
+            ) : (
+              <div className="card-cyber p-8 text-center">
+                <HardDrive className="h-12 w-12 text-gray-600 mx-auto mb-4" />
+                <p className="text-gray-400 mb-4">
+                  {t('product_detail.login_to_upload_firmware')}
+                </p>
+                <Link to="/login" className="btn-cyber">
+                  {t('product_detail.login_to_contribute')}
+                </Link>
+              </div>
+            )}
+
+            {/* Empty state for no firmware */}
+            {(!firmwareList || firmwareList.length === 0) && !isAuthenticated && (
+              <div className="card-cyber p-8 text-center text-gray-500">
+                <HardDrive className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>{t('product_detail.no_firmware')}</p>
+              </div>
+            )}
+
+            {/* Guidelines */}
+            <div className="p-4 border border-cyber-light/20 bg-cyber-dark/50">
+              <h4 className="font-mono text-sm text-cyber-green mb-2">{t('product_detail.fw_guidelines_title')}</h4>
+              <ul className="text-xs text-gray-500 space-y-1">
+                <li>• {t('product_detail.fw_guideline_1')}</li>
+                <li>• {t('product_detail.fw_guideline_2')}</li>
+                <li>• {t('product_detail.fw_guideline_3')}</li>
+                <li>• {t('product_detail.fw_guideline_4')}</li>
+                <li>• {t('product_detail.fw_guideline_5')}</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'comments' && (
           <ProductComments productId={id!} />
         )}

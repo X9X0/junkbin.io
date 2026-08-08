@@ -357,7 +357,7 @@ class StatsView(APIView):
     )
     @method_decorator(cache_page(60 * 15))
     def get(self, request):
-        from apps.products.models import Product, Schematic
+        from apps.products.models import Product, Schematic, Firmware
         from apps.components.models import Component
         from django.contrib.auth import get_user_model
 
@@ -367,6 +367,7 @@ class StatsView(APIView):
             'products': Product.objects.filter(is_approved=True).count(),
             'components': Component.objects.count(),
             'schematics': Schematic.objects.filter(is_approved=True).count(),
+            'firmware': Firmware.objects.filter(is_approved=True).count(),
             'contributors': User.objects.filter(contribution_count__gt=0).count(),
         })
 

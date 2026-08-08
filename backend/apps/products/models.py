@@ -69,6 +69,7 @@ class AdaptiveThumbnail:
 # Allowed file extensions for uploads
 ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg']
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
+ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip']
 
 
 def product_image_path(instance, filename):
@@ -533,6 +534,147 @@ class Schematic(models.Model):
         """Increment download count."""
         from django.db.models import F
         Schematic.objects.filter(pk=self.pk).update(
+            download_count=F('download_count') + 1
+        )
+
+
+def firmware_file_path(instance, filename):
+    """Generate upload path for firmware files."""
+    ext = filename.split('.')[-1]
+    new_filename = f'{uuid.uuid4().hex}.{ext}'
+    return f'firmware/{instance.product.id}/{new_filename}'
+
+
+class Firmware(models.Model):
+    """
+    Recovered/dumped firmware binaries for products.
+
+    Preserving firmware images lets owners re-flash devices bricked by a
+    failed OTA update or a swapped flash chip - part of the Right to
+    Repair movement.
+    """
+
+    class SourceType(models.TextChoices):
+        OFFICIAL = 'official', _('Official/Manufacturer Release')
+        DUMPED = 'dumped', _('Dumped from Device')
+        COMMUNITY = 'community', _('Community Contributed')
+        REVERSE_ENGINEERED = 'reverse_engineered', _('Reverse Engineered')
+        LEAKED = 'leaked', _('Leaked')
+        UNKNOWN = 'unknown', _('Unknown Source')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='firmware_files'
+    )
+
+    # File
+    file = models.FileField(
+        upload_to=firmware_file_path,
+        help_text=_('Firmware binary (BIN, HEX, ROM, IMG, etc.)'),
+        validators=[FileExtensionValidator(allowed_extensions=ALLOWED_FIRMWARE_EXTENSIONS)]
+    )
+    file_type = models.CharField(
+        max_length=20,
+        blank=True,
+        help_text=_('File extension/type')
+    )
+    file_size = models.PositiveIntegerField(
+        null=True,
+        blank=True,
+        help_text=_('File size in bytes')
+    )
+
+    # Metadata
+    title = models.CharField(
+        max_length=300,
+        help_text=_('Descriptive title for this firmware')
+    )
+    description = models.TextField(
+        blank=True,
+        help_text=_('Additional details about this firmware')
+    )
+    version = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text=_('Firmware version')
+    )
+    chip_architecture = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text=_('Chip or architecture this firmware targets (e.g. ESP32, ARM Cortex-M4)')
+    )
+
+    # Source attribution
+    source_type = models.CharField(
+        max_length=30,
+        choices=SourceType.choices,
+        default=SourceType.DUMPED
+    )
+    source_url = models.URLField(
+        blank=True,
+        help_text=_('URL where this firmware was obtained')
+    )
+    source_notes = models.TextField(
+        blank=True,
+        help_text=_('Attribution, extraction method, and source information')
+    )
+
+    # Upload info
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_firmware'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # Moderation
+    is_approved = models.BooleanField(
+        default=False,
+        help_text=_('Whether firmware has been verified/approved')
+    )
+
+    # Statistics
+    download_count = models.PositiveIntegerField(
+        default=0,
+        help_text=_('Number of times downloaded')
+    )
+
+    class Meta:
+        verbose_name = _('firmware')
+        verbose_name_plural = _('firmware')
+        ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['product', '-uploaded_at']),
+            models.Index(fields=['is_approved', '-uploaded_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.product} - {self.title}'
+
+    def save(self, *args, **kwargs):
+        # Auto-populate file info
+        if self.file:
+            if not self.file_type:
+                self.file_type = self.file.name.split('.')[-1].lower()
+            if not self.file_size:
+                try:
+                    self.file_size = self.file.size
+                except Exception:
+                    pass
+        super().save(*args, **kwargs)
+
+    def increment_download_count(self):
+        """Increment download count."""
+        from django.db.models import F
+        Firmware.objects.filter(pk=self.pk).update(
             download_count=F('download_count') + 1
         )
 

@@ -7,6 +7,7 @@ import {
   Terminal,
   Cpu,
   FileText,
+  HardDrive,
   Users,
   Zap,
   Mail,
@@ -210,7 +211,7 @@ export default function Home() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
             <Link to="/products" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 neon-border hover:border-cyber-cyan/50 transition-colors group block">
               <Cpu className="h-6 w-6 text-cyber-cyan mx-auto mb-3" />
               <div className="text-3xl md:text-4xl font-display font-bold text-cyber-cyan mb-1">
@@ -233,6 +234,14 @@ export default function Home() {
                 {siteStats?.schematics ?? '—'}
               </div>
               <div className="text-gray-500 group-hover:text-cyber-green font-mono text-xs tracking-wider transition-colors">{t('home.stats_schematics')}</div>
+            </Link>
+
+            <Link to="/products" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-purple-400/50 transition-colors group block">
+              <HardDrive className="h-6 w-6 text-purple-400 mx-auto mb-3" />
+              <div className="text-3xl md:text-4xl font-display font-bold text-purple-400 mb-1">
+                {siteStats?.firmware ?? '—'}
+              </div>
+              <div className="text-gray-500 group-hover:text-purple-400 font-mono text-xs tracking-wider transition-colors">{t('home.stats_firmware')}</div>
             </Link>
 
             <Link to="/leaderboard" className="text-center p-4 border border-cyber-light/20 bg-cyber-dark/50 hover:border-cyber-yellow/50 transition-colors group block">
