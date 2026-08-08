@@ -59,35 +59,33 @@ def send_welcome_email(user):
     )
 
 
-def send_submission_approved_email(submission):
-    """Send email when a submission is approved."""
-    if not submission.submitted_by or not submission.submitted_by.email:
-        return
-
+def send_contribution_approved_email(user, content_type, content_str, content_url):
+    """Send email when a user's contribution (product, schematic, image, etc.) is approved."""
     return send_templated_email(
         subject='Your Junkbin.io submission has been approved!',
         template_name='submission_approved',
         context={
-            'user': submission.submitted_by,
-            'submission': submission
+            'user': user,
+            'content_type': content_type,
+            'content_str': content_str,
+            'content_url': content_url,
         },
-        recipient_list=[submission.submitted_by.email]
+        recipient_list=[user.email]
     )
 
 
-def send_submission_rejected_email(submission):
-    """Send email when a submission is rejected."""
-    if not submission.submitted_by or not submission.submitted_by.email:
-        return
-
+def send_contribution_rejected_email(user, content_type, content_str, notes=''):
+    """Send email when a user's contribution (product, schematic, image, etc.) is rejected."""
     return send_templated_email(
         subject='Your Junkbin.io submission needs attention',
         template_name='submission_rejected',
         context={
-            'user': submission.submitted_by,
-            'submission': submission
+            'user': user,
+            'content_type': content_type,
+            'content_str': content_str,
+            'notes': notes,
         },
-        recipient_list=[submission.submitted_by.email]
+        recipient_list=[user.email]
     )
 
 

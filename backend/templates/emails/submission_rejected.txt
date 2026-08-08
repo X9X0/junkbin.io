@@ -1,0 +1,16 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+Your submission needs attention
+
+Hello {{ user.username }},
+
+A moderator reviewed the following contribution and it was not approved:
+
+{{ content_type }}: {{ content_str }}
+{% if notes %}
+Reason: {{ notes }}
+{% endif %}
+Please review our community guidelines and feel free to resubmit with corrections.
+
+---
+Junkbin.io

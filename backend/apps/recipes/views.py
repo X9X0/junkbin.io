@@ -270,6 +270,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve a pending recipe (staff/moderator only)."""
+        from django.conf import settings
+        from apps.users.tasks import notify_contribution_reviewed
+
         recipe = self.get_object()
         if recipe.is_approved:
             return Response({'detail': 'Recipe is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -278,14 +281,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
 
         if recipe.created_by:
             recipe.created_by.increment_contribution()
+            notify_contribution_reviewed.delay(
+                str(recipe.created_by.pk), 'Recipe', recipe.name,
+                f'{settings.FRONTEND_URL}/recipes/{recipe.pk}', True,
+            )
 
         return Response({'detail': 'Recipe approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending recipe (staff/moderator only)."""
+        from apps.users.tasks import notify_contribution_reviewed
+
         recipe = self.get_object()
         if recipe.is_approved:
             return Response({'detail': 'Cannot reject an already-approved recipe.'}, status=status.HTTP_400_BAD_REQUEST)
+        if recipe.created_by:
+            notify_contribution_reviewed.delay(
+                str(recipe.created_by.pk), 'Recipe', recipe.name,
+                '', False, request.data.get('notes', ''),
+            )
         recipe.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

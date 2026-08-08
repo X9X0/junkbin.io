@@ -721,6 +721,9 @@ class ProductViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve a pending product (staff/moderator only)."""
+        from django.conf import settings
+        from apps.users.tasks import notify_contribution_reviewed
+
         product = self.get_object()
         if product.is_approved:
             return Response({'detail': 'Product is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -729,15 +732,26 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         if product.created_by:
             product.created_by.increment_contribution()
+            notify_contribution_reviewed.delay(
+                str(product.created_by.pk), 'Product', str(product),
+                f'{settings.FRONTEND_URL}/products/{product.pk}', True,
+            )
 
         return Response({'detail': 'Product approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending product (staff/moderator only)."""
+        from apps.users.tasks import notify_contribution_reviewed
+
         product = self.get_object()
         if product.is_approved:
             return Response({'detail': 'Cannot reject an already-approved product.'}, status=status.HTTP_400_BAD_REQUEST)
+        if product.created_by:
+            notify_contribution_reviewed.delay(
+                str(product.created_by.pk), 'Product', str(product),
+                '', False, request.data.get('notes', ''),
+            )
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -832,6 +846,9 @@ class SchematicViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve a pending schematic (staff/moderator only)."""
+        from django.conf import settings
+        from apps.users.tasks import notify_contribution_reviewed
+
         schematic = self.get_object()
         if schematic.is_approved:
             return Response({'detail': 'Schematic is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -840,15 +857,26 @@ class SchematicViewSet(viewsets.ModelViewSet):
 
         if schematic.uploaded_by:
             schematic.uploaded_by.increment_contribution()
+            notify_contribution_reviewed.delay(
+                str(schematic.uploaded_by.pk), 'Schematic', schematic.title,
+                f'{settings.FRONTEND_URL}/products/{schematic.product_id}', True,
+            )
 
         return Response({'detail': 'Schematic approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending schematic (staff/moderator only)."""
+        from apps.users.tasks import notify_contribution_reviewed
+
         schematic = self.get_object()
         if schematic.is_approved:
             return Response({'detail': 'Cannot reject an already-approved schematic.'}, status=status.HTTP_400_BAD_REQUEST)
+        if schematic.uploaded_by:
+            notify_contribution_reviewed.delay(
+                str(schematic.uploaded_by.pk), 'Schematic', schematic.title,
+                '', False, request.data.get('notes', ''),
+            )
         schematic.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -872,6 +900,9 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         """Approve a pending image (staff/moderator only)."""
+        from django.conf import settings
+        from apps.users.tasks import notify_contribution_reviewed
+
         image = self.get_object()
         if image.is_approved:
             return Response({'detail': 'Image is already approved.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -880,14 +911,25 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
 
         if image.uploaded_by:
             image.uploaded_by.increment_contribution()
+            notify_contribution_reviewed.delay(
+                str(image.uploaded_by.pk), 'Image', image.caption or f'{image.image_type} image',
+                f'{settings.FRONTEND_URL}/products/{image.product_id}', True,
+            )
 
         return Response({'detail': 'Image approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending image (staff/moderator only)."""
+        from apps.users.tasks import notify_contribution_reviewed
+
         image = self.get_object()
         if image.is_approved:
             return Response({'detail': 'Cannot reject an already-approved image.'}, status=status.HTTP_400_BAD_REQUEST)
+        if image.uploaded_by:
+            notify_contribution_reviewed.delay(
+                str(image.uploaded_by.pk), 'Image', image.caption or f'{image.image_type} image',
+                '', False, request.data.get('notes', ''),
+            )
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

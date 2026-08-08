@@ -1,0 +1,17 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+Your submission was approved!
+
+Hello {{ user.username }},
+
+Good news — a moderator reviewed your contribution and it's now live on Junkbin.io:
+
+{{ content_type }}: {{ content_str }}
+{% if content_url %}
+View it live:
+{{ content_url }}
+{% endif %}
+Thank you for contributing to the Junkbin.io community!
+
+---
+Junkbin.io
