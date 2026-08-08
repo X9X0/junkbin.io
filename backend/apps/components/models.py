@@ -444,7 +444,7 @@ def datasheet_file_path(instance, filename):
     return f'datasheets/components/{instance.component.id}/{uuid.uuid4().hex}.{ext}'
 
 
-ALLOWED_DATASHEET_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'svg']
+ALLOWED_DATASHEET_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'svg']
 
 
 class ComponentDatasheet(models.Model):

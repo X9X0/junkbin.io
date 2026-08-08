@@ -9,10 +9,11 @@ from django.core.exceptions import ValidationError
 
 # MIME type to allowed extensions mapping
 MIME_TO_EXTENSIONS = {
-    'image/jpeg': ['jpg', 'jpeg'],
+    'image/jpeg': ['jpg', 'jpeg', 'jfif'],
     'image/png': ['png'],
     'image/gif': ['gif'],
     'image/webp': ['webp'],
+    'image/avif': ['avif'],
     'image/svg+xml': ['svg'],
     'application/pdf': ['pdf'],
 }
@@ -21,9 +22,11 @@ MIME_TO_EXTENSIONS = {
 EXTENSION_TO_MIMES = {
     'jpg': ['image/jpeg'],
     'jpeg': ['image/jpeg'],
+    'jfif': ['image/jpeg'],
     'png': ['image/png'],
     'gif': ['image/gif'],
     'webp': ['image/webp'],
+    'avif': ['image/avif'],
     'svg': ['image/svg+xml', 'text/xml', 'application/xml'],
     'pdf': ['application/pdf'],
 }
@@ -98,7 +101,7 @@ def validate_image_file(file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['jpg', 'jpeg', 'png', 'gif', 'webp']
+    allowed_extensions = ['jpg', 'jpeg', 'jfif', 'png', 'gif', 'webp', 'avif']
     return validate_file_magic(file, allowed_extensions)
 
 
@@ -115,5 +118,5 @@ def validate_schematic_file(file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
+    allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg']
     return validate_file_magic(file, allowed_extensions)

@@ -30,8 +30,8 @@ class AlphaToBlack:
 
 
 # Allowed file extensions for uploads
-ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg']
-ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'webp']
+ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg']
+ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
 
 
 def product_image_path(instance, filename):
