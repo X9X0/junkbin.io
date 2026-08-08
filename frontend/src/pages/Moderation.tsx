@@ -9,6 +9,7 @@ import type { Report, UserReview, Product, ProductImage, Schematic, Recipe, Comp
 import Pagination from '../components/Pagination';
 import ResolveReportModal from '../components/moderation/ResolveReportModal';
 import UserReviewPanel from '../components/moderation/UserReviewPanel';
+import { parseApiError } from '../utils/formErrors';
 import clsx from 'clsx';
 
 const reportStatusColors: Record<string, string> = {
@@ -478,6 +479,7 @@ function PendingContentTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const openPreview = (url: string, fileType: string) => {
     const isPdf = fileType === 'pdf' || url.toLowerCase().endsWith('.pdf');
@@ -570,53 +572,71 @@ function PendingContentTab() {
     queryClient.invalidateQueries({ queryKey: ['pendingDatasheets'] });
   };
 
+  const onActionError = (err: any) => setActionError(parseApiError(err, 'Action failed. Please try again.'));
+  const onActionSuccess = () => {
+    setActionError(null);
+    invalidateAll();
+  };
+
   const approveProduct = useMutation({
     mutationFn: (id: string) => products.approve(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const rejectProduct = useMutation({
     mutationFn: (id: string) => products.reject(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const approveSchematic = useMutation({
     mutationFn: (id: string) => schematics.approve(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const rejectSchematic = useMutation({
     mutationFn: (id: string) => schematics.reject(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const approveRecipe = useMutation({
     mutationFn: (id: string) => recipes.approve(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const rejectRecipe = useMutation({
     mutationFn: (id: string) => recipes.reject(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const approveImage = useMutation({
     mutationFn: (id: string) => productImages.approve(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const rejectImage = useMutation({
     mutationFn: (id: string) => productImages.reject(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const approveComponentImage = useMutation({
     mutationFn: (id: string) => componentImages.approve(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const rejectComponentImage = useMutation({
     mutationFn: (id: string) => componentImages.reject(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const approveDatasheet = useMutation({
     mutationFn: (id: string) => componentDatasheets.approve(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
   const rejectDatasheet = useMutation({
     mutationFn: (id: string) => componentDatasheets.reject(id),
-    onSuccess: invalidateAll,
+    onSuccess: onActionSuccess,
+    onError: onActionError,
   });
 
   // Merge items into a unified list
@@ -747,6 +767,12 @@ function PendingContentTab() {
           ))}
         </div>
       </div>
+
+      {actionError && (
+        <div className="card-cyber border-cyber-pink/50 text-cyber-pink px-4 py-3 mb-6 text-sm font-mono">
+          {actionError}
+        </div>
+      )}
 
       {/* Results */}
       {isLoading ? (
