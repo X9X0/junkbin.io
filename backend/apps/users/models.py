@@ -196,6 +196,31 @@ class User(AbstractUser):
                     self.reputation_score >= settings.TRUSTED_USER_MIN_REPUTATION):
                 self.is_trusted = True
 
+    def deactivate_account(self):
+        """
+        Self-service account deletion: deactivate and scrub PII rather than
+        hard-deleting the row. A real delete would cascade inconsistently
+        across the schema (some FKs CASCADE, most SET_NULL), silently
+        wiping some content while orphaning the rest. Scrubbing keeps every
+        product/comment/schematic this user created intact and consistently
+        attributed, and frees up the username/email for reuse.
+        """
+        anon_id = self.id.hex
+        self.username = f'deleted_user_{anon_id}'
+        self.email = f'deleted_{anon_id}@deleted.junkbin.io'
+        self.first_name = ''
+        self.last_name = ''
+        self.bio = ''
+        self.location = ''
+        self.website = ''
+        self.preferred_language = ''
+        self.preferences = {}
+        if self.avatar:
+            self.avatar.delete(save=False)
+        self.is_active = False
+        self.set_unusable_password()
+        self.save()
+
 
 class UserActivity(models.Model):
     """

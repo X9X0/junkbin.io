@@ -23,6 +23,8 @@ const FIELD_LABELS: Record<string, string> = {
   datasheet_url: 'Datasheet URL',
   // User fields
   username: 'Username',
+  new_username: 'New Username',
+  current_password: 'Current Password',
   email: 'Email',
   password: 'Password',
   password_confirm: 'Confirm Password',

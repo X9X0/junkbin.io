@@ -101,6 +101,15 @@ export const auth = {
   changePassword: async (data: { current_password: string; new_password: string; new_password_confirm: string }): Promise<void> => {
     await api.post('/auth/password/change/', data);
   },
+
+  changeUsername: async (data: { current_password: string; new_username: string }): Promise<User> => {
+    const response = await api.post('/auth/username/change/', data);
+    return response.data;
+  },
+
+  deleteAccount: async (data: { current_password: string }): Promise<void> => {
+    await api.post('/auth/account/delete/', data);
+  },
 };
 
 // Products endpoints

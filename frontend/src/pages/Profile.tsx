@@ -9,6 +9,8 @@ import type { UserPreferences } from '../types';
 import { BadgeGrid } from '../components/BadgeDisplay';
 import EditProfileModal from '../components/EditProfileModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import ChangeUsernameModal from '../components/ChangeUsernameModal';
+import DeleteAccountModal from '../components/DeleteAccountModal';
 import {
   User,
   Shield,
@@ -32,6 +34,8 @@ export default function Profile() {
   const { user, isAuthenticated } = useAuth();
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [showChangeUsername, setShowChangeUsername] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -376,6 +380,21 @@ export default function Profile() {
             </h2>
           </div>
 
+          <div className="flex items-center justify-between py-2 border-b border-cyber-light/10">
+            <div>
+              <div className="text-sm text-white font-mono">{t('profile.username_label')}</div>
+              <div className="text-xs text-gray-500">
+                {t('profile.change_username')}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowChangeUsername(true)}
+              className="text-xs font-mono text-cyber-green hover:text-white border border-cyber-green/50 px-3 py-1.5 hover:bg-cyber-green/10 transition-colors"
+            >
+              {t('profile.change_username_btn')}
+            </button>
+          </div>
+
           <div className="flex items-center justify-between py-2">
             <div>
               <div className="text-sm text-white font-mono">{t('profile.password_label')}</div>
@@ -388,6 +407,31 @@ export default function Profile() {
               className="text-xs font-mono text-cyber-green hover:text-white border border-cyber-green/50 px-3 py-1.5 hover:bg-cyber-green/10 transition-colors"
             >
               {t('profile.change_password_btn')}
+            </button>
+          </div>
+        </div>
+
+        {/* Danger Zone */}
+        <div className="card-cyber p-6 mb-8 border-cyber-pink/30">
+          <div className="flex items-center gap-2 mb-4">
+            <AlertCircle className="h-5 w-5 text-cyber-pink" />
+            <h2 className="font-display text-lg font-bold text-white">
+              {t('profile.danger_zone')}
+            </h2>
+          </div>
+
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <div className="text-sm text-white font-mono">{t('profile.delete_account_label')}</div>
+              <div className="text-xs text-gray-500">
+                {t('profile.delete_account_desc')}
+              </div>
+            </div>
+            <button
+              onClick={() => setShowDeleteAccount(true)}
+              className="text-xs font-mono text-cyber-pink hover:text-white border border-cyber-pink/50 px-3 py-1.5 hover:bg-cyber-pink/10 transition-colors"
+            >
+              {t('profile.delete_account_btn')}
             </button>
           </div>
         </div>
@@ -583,6 +627,14 @@ export default function Profile() {
       <ChangePasswordModal
         isOpen={showChangePassword}
         onClose={() => setShowChangePassword(false)}
+      />
+      <ChangeUsernameModal
+        isOpen={showChangeUsername}
+        onClose={() => setShowChangeUsername(false)}
+      />
+      <DeleteAccountModal
+        isOpen={showDeleteAccount}
+        onClose={() => setShowDeleteAccount(false)}
       />
     </div>
   );

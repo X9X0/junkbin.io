@@ -26,6 +26,8 @@ from .serializers import (
     UserRegistrationSerializer,
     UserStatsSerializer,
     PasswordChangeSerializer,
+    UsernameChangeSerializer,
+    AccountDeleteSerializer,
     PreferencesSerializer,
     PasswordResetRequestSerializer,
     PasswordResetConfirmSerializer,
@@ -47,6 +49,12 @@ class UserViewSet(ModelViewSet):
     list: List all users (public info only)
     retrieve: Get a specific user's public profile
     """
+
+    # Read-only: profile edits go through CurrentUserView/UsernameChangeView,
+    # deletion through AccountDeleteView. ModelViewSet's default update/
+    # destroy would otherwise let IsOwnerOrReadOnly permit an unconfirmed
+    # PATCH or hard DELETE straight through this router.
+    http_method_names = ['get', 'head', 'options']
 
     queryset = User.objects.filter(is_active=True)
     permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
@@ -235,6 +243,65 @@ class PasswordChangeView(APIView):
         request.user.save()
 
         return Response({'message': 'Password changed successfully.'})
+
+
+class UsernameChangeView(APIView):
+    """Change username for authenticated user."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    @extend_schema(
+        description='Change current user username',
+        request=UsernameChangeSerializer,
+        responses={200: UserDetailSerializer}
+    )
+    def post(self, request):
+        serializer = UsernameChangeSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        request.user.username = serializer.validated_data['new_username']
+        request.user.save(update_fields=['username'])
+
+        return Response(UserDetailSerializer(request.user).data)
+
+
+class AccountDeleteView(APIView):
+    """Deactivate and scrub the authenticated user's own account."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
+
+    @extend_schema(
+        description='Delete (deactivate) the current user account',
+        request=AccountDeleteSerializer,
+        responses={200: None}
+    )
+    def post(self, request):
+        serializer = AccountDeleteSerializer(
+            data=request.data,
+            context={'request': request}
+        )
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        user.deactivate_account()
+
+        # Log out everywhere: blacklist every outstanding token for this
+        # user, not just the current session's.
+        from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+        for token in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=token)
+
+        from apps.api.urls import clear_token_cookies
+
+        response = Response({'message': 'Your account has been deleted.'})
+        return clear_token_cookies(response)
 
 
 class PreferencesView(APIView):

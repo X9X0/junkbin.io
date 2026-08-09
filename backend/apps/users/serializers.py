@@ -50,7 +50,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'last_contribution_at', 'badges'
         ]
         read_only_fields = [
-            'id', 'email', 'reputation_score', 'contribution_count',
+            'id', 'username', 'email', 'reputation_score', 'contribution_count',
             'report_count', 'is_staff', 'is_trusted', 'is_moderator',
             'email_verified', 'oauth_provider', 'created_at', 'updated_at',
             'last_contribution_at'
@@ -138,6 +138,57 @@ class PasswordChangeSerializer(serializers.Serializer):
                 'new_password_confirm': _("New passwords didn't match.")
             })
         return attrs
+
+
+class CurrentPasswordConfirmMixin:
+    """
+    Shared password-confirmation logic for sensitive self-service actions
+    (username change, account deletion). OAuth-only accounts have no
+    usable password, so there's nothing to confirm against — their session
+    is already the proof of identity.
+    """
+
+    def validate(self, attrs):
+        user = self.context['request'].user
+        if user.has_usable_password():
+            current_password = attrs.get('current_password')
+            if not current_password:
+                raise serializers.ValidationError({
+                    'current_password': _('Current password is required.')
+                })
+            if not user.check_password(current_password):
+                raise serializers.ValidationError({
+                    'current_password': _('Current password is incorrect.')
+                })
+        return attrs
+
+
+class UsernameChangeSerializer(CurrentPasswordConfirmMixin, serializers.Serializer):
+    """Serializer for self-service username change."""
+
+    current_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        style={'input_type': 'password'}
+    )
+    new_username = serializers.CharField(required=True, max_length=150)
+
+    def validate_new_username(self, value):
+        user = self.context['request'].user
+        User._meta.get_field('username').run_validators(value)
+        if User.objects.exclude(pk=user.pk).filter(username__iexact=value).exists():
+            raise serializers.ValidationError(_('This username is already taken.'))
+        return value
+
+
+class AccountDeleteSerializer(CurrentPasswordConfirmMixin, serializers.Serializer):
+    """Serializer for self-service account deletion."""
+
+    current_password = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        style={'input_type': 'password'}
+    )
 
 
 class PreferencesSerializer(serializers.Serializer):
