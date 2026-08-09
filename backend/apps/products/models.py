@@ -402,6 +402,14 @@ class Schematic(models.Model):
         BOM = 'bom', _('Bill of Materials')
         OTHER = 'other', _('Other Documentation')
 
+    # Schematic types worth running text/table BOM extraction on - i.e. ones
+    # that plausibly contain an actual parts list. Circuit diagrams (full
+    # schematic, block diagram, PCB layout, wiring diagram) don't have BOM
+    # tables to find; their components are drawn symbols with designator
+    # labels scattered spatially across the page, which needs the separate
+    # OCR + spatial-matching pipeline instead of text/table extraction.
+    BOM_EXTRACTABLE_TYPES = {'service_manual', 'bom'}
+
     class SourceType(models.TextChoices):
         OFFICIAL = 'official', _('Official/Manufacturer')
         COMMUNITY = 'community', _('Community Contributed')
@@ -505,6 +513,11 @@ class Schematic(models.Model):
         default=0,
         help_text=_('Number of times downloaded')
     )
+
+    # BOM extraction tracking (see ComponentSuggestion / extract_bom action) -
+    # null means never processed; set on every run (even zero-candidate ones)
+    # so a batch sweep doesn't keep reprocessing the same document.
+    bom_extracted_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         verbose_name = _('schematic')
@@ -677,6 +690,115 @@ class Firmware(models.Model):
         Firmware.objects.filter(pk=self.pk).update(
             download_count=F('download_count') + 1
         )
+
+
+def suggestion_source_path(instance, filename):
+    """Generate upload path for the source document behind a component suggestion."""
+    ext = filename.split('.')[-1]
+    new_filename = f'{uuid.uuid4().hex}.{ext}'
+    return f'component_suggestions/{instance.product.id}/{new_filename}'
+
+
+class ComponentSuggestion(models.Model):
+    """
+    A machine-extracted candidate component, pending moderator review.
+
+    Populated by parsing a manual/service-doc PDF, OCR-scanning a circuit
+    diagram, or (in future) OCR of PCB photos. Never linked into the live
+    parts list directly - a moderator must approve it, at which point a
+    real Component + ProductComponent pair is created from its data.
+    """
+
+    class SourceType(models.TextChoices):
+        PDF_MANUAL = 'pdf_manual', _('PDF Manual/Service Doc')
+        SCHEMATIC_OCR = 'schematic_ocr', _('Schematic OCR')
+        PHOTO_OCR = 'photo_ocr', _('PCB Photo OCR')
+
+    class Confidence(models.TextChoices):
+        HIGH = 'high', _('High (table extraction)')
+        MEDIUM = 'medium', _('Medium')
+        LOW = 'low', _('Low (heuristic text match)')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='component_suggestions'
+    )
+
+    # Source
+    source_type = models.CharField(
+        max_length=20,
+        choices=SourceType.choices,
+        default=SourceType.PDF_MANUAL
+    )
+    source_file = models.FileField(
+        upload_to=suggestion_source_path,
+        null=True,
+        blank=True,
+        help_text=_('The manual/document this was extracted from')
+    )
+    page_number = models.PositiveIntegerField(null=True, blank=True)
+    extraction_context = models.TextField(
+        blank=True,
+        help_text=_('Raw extracted row/line, for moderator sanity-checking')
+    )
+    confidence = models.CharField(
+        max_length=10,
+        choices=Confidence.choices,
+        default=Confidence.MEDIUM
+    )
+
+    # Extracted candidate data (mirrors ProductComponent + Component fields)
+    part_number = models.CharField(max_length=200, blank=True)
+    manufacturer = models.CharField(max_length=200, blank=True)
+    reference_designator = models.CharField(max_length=255, blank=True)
+    component_type = models.CharField(max_length=50, blank=True)
+    package_type = models.CharField(max_length=50, blank=True)
+    description = models.CharField(max_length=500, blank=True)
+    value_raw = models.CharField(max_length=100, blank=True)
+    quantity = models.PositiveSmallIntegerField(default=1)
+    location_description = models.CharField(max_length=200, blank=True)
+
+    # Best-effort match against the existing Component catalog
+    matched_component = models.ForeignKey(
+        'components.Component',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='+'
+    )
+
+    # Upload info
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='uploaded_component_suggestions'
+    )
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    # Moderation - approving converts this into a real ProductComponent and
+    # deletes the suggestion; rejecting just deletes it. is_approved stays
+    # False for the lifetime of every row still in the table, but is kept
+    # for consistency with the moderation queue's is_approved=False pattern.
+    is_approved = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _('component suggestion')
+        verbose_name_plural = _('component suggestions')
+        ordering = ['-uploaded_at']
+        indexes = [
+            models.Index(fields=['product', '-uploaded_at']),
+            models.Index(fields=['is_approved', '-uploaded_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.product} - {self.part_number or self.reference_designator or "suggestion"}'
 
 
 class ProductComment(models.Model):

@@ -283,7 +283,7 @@ describe('ImageUpload', () => {
       await user.click(screen.getByRole('button', { name: /UPLOAD ALL/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/Images uploaded/i)).toBeInTheDocument();
+        expect(screen.getByText(/images? uploaded/i)).toBeInTheDocument();
       });
     });
   });

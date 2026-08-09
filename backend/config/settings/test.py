@@ -53,10 +53,14 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'anon': '1000/hour',
     'user': '1000/hour',
+    'auth': '1000/hour',
     'submission': '1000/hour',
+    'upload': '1000/hour',
     'search': '1000/hour',
-    'message': '1000/hour',
+    'messaging': '1000/hour',
     'report': '1000/hour',
+    'lookup': '1000/hour',
+    'subscribe': '1000/hour',
 }
 
 # Use console email backend

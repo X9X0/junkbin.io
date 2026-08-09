@@ -7,6 +7,8 @@ import type {
   Component,
   Schematic,
   Firmware,
+  ComponentSuggestion,
+  BomCandidate,
   User,
   PublicUser,
   UserStats,
@@ -187,6 +189,23 @@ export const products = {
     return response.data;
   },
 
+  extractBomPdf: async (id: string, formData: FormData): Promise<{
+    candidates: BomCandidate[];
+    total: number;
+    high_confidence: number;
+    low_confidence: number;
+  }> => {
+    const response = await api.post(`/products/${id}/extract_bom_pdf/`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  submitBomSuggestions: async (id: string, candidates: BomCandidate[], sourceType?: string): Promise<{ created: number; detail: string }> => {
+    const response = await api.post(`/products/${id}/submit_bom_suggestions/`, { candidates, source_type: sourceType });
+    return response.data;
+  },
+
   addComponent: async (productId: string, data: any): Promise<any> => {
     const response = await api.post(`/products/${productId}/add_component/`, data);
     return response.data;
@@ -220,7 +239,7 @@ export const products = {
     await api.post(`/products/${id}/reject/`);
   },
 
-  pendingCounts: async (): Promise<{ products: number; schematics: number; firmware: number; recipes: number; images: number; component_images: number; datasheets: number }> => {
+  pendingCounts: async (): Promise<{ products: number; schematics: number; firmware: number; recipes: number; images: number; component_images: number; datasheets: number; component_suggestions: number }> => {
     const response = await api.get('/products/pending_counts/');
     return response.data;
   },
@@ -394,6 +413,28 @@ export const schematics = {
     return response.data;
   },
 
+  extractBom: async (id: string): Promise<{
+    product: string;
+    candidates: BomCandidate[];
+    total: number;
+    high_confidence: number;
+    low_confidence: number;
+  }> => {
+    const response = await api.get(`/schematics/${id}/extract_bom/`);
+    return response.data;
+  },
+
+  extractBomOcr: async (id: string): Promise<{
+    product: string;
+    candidates: BomCandidate[];
+    total: number;
+    high_confidence: number;
+    low_confidence: number;
+  }> => {
+    const response = await api.get(`/schematics/${id}/extract_bom_ocr/`);
+    return response.data;
+  },
+
   download: async (id: string): Promise<{ download_url: string }> => {
     const response = await api.get(`/schematics/${id}/download/`);
     return response.data;
@@ -443,6 +484,23 @@ export const firmware = {
 
   reject: async (id: string): Promise<void> => {
     await api.post(`/firmware/${id}/reject/`);
+  },
+};
+
+// Component suggestions (machine-extracted BOM candidates) - moderation
+export const componentSuggestions = {
+  list: async (params?: any): Promise<PaginatedResponse<ComponentSuggestion>> => {
+    const response = await api.get('/component-suggestions/', { params });
+    return response.data;
+  },
+
+  approve: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/component-suggestions/${id}/approve/`);
+    return response.data;
+  },
+
+  reject: async (id: string): Promise<void> => {
+    await api.post(`/component-suggestions/${id}/reject/`);
   },
 };
 

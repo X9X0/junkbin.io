@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, HardDrive, Check, X, ExternalLink } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, HardDrive, Sparkles, Check, X, ExternalLink } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
-import { reports, reviews, products, schematics, firmware, recipes, productImages, componentImages, componentDatasheets } from '../api/endpoints';
-import type { Report, UserReview, Product, ProductImage, Schematic, Firmware, Recipe, ComponentDatasheet, ComponentImage } from '../types';
+import { reports, reviews, products, schematics, firmware, componentSuggestions, recipes, productImages, componentImages, componentDatasheets } from '../api/endpoints';
+import type { Report, UserReview, Product, ProductImage, Schematic, Firmware, ComponentSuggestion, Recipe, ComponentDatasheet, ComponentImage } from '../types';
 import Pagination from '../components/Pagination';
 import ResolveReportModal from '../components/moderation/ResolveReportModal';
 import UserReviewPanel from '../components/moderation/UserReviewPanel';
@@ -447,12 +447,13 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
 /* Pending Content Tab                                                */
 /* ------------------------------------------------------------------ */
 
-type ContentFilter = 'all' | 'products' | 'schematics' | 'firmware' | 'recipes' | 'images' | 'component_images' | 'datasheets';
+type ContentFilter = 'all' | 'products' | 'schematics' | 'firmware' | 'component_suggestions' | 'recipes' | 'images' | 'component_images' | 'datasheets';
 
 type PendingItem =
   | { type: 'product'; data: Product }
   | { type: 'schematic'; data: Schematic }
   | { type: 'firmware'; data: Firmware }
+  | { type: 'component_suggestion'; data: ComponentSuggestion }
   | { type: 'recipe'; data: Recipe }
   | { type: 'image'; data: ProductImage }
   | { type: 'component_image'; data: ComponentImage & { component: string; uploaded_at: string } }
@@ -462,6 +463,7 @@ const typeBadgeColors: Record<string, string> = {
   product: 'border-cyber-cyan/50 text-cyber-cyan',
   schematic: 'border-cyber-yellow/50 text-cyber-yellow',
   firmware: 'border-purple-400/50 text-purple-400',
+  component_suggestion: 'border-cyber-cyan/50 text-cyber-cyan',
   recipe: 'border-cyber-green/50 text-cyber-green',
   image: 'border-cyber-pink/50 text-cyber-pink',
   component_image: 'border-orange-400/50 text-orange-400',
@@ -472,6 +474,7 @@ const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   product: Package,
   schematic: FileText,
   firmware: HardDrive,
+  component_suggestion: Sparkles,
   recipe: Wrench,
   image: ImageIcon,
   component_image: ImageIcon,
@@ -547,6 +550,12 @@ function PendingContentTab() {
     enabled: contentFilter === 'all' || contentFilter === 'firmware',
   });
 
+  const { data: pendingComponentSuggestions, isLoading: loadingComponentSuggestions } = useQuery({
+    queryKey: ['pendingComponentSuggestions'],
+    queryFn: () => componentSuggestions.list({ is_approved: 'false', page_size: 100 }),
+    enabled: contentFilter === 'all' || contentFilter === 'component_suggestions',
+  });
+
   const { data: pendingRecipes, isLoading: loadingRecipes } = useQuery({
     queryKey: ['pendingRecipes'],
     queryFn: () => recipes.list({ is_approved: 'false', page_size: 100 }),
@@ -576,6 +585,7 @@ function PendingContentTab() {
     queryClient.invalidateQueries({ queryKey: ['pendingProducts'] });
     queryClient.invalidateQueries({ queryKey: ['pendingSchematics'] });
     queryClient.invalidateQueries({ queryKey: ['pendingFirmware'] });
+    queryClient.invalidateQueries({ queryKey: ['pendingComponentSuggestions'] });
     queryClient.invalidateQueries({ queryKey: ['pendingRecipes'] });
     queryClient.invalidateQueries({ queryKey: ['pendingImages'] });
     queryClient.invalidateQueries({ queryKey: ['pendingComponentImages'] });
@@ -615,6 +625,16 @@ function PendingContentTab() {
   });
   const rejectFirmware = useMutation({
     mutationFn: (id: string) => firmware.reject(id),
+    onSuccess: onActionSuccess,
+    onError: onActionError,
+  });
+  const approveComponentSuggestion = useMutation({
+    mutationFn: (id: string) => componentSuggestions.approve(id),
+    onSuccess: onActionSuccess,
+    onError: onActionError,
+  });
+  const rejectComponentSuggestion = useMutation({
+    mutationFn: (id: string) => componentSuggestions.reject(id),
     onSuccess: onActionSuccess,
     onError: onActionError,
   });
@@ -670,6 +690,9 @@ function PendingContentTab() {
   if (contentFilter === 'all' || contentFilter === 'firmware') {
     (pendingFirmware?.results || []).forEach((f) => items.push({ type: 'firmware', data: f }));
   }
+  if (contentFilter === 'all' || contentFilter === 'component_suggestions') {
+    (pendingComponentSuggestions?.results || []).forEach((cs) => items.push({ type: 'component_suggestion', data: cs }));
+  }
   if (contentFilter === 'all' || contentFilter === 'recipes') {
     (pendingRecipes?.results || []).forEach((r) => items.push({ type: 'recipe', data: r }));
   }
@@ -690,12 +713,16 @@ function PendingContentTab() {
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
-  const isLoading = loadingProducts || loadingSchematics || loadingFirmware || loadingRecipes || loadingImages || loadingComponentImages || loadingDatasheets;
+  const isLoading = loadingProducts || loadingSchematics || loadingFirmware || loadingComponentSuggestions || loadingRecipes || loadingImages || loadingComponentImages || loadingDatasheets;
 
   const getItemTitle = (item: PendingItem): string => {
     if (item.type === 'product') return `${item.data.manufacturer} ${item.data.model_number}`;
     if (item.type === 'schematic') return (item.data as Schematic).title;
     if (item.type === 'firmware') return (item.data as Firmware).title;
+    if (item.type === 'component_suggestion') {
+      const cs = item.data as ComponentSuggestion;
+      return cs.reference_designator ? `${cs.part_number} (${cs.reference_designator})` : cs.part_number || 'Unnamed part';
+    }
     if (item.type === 'image') {
       const img = item.data as ProductImage;
       return img.caption || `${img.image_type} image`;
@@ -711,6 +738,7 @@ function PendingContentTab() {
   const getItemUser = (item: PendingItem): string => {
     if (item.type === 'schematic') return (item.data as Schematic).uploaded_by?.username || 'Unknown';
     if (item.type === 'firmware') return (item.data as Firmware).uploaded_by?.username || 'Unknown';
+    if (item.type === 'component_suggestion') return (item.data as ComponentSuggestion).uploaded_by?.username || 'Unknown';
     if (item.type === 'image') return (item.data as ProductImage).uploaded_by?.username || 'Unknown';
     if (item.type === 'component_image') return (item.data as ComponentImage).uploaded_by?.username || 'Unknown';
     if (item.type === 'datasheet') return (item.data as ComponentDatasheet).uploaded_by?.username || 'Unknown';
@@ -720,6 +748,7 @@ function PendingContentTab() {
   const getItemDate = (item: PendingItem): string => {
     if (item.type === 'schematic') return (item.data as Schematic).uploaded_at;
     if (item.type === 'firmware') return (item.data as Firmware).uploaded_at;
+    if (item.type === 'component_suggestion') return (item.data as ComponentSuggestion).uploaded_at;
     if (item.type === 'image') return (item.data as ProductImage).uploaded_at || '';
     if (item.type === 'component_image') return (item.data as any).uploaded_at || '';
     if (item.type === 'datasheet') return (item.data as ComponentDatasheet).uploaded_at;
@@ -731,6 +760,7 @@ function PendingContentTab() {
     if (item.type === 'recipe') return `/recipes/${item.data.id}`;
     if (item.type === 'image') return `/products/${(item.data as ProductImage).product}`;
     if (item.type === 'firmware') return `/products/${(item.data as Firmware).product}`;
+    if (item.type === 'component_suggestion') return `/products/${(item.data as ComponentSuggestion).product}`;
     if (item.type === 'component_image') return `/components/${(item.data as any).component}/products`;
     if (item.type === 'datasheet') return `/components/${(item.data as ComponentDatasheet).component}/products`;
     return `/products/${(item.data as Schematic).product}`;
@@ -740,6 +770,7 @@ function PendingContentTab() {
     if (item.type === 'product') approveProduct.mutate(item.data.id);
     else if (item.type === 'schematic') approveSchematic.mutate(item.data.id);
     else if (item.type === 'firmware') approveFirmware.mutate(item.data.id);
+    else if (item.type === 'component_suggestion') approveComponentSuggestion.mutate(item.data.id);
     else if (item.type === 'image') approveImage.mutate(item.data.id);
     else if (item.type === 'component_image') approveComponentImage.mutate(item.data.id!);
     else if (item.type === 'datasheet') approveDatasheet.mutate(item.data.id);
@@ -750,6 +781,7 @@ function PendingContentTab() {
     if (item.type === 'product') rejectProduct.mutate(item.data.id);
     else if (item.type === 'schematic') rejectSchematic.mutate(item.data.id);
     else if (item.type === 'firmware') rejectFirmware.mutate(item.data.id);
+    else if (item.type === 'component_suggestion') rejectComponentSuggestion.mutate(item.data.id);
     else if (item.type === 'image') rejectImage.mutate(item.data.id);
     else if (item.type === 'component_image') rejectComponentImage.mutate(item.data.id!);
     else if (item.type === 'datasheet') rejectDatasheet.mutate(item.data.id);
@@ -759,6 +791,7 @@ function PendingContentTab() {
   const isMutating = approveProduct.isPending || rejectProduct.isPending
     || approveSchematic.isPending || rejectSchematic.isPending
     || approveFirmware.isPending || rejectFirmware.isPending
+    || approveComponentSuggestion.isPending || rejectComponentSuggestion.isPending
     || approveRecipe.isPending || rejectRecipe.isPending
     || approveImage.isPending || rejectImage.isPending
     || approveComponentImage.isPending || rejectComponentImage.isPending
@@ -768,10 +801,11 @@ function PendingContentTab() {
     <>
       {/* Stat cards */}
       {counts && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-4 mb-6">
           <StatCard label="PRODUCTS" value={counts.products} color="text-cyber-cyan" icon={Package} />
           <StatCard label="SCHEMATICS" value={counts.schematics} color="text-cyber-yellow" icon={FileText} />
           <StatCard label="FIRMWARE" value={counts.firmware} color="text-purple-400" icon={HardDrive} />
+          <StatCard label="AI SUGGESTIONS" value={counts.component_suggestions} color="text-cyber-cyan" icon={Sparkles} />
           <StatCard label="RECIPES" value={counts.recipes} color="text-cyber-green" icon={Wrench} />
           <StatCard label="IMAGES" value={counts.images} color="text-cyber-pink" icon={ImageIcon} />
           <StatCard label="COMP IMAGES" value={counts.component_images} color="text-orange-400" icon={ImageIcon} />
@@ -782,7 +816,7 @@ function PendingContentTab() {
       {/* Sub-filter */}
       <div className="card-cyber p-4 mb-6">
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'products', 'schematics', 'firmware', 'recipes', 'images', 'component_images', 'datasheets'] as ContentFilter[]).map((f) => (
+          {(['all', 'products', 'schematics', 'firmware', 'component_suggestions', 'recipes', 'images', 'component_images', 'datasheets'] as ContentFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setContentFilter(f)}

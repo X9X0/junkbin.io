@@ -42,6 +42,27 @@ class SubmissionRateThrottle(UserRateThrottle):
         return super().allow_request(request, view)
 
 
+class UploadRateThrottle(UserRateThrottle):
+    """
+    Throttle for file uploads (images, schematics, firmware).
+
+    Kept separate from SubmissionRateThrottle: a single legitimate product
+    submission commonly includes several photos, each a separate request,
+    which would otherwise burn through the same budget as spam-prevention
+    for new product/comment creation. Staff and moderators are exempt.
+    """
+
+    scope = 'upload'
+
+    def allow_request(self, request, view):
+        user = request.user
+        if user and user.is_authenticated and (
+            user.is_staff or getattr(user, 'is_moderator', False)
+        ):
+            return True
+        return super().allow_request(request, view)
+
+
 class ReportRateThrottle(UserRateThrottle):
     """
     Throttle for report submissions.

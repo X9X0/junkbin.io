@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import { Upload, Camera, X, Loader2, CheckCircle, AlertCircle, Clock, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
+import axios from 'axios';
 
 interface ImageTypeOption {
   value: string;
@@ -61,6 +62,8 @@ export default function ImageUpload({
   const [files, setFiles] = useState<PreviewFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadedCount, setUploadedCount] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -138,24 +141,63 @@ export default function ImageUpload({
     });
   };
 
+  const getUploadErrorMessage = (error: unknown): string => {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const data = error.response?.data;
+
+      if (status === 429) {
+        return "You've hit the upload rate limit — wait a bit before uploading more.";
+      }
+      if (status === 401) {
+        return 'Your session expired — please log in again.';
+      }
+      if (status === 403 && typeof data?.detail === 'string') {
+        return data.detail;
+      }
+      if (data && typeof data === 'object') {
+        const fieldError = Object.values(data).flat().find((v) => typeof v === 'string');
+        if (fieldError) {
+          return fieldError;
+        }
+      }
+    }
+    return 'Failed to upload image.';
+  };
+
   const uploadAll = async () => {
     setUploadProgress(0);
+    setUploadError(null);
     let completed = 0;
+    const remaining: PreviewFile[] = [];
 
-    for (const file of files) {
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       try {
         await uploadMutation.mutateAsync(file);
         completed++;
+        URL.revokeObjectURL(file.preview);
         setUploadProgress(Math.round((completed / files.length) * 100));
       } catch (error) {
-        console.error('Failed to upload:', file.file.name);
+        console.error('Failed to upload:', file.file.name, error);
+        // Once one request is rate-limited the rest will be too — stop
+        // burning the budget and keep every un-uploaded file for retry.
+        if (axios.isAxiosError(error) && error.response?.status === 429) {
+          setUploadError(getUploadErrorMessage(error));
+          remaining.push(...files.slice(i));
+          break;
+        }
+        setUploadError(getUploadErrorMessage(error));
+        remaining.push(file);
       }
     }
 
-    files.forEach((f) => URL.revokeObjectURL(f.preview));
-    setFiles([]);
+    setFiles(remaining);
     setUploadProgress(null);
-    onSuccess?.();
+    setUploadedCount(completed);
+    if (completed > 0) {
+      onSuccess?.();
+    }
   };
 
   return (
@@ -308,11 +350,11 @@ export default function ImageUpload({
       )}
 
       {/* Success message */}
-      {uploadMutation.isSuccess && files.length === 0 && (
+      {uploadedCount > 0 && !uploadMutation.isPending && (
         <div className="border border-cyber-green/50 bg-cyber-green/10 p-3 space-y-2">
           <div className="flex items-center gap-2 text-cyber-green text-sm font-mono">
             <CheckCircle className="h-4 w-4 shrink-0" />
-            Images uploaded — pending moderator review.
+            {uploadedCount} image{uploadedCount !== 1 ? 's' : ''} uploaded — pending moderator review.
           </div>
           <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
             <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
@@ -331,10 +373,11 @@ export default function ImageUpload({
       )}
 
       {/* Error message */}
-      {uploadMutation.isError && (
+      {uploadError && !uploadMutation.isPending && (
         <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">
           <AlertCircle className="h-4 w-4" />
-          Failed to upload some images. Please try again.
+          {uploadError}
+          {files.length > 0 && ' Remaining images were kept — click Upload All to retry.'}
         </div>
       )}
     </div>

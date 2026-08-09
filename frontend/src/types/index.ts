@@ -254,6 +254,48 @@ export interface Firmware {
   uploaded_at: string;
 }
 
+// BOM/manual extraction candidate — not yet persisted server-side
+export interface BomCandidate {
+  page_number: number | null;
+  confidence: 'high' | 'medium' | 'low';
+  part_number: string;
+  manufacturer: string;
+  reference_designator: string;
+  component_type: string;
+  package_type: string;
+  description: string;
+  value_raw: string;
+  quantity: number;
+  location_description: string;
+  extraction_context: string;
+  matched_component: { id: string; part_number: string; manufacturer: string } | null;
+}
+
+// Component suggestion — a candidate BOM row pending moderator review
+export interface ComponentSuggestion {
+  id: string;
+  product: string;
+  source_type: string;
+  source_type_display?: string;
+  page_number?: number;
+  extraction_context: string;
+  confidence: 'high' | 'medium' | 'low';
+  confidence_display?: string;
+  part_number: string;
+  manufacturer: string;
+  reference_designator: string;
+  component_type: string;
+  package_type: string;
+  description: string;
+  value_raw: string;
+  quantity: number;
+  location_description: string;
+  matched_component: { id: string; part_number: string; manufacturer: string } | null;
+  uploaded_by?: CreatedBy;
+  uploaded_at: string;
+  is_approved: boolean;
+}
+
 // API Response types
 export interface PaginatedResponse<T> {
   count: number;

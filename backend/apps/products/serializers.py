@@ -5,7 +5,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
-from .models import Product, ProductImage, ProductComment, Schematic, Firmware
+from .models import Product, ProductImage, ProductComment, Schematic, Firmware, ComponentSuggestion
 from utils.file_validation import validate_image_file, validate_schematic_file
 from utils.image_processing import strip_exif
 
@@ -390,6 +390,39 @@ class FirmwareUploadSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['uploaded_by'] = self.context['request'].user
         return super().create(validated_data)
+
+
+class ComponentSuggestionSerializer(serializers.ModelSerializer):
+    """Serializer for reviewing machine-extracted component suggestions."""
+
+    uploaded_by = CreatedBySerializer(read_only=True)
+    source_type_display = serializers.CharField(source='get_source_type_display', read_only=True)
+    confidence_display = serializers.CharField(source='get_confidence_display', read_only=True)
+    matched_component = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ComponentSuggestion
+        fields = [
+            'id', 'product', 'source_type', 'source_type_display', 'source_file',
+            'page_number', 'extraction_context', 'confidence', 'confidence_display',
+            'part_number', 'manufacturer', 'reference_designator', 'component_type',
+            'package_type', 'description', 'value_raw', 'quantity', 'location_description',
+            'matched_component', 'uploaded_by', 'uploaded_at', 'is_approved',
+        ]
+        read_only_fields = [
+            'id', 'product', 'source_type', 'source_file', 'page_number',
+            'extraction_context', 'confidence', 'matched_component',
+            'uploaded_by', 'uploaded_at', 'is_approved',
+        ]
+
+    def get_matched_component(self, obj):
+        if obj.matched_component:
+            return {
+                'id': str(obj.matched_component.id),
+                'part_number': obj.matched_component.part_number,
+                'manufacturer': obj.matched_component.manufacturer,
+            }
+        return None
 
 
 class ProductCommentSerializer(serializers.ModelSerializer):

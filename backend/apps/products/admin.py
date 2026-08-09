@@ -7,7 +7,7 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
-from .models import Product, ProductImage, ProductComment, Schematic, Firmware
+from .models import Product, ProductImage, ProductComment, Schematic, Firmware, ComponentSuggestion
 
 
 class ProductImageInline(admin.TabularInline):
@@ -327,6 +327,32 @@ class FirmwareAdmin(admin.ModelAdmin):
     def unapprove_firmware(self, request, queryset):
         updated = queryset.update(is_approved=False)
         self.message_user(request, f'{updated} firmware files unapproved.')
+
+
+@admin.register(ComponentSuggestion)
+class ComponentSuggestionAdmin(admin.ModelAdmin):
+    """
+    Read-mostly oversight for machine-extracted component suggestions.
+
+    Real review (approve → creates Component + ProductComponent, or
+    reject) happens through the moderation dashboard, since approving
+    requires the conversion logic in ComponentSuggestionViewSet.approve -
+    this admin view is for browsing/spot-deleting the queue.
+    """
+
+    list_display = [
+        'part_number', 'manufacturer', 'reference_designator', 'product',
+        'source_type', 'confidence', 'uploaded_by', 'uploaded_at'
+    ]
+    list_filter = ['source_type', 'confidence', 'uploaded_at']
+    search_fields = [
+        'part_number', 'manufacturer', 'reference_designator',
+        'product__manufacturer', 'product__model_number', 'extraction_context'
+    ]
+    readonly_fields = ['id', 'uploaded_by', 'uploaded_at', 'matched_component']
+    ordering = ['-uploaded_at']
+    date_hierarchy = 'uploaded_at'
+    autocomplete_fields = ['product']
 
 
 @admin.register(ProductComment)

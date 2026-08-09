@@ -19,7 +19,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
 
-from .models import Product, ProductImage, ProductComment, Schematic, Firmware
+from .models import Product, ProductImage, ProductComment, Schematic, Firmware, ComponentSuggestion
 from .serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
@@ -32,11 +32,12 @@ from .serializers import (
     SchematicUploadSerializer,
     FirmwareSerializer,
     FirmwareUploadSerializer,
+    ComponentSuggestionSerializer,
 )
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
-from apps.api.throttling import SubmissionRateThrottle
+from apps.api.throttling import SubmissionRateThrottle, UploadRateThrottle
 from apps.api.metrics import submission_counter
 
 
@@ -85,7 +86,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'add_component', 'batch_add_components',
                            'upload_image', 'upload_schematic', 'upload_firmware',
-                           'comments', 'parse_bom', 'import_bom']:
+                           'comments', 'parse_bom', 'import_bom',
+                           'extract_bom_pdf', 'submit_bom_suggestions']:
             if self.request.method == 'POST':
                 return [permissions.IsAuthenticated(), IsVerifiedEmail()]
             return [permissions.AllowAny()]
@@ -98,8 +100,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         return [permissions.AllowAny()]
 
     def get_throttles(self):
+        if self.action in ['upload_image', 'upload_schematic', 'upload_firmware']:
+            if self.request.method == 'POST':
+                return [UploadRateThrottle()]
         if self.action in ['create', 'add_component', 'batch_add_components',
-                           'comments', 'upload_image', 'upload_schematic', 'upload_firmware']:
+                           'comments', 'extract_bom_pdf', 'submit_bom_suggestions']:
             if self.request.method == 'POST':
                 return [SubmissionRateThrottle()]
         return super().get_throttles()
@@ -490,6 +495,125 @@ class ProductViewSet(viewsets.ModelViewSet):
         methods=['post'],
         parser_classes=[MultiPartParser, FormParser]
     )
+    def extract_bom_pdf(self, request, pk=None):
+        """
+        Extract candidate BOM rows from an uploaded manual/service-doc PDF.
+
+        Preview only - nothing is persisted here. The uploader reviews and
+        edits the returned candidates client-side, then calls
+        submit_bom_suggestions to queue them for moderator review.
+        """
+        from .pdf_bom_utils import build_candidates_from_pdf, find_component_match
+
+        self.get_object()  # 404s early if the product doesn't exist/isn't visible
+
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not file.name.lower().endswith('.pdf'):
+            return Response({'detail': 'Only PDF files are supported.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if file.size > 20 * 1024 * 1024:
+            return Response({'detail': 'File too large (max 20MB).'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            candidates = build_candidates_from_pdf(file)
+        except Exception as e:
+            return Response({'detail': f'Could not parse PDF: {str(e)}'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        for candidate in candidates:
+            match = find_component_match(candidate['part_number'], candidate['manufacturer'])
+            candidate['matched_component'] = {
+                'id': str(match.id),
+                'part_number': match.part_number,
+                'manufacturer': match.manufacturer,
+            } if match else None
+
+        return Response({
+            'candidates': candidates,
+            'total': len(candidates),
+            'high_confidence': sum(1 for c in candidates if c['confidence'] == 'high'),
+            'low_confidence': sum(1 for c in candidates if c['confidence'] == 'low'),
+        })
+
+    @action(detail=True, methods=['post'])
+    def submit_bom_suggestions(self, request, pk=None):
+        """
+        Queue reviewed candidate BOM rows as ComponentSuggestions for
+        moderator review. Does not touch the live parts list.
+        """
+        from .pdf_bom_utils import find_component_match
+
+        product = self.get_object()
+        candidates = request.data.get('candidates', [])
+        source_type = request.data.get('source_type', ComponentSuggestion.SourceType.PDF_MANUAL)
+        if source_type not in ComponentSuggestion.SourceType.values:
+            source_type = ComponentSuggestion.SourceType.PDF_MANUAL
+
+        if not isinstance(candidates, list) or not candidates:
+            return Response({'detail': 'No candidates provided.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(candidates) > 200:
+            return Response({'detail': 'Too many candidates in one submission (max 200).'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        created = []
+        for candidate in candidates:
+            part_number = str(candidate.get('part_number', '')).strip()
+            reference_designator = str(candidate.get('reference_designator', '')).strip()
+
+            # OCR candidates are often "we found this designator" with no
+            # readable marking nearby - still worth a moderator's eyes. The
+            # text/table pipeline's candidates are useless without a part
+            # number, so still require one there.
+            if source_type == ComponentSuggestion.SourceType.SCHEMATIC_OCR:
+                if not reference_designator:
+                    continue
+            elif not part_number:
+                continue
+
+            manufacturer = str(candidate.get('manufacturer', '')).strip()
+            match = find_component_match(part_number, manufacturer) if part_number else None
+
+            try:
+                quantity = int(candidate.get('quantity', 1))
+            except (TypeError, ValueError):
+                quantity = 1
+
+            suggestion = ComponentSuggestion.objects.create(
+                product=product,
+                source_type=source_type,
+                page_number=candidate.get('page_number') or None,
+                extraction_context=str(candidate.get('extraction_context', ''))[:2000],
+                confidence=candidate.get('confidence') or ComponentSuggestion.Confidence.MEDIUM,
+                part_number=part_number,
+                manufacturer=manufacturer,
+                reference_designator=reference_designator,
+                component_type=str(candidate.get('component_type', '')).strip(),
+                package_type=str(candidate.get('package_type', '')).strip(),
+                description=str(candidate.get('description', '')).strip()[:500],
+                value_raw=str(candidate.get('value_raw', '')).strip(),
+                quantity=max(1, quantity),
+                location_description=str(candidate.get('location_description', '')).strip(),
+                matched_component=match,
+                uploaded_by=request.user,
+            )
+            created.append(suggestion)
+
+        submission_counter.labels(content_type='component_suggestion').inc(len(created))
+
+        return Response({
+            'created': len(created),
+            'detail': f'{len(created)} component suggestion(s) submitted for moderator review.',
+        }, status=status.HTTP_201_CREATED)
+
+    @action(
+        detail=True,
+        methods=['post'],
+        parser_classes=[MultiPartParser, FormParser]
+    )
     def upload_image(self, request, pk=None):
         """Upload an image for this product."""
         product = self.get_object()
@@ -835,6 +959,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             'images': ProductImage.objects.filter(is_approved=False).count(),
             'component_images': ComponentImage.objects.filter(is_approved=False).count(),
             'datasheets': ComponentDatasheet.objects.filter(is_approved=False).count(),
+            'component_suggestions': ComponentSuggestion.objects.filter(is_approved=False).count(),
         })
 
 
@@ -897,6 +1022,101 @@ class SchematicViewSet(viewsets.ModelViewSet):
             'filename': schematic.file.name.split('/')[-1],
             'file_type': schematic.file_type,
             'file_size': schematic.file_size,
+        })
+
+    @action(detail=True, methods=['get'])
+    def extract_bom(self, request, pk=None):
+        """
+        Extract candidate BOM rows from this schematic's own file, without
+        requiring a fresh upload. Preview only, same shape as
+        ProductViewSet.extract_bom_pdf - submit via
+        ProductViewSet.submit_bom_suggestions using this schematic's product.
+        """
+        from django.utils import timezone
+        from .pdf_bom_utils import build_candidates_from_pdf, find_component_match
+
+        schematic = self.get_object()
+
+        if schematic.file_type != 'pdf':
+            return Response(
+                {'detail': 'BOM extraction is only supported for PDF schematics.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if schematic.schematic_type not in Schematic.BOM_EXTRACTABLE_TYPES:
+            return Response(
+                {'detail': 'BOM extraction is only available for Service Manual and Bill of Materials documents. '
+                           'Circuit diagrams don\'t contain parts tables this pipeline can read.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            candidates = build_candidates_from_pdf(schematic.file)
+        except Exception as e:
+            return Response({'detail': f'Could not parse PDF: {str(e)}'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        for candidate in candidates:
+            match = find_component_match(candidate['part_number'], candidate['manufacturer'])
+            candidate['matched_component'] = {
+                'id': str(match.id),
+                'part_number': match.part_number,
+                'manufacturer': match.manufacturer,
+            } if match else None
+
+        Schematic.objects.filter(pk=schematic.pk).update(bom_extracted_at=timezone.now())
+
+        return Response({
+            'product': str(schematic.product_id),
+            'candidates': candidates,
+            'total': len(candidates),
+            'high_confidence': sum(1 for c in candidates if c['confidence'] == 'high'),
+            'low_confidence': sum(1 for c in candidates if c['confidence'] == 'low'),
+        })
+
+    @action(detail=True, methods=['get'])
+    def extract_bom_ocr(self, request, pk=None):
+        """
+        OCR-scan this schematic (a circuit diagram, block diagram, PCB
+        layout, etc.) for reference-designator labels and whatever text
+        sits nearest them on the page. Always low confidence - there's no
+        BOM table here, just spatial guesswork - so every candidate needs
+        a moderator's eyes before it becomes a real component.
+        """
+        from django.utils import timezone
+        from .pdf_bom_utils import find_component_match
+        from .schematic_ocr_utils import build_candidates_from_schematic_file
+
+        schematic = self.get_object()
+
+        if schematic.file_type not in ('pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp'):
+            return Response(
+                {'detail': 'OCR extraction isn\'t supported for this file type.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            candidates = build_candidates_from_schematic_file(schematic.file, schematic.file_type)
+        except Exception as e:
+            return Response({'detail': f'Could not OCR this file: {str(e)}'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
+        for candidate in candidates:
+            match = find_component_match(candidate['part_number'], candidate['manufacturer'])
+            candidate['matched_component'] = {
+                'id': str(match.id),
+                'part_number': match.part_number,
+                'manufacturer': match.manufacturer,
+            } if match else None
+
+        Schematic.objects.filter(pk=schematic.pk).update(bom_extracted_at=timezone.now())
+
+        return Response({
+            'product': str(schematic.product_id),
+            'candidates': candidates,
+            'total': len(candidates),
+            'high_confidence': 0,
+            'low_confidence': len(candidates),
         })
 
     @action(detail=False, methods=['get'])
@@ -1055,6 +1275,101 @@ class FirmwareViewSet(viewsets.ModelViewSet):
                 '', False, request.data.get('notes', ''),
             )
         firmware.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ComponentSuggestionViewSet(viewsets.ModelViewSet):
+    """
+    Moderation queue for machine-extracted component suggestions
+    (currently: PDF manual/service-doc parsing; see extract_bom_pdf on
+    ProductViewSet). Staff/moderator only - approving converts a suggestion
+    into a real Component + ProductComponent; rejecting deletes it.
+    """
+
+    queryset = ComponentSuggestion.objects.select_related('product', 'uploaded_by', 'matched_component')
+    serializer_class = ComponentSuggestionSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_fields = ['source_type', 'confidence', 'is_approved', 'product', 'uploaded_by']
+    ordering_fields = ['uploaded_at']
+    ordering = ['-uploaded_at']
+
+    def get_permissions(self):
+        return [IsModeratorOrAdmin()]
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        """Convert a suggestion into a real Component + ProductComponent."""
+        from django.conf import settings
+        from apps.components.models import Component, ProductComponent
+        from apps.users.tasks import notify_contribution_reviewed
+        from .bom_utils import extract_value_from_text
+
+        suggestion = self.get_object()
+        if not suggestion.part_number or not suggestion.manufacturer:
+            return Response(
+                {'detail': 'Part number and manufacturer are both required before approving.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        credited_user = suggestion.uploaded_by or request.user
+        specs = extract_value_from_text(suggestion.value_raw, suggestion.component_type) if suggestion.value_raw else {}
+
+        component, _created = Component.objects.get_or_create(
+            manufacturer=suggestion.manufacturer.strip(),
+            part_number=suggestion.part_number.strip(),
+            defaults={
+                'component_type': suggestion.component_type or 'other',
+                'package_type': suggestion.package_type,
+                'description': suggestion.description,
+                'specifications': specs,
+                'created_by': credited_user,
+            }
+        )
+
+        product_component, pc_created = ProductComponent.objects.get_or_create(
+            product=suggestion.product,
+            component=component,
+            defaults={
+                'reference_designator': suggestion.reference_designator,
+                'quantity': suggestion.quantity,
+                'location_description': suggestion.location_description,
+                'submission_level': 'advanced',
+                'created_by': credited_user,
+            }
+        )
+
+        if credited_user:
+            credited_user.increment_contribution()
+            notify_contribution_reviewed.delay(
+                str(credited_user.pk), 'Component Suggestion',
+                f'{suggestion.part_number} ({suggestion.reference_designator or "?"})',
+                f'{settings.FRONTEND_URL}/components/{component.id}/products', True,
+            )
+
+        suggestion_id = str(suggestion.id)
+        suggestion.delete()
+
+        return Response({
+            'detail': 'Suggestion approved.',
+            'suggestion_id': suggestion_id,
+            'component_id': str(component.id),
+            'product_component_id': str(product_component.id),
+            'product_component_created': pc_created,
+        })
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        """Reject and delete a component suggestion."""
+        from apps.users.tasks import notify_contribution_reviewed
+
+        suggestion = self.get_object()
+        if suggestion.uploaded_by:
+            notify_contribution_reviewed.delay(
+                str(suggestion.uploaded_by.pk), 'Component Suggestion',
+                f'{suggestion.part_number or "?"} ({suggestion.reference_designator or "?"})',
+                '', False, request.data.get('notes', ''),
+            )
+        suggestion.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

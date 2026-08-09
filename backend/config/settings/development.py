@@ -64,9 +64,20 @@ CACHES = {
     }
 }
 
-# Disable throttling in development
+# Disable throttling in development (keep rate keys defined to avoid
+# ImproperlyConfigured — several views instantiate throttle classes directly
+# via get_throttles()/throttle_classes, bypassing DEFAULT_THROTTLE_CLASSES)
 REST_FRAMEWORK['DEFAULT_THROTTLE_CLASSES'] = []
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
+    'anon': '1000/hour',
+    'user': '1000/hour',
+    'auth': '1000/hour',
+    'submission': '1000/hour',
+    'upload': '1000/hour',
+    'report': '1000/hour',
+    'search': '1000/hour',
+    'messaging': '1000/hour',
+    'lookup': '1000/hour',
     'subscribe': '10/hour',
 }
 

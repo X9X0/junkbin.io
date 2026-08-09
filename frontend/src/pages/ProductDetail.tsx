@@ -8,6 +8,7 @@ import SchematicUpload from '../components/SchematicUpload';
 import FirmwareUpload from '../components/FirmwareUpload';
 import AddComponentForm from '../components/AddComponentForm';
 import BomImport from '../components/BomImport';
+import BomPdfExtract from '../components/BomPdfExtract';
 import BatchAddComponents from '../components/BatchAddComponents';
 import ReportModal from '../components/ReportModal';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
@@ -31,12 +32,21 @@ import {
   Trash2,
   ArrowLeftRight,
   HardDrive,
+  Sparkles,
+  ScanText,
 } from 'lucide-react';
-import type { JunkbinItem } from '../types';
+import type { JunkbinItem, Schematic } from '../types';
 import clsx from 'clsx';
 import { useState } from 'react';
 import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
+
+// Schematic types that plausibly contain a real parts list/table - circuit
+// diagrams don't, and need the separate OCR + spatial-matching pipeline.
+const BOM_EXTRACTABLE_SCHEMATIC_TYPES = ['service_manual', 'bom'];
+// Circuit-diagram-shaped types where OCR-scanning for designator labels is
+// the relevant technique instead (components are drawn symbols, not table rows).
+const OCR_EXTRACTABLE_SCHEMATIC_TYPES = ['full_schematic', 'block_diagram', 'pcb_layout', 'wiring_diagram', 'pinout'];
 
 function SwapItemCard({ item, currentUserId, isAuthenticated, t }: {
   item: JunkbinItem;
@@ -117,6 +127,9 @@ export default function ProductDetail() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [showBomImport, setShowBomImport] = useState(false);
+  const [showBomPdfExtract, setShowBomPdfExtract] = useState(false);
+  const [extractingSchematic, setExtractingSchematic] = useState<Schematic | null>(null);
+  const [extractingMode, setExtractingMode] = useState<'text' | 'ocr'>('text');
   const [showBatchAdd, setShowBatchAdd] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
@@ -650,13 +663,19 @@ export default function ProductDetail() {
                   <h3 className="font-display text-lg font-semibold text-white">
                     {t('product_detail.documented_components')} ({componentList.length})
                   </h3>
-                  {isAuthenticated && !showAddComponent && !showBomImport && !showBatchAdd && (
+                  {isAuthenticated && !showAddComponent && !showBomImport && !showBomPdfExtract && !showBatchAdd && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setShowBomImport(true)}
                         className="btn-cyber btn-cyber-green text-sm py-1.5"
                       >
                         {t('product_detail.import_bom')}
+                      </button>
+                      <button
+                        onClick={() => setShowBomPdfExtract(true)}
+                        className="btn-cyber text-sm py-1.5"
+                      >
+                        {t('product_detail.extract_from_manual')}
                       </button>
                       <button
                         onClick={() => setShowBatchAdd(true)}
@@ -799,6 +818,16 @@ export default function ProductDetail() {
               </div>
             )}
 
+            {/* Extract BOM from Manual PDF */}
+            {isAuthenticated && showBomPdfExtract && (
+              <div className="card-cyber p-6">
+                <BomPdfExtract
+                  productId={id!}
+                  onClose={() => setShowBomPdfExtract(false)}
+                />
+              </div>
+            )}
+
             {/* Batch Add Components */}
             {isAuthenticated && showBatchAdd && (
               <div className="card-cyber p-6">
@@ -814,7 +843,7 @@ export default function ProductDetail() {
             )}
 
             {/* Empty state / Add button for no components */}
-            {(!componentList || componentList.length === 0) && !showAddComponent && !showBomImport && !showBatchAdd && (
+            {(!componentList || componentList.length === 0) && !showAddComponent && !showBomImport && !showBomPdfExtract && !showBatchAdd && (
               <div className="card-cyber p-8 text-center">
                 <Cpu className="h-12 w-12 text-gray-600 mx-auto mb-4" />
                 <p className="text-gray-400 mb-4">{t('product_detail.bom_empty')}</p>
@@ -825,6 +854,12 @@ export default function ProductDetail() {
                       className="btn-cyber btn-cyber-green"
                     >
                       {t('product_detail.import_bom')}
+                    </button>
+                    <button
+                      onClick={() => setShowBomPdfExtract(true)}
+                      className="btn-cyber"
+                    >
+                      {t('product_detail.extract_from_manual')}
                     </button>
                     <button
                       onClick={() => setShowBatchAdd(true)}
@@ -893,21 +928,54 @@ export default function ProductDetail() {
                             <span>{schematic.download_count} downloads</span>
                           </div>
                         </div>
-                        <button
-                          onClick={async () => {
-                            try {
-                              const { download_url } = await schematics.download(schematic.id);
-                              window.open(download_url, '_blank', 'noopener,noreferrer');
-                            } catch {
-                              // Fallback to direct URL if tracking endpoint fails
-                              window.open(schematic.file_url, '_blank', 'noopener,noreferrer');
-                            }
-                          }}
-                          className="btn-cyber btn-cyber-green py-2 px-3"
-                        >
-                          <Download className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {isAuthenticated && schematic.file_type === 'pdf' && BOM_EXTRACTABLE_SCHEMATIC_TYPES.includes(schematic.schematic_type) && (
+                            <button
+                              onClick={() => { setExtractingMode('text'); setExtractingSchematic(schematic); }}
+                              title={t('product_detail.extract_from_manual')}
+                              className="btn-cyber py-2 px-3"
+                            >
+                              <Sparkles className="h-4 w-4" />
+                            </button>
+                          )}
+                          {isAuthenticated
+                            && ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp'].includes(schematic.file_type)
+                            && OCR_EXTRACTABLE_SCHEMATIC_TYPES.includes(schematic.schematic_type) && (
+                            <button
+                              onClick={() => { setExtractingMode('ocr'); setExtractingSchematic(schematic); }}
+                              title={t('product_detail.ocr_scan_schematic')}
+                              className="btn-cyber py-2 px-3"
+                            >
+                              <ScanText className="h-4 w-4" />
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => {
+                              try {
+                                const { download_url } = await schematics.download(schematic.id);
+                                window.open(download_url, '_blank', 'noopener,noreferrer');
+                              } catch {
+                                // Fallback to direct URL if tracking endpoint fails
+                                window.open(schematic.file_url, '_blank', 'noopener,noreferrer');
+                              }
+                            }}
+                            className="btn-cyber btn-cyber-green py-2 px-3"
+                          >
+                            <Download className="h-4 w-4" />
+                          </button>
+                        </div>
                       </div>
+                      {extractingSchematic?.id === schematic.id && (
+                        <div className="mt-4 pt-4 border-t border-cyber-light/20">
+                          <BomPdfExtract
+                            productId={id!}
+                            schematicId={schematic.id}
+                            schematicTitle={schematic.title}
+                            mode={extractingMode}
+                            onClose={() => setExtractingSchematic(null)}
+                          />
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
