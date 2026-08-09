@@ -13,10 +13,13 @@
 # falls back to English automatically. No English standins needed.
 #
 # Usage:
-#   ./deployment/sync-translations.sh <lang> [--dry-run]
+#   WEBLATE_TOKEN=wlu_xxxxx ./deployment/sync-translations.sh <lang> [--dry-run]
 #
 #   <lang>      Two-letter language code (e.g. pl, ru, tr)
 #   --dry-run   Translate and show results but do not commit to git
+#
+# Requires WEBLATE_TOKEN in the environment (Settings -> API access on
+# translate.junkbin.io). Never hardcode it here.
 #
 # Check translation-status.json for per-language progress.
 ################################################################################
@@ -65,7 +68,11 @@ if [ -z "$LANG" ]; then
     exit 1
 fi
 
-WEBLATE_TOKEN="***REMOVED-WEBLATE-TOKEN***"
+if [ -z "$WEBLATE_TOKEN" ]; then
+    log_error "WEBLATE_TOKEN environment variable is not set."
+    log_error "  Example: WEBLATE_TOKEN=wlu_xxxxx $0 $LANG"
+    exit 1
+fi
 WEBLATE_BASE="https://translate.junkbin.io/api"
 COMPONENT="junkbin-io/frontend-ui"
 LOCALES_DIR="frontend/public/locales"
