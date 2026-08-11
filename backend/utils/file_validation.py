@@ -6,6 +6,8 @@ Provides magic byte verification to ensure uploaded files match their claimed ty
 import magic
 from django.core.exceptions import ValidationError
 
+from apps.products.models import ALLOWED_SCHEMATIC_EXTENSIONS
+
 
 # MIME type to allowed extensions mapping
 MIME_TO_EXTENSIONS = {
@@ -29,6 +31,9 @@ EXTENSION_TO_MIMES = {
     'avif': ['image/avif'],
     'svg': ['image/svg+xml', 'text/xml', 'application/xml'],
     'pdf': ['application/pdf'],
+    # libmagic misidentifies stored (non-deflate) zips as application/octet-stream,
+    # which is common for archives of already-compressed binary board-view data.
+    'zip': ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
 }
 
 
@@ -118,5 +123,4 @@ def validate_schematic_file(file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip']
-    return validate_file_magic(file, allowed_extensions)
+    return validate_file_magic(file, ALLOWED_SCHEMATIC_EXTENSIONS)
