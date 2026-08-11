@@ -281,6 +281,8 @@ class ProductImage(models.Model):
         CLOSEUP = 'closeup', _('Close-up Detail')
         LABEL = 'label', _('Label/Sticker')
         INTERNAL = 'internal', _('Internal View')
+        PORTS = 'ports', _('Ports/Connectors')
+        DAMAGE = 'damage', _('Damage/Issue')
         SCHEMATIC = 'schematic', _('Schematic')
         OTHER = 'other', _('Other')
 

@@ -28,11 +28,11 @@ interface PreviewFile {
 
 const PRODUCT_IMAGE_TYPES: ImageTypeOption[] = [
   { value: 'overview', label: 'Overview' },
-  { value: 'pcb_front', label: 'PCB Front' },
-  { value: 'pcb_back', label: 'PCB Back' },
+  { value: 'pcb_top', label: 'PCB Front' },
+  { value: 'pcb_bottom', label: 'PCB Back' },
   { value: 'closeup', label: 'Close-up' },
   { value: 'label', label: 'Label/FCC ID' },
-  { value: 'internals', label: 'Internals' },
+  { value: 'internal', label: 'Internals' },
   { value: 'ports', label: 'Ports/Connectors' },
   { value: 'damage', label: 'Damage/Issue' },
   { value: 'other', label: 'Other' },

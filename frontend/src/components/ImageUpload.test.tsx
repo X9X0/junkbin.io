@@ -225,7 +225,7 @@ describe('ImageUpload', () => {
       });
 
       const select = screen.getByRole('combobox');
-      await user.selectOptions(select, 'pcb_front');
+      await user.selectOptions(select, 'pcb_top');
 
       expect(select).toHaveDisplayValue('PCB Front');
     });
