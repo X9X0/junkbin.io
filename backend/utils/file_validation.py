@@ -118,5 +118,5 @@ def validate_schematic_file(file):
     Returns:
         str: The detected MIME type
     """
-    allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg']
+    allowed_extensions = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip']
     return validate_file_magic(file, allowed_extensions)

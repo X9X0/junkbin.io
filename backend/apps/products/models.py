@@ -67,7 +67,7 @@ class AdaptiveThumbnail:
 
 
 # Allowed file extensions for uploads
-ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg']
+ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip']
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
 ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip']
 
