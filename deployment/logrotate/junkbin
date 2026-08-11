@@ -1,5 +1,5 @@
-# Junkbin.io - Nginx log rotation
-# Rotates logs inside the Docker nginx_logs volume
+# Junkbin.io - log rotation
+# Rotates logs inside the Docker nginx_logs and backend_logs volumes
 # Install: cp deployment/logrotate/junkbin /etc/logrotate.d/junkbin
 
 /var/lib/docker/volumes/*_nginx_logs/_data/*.log {
@@ -13,4 +13,17 @@
     postrotate
         docker exec junkbin_nginx nginx -s reopen 2>/dev/null || true
     endscript
+}
+
+# backend/celery/celery-beat write with a plain (non-rotating) FileHandler -
+# see backend/config/settings/production.py - so use copytruncate rather than
+# a postrotate reopen signal, since the app never gets told to reopen the file.
+/var/lib/docker/volumes/*_backend_logs/_data/*.log {
+    daily
+    missingok
+    rotate 30
+    compress
+    delaycompress
+    notifempty
+    copytruncate
 }

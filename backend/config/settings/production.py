@@ -3,6 +3,8 @@ Django production settings for Junkbin.io
 
 Settings optimized for production deployment.
 """
+import sys
+
 from .base import *
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -163,12 +165,32 @@ if SENTRY_DSN:
         ],
         traces_sample_rate=0.1,
         send_default_pii=False,
-        environment='production',
+        # Both dev and prod run this same settings module (config.settings.production)
+        # - hardcoding 'production' here would mislabel dev's traffic in Sentry as
+        # real prod events under the same DSN.
+        environment=env('SENTRY_ENVIRONMENT', default='production'),
     )
 
 # =============================================================================
 # Logging (Production)
 # =============================================================================
+# Docker's json-file driver discards a container's captured stdout the moment
+# it's recreated (a routine part of every deploy), so console-only logging
+# leaves nothing to debug after the next `docker compose up`. Mirror it to a
+# file on the backend_logs volume, which survives container recreation.
+#
+# gunicorn (backend), celery worker, and celery-beat all load this same
+# settings module but must not share one log file - concurrent processes
+# rotating/writing the same path can interleave or clobber each other. Derive
+# a per-service filename from how the process was invoked instead of adding
+# more docker-compose plumbing.
+if 'beat' in sys.argv:
+    _SERVICE_NAME = 'celery-beat'
+elif 'celery' in sys.argv[0]:
+    _SERVICE_NAME = 'celery'
+else:
+    _SERVICE_NAME = 'backend'
+
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -183,24 +205,33 @@ LOGGING = {
             'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
+        'file': {
+            # Not RotatingFileHandler: rotation isn't safe across the multiple
+            # processes (gunicorn workers) that write this same file, and
+            # plain append() calls are. Bound growth with logrotate instead
+            # (see deployment/logrotate/junkbin).
+            'class': 'logging.FileHandler',
+            'filename': f'/app/logs/{_SERVICE_NAME}.log',
+            'formatter': 'verbose',
+        },
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'INFO',
     },
     'loggers': {
         'django': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'WARNING',
             'propagate': False,
         },
         'django.security': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'WARNING',
             'propagate': False,
         },
         'apps': {
-            'handlers': ['console'],
+            'handlers': ['console', 'file'],
             'level': 'INFO',
             'propagate': False,
         },

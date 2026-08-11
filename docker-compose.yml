@@ -89,10 +89,13 @@ services:
       - OAUTH_GOOGLE_CLIENT_SECRET=${OAUTH_GOOGLE_CLIENT_SECRET:-}
       - OAUTH_GITHUB_CLIENT_ID=${OAUTH_GITHUB_CLIENT_ID:-}
       - OAUTH_GITHUB_CLIENT_SECRET=${OAUTH_GITHUB_CLIENT_SECRET:-}
+      - SENTRY_DSN=${SENTRY_DSN:-}
+      - SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-production}
     volumes:
       - ./backend:/app
       - media_files:/app/media
       - static_files:/app/staticfiles
+      - backend_logs:/app/logs
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -123,6 +126,7 @@ services:
     volumes:
       - ./backend:/app
       - media_files:/app/media
+      - backend_logs:/app/logs
     depends_on:
       - postgres
       - redis
@@ -144,6 +148,7 @@ services:
     environment: *backend-env
     volumes:
       - ./backend:/app
+      - backend_logs:/app/logs
     depends_on:
       - postgres
       - redis
@@ -332,6 +337,16 @@ services:
       - ./deployment/nginx/ssl:/etc/nginx/ssl:ro
       - /etc/letsencrypt:/etc/letsencrypt:ro
       - nginx_logs:/var/log/nginx
+    # nginx:alpine symlinks access.log/error.log to /dev/stdout/stderr so
+    # `docker logs` shows them - but that means the nginx_logs volume above
+    # just persists those symlinks, not actual log content, across recreates.
+    # Break the symlinks so nginx.conf's explicit file paths write real files.
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      # Only unlink if still the image's default symlink-to-stdout - on a
+      # populated volume from a prior start, these are already real files
+      # and must survive container recreation, not get wiped on every start.
+      - "for f in /var/log/nginx/access.log /var/log/nginx/error.log; do [ -L \"$$f\" ] && rm -f \"$$f\"; done; exec /docker-entrypoint.sh nginx -g 'daemon off;'"
     depends_on:
       - backend
       - frontend
@@ -360,6 +375,8 @@ volumes:
   frontend_build:
     driver: local
   nginx_logs:
+    driver: local
+  backend_logs:
     driver: local
   prometheus_data:
     driver: local
