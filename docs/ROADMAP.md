@@ -484,6 +484,7 @@ The `junkbin-deploy.sh` script will handle:
 - ✅ **Backup restoration testing** — `deployment/restore.sh` with interactive menu, selective restore (Feb 11, 2026)
 - ✅ **Automated daily backups** — cron on production runs `backup.sh` at 2 AM daily (Feb 15, 2026)
 - ✅ **Automated off-site retrieval** — cron on dev machine runs `Docs/autotransfer.sh` at 3 AM daily, pulls latest backup from production via SCP to `Docs/Prod_Backups/` (Feb 15, 2026)
+- ⏳ **Considered, not done: back up the `backend_logs`/`nginx_logs` volumes too** (Aug 11, 2026) — deferred, not forgotten. Logs now persist across deploys and rotate with 30-day local retention (see Monitoring Setup), but aren't included in `backup.sh`/off-site retrieval, so a fresh-host disaster recovery would lose anything not already in Sentry. Skipped for now because Sentry already captures the high-value stuff (errors, stack traces, breadcrumbs) going forward, and raw logs are lower-value operational data - reconsider if raw access-log retention becomes a real need (e.g. security incident investigation, traffic analysis) rather than a "just in case."
 
 ### Monitoring Setup
 - ✅ Health check endpoints (`/api/health/`, nginx `/health`)
