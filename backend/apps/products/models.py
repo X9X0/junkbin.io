@@ -67,7 +67,17 @@ class AdaptiveThumbnail:
 
 
 # Allowed file extensions for uploads
-ALLOWED_SCHEMATIC_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip']
+ALLOWED_SCHEMATIC_EXTENSIONS = [
+    'pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip',
+    # Altium Designer (OLE compound file format)
+    'schdoc', 'pcbdoc', 'prjpcb',
+    # KiCad >=6 (S-expression text format)
+    'kicad_sch', 'kicad_pcb', 'kicad_pro',
+    # STEP 3D models (ISO-10303-21 text format)
+    'step', 'stp',
+    # Legacy/tool-varying EDA text formats (KiCad <6, Eagle, gEDA)
+    'sch', 'brd', 'dxf', 'gbr',
+]
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
 ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip']
 

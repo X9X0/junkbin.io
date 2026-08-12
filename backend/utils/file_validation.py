@@ -34,6 +34,41 @@ EXTENSION_TO_MIMES = {
     # libmagic misidentifies stored (non-deflate) zips as application/octet-stream,
     # which is common for archives of already-compressed binary board-view data.
     'zip': ['application/zip', 'application/x-zip-compressed', 'application/octet-stream'],
+    # Altium Designer documents are OLE compound files; libmagic reports these as
+    # application/CDFV2 (or x-ole-storage on some distros' magic databases), and
+    # falls back to octet-stream on older ones. EXTENSION_SIGNATURES below does
+    # the real check via the OLE2 byte signature.
+    'schdoc': ['application/CDFV2', 'application/x-ole-storage', 'application/octet-stream'],
+    'pcbdoc': ['application/CDFV2', 'application/x-ole-storage', 'application/octet-stream'],
+    'prjpcb': ['application/CDFV2', 'application/x-ole-storage', 'application/octet-stream'],
+    # KiCad >=6 schematic/board files (S-expression text)
+    'kicad_sch': ['text/plain'],
+    'kicad_pcb': ['text/plain'],
+    # KiCad >=6 project file is JSON, not S-expression
+    'kicad_pro': ['application/json', 'text/plain'],
+    # STEP 3D models (ISO-10303-21 text format)
+    'step': ['text/plain'],
+    'stp': ['text/plain'],
+    # Legacy/tool-varying EDA formats: KiCad <6, Eagle (XML), and gEDA all use
+    # '.sch'/'.brd' for differently-shaped content, so only the broad text/xml
+    # MIME class is verified here rather than a specific signature.
+    'sch': ['text/plain', 'text/xml', 'application/xml'],
+    'brd': ['text/plain', 'text/xml', 'application/xml'],
+    'dxf': ['text/plain', 'image/vnd.dxf', 'application/octet-stream'],
+    'gbr': ['text/plain'],
+}
+
+# Raw content signatures checked in addition to the MIME class above, for
+# extensions where the MIME alone (e.g. generic 'text/plain') wouldn't catch
+# an arbitrary renamed file.
+EXTENSION_SIGNATURES = {
+    'schdoc': [b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'],  # OLE2 compound file header
+    'pcbdoc': [b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'],
+    'prjpcb': [b'\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1'],
+    'kicad_sch': [b'(kicad_sch'],
+    'kicad_pcb': [b'(kicad_pcb'],
+    'step': [b'ISO-10303-21'],
+    'stp': [b'ISO-10303-21'],
 }
 
 
@@ -88,6 +123,14 @@ def validate_file_magic(file, allowed_extensions=None):
             raise ValidationError(
                 f"File content does not match extension '.{extension}'. "
                 f"Detected type: {detected_mime}"
+            )
+
+        # For formats where the MIME class alone is too generic to be
+        # meaningful (e.g. plain text), also check for an expected byte signature.
+        signatures = EXTENSION_SIGNATURES.get(extension)
+        if signatures and not any(sig in file_content for sig in signatures):
+            raise ValidationError(
+                f"File content does not match expected format for '.{extension}' files."
             )
 
     return detected_mime

@@ -29,11 +29,22 @@ const ALLOWED_TYPES = [
   'image/jpeg',
   'image/gif',
   'image/webp',
+  'image/svg+xml',
   'application/zip',
   'application/x-zip-compressed',
 ];
 
-const ALLOWED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'zip'];
+// Kept in sync with ALLOWED_SCHEMATIC_EXTENSIONS in backend/apps/products/models.py.
+// Most EDA tool formats below (KiCad, Altium, Eagle, STEP, Gerber, DXF) aren't in
+// the browser's MIME database, so `type` comes back empty for them — extension is
+// the only signal available client-side. The backend still verifies real content.
+const ALLOWED_EXTENSIONS = [
+  'pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip',
+  'schdoc', 'pcbdoc', 'prjpcb',
+  'kicad_sch', 'kicad_pcb', 'kicad_pro',
+  'step', 'stp',
+  'sch', 'brd', 'dxf', 'gbr',
+];
 
 export default function SchematicUpload({ productId, onSuccess }: SchematicUploadProps) {
   const { t } = useTranslation();
@@ -215,7 +226,7 @@ export default function SchematicUpload({ productId, onSuccess }: SchematicUploa
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.zip"
+            accept={ALLOWED_EXTENSIONS.map((ext) => `.${ext}`).join(',')}
             onChange={(e) => handleFile(e.target.files?.[0] || null)}
             className="hidden"
           />
