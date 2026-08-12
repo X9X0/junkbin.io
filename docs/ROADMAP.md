@@ -488,9 +488,16 @@ The `junkbin-deploy.sh` script will handle:
 ### Monitoring Setup
 - ✅ Health check endpoints (`/api/health/`, nginx `/health`)
 - ✅ Admin system status dashboard (`/admin/system-status/`) — service health, system metrics, Celery task history, app stats, quick links (Feb 12, 2026)
-- ✅ Log rotation — Docker JSON file driver (10MB x 5 per container), logrotate config for nginx volume logs with daily rotation/30d retention (Feb 17, 2026)
+- ✅ Log rotation — Docker JSON file driver (10MB x 5 per container); nginx logrotate config existed since Feb 17 but was **never actually installed on prod**, and separately nginx's `access.log`/`error.log` were silently symlinked to `/dev/stdout`/`stderr` by the base image the whole time, so the `nginx_logs` volume only ever persisted those symlinks, not content — real, working nginx + backend/celery/celery-beat log persistence (with logrotate actually installed) fixed Aug 11, 2026
 - ✅ Disk space monitoring — `disk-monitor.sh` with warning (80%) and critical (90%) email alerts, systemd timer running hourly (Feb 17, 2026)
 - ✅ Service restart on failure — systemd unit (`junkbin.service`) starts Docker Compose on boot with `Restart=on-failure` and 10s backoff (Feb 17, 2026)
+- ✅ Sentry error tracking — Django/Celery/Redis integrations on the backend, `@sentry/react` on the frontend (reported via the existing `ErrorBoundary`), both tagged with git-SHA release and dev/prod environment so events correlate across a single deploy (Aug 11, 2026)
+- ✅ Celery Crons monitoring for `check-system-health` (the 5-minute task) — catches celery-beat dying entirely, which would otherwise silently kill all 4 scheduled tasks with no alert (Aug 11, 2026)
+- ⏳ **Deferred to stay on Sentry's free Developer plan** — revisit if/when upgrading to a paid tier:
+  - Cron monitoring for the other 3 scheduled tasks (`send-daily-digest`, `cleanup-search-queries`, `cleanup-old-activity`) — free plan includes only 1 cron monitor; additional ones are $0.78/mo each on Team
+  - Performance profiling (backend + frontend) — not bundled on any Sentry plan, it's metered pay-as-you-go ($0.25/hr UI profiling, $0.0315/hr continuous) regardless of tier
+  - Session Replay — free plan caps at 50 replays/month; not yet evaluated whether it's worth enabling within that
+  - Frontend source maps upload to Sentry — needs a Sentry org auth token (separate from the DSN) for readable/unminified JS stack traces; not yet set up
 
 ### Update & Maintenance
 - Pull latest code
