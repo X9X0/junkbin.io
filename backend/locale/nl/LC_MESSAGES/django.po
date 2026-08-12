@@ -3,91 +3,94 @@
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
-#, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-03-04 13:52-0500\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
-"Language: \n"
+"PO-Revision-Date: 2026-08-08 20:15+0000\n"
+"Last-Translator: Eric van den Hurck <biohazardindustries@gmail.com>\n"
+"Language-Team: Dutch <http://translate.junkbin.io/projects/junkbin-io/"
+"backend/nl/>\n"
+"Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.10.4\n"
+
 #: apps/components/models.py:34 apps/products/models.py:111
 msgid "Manufacturer part number"
-msgstr ""
+msgstr "Fabrikant onderdeelnummer"
 
 #: apps/components/models.py:39
 msgid "Component manufacturer"
-msgstr ""
+msgstr "Componentenfabrikant"
 
 #: apps/components/models.py:44
 msgid "Alternative manufacturer names"
-msgstr ""
+msgstr "Alternatieve fabrikantnamen"
 
 #: apps/components/models.py:52
 msgid "Type of component"
-msgstr ""
+msgstr "Componenttype"
 
 #: apps/components/models.py:57
 msgid "Package type (SOT-23, SOIC-8, 0805, etc.)"
-msgstr ""
+msgstr "Behuizingstype (SOT-23, SOIC-8, 0805, etc.)"
 
 #: apps/components/models.py:63
 msgid "Component description"
-msgstr ""
+msgstr "Componentomschrijving"
 
 #: apps/components/models.py:68
 msgid "Typical application (voltage regulator, MCU, etc.)"
-msgstr ""
+msgstr "Typische toepassing (spanningsregelaar, MCU, etc.)"
 
 #: apps/components/models.py:75
 msgid "Technical specifications"
-msgstr ""
+msgstr "Technische specificaties"
 
 #: apps/components/models.py:81
 msgid "Link to datasheet"
-msgstr ""
+msgstr "Link naar gegevensblad"
 
 #: apps/components/models.py:85
 msgid "Octopart listing URL"
-msgstr ""
+msgstr "Octopart pagina URL"
 
 #: apps/components/models.py:93
 msgid "Equivalent parts"
-msgstr ""
+msgstr "Equivalente onderdelen"
 
 #: apps/components/models.py:100
 msgid "Alternative part numbers for this component"
-msgstr ""
+msgstr "Alternatieve onderdeelnummers voor dit component"
 
 #: apps/components/models.py:116
 msgid "Component information has been verified"
-msgstr ""
+msgstr "Componentinformatie is geverifieerd"
 
 #: apps/components/models.py:122
 msgid "Number of products containing this component"
-msgstr ""
+msgstr "Aantal producten dat dit component bevat"
 
 #: apps/components/models.py:129
+#, fuzzy
 msgid "component"
-msgstr ""
+msgstr "component"
 
 #: apps/components/models.py:130
 msgid "components"
-msgstr ""
+msgstr "componenten"
 
 #: apps/components/models.py:286
 msgid "Package Photo"
-msgstr ""
+msgstr "Foto van de behuizing"
 
 #: apps/components/models.py:287
 msgid "Markings/Labels"
-msgstr ""
+msgstr "Markeringen/Labels"
 
 #: apps/components/models.py:288 apps/products/models.py:242
 msgid "Close-up Detail"
@@ -95,7 +98,7 @@ msgstr ""
 
 #: apps/components/models.py:289
 msgid "Pinout Reference"
-msgstr ""
+msgstr "Pinout-referentie"
 
 #: apps/components/models.py:290
 msgid "Application/In-Circuit"
