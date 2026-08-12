@@ -27,6 +27,12 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
+# Baked in at build time so Sentry can tag events with the release that
+# produced them (see config/settings/production.py) - placed after the
+# pip install layer so it doesn't bust that cache on every commit.
+ARG GIT_SHA=unknown
+ENV GIT_SHA=$GIT_SHA
+
 # Copy project
 COPY . /app/
 

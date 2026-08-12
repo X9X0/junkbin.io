@@ -1,5 +1,6 @@
 import { Component } from 'react';
-import type { ReactNode } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
 import { AlertTriangle } from 'lucide-react';
 import { withTranslation } from 'react-i18next';
 import type { WithTranslation } from 'react-i18next';
@@ -21,6 +22,10 @@ class ErrorBoundary extends Component<Props, State> {
 
   static getDerivedStateFromError(error: Error): State {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
   }
 
   render() {

@@ -55,6 +55,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+      args:
+        - GIT_SHA=${GIT_SHA:-unknown}
     image: junkbinio-backend
     container_name: junkbin_backend
     restart: unless-stopped
@@ -171,6 +173,9 @@ services:
         - VITE_GOOGLE_CLIENT_ID=${OAUTH_GOOGLE_CLIENT_ID:-}
         - VITE_GITHUB_CLIENT_ID=${OAUTH_GITHUB_CLIENT_ID:-}
         - VITE_DEV_TOOLS=${VITE_DEV_TOOLS:-}
+        - VITE_SENTRY_DSN=${SENTRY_DSN:-}
+        - VITE_SENTRY_ENVIRONMENT=${SENTRY_ENVIRONMENT:-production}
+        - VITE_GIT_SHA=${GIT_SHA:-unknown}
     container_name: junkbin_frontend
     restart: unless-stopped
     volumes:

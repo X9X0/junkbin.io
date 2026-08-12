@@ -68,6 +68,7 @@ fi
 
 # 2. Build images
 log_step "Building Docker images..."
+export GIT_SHA="$(git rev-parse --short HEAD)"
 $DC build backend frontend
 
 # 3. Recreate containers (frontend needs volume reset for new build assets)

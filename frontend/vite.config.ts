@@ -22,6 +22,7 @@ export default defineConfig({
           'vendor-i18n':   ['i18next', 'react-i18next', 'i18next-browser-languagedetector', 'i18next-http-backend'],
           'vendor-icons':  ['lucide-react'],
           'vendor-utils':  ['axios', 'clsx'],
+          'vendor-sentry': ['@sentry/react'],
         },
       },
     },

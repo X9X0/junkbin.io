@@ -160,7 +160,20 @@ if SENTRY_DSN:
         dsn=SENTRY_DSN,
         integrations=[
             DjangoIntegration(),
-            CeleryIntegration(),
+            # Free Sentry plan includes exactly 1 cron monitor. check-system-health
+            # runs every 5 minutes, so a missed check-in catches celery-beat dying
+            # entirely (which silently kills all 4 scheduled tasks) faster than
+            # monitoring any single less-frequent task would. The other 3 stay
+            # excluded rather than spending money on additional monitors
+            # ($0.78/mo each) for a hobby-scale deployment.
+            CeleryIntegration(
+                monitor_beat_tasks=True,
+                exclude_beat_tasks=[
+                    'send-daily-digest',
+                    'cleanup-search-queries',
+                    'cleanup-old-activity',
+                ],
+            ),
             RedisIntegration(),
         ],
         traces_sample_rate=0.1,
@@ -169,6 +182,10 @@ if SENTRY_DSN:
         # - hardcoding 'production' here would mislabel dev's traffic in Sentry as
         # real prod events under the same DSN.
         environment=env('SENTRY_ENVIRONMENT', default='production'),
+        # Baked into the image at build time (see backend/Dockerfile) so events
+        # can be tied to the deploy that produced them - lets Sentry show which
+        # release introduced a regression instead of one undifferentiated pool.
+        release=env('GIT_SHA', default=None),
     )
 
 # =============================================================================
