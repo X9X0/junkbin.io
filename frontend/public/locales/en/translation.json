@@ -314,7 +314,7 @@
     "about_text_intro": "This archive contains service manuals, schematics, and technical documentation contributed by the repair community. All documents are provided for educational and repair purposes in support of the Right to Repair movement. If you have documentation to share, please",
     "upload": {
       "drop_hint": "Click to upload or drag and drop",
-      "drop_accept": "PDF, images, ZIP, KiCad, Altium, Eagle, STEP, DXF up to 50MB",
+      "drop_accept": "PDF, images, ZIP, KiCad, Altium, Eagle, STEP, DXF, board-view up to 50MB",
       "title_label": "TITLE",
       "type_label": "SCHEMATIC TYPE",
       "source_label": "SOURCE",
@@ -1030,7 +1030,7 @@
     "sch_guideline_2": "Include version/revision info when known",
     "sch_guideline_3": "Provide source attribution when possible",
     "sch_guideline_4": "Max file size: 50MB per schematic",
-    "sch_guideline_5": "Supported formats: PDF, images, ZIP, KiCad, Altium, Eagle, STEP, DXF",
+    "sch_guideline_5": "Supported formats: PDF, images, ZIP, KiCad, Altium, Eagle, STEP, DXF, board-view",
     "add_firmware": "UPLOAD FIRMWARE",
     "available_firmware": "AVAILABLE FIRMWARE",
     "login_to_upload_firmware": "Log in to upload firmware for this product.",

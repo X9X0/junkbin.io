@@ -77,6 +77,10 @@ ALLOWED_SCHEMATIC_EXTENSIONS = [
     'step', 'stp',
     # Legacy/tool-varying EDA text formats (KiCad <6, Eagle, gEDA)
     'sch', 'brd', 'dxf', 'gbr',
+    # Repair-community board-view formats (OpenBoardview-compatible):
+    # .pcb (XZZPCB), .tvw (Teboview, proprietary/undocumented), .fz
+    # (encrypted board-view export)
+    'pcb', 'tvw', 'fz',
 ]
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
 ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip']

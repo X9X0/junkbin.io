@@ -44,6 +44,7 @@ const ALLOWED_EXTENSIONS = [
   'kicad_sch', 'kicad_pcb', 'kicad_pro',
   'step', 'stp',
   'sch', 'brd', 'dxf', 'gbr',
+  'pcb', 'tvw', 'fz',
 ];
 
 export default function SchematicUpload({ productId, onSuccess }: SchematicUploadProps) {

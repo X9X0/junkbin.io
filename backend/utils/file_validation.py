@@ -56,6 +56,21 @@ EXTENSION_TO_MIMES = {
     'brd': ['text/plain', 'text/xml', 'application/xml'],
     'dxf': ['text/plain', 'image/vnd.dxf', 'application/octet-stream'],
     'gbr': ['text/plain'],
+    # XZZPCB board-view files (repair-community format read by
+    # OpenBoardview) are binary with an "XZZPCB" magic header (or an
+    # XOR-obfuscated variant), so libmagic reports generic octet-stream;
+    # the real check is the signature below.
+    'pcb': ['application/octet-stream'],
+    # No MIME/signature entry for 'tvw' or 'fz' — deliberately omitted, not
+    # forgotten. .tvw (Teboview) is an undocumented proprietary board-view
+    # format with no public spec to check against. .fz board-view files are
+    # RC6-encrypted+zlib-compressed; even OpenBoardview's own loader skips
+    # content verification for .fz and trusts the extension outright. High-
+    # entropy binary like this also isn't safe to pin to 'octet-stream'
+    # alone — libmagic can confidently misdetect unstructured binary as an
+    # unrelated specific format (e.g. image/x-tga), which would reject
+    # legitimate uploads. These two extensions fall back to allowlist-only
+    # gating via ALLOWED_SCHEMATIC_EXTENSIONS.
 }
 
 # Raw content signatures checked in addition to the MIME class above, for
@@ -69,6 +84,7 @@ EXTENSION_SIGNATURES = {
     'kicad_pcb': [b'(kicad_pcb'],
     'step': [b'ISO-10303-21'],
     'stp': [b'ISO-10303-21'],
+    'pcb': [b'XZZPCB'],
 }
 
 
