@@ -1,0 +1,124 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}Bulk Edit Components | {{ site_title|default:"Django site admin" }}{% endblock %}
+
+{% block breadcrumbs %}
+  <div class="breadcrumbs">
+    <a href="{% url 'admin:index' %}">Home</a>
+    &rsaquo; <a href="{% url 'admin:components_component_changelist' %}">Components</a>
+    &rsaquo; Bulk Edit
+  </div>
+{% endblock %}
+
+{% block content %}
+<style>
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 16px; text-align: center; }
+  .stat-card .number { font-size: 28px; font-weight: bold; color: #417690; }
+  .stat-card .label { font-size: 12px; color: #666; margin-top: 4px; }
+  .section-title { font-size: 16px; font-weight: bold; color: #333; margin: 24px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #79aec8; }
+  .task-table { width: 100%; border-collapse: collapse; background: #fff; margin-bottom: 24px; }
+  .task-table th { background: #79aec8; color: #fff; padding: 8px 12px; text-align: left; font-size: 12px; text-transform: uppercase; }
+  .task-table td { padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 13px; }
+  .task-table tr:hover { background: #f8f9fa; }
+  .truncate-note { color: #999; font-style: italic; padding: 8px 0; }
+
+  .edit-form { background: #fff; border: 1px solid #ddd; border-radius: 4px; padding: 20px; margin-bottom: 24px; max-width: 480px; }
+  .edit-form label { display: block; font-weight: bold; margin-bottom: 4px; margin-top: 12px; }
+  .edit-form select, .edit-form input[type="text"], .edit-form textarea {
+    width: 100%; padding: 6px 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: 13px;
+  }
+  .edit-form textarea { min-height: 80px; }
+  .edit-form .submit-row { margin-top: 20px; display: flex; gap: 8px; }
+  .edit-form button { padding: 8px 20px; border: none; border-radius: 4px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .edit-form .btn-apply { background: #417690; color: #fff; }
+  .edit-form .btn-apply:hover { background: #205067; }
+  .edit-form .btn-cancel { background: #eee; color: #333; text-decoration: none; padding: 8px 20px; border-radius: 4px; }
+  .excluded-note { color: #666; font-size: 12px; margin-top: 16px; }
+</style>
+
+<div class="section-title">Selection Summary</div>
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="number">{{ total_count }}</div>
+    <div class="label">Selected Components</div>
+  </div>
+  {% for row in type_counts %}
+  <div class="stat-card">
+    <div class="number">{{ row.count }}</div>
+    <div class="label">{{ row.component_type|title }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="section-title">Apply Change</div>
+<form method="post" action="{{ action_url }}" class="edit-form">
+  {% csrf_token %}
+  <label for="id_field">Field</label>
+  <select name="field" id="id_field" required>
+    <option value="">Select a field&hellip;</option>
+    {% for f in fields %}
+    <option value="{{ f.name }}" data-kind="{{ f.kind }}">{{ f.label|capfirst }}</option>
+    {% endfor %}
+  </select>
+
+  <label for="id_value">New Value</label>
+  {% for f in fields %}
+    {% if f.kind == 'choice' %}
+    <select name="value" class="value-input" data-for="{{ f.name }}" style="display:none;">
+      {% for choice, choice_label in f.choices %}
+      <option value="{{ choice }}">{{ choice_label }}</option>
+      {% endfor %}
+    </select>
+    {% elif f.kind == 'boolean' %}
+    <select name="value" class="value-input" data-for="{{ f.name }}" style="display:none;">
+      <option value="true">True</option>
+      <option value="false">False</option>
+    </select>
+    {% elif f.kind == 'textarea' %}
+    <textarea name="value" class="value-input" data-for="{{ f.name }}" style="display:none;"></textarea>
+    {% else %}
+    <input type="text" name="value" class="value-input" data-for="{{ f.name }}" style="display:none;">
+    {% endif %}
+  {% endfor %}
+
+  <div class="submit-row">
+    <button type="submit" class="btn-apply" onclick="return confirm('Apply this change to all ' + {{ total_count }} + ' selected component(s)? This cannot be undone automatically.')">Apply to {{ total_count }} component(s)</button>
+    <a href="{{ cancel_url }}" class="btn-cancel">Cancel</a>
+  </div>
+
+  <p class="excluded-note">
+    Identity fields (manufacturer, part number), JSON fields (specifications, aliases),
+    and cross-references aren't bulk-editable here &mdash; they need merge rather than
+    overwrite semantics.
+  </p>
+</form>
+
+<div class="section-title">Selected Components{% if truncated %} (showing first {{ components|length }} of {{ total_count }}){% endif %}</div>
+<table class="task-table">
+  <thead>
+    <tr>
+      <th>Manufacturer</th>
+      <th>Part Number</th>
+      <th>Type</th>
+      <th>Package</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for c in components %}
+    <tr>
+      <td>{{ c.manufacturer }}</td>
+      <td><a href="{% url 'admin:components_component_change' c.pk %}">{{ c.part_number }}</a></td>
+      <td>{{ c.get_component_type_display }}</td>
+      <td>{{ c.package_type|default:"&mdash;" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if truncated %}
+<p class="truncate-note">The change will still apply to all {{ total_count }} selected components, not just the ones shown above.</p>
+{% endif %}
+
+<script src="{% static 'admin/js/component_bulk_edit.js' %}"></script>
+{% endblock %}

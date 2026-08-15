@@ -14,6 +14,7 @@ from drf_spectacular.views import (
 )
 from rest_framework.permissions import IsAdminUser
 from apps.api.admin_views import system_status, system_status_json
+from apps.components.admin_views import bulk_edit_components, bulk_edit_components_action
 from apps.users.admin_views import user_contributions, user_contributions_action
 
 urlpatterns = [
@@ -27,6 +28,10 @@ urlpatterns = [
     # Admin user contribution review (must be before admin.site.urls)
     path(settings.ADMIN_URL + 'user-contributions/<uuid:user_id>/', user_contributions, name='admin-user-contributions'),
     path(settings.ADMIN_URL + 'user-contributions/<uuid:user_id>/actions/', user_contributions_action, name='admin-user-contributions-action'),
+
+    # Admin component bulk edit (must be before admin.site.urls)
+    path(settings.ADMIN_URL + 'component-bulk-edit/', bulk_edit_components, name='admin-component-bulk-edit'),
+    path(settings.ADMIN_URL + 'component-bulk-edit/apply/', bulk_edit_components_action, name='admin-component-bulk-edit-action'),
 
     # Django Admin (configurable URL via ADMIN_URL setting for security)
     path(settings.ADMIN_URL, admin.site.urls),

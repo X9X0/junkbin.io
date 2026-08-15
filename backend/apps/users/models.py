@@ -298,6 +298,7 @@ class AdminAuditLog(models.Model):
         SUBMISSION_APPROVED = 'submission_approved', _('Approved Submission')
         SUBMISSION_REJECTED = 'submission_rejected', _('Rejected Submission')
         COMPONENT_VERIFIED = 'component_verified', _('Verified Component')
+        COMPONENT_BULK_EDITED = 'component_bulk_edited', _('Bulk Edited Component')
         REPORT_RESOLVED = 'report_resolved', _('Resolved Report')
         OTHER = 'other', _('Other Action')
 

@@ -4,12 +4,38 @@ Component admin configuration for Junkbin.io
 import csv
 
 from django.contrib import admin
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
+from django.urls import reverse
 from django.utils.html import format_html
 from import_export.admin import ImportExportActionModelAdmin
 
+from apps.products.models import Product
+
 from .models import Component, ComponentImage, ComponentTypeImage, ComponentDatasheet, ProductComponent, ComponentVote, ComponentViewStats
 from .resources import ComponentResource, ProductComponentResource
+
+
+class ComponentProductFilter(admin.SimpleListFilter):
+    """Filter the component list down to components used in one product's BOM.
+
+    Component is the shared parts catalog (linked to products through the
+    ProductComponent junction), so there's no direct FK to filter on -
+    this goes through that reverse relation instead.
+    """
+
+    title = 'product (BOM)'
+    parameter_name = 'product'
+
+    def lookups(self, request, model_admin):
+        products = Product.objects.order_by('manufacturer', 'model_number').values_list(
+            'id', 'manufacturer', 'model_number'
+        )
+        return [(str(pid), f'{manufacturer} {model_number}') for pid, manufacturer, model_number in products]
+
+    def queryset(self, request, queryset):
+        if not self.value():
+            return queryset
+        return queryset.filter(product_components__product_id=self.value()).distinct()
 
 
 class ComponentDatasheetInline(admin.TabularInline):
@@ -65,7 +91,7 @@ class ComponentAdmin(ImportExportActionModelAdmin):
         'typical_function', 'usage_count', 'is_verified', 'created_at'
     ]
     list_filter = [
-        'component_type', 'is_verified', 'created_at'
+        ComponentProductFilter, 'component_type', 'is_verified', 'created_at'
     ]
     search_fields = [
         'part_number', 'manufacturer', 'description', 'typical_function'
@@ -102,12 +128,22 @@ class ComponentAdmin(ImportExportActionModelAdmin):
 
     inlines = [ComponentDatasheetInline, ComponentImageInline, ProductComponentInline]
 
-    actions = ['verify_components', 'export_as_csv']
+    actions = ['verify_components', 'export_as_csv', 'bulk_edit_field']
 
     @admin.action(description='Verify selected components')
     def verify_components(self, request, queryset):
         updated = queryset.update(is_verified=True)
         self.message_user(request, f'{updated} components verified.')
+
+    @admin.action(description='Bulk edit a field on selected components')
+    def bulk_edit_field(self, request, queryset):
+        # Selection can be larger than a URL comfortably carries (a full BOM
+        # can be 500+ components), so hand it to the confirmation page via
+        # the session rather than a querystring.
+        request.session['bulk_edit_component_ids'] = list(
+            str(pk) for pk in queryset.values_list('pk', flat=True)
+        )
+        return HttpResponseRedirect(reverse('admin-component-bulk-edit'))
 
     @admin.action(description='Export selected as simple CSV')
     def export_as_csv(self, request, queryset):
