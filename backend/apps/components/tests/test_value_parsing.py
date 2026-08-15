@@ -7,6 +7,7 @@ that OCR reliably produces.
 """
 from apps.components.value_parsing import (
     parse_capacitor_nf,
+    parse_description,
     parse_inductor_uh,
     parse_resistor_ohms,
 )
@@ -90,3 +91,43 @@ class TestParseInductorUh:
     def test_unparseable_returns_none(self):
         assert parse_inductor_uh('TRAP, LC') is None
         assert parse_inductor_uh('COIL, CHOKE') is None
+
+
+class TestParseDescription:
+    def test_resistor_construction_tolerance_and_wattage(self):
+        assert parse_description('resistor', 'METAL GLAZE 4.7K 5% | 1/10W') == \
+            'Metal glaze resistor, ±5% tolerance, 1/10W'
+
+    def test_capacitor_construction_tolerance_and_voltage(self):
+        assert parse_description('capacitor', '5% CERAMIC CHIP 470PF | 50V') == \
+            'Ceramic chip capacitor, ±5% tolerance, 50V rating'
+
+    def test_capacitor_kilovolt_rating(self):
+        assert parse_description('capacitor', 'FILM 0.0016MF 3% | 2KV') == \
+            'Film capacitor, ±3% tolerance, 2kV rating'
+
+    def test_ignores_bleed_after_pipe_for_rating(self):
+        notes = 'MYLAR 0.022MF 10% | 100V Cl324 1-163-031-11 CERAMIC CHIP 0.01MF'
+        assert parse_description('capacitor', notes) == 'Mylar film capacitor, ±10% tolerance, 100V rating'
+
+    def test_no_rating_or_tolerance_present(self):
+        assert parse_description('capacitor', 'CERAMIC CHIP 6PF 0.25PF') == 'Ceramic chip capacitor'
+
+    def test_garbled_construction_word_recognized(self):
+        # "ME1A1" and "CAR80N" are this manual's specific OCR garbling of "METAL"/"CARBON".
+        assert parse_description('resistor', 'ME1A1 75 1% | 1/4W') == 'Metal film resistor, ±1% tolerance, 1/4W'
+        assert parse_description('resistor', "CAR80N 10K 5% | F 1/4W") == 'Carbon film resistor, ±5% tolerance, 1/4W'
+
+    def test_inductor_specific_construction(self):
+        assert parse_description('inductor', 'FERRITE BEAD INDUCTOR 0.45UH') == 'Ferrite bead inductor'
+        assert parse_description('inductor', 'INDUCTOR CHIP 68UH') == 'Chip inductor'
+
+    def test_inductor_generic_construction_is_redundant_and_skipped(self):
+        # Bare "INDUCTOR" adds nothing beyond the component-type badge already shown.
+        assert parse_description('inductor', 'INDUCTOR 33UH') is None
+
+    def test_unrecognized_construction_returns_none(self):
+        assert parse_description('resistor', 'SOLID 1M 20% | 1/2W') is None
+
+    def test_unsupported_component_type_returns_none(self):
+        assert parse_description('diode', 'DIODE 1SS226') is None

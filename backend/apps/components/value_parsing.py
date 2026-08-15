@@ -110,3 +110,79 @@ PARSERS = {
     'capacitor': ('capacitance_nf', parse_capacitor_nf),
     'inductor': ('inductance_uh', parse_inductor_uh),
 }
+
+
+# Construction-type keywords, longest/most-specific match first so e.g.
+# "METAL CHIP" wins over the plain "METAL" fallback. Includes the specific
+# OCR-garbled spellings actually observed in this manual's BOM text (see
+# apps.components.management.commands.backfill_component_values) rather than
+# a general letter-repair pass - description text is user-visible, so an
+# unmatched construction word is left out rather than guessed at.
+_CONSTRUCTION_KEYWORDS = {
+    'resistor': [
+        ('METAL GLAZE', 'Metal glaze'), ('METALGLAZE', 'Metal glaze'), ('MET AL GLAZE', 'Metal glaze'),
+        ('METAL CHIP', 'Metal film chip'), ('METALCHIP', 'Metal film chip'), ('MET AL CHIP', 'Metal film chip'),
+        ('METAL OXIDE', 'Metal oxide'),
+        ('METAL FILM', 'Metal film'),
+        ('ME1A1', 'Metal film'), ('METAL', 'Metal film'),
+        ('CAR80N', 'Carbon film'), ('CARBON', 'Carbon film'),
+        ('WIREWOUND', 'Wirewound'),
+        ('FUSIBLE', 'Fusible'),
+    ],
+    'capacitor': [
+        ('CERAMICCHIP', 'Ceramic chip'), ('CERAMIC CHIP', 'Ceramic chip'), ('CERAMIC', 'Ceramic'),
+        ('ELECT', 'Electrolytic'),
+        ('TANTALUM', 'Tantalum'),
+        ('MYLAR', 'Mylar film'),
+        ('FILM', 'Film'),
+    ],
+    'inductor': [
+        ('FERRITE BEAD', 'Ferrite bead'),
+        ('INDUCTOR CHIP', 'Chip'),
+        ('COIL', 'Coil'),
+        # Bare "INDUCTOR" with no more specific construction word is left
+        # unmatched (falls through to None) - it's already redundant with
+        # the component-type badge shown alongside the description.
+    ],
+}
+_TYPE_NOUN = {'resistor': 'resistor', 'capacitor': 'capacitor', 'inductor': 'inductor'}
+
+_TOLERANCE_TOKEN = re.compile(r'(\d+(?:\.\d+)?)\s*%')
+_VOLTAGE_TOKEN = re.compile(r'\b(\d+(?:\.\d+)?)\s*(K?V)\b', re.IGNORECASE)
+_WATTAGE_TOKEN = re.compile(r'\b(\d+/\d+|\d+(?:\.\d+)?)\s*W\b', re.IGNORECASE)
+
+
+def parse_description(component_type, notes):
+    """Build a short human-readable description from construction type,
+    tolerance, and voltage/wattage rating, or None if the construction type
+    isn't recognized. Rating (voltage/wattage) is read from after the first
+    '|' - that's where this manual puts it - while tolerance is read from
+    before it, alongside the value."""
+    keywords = _CONSTRUCTION_KEYWORDS.get(component_type)
+    if not keywords:
+        return None
+
+    head_upper = _head(notes).upper()
+    construction = next((label for needle, label in keywords if needle in head_upper), None)
+    if construction is None:
+        return None
+
+    noun = _TYPE_NOUN[component_type]
+    headline = construction if noun in construction.lower() else f'{construction} {noun}'
+    parts = [headline]
+
+    tolerance = _TOLERANCE_TOKEN.search(_head(notes))
+    if tolerance:
+        parts.append(f'±{tolerance.group(1)}% tolerance')
+
+    rating_text = notes.split('|', 1)[1] if '|' in notes else ''
+    wattage = _WATTAGE_TOKEN.search(rating_text)
+    if wattage:
+        parts.append(f'{wattage.group(1)}W')
+    else:
+        voltage = _VOLTAGE_TOKEN.search(rating_text)
+        if voltage:
+            unit = 'kV' if voltage.group(2).upper() == 'KV' else 'V'
+            parts.append(f'{voltage.group(1)}{unit} rating')
+
+    return ', '.join(parts)

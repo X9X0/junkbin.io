@@ -77,6 +77,50 @@ class TestBackfillComponentValues:
         assert component.specifications == {}
         assert 'TRAP, LC' in output
 
+    def test_populates_description_from_notes(self, product_factory, component_factory, product_component_factory):
+        product = product_factory()
+        component = component_factory(component_type='resistor', specifications={}, description='')
+        product_component_factory(
+            product=product,
+            component=component,
+            notes='METAL GLAZE 4.7K 5% | 1/10W',
+        )
+
+        run_command(product)
+
+        component.refresh_from_db()
+        assert component.description == 'Metal glaze resistor, ±5% tolerance, 1/10W'
+
+    def test_does_not_overwrite_existing_description(self, product_factory, component_factory, product_component_factory):
+        product = product_factory()
+        component = component_factory(component_type='resistor', specifications={}, description='Hand-verified note')
+        product_component_factory(
+            product=product,
+            component=component,
+            notes='METAL GLAZE 4.7K 5% | 1/10W',
+        )
+
+        run_command(product)
+
+        component.refresh_from_db()
+        assert component.description == 'Hand-verified note'
+
+    def test_unrecognized_construction_leaves_description_blank(self, product_factory, component_factory, product_component_factory):
+        product = product_factory()
+        component = component_factory(component_type='resistor', specifications={}, description='')
+        product_component_factory(
+            product=product,
+            component=component,
+            notes='SOLID 1M 20% | 1/2W',
+        )
+
+        run_command(product)
+
+        component.refresh_from_db()
+        assert component.description == ''
+        # value is still recovered even when the construction type isn't recognized for description
+        assert component.specifications['resistance_ohm'] == 1_000_000.0
+
     def test_ignores_other_products(self, product_factory, component_factory, product_component_factory):
         product = product_factory()
         other_product = product_factory()
