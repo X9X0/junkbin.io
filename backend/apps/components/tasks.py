@@ -55,7 +55,11 @@ def enrich_component(self, component_id):
     if not component.octopart_url and result.get("mpn"):
         component.octopart_url = f"https://octopart.com/search?q={result['mpn']}"
 
-    component.save(update_fields=["specifications", "datasheet_url", "octopart_url"])
+    # Auto-fill description from Nexar's category text if empty
+    if not component.description and result.get("description"):
+        component.description = result["description"]
+
+    component.save(update_fields=["specifications", "datasheet_url", "octopart_url", "description"])
     logger.info("Enriched component %s with Nexar data", component.part_number)
 
 
