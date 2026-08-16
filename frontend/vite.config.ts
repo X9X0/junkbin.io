@@ -31,6 +31,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
+      injectRegister: false,
       includeAssets: ['vite.svg', 'icons/*.png'],
       manifest: {
         name: 'Junkbin.io - Right to Repair Database',
