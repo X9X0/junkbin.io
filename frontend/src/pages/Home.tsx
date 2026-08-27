@@ -1,27 +1,19 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { stats, newsletter, products } from '../api/endpoints';
+import { useQuery } from '@tanstack/react-query';
+import { stats, products } from '../api/endpoints';
 import {
-  Terminal,
   Cpu,
   FileText,
   HardDrive,
   Users,
   Zap,
-  Mail,
   ArrowRight,
   ChevronRight,
 } from 'lucide-react';
-import { parseApiError } from '../utils/formErrors';
-import LaunchCountdown from '../components/LaunchCountdown';
 
 export default function Home() {
   const { t } = useTranslation();
-  const [email, setEmail] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [error, setError] = useState('');
 
   const { data: siteStats } = useQuery({
     queryKey: ['stats'],
@@ -34,75 +26,8 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const subscribeMutation = useMutation({
-    mutationFn: (email: string) => newsletter.subscribe(email, 'landing'),
-    onSuccess: () => {
-      setSubmitted(true);
-      setEmail('');
-      setError('');
-    },
-    onError: (err: any) => {
-      setError(parseApiError(err, t('common.error')));
-    },
-  });
-
-  const handleNotify = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    subscribeMutation.mutate(email);
-  };
-
   return (
     <div className="noise">
-      {/* OpenSauce Launch Section */}
-      <section className="relative py-6 border-b border-cyber-pink/20 bg-cyber-darker/60 overflow-hidden">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6 md:gap-10">
-            {/* Canted OpenSauce stamp with APPROVED overlay */}
-            <div className="relative flex-shrink-0">
-              <div className="-rotate-6 select-none">
-                <div className="border-4 border-double border-cyber-pink/80 px-6 py-3 text-center bg-cyber-black/40 shadow-neon-pink">
-                  <div className="font-display text-xl md:text-2xl font-black tracking-wider text-cyber-pink leading-tight">
-                    OPEN<br />SAUCE
-                  </div>
-                  <div className="font-mono text-[11px] tracking-[0.3em] text-cyber-pink/70 mt-1">
-                    {t('home.opensauce_dates')}
-                  </div>
-                </div>
-              </div>
-              <div className="absolute inset-0 flex items-center justify-center rotate-12 pointer-events-none opacity-50">
-                <div className="border-4 border-cyber-green px-4 py-1 bg-cyber-black/30 shadow-neon-green">
-                  <span className="font-display text-lg md:text-xl font-black tracking-[0.2em] text-cyber-green">
-                    {t('home.opensauce_approved')}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Countdown + statement */}
-            <div className="flex-1 text-center max-w-md">
-              <h2 className="font-display text-lg md:text-xl font-bold text-white mb-1">
-                {t('home.opensauce_title')}<br />
-                <span className="text-cyber-pink">{t('home.opensauce_title_highlight')}</span>
-              </h2>
-              <p className="text-gray-400 text-sm mb-3">
-                {t('home.opensauce_statement')}
-              </p>
-              <LaunchCountdown />
-            </div>
-
-            {/* Official OpenSauce 2026 logo */}
-            <div className="flex-shrink-0">
-              <img
-                src="/images/opensauce-2026-logo.webp"
-                alt="OpenSauce 2026"
-                className="w-28 md:w-40 drop-shadow-[0_0_20px_rgba(255,42,109,0.35)]"
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16 md:py-24 scanlines">
         {/* Background effects */}
@@ -153,51 +78,11 @@ export default function Home() {
             <Zap className="h-5 w-5" />
           </div>
 
-          {/* Coming Soon CTA */}
           <div className="max-w-lg mx-auto">
-            {!submitted ? (
-              <form onSubmit={handleNotify} className="flex flex-col gap-3">
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div className="flex-1 relative">
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder={t('home.email_placeholder')}
-                      required
-                      disabled={subscribeMutation.isPending}
-                      className="terminal-input w-full px-4 py-3 text-cyber-cyan placeholder-cyber-cyan/40 disabled:opacity-50"
-                    />
-                    <Terminal className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-cyber-cyan/30" />
-                  </div>
-                  <button
-                    type="submit"
-                    className="btn-cyber whitespace-nowrap disabled:opacity-50"
-                    disabled={subscribeMutation.isPending}
-                  >
-                    <Mail className="h-4 w-4 inline mr-2" />
-                    {subscribeMutation.isPending ? t('home.subscribing') : t('home.notify_me')}
-                  </button>
-                </div>
-                {error && (
-                  <div className="text-cyber-pink font-mono text-sm">
-                    <span className="text-cyber-pink">{t('home.error_prefix')}</span> {error}
-                  </div>
-                )}
-              </form>
-            ) : (
-              <div className="border border-cyber-green/50 bg-cyber-green/10 p-4 font-mono text-cyber-green text-sm">
-                <span className="text-cyber-green">✓</span> {t('home.subscription_confirmed')}
-              </div>
-            )}
-
-            <div className="flex items-center justify-center gap-3 mt-5 animate-yellow-pulse">
-              <span className="text-[#f9f002] text-2xl leading-none">▼</span>
-              <p className="font-bold text-[#f9f002] tracking-widest uppercase text-lg">
-                {t('home.beta_testers_cta')}
-              </p>
-              <span className="text-[#f9f002] text-2xl leading-none">▼</span>
-            </div>
+            <Link to="/register" className="btn-cyber">
+              {t('home.create_account')}
+              <ArrowRight className="h-4 w-4 inline ml-2" />
+            </Link>
           </div>
         </div>
       </section>
