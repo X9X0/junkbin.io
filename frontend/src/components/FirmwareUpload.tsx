@@ -346,16 +346,27 @@ export default function FirmwareUpload({ productId, onSuccess }: FirmwareUploadP
         <div className="border border-cyber-green/50 bg-cyber-green/10 p-3 space-y-2">
           <div className="flex items-center gap-2 text-cyber-green text-sm font-mono">
             <CheckCircle className="h-4 w-4 shrink-0" />
-            {t('firmware.upload.success')}
+            {uploadMutation.data?.is_approved
+              ? t('firmware.upload.success_approved')
+              : t('firmware.upload.success')}
           </div>
-          <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
-            <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
-            <span>{t('firmware.upload.success_review_time')}</span>
-          </div>
-          <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
-            <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
-            <span>{t('firmware.upload.success_trusted', { contributions: 25, reputation: 50 })}</span>
-          </div>
+          {uploadMutation.data?.is_approved ? (
+            <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+              <CheckCircle className="h-3 w-3 text-cyber-green mt-0.5 shrink-0" />
+              <span>{t('firmware.upload.success_approved_detail')}</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+                <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
+                <span>{t('firmware.upload.success_review_time')}</span>
+              </div>
+              <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+                <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
+                <span>{t('firmware.upload.success_trusted', { contributions: 25, reputation: 50 })}</span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

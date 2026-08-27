@@ -64,6 +64,7 @@ export default function ImageUpload({
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
+  const [uploadedApproved, setUploadedApproved] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -169,12 +170,14 @@ export default function ImageUpload({
     setUploadProgress(0);
     setUploadError(null);
     let completed = 0;
+    let allApproved = true;
     const remaining: PreviewFile[] = [];
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       try {
-        await uploadMutation.mutateAsync(file);
+        const result = await uploadMutation.mutateAsync(file);
+        if (!result?.is_approved) allApproved = false;
         completed++;
         URL.revokeObjectURL(file.preview);
         setUploadProgress(Math.round((completed / files.length) * 100));
@@ -195,6 +198,7 @@ export default function ImageUpload({
     setFiles(remaining);
     setUploadProgress(null);
     setUploadedCount(completed);
+    setUploadedApproved(allApproved);
     if (completed > 0) {
       onSuccess?.();
     }
@@ -354,21 +358,32 @@ export default function ImageUpload({
         <div className="border border-cyber-green/50 bg-cyber-green/10 p-3 space-y-2">
           <div className="flex items-center gap-2 text-cyber-green text-sm font-mono">
             <CheckCircle className="h-4 w-4 shrink-0" />
-            {uploadedCount} image{uploadedCount !== 1 ? 's' : ''} uploaded — pending moderator review.
+            {uploadedApproved
+              ? <>{uploadedCount} image{uploadedCount !== 1 ? 's' : ''} uploaded and published.</>
+              : <>{uploadedCount} image{uploadedCount !== 1 ? 's' : ''} uploaded — pending moderator review.</>}
           </div>
-          <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
-            <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
-            <span>They will appear once approved, usually within a few hours.</span>
-          </div>
-          <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
-            <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
-            <span>
-              After{' '}
-              <span className="text-white font-mono">25 contributions</span> and{' '}
-              <span className="text-white font-mono">50 reputation</span>,
-              uploads publish instantly.
-            </span>
-          </div>
+          {uploadedApproved ? (
+            <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+              <CheckCircle className="h-3 w-3 text-cyber-green mt-0.5 shrink-0" />
+              <span>You're a trusted contributor, so these went live instantly.</span>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+                <Clock className="h-3 w-3 text-cyber-cyan mt-0.5 shrink-0" />
+                <span>They will appear once approved, usually within a few hours.</span>
+              </div>
+              <div className="flex items-start gap-2 text-xs text-gray-400 pl-6">
+                <TrendingUp className="h-3 w-3 text-cyber-yellow mt-0.5 shrink-0" />
+                <span>
+                  After{' '}
+                  <span className="text-white font-mono">25 contributions</span> and{' '}
+                  <span className="text-white font-mono">50 reputation</span>,
+                  uploads publish instantly.
+                </span>
+              </div>
+            </>
+          )}
         </div>
       )}
 

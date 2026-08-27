@@ -44,6 +44,7 @@ interface SubmittedItem {
   type: SubmitType;
   id: string;
   label: string;
+  isApproved: boolean;
 }
 
 export default function Submit() {
@@ -97,6 +98,7 @@ export default function Submit() {
         type: 'product',
         id: data.id,
         label: `${data.manufacturer} ${data.model_number}`,
+        isApproved: !!data.is_approved,
       });
     },
     onError: (err: any) => {
@@ -115,6 +117,7 @@ export default function Submit() {
         type: 'component',
         id: data.id,
         label: `${data.manufacturer} ${data.part_number}`,
+        isApproved: !!data.is_approved,
       });
     },
     onError: (err: any) => {
@@ -425,6 +428,7 @@ export default function Submit() {
             itemLabel={submittedItem.label}
             viewLink={viewLink}
             onSubmitAnother={handleSubmitAnother}
+            isApproved={submittedItem.isApproved}
           />
         </div>
       </div>

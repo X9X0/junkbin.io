@@ -6,15 +6,16 @@ interface ModerationNoticeProps {
   itemLabel: string;
   viewLink: string;
   onSubmitAnother: () => void;
+  isApproved?: boolean;
 }
 
 /**
- * Shown after a user submits content that requires moderator review.
+ * Shown after a user submits content.
  * Thresholds match backend settings:
- *   TRUSTED_USER_CONTRIBUTION_THRESHOLD = 50
- *   TRUSTED_USER_MIN_REPUTATION          = 100
+ *   TRUSTED_USER_CONTRIBUTION_THRESHOLD = 25
+ *   TRUSTED_USER_MIN_REPUTATION         = 50
  */
-export default function ModerationNotice({ itemLabel, viewLink, onSubmitAnother }: ModerationNoticeProps) {
+export default function ModerationNotice({ itemLabel, viewLink, onSubmitAnother, isApproved }: ModerationNoticeProps) {
   const { t } = useTranslation();
 
   return (
@@ -27,30 +28,44 @@ export default function ModerationNotice({ itemLabel, viewLink, onSubmitAnother 
             SUBMISSION RECEIVED
           </p>
           <p className="text-gray-400 text-sm mt-0.5">
-            {itemLabel} is now in the moderation queue.
+            {isApproved
+              ? `${itemLabel} is live now.`
+              : `${itemLabel} is now in the moderation queue.`}
           </p>
         </div>
       </div>
 
       {/* Explanation panels */}
       <div className="space-y-3 text-sm text-gray-400 border border-cyber-light/20 bg-cyber-dark/50 p-4">
-        <div className="flex items-start gap-3">
-          <Clock className="h-4 w-4 text-cyber-cyan mt-0.5 shrink-0" />
-          <p>
-            A moderator will review your submission shortly. Once approved it will be
-            visible to all users — usually within a few hours.
-          </p>
-        </div>
-        <div className="flex items-start gap-3">
-          <TrendingUp className="h-4 w-4 text-cyber-yellow mt-0.5 shrink-0" />
-          <p>
-            After{' '}
-            <span className="text-white font-mono">25 approved contributions</span>
-            {' '}and{' '}
-            <span className="text-white font-mono">50 reputation points</span>,
-            your submissions will be published instantly — no moderation required.
-          </p>
-        </div>
+        {isApproved ? (
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="h-4 w-4 text-cyber-green mt-0.5 shrink-0" />
+            <p>
+              You're a trusted contributor, so this was published instantly —
+              no moderation queue needed.
+            </p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start gap-3">
+              <Clock className="h-4 w-4 text-cyber-cyan mt-0.5 shrink-0" />
+              <p>
+                A moderator will review your submission shortly. Once approved it will be
+                visible to all users — usually within a few hours.
+              </p>
+            </div>
+            <div className="flex items-start gap-3">
+              <TrendingUp className="h-4 w-4 text-cyber-yellow mt-0.5 shrink-0" />
+              <p>
+                After{' '}
+                <span className="text-white font-mono">25 approved contributions</span>
+                {' '}and{' '}
+                <span className="text-white font-mono">50 reputation points</span>,
+                your submissions will be published instantly — no moderation required.
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Actions */}
