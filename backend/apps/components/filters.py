@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.contrib.postgres.search import SearchQuery, SearchRank
 
 from .models import Component, ProductComponent
+from .value_search import parse_value_query, spec_key_candidates
 
 
 class ComponentFilter(django_filters.FilterSet):
@@ -15,6 +16,10 @@ class ComponentFilter(django_filters.FilterSet):
 
     # Text search across multiple fields
     q = django_filters.CharFilter(method='filter_search')
+
+    # Structured value search (e.g. "10k", "4.7uF", "16MHz") against
+    # specifications, not free text - see value_search.py.
+    value = django_filters.CharFilter(method='filter_value')
 
     # Exact and partial matches
     part_number = django_filters.CharFilter(lookup_expr='icontains')
@@ -51,10 +56,32 @@ class ComponentFilter(django_filters.FilterSet):
     class Meta:
         model = Component
         fields = [
-            'q', 'part_number', 'manufacturer', 'component_type',
+            'q', 'value', 'part_number', 'manufacturer', 'component_type',
             'package_type', 'typical_function', 'is_verified',
             'has_datasheet', 'min_usage'
         ]
+
+    def filter_value(self, queryset, name, value):
+        """
+        Structured value search (e.g. "10k", "4.7uF", "16MHz") - matches
+        components whose specifications carry that physical quantity within
+        a tolerance band, not a substring match against free text. Rejects
+        (matches nothing) rather than ignoring text that isn't a value at
+        all, since silently no-op'ing an applied filter would be misleading.
+        """
+        parsed = parse_value_query(value)
+        if parsed is None:
+            return queryset.none()
+
+        kind, magnitude = parsed
+        candidates = spec_key_candidates(kind, magnitude)
+        if not candidates:
+            return queryset.none()
+
+        q = Q()
+        for key, lo, hi in candidates:
+            q |= Q(**{f'specifications__{key}__gte': lo, f'specifications__{key}__lte': hi})
+        return queryset.filter(q)
 
     def filter_search(self, queryset, name, value):
         """

@@ -7,58 +7,7 @@ import { Cpu, Grid, List, Search, ChevronDown, ExternalLink, CheckCircle, Packag
 import clsx from 'clsx';
 import Pagination from '../components/Pagination';
 import { ComponentGridSkeleton } from '../components/Skeleton';
-
-const COMPONENT_TYPES = [
-  { value: '', label: 'All Types' },
-  // Active
-  { value: 'ic', label: 'Integrated Circuit' },
-  { value: 'mcu', label: 'Microcontroller' },
-  { value: 'transistor', label: 'Transistor' },
-  { value: 'mosfet', label: 'MOSFET' },
-  { value: 'diode', label: 'Diode' },
-  { value: 'regulator', label: 'Voltage Regulator' },
-  { value: 'opamp', label: 'Op-Amp' },
-  // Passive
-  { value: 'resistor', label: 'Resistor' },
-  { value: 'capacitor', label: 'Capacitor' },
-  { value: 'inductor', label: 'Inductor' },
-  { value: 'transformer', label: 'Transformer' },
-  { value: 'crystal', label: 'Crystal/Oscillator' },
-  { value: 'fuse', label: 'Fuse' },
-  { value: 'ferrite', label: 'Ferrite Bead' },
-  // Electromechanical
-  { value: 'relay', label: 'Relay' },
-  { value: 'switch', label: 'Switch' },
-  { value: 'connector', label: 'Connector' },
-  { value: 'socket', label: 'Socket/Header' },
-  // RF/Wireless
-  { value: 'antenna', label: 'Antenna' },
-  { value: 'rf_module', label: 'RF Module' },
-  { value: 'balun', label: 'Balun/Filter' },
-  // Power
-  { value: 'battery', label: 'Battery/Cell' },
-  { value: 'power_jack', label: 'Power Jack' },
-  { value: 'usb_port', label: 'USB Port' },
-  // Display/Output
-  { value: 'led', label: 'LED' },
-  { value: 'display', label: 'Display/LCD' },
-  { value: 'speaker', label: 'Speaker/Buzzer' },
-  // Sensors
-  { value: 'sensor', label: 'Sensor' },
-  { value: 'thermistor', label: 'Thermistor/NTC' },
-  // Modules
-  { value: 'module', label: 'Module/Daughter Board' },
-  { value: 'pcb_assembly', label: 'PCB Assembly' },
-  // Cabling
-  { value: 'cable', label: 'Cable/Wire Harness' },
-  { value: 'flex_cable', label: 'Flex Cable/FPC' },
-  { value: 'coax', label: 'Coaxial Cable' },
-  // Other
-  { value: 'heatsink', label: 'Heatsink' },
-  { value: 'shield', label: 'EMI Shield' },
-  { value: 'mechanical', label: 'Mechanical Part' },
-  { value: 'other', label: 'Other' },
-];
+import { COMPONENT_TYPES } from '../constants/componentTypes';
 
 export default function Components() {
   const { t } = useTranslation();
@@ -67,12 +16,14 @@ export default function Components() {
 
   const search = searchParams.get('search') || '';
   const componentType = searchParams.get('component_type') || '';
+  const packageType = searchParams.get('package_type') || '';
+  const value = searchParams.get('value') || '';
   const ordering = searchParams.get('ordering') || '-usage_count';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['components', { search, component_type: componentType, ordering, page }],
-    queryFn: () => components.list({ search, component_type: componentType, ordering, page }),
+    queryKey: ['components', { search, component_type: componentType, package_type: packageType, value, ordering, page }],
+    queryFn: () => components.list({ search, component_type: componentType, package_type: packageType, value, ordering, page }),
   });
 
   const pageSize = 20;
@@ -145,6 +96,25 @@ export default function Components() {
               </select>
               <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
             </div>
+
+            {/* Value */}
+            <input
+              type="text"
+              value={value}
+              onChange={(e) => updateFilter('value', e.target.value)}
+              placeholder={t('components.value_placeholder')}
+              title={t('components.value_hint')}
+              className="input-cyber w-full lg:w-36"
+            />
+
+            {/* Package */}
+            <input
+              type="text"
+              value={packageType}
+              onChange={(e) => updateFilter('package_type', e.target.value)}
+              placeholder={t('components.package_placeholder')}
+              className="input-cyber w-full lg:w-36"
+            />
 
             {/* Sort */}
             <div className="relative">

@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { stats, products } from '../api/endpoints';
@@ -10,10 +11,18 @@ import {
   Zap,
   ArrowRight,
   ChevronRight,
+  ChevronDown,
+  Search,
 } from 'lucide-react';
+import { COMPONENT_TYPES } from '../constants/componentTypes';
 
 export default function Home() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+
+  const [findType, setFindType] = useState('');
+  const [findValue, setFindValue] = useState('');
+  const [findPackage, setFindPackage] = useState('');
 
   const { data: siteStats } = useQuery({
     queryKey: ['stats'],
@@ -25,6 +34,15 @@ export default function Home() {
     queryFn: products.featured,
     staleTime: 5 * 60 * 1000,
   });
+
+  const handleFindPart = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams();
+    if (findType) params.set('component_type', findType);
+    if (findValue.trim()) params.set('value', findValue.trim());
+    if (findPackage.trim()) params.set('package_type', findPackage.trim());
+    navigate(params.toString() ? `/components?${params.toString()}` : '/components');
+  };
 
   return (
     <div className="noise">
@@ -84,6 +102,61 @@ export default function Home() {
               <ArrowRight className="h-4 w-4 inline ml-2" />
             </Link>
           </div>
+        </div>
+      </section>
+
+      {/* Find a Part */}
+      <section className="py-10 border-y border-cyber-light/20 bg-cyber-dark/40">
+        <div className="mx-auto max-w-4xl px-4">
+          <div className="text-center mb-6">
+            <h2 className="font-display text-xl md:text-2xl font-bold text-white">
+              {t('home.find_part_title')} <span className="text-cyber-cyan">{t('home.find_part_highlight')}</span>
+            </h2>
+            <p className="text-gray-500 font-mono text-sm mt-1">
+              {t('home.find_part_subtitle')}
+            </p>
+          </div>
+
+          <form onSubmit={handleFindPart} className="card-cyber p-4 md:p-6">
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div className="relative">
+                <select
+                  value={findType}
+                  onChange={(e) => setFindType(e.target.value)}
+                  className="input-cyber appearance-none pr-10 w-full"
+                >
+                  {COMPONENT_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.value === '' ? t('components.all_types') : type.label}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-500 pointer-events-none" />
+              </div>
+
+              <input
+                type="text"
+                value={findValue}
+                onChange={(e) => setFindValue(e.target.value)}
+                placeholder={t('components.value_placeholder')}
+                title={t('components.value_hint')}
+                className="input-cyber w-full"
+              />
+
+              <input
+                type="text"
+                value={findPackage}
+                onChange={(e) => setFindPackage(e.target.value)}
+                placeholder={t('components.package_placeholder')}
+                className="input-cyber w-full"
+              />
+            </div>
+
+            <button type="submit" className="btn-cyber w-full sm:w-auto mt-4 flex items-center justify-center gap-2">
+              <Search className="h-4 w-4" />
+              {t('home.find_part_submit')}
+            </button>
+          </form>
         </div>
       </section>
 
