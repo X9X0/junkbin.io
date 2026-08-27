@@ -98,6 +98,7 @@ export default function Submit() {
         type: 'product',
         id: data.id,
         label: `${data.manufacturer} ${data.model_number}`,
+        // Products carry a real is_approved gate — trust it explicitly.
         isApproved: !!data.is_approved,
       });
     },
@@ -117,7 +118,9 @@ export default function Submit() {
         type: 'component',
         id: data.id,
         label: `${data.manufacturer} ${data.part_number}`,
-        isApproved: !!data.is_approved,
+        // The Component record itself has no moderation gate — it's always
+        // live immediately (only its images/datasheets can be pending).
+        isApproved: true,
       });
     },
     onError: (err: any) => {

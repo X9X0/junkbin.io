@@ -218,9 +218,10 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'slug', 'manufacturer', 'model_number', 'revision', 'region',
             'category', 'subcategory', 'year_manufactured',
-            'fcc_id', 'ic_id', 'part_number', 'description', 'teardown_notes'
+            'fcc_id', 'ic_id', 'part_number', 'description', 'teardown_notes',
+            'is_approved'
         ]
-        read_only_fields = ['id', 'slug']
+        read_only_fields = ['id', 'slug', 'is_approved']
         # Disable DRF's auto-generated UniqueTogetherValidator (from the model's
         # UniqueConstraint) — it would run before validate() below and short-circuit
         # with a generic message, never attaching duplicate_of for the frontend.
