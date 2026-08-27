@@ -263,36 +263,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Early Access Section */}
-      <section className="py-16 bg-cyber-darker/50">
-        <div className="mx-auto max-w-3xl px-4">
-          <div className="card-cyber p-8 md:p-10 text-center relative overflow-hidden">
-            {/* Background decoration */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-4 left-4 font-mono text-[8px] text-cyber-cyan leading-tight whitespace-pre">
-{"╔══════════════════════════════════╗\n║  " + t('home.no_user_serviceable') + " ║\n║  " + t('home.no_user_serviceable') + " ║\n║  " + t('home.no_user_serviceable') + " ║\n╚══════════════════════════════════╝"}
-              </div>
-            </div>
-
-            <div className="relative">
-              <h2 className="font-display text-2xl md:text-3xl font-bold text-white mb-4">
-                {t('home.early_access_title')} <span className="text-cyber-yellow">{t('home.early_access_highlight')}</span>{t('home.early_access_question')}
-              </h2>
-              <p className="text-gray-400 mb-6 max-w-md mx-auto">
-                {t('home.early_access_desc')}
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link to="/register" className="btn-cyber">
-                  {t('home.create_account')}
-                  <ArrowRight className="h-4 w-4 inline ml-2" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Mascot Poster */}
       <section className="relative py-16 md:py-20 px-4">
         <div className="mx-auto max-w-3xl flex justify-center">
