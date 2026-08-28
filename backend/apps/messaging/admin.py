@@ -15,6 +15,7 @@ class MessageAttachmentInline(admin.TabularInline):
 
 class MessageInline(admin.TabularInline):
     model = Message
+    fk_name = 'conversation'
     extra = 0
     readonly_fields = ['id', 'sender', 'content', 'is_read', 'created_at']
     can_delete = True
@@ -32,11 +33,11 @@ class ConversationAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
-    list_display = ['id', 'conversation', 'sender', 'content_preview', 'is_read', 'created_at']
+    list_display = ['id', 'conversation', 'sender', 'content_preview', 'is_read', 'forwarded_from_conversation', 'created_at']
     list_filter = ['is_read', 'created_at']
     search_fields = ['sender__username', 'content']
     readonly_fields = ['id', 'conversation', 'sender', 'created_at']
-    raw_id_fields = ['conversation', 'sender']
+    raw_id_fields = ['conversation', 'sender', 'forwarded_from_conversation']
     inlines = [MessageAttachmentInline]
 
     def content_preview(self, obj):

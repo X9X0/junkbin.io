@@ -104,6 +104,17 @@ class Message(models.Model):
         default=False,
         help_text=_('Whether recipient has read this')
     )
+    forwarded_from_conversation = models.ForeignKey(
+        Conversation,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='+',
+        help_text=_(
+            'Set only on auto-forwarded copies/relays: the conversation this '
+            'message was mirrored from or back into (see forward_messages_to).'
+        ),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

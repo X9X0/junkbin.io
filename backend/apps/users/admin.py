@@ -31,6 +31,7 @@ class UserAdmin(BaseUserAdmin):
         'id', 'created_at', 'updated_at', 'email_verified_at',
         'last_contribution_at', 'last_login', 'contribution_review_link'
     ]
+    raw_id_fields = ['forward_messages_to']
 
     fieldsets = (
         (None, {'fields': ('id', 'username', 'password')}),
@@ -51,6 +52,7 @@ class UserAdmin(BaseUserAdmin):
             'is_trusted', 'is_moderator', 'messaging_blocked',
             'groups', 'user_permissions'
         )}),
+        (_('Messaging'), {'fields': ('forward_messages_to',)}),
         (_('Preferences'), {'fields': ('preferences',)}),
         (_('Important dates'), {'fields': (
             'last_login', 'date_joined', 'created_at', 'updated_at'

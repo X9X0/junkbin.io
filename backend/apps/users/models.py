@@ -100,6 +100,17 @@ class User(AbstractUser):
         default=False,
         help_text=_('User is blocked from sending/receiving messages (set by moderators)')
     )
+    forward_messages_to = models.ForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name='forwarded_from_users',
+        help_text=_(
+            'If set, a copy of every message this user receives is also sent to '
+            'this delegate, who can reply on their behalf.'
+        ),
+    )
     is_moderator = models.BooleanField(
         default=False,
         help_text=_('User can moderate submissions and reports')
@@ -142,6 +153,12 @@ class User(AbstractUser):
         verbose_name = _('user')
         verbose_name_plural = _('users')
         ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(
+                check=~models.Q(forward_messages_to=models.F('id')),
+                name='no_self_message_forward',
+            ),
+        ]
 
     def __str__(self):
         return self.username
@@ -215,11 +232,15 @@ class User(AbstractUser):
         self.website = ''
         self.preferred_language = ''
         self.preferences = {}
+        self.forward_messages_to = None
         if self.avatar:
             self.avatar.delete(save=False)
         self.is_active = False
         self.set_unusable_password()
         self.save()
+        # Anyone delegating their messages to this account should stop -
+        # forwarding to a deactivated/scrubbed user would silently no-op.
+        User.objects.filter(forward_messages_to=self).update(forward_messages_to=None)
 
 
 class UserActivity(models.Model):

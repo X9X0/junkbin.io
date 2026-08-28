@@ -34,6 +34,8 @@ export interface User {
   preferences?: UserPreferences;
   updated_at?: string;
   last_contribution_at?: string;
+  forward_messages_to?: string | null;
+  forward_messages_to_detail?: PublicUser | null;
 }
 
 export interface PublicUser {
