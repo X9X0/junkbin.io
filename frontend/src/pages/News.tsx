@@ -1,4 +1,4 @@
-import { Newspaper, Zap, Cpu, Globe, Wrench, Package } from 'lucide-react';
+import { Newspaper, Zap, Cpu, Globe, Wrench, Package, Rocket, ShieldCheck, Sparkles } from 'lucide-react';
 
 interface WeekEntry {
   id: string;
@@ -11,6 +11,116 @@ interface WeekEntry {
 }
 
 const weeks: WeekEntry[] = [
+  {
+    id: 'week-12',
+    label: 'Week 12',
+    dates: 'Aug 27, 2026',
+    color: 'cyber-purple',
+    icon: <Sparkles className="h-5 w-5" />,
+    intro:
+      "Trusted contributors were seeing a \"pending moderator review\" message on submissions that had actually gone live instantly — fixed at the root, in both the API response and the UI. The homepage got a cleanup: a stale launch banner and a blinking beta-tester callout are gone, replaced by a \"Find a Part\" search that actually shows off what the database is for, and a mascot-branded home-screen icon. Component search now understands real values — searching \"10k\" finds resistors near 10kΩ, not just anything with \"10k\" in its description. And uploaded photos can now have their backgrounds automatically removed, entirely on our own server — no third-party API, no per-image cost — with moderator tools to apply it retroactively to images that predate the feature.",
+    items: [
+      'Fixed trusted-contributor submissions showing "pending moderator review" even when already published — the server response never carried the actual approval status',
+      'Homepage refresh: dropped a stale launch banner and a blinking beta-tester callout, added a "Find a Part" search widget, new mascot-based PWA/app icon',
+      'Structured component value search — "10k", "4.7uF", "16MHz" match real specifications within a tolerance band, not substring text search; new Value and Package filters on the Components page',
+      'Self-hosted background removal for product/component photos (rembg/ONNX, no external API) — automatic on upload for hero/package shots, with a before/after compare and Advanced controls',
+      'Moderator tool to retroactively apply background removal to already-published images, with Undo',
+      'Open-hardware seed data: Arduino Uno Rev3 and Framework Laptop 13, sourced from official manufacturer schematics/BOMs under permissive licenses',
+    ],
+  },
+  {
+    id: 'week-11',
+    label: 'Week 11',
+    dates: 'Aug 15, 2026',
+    color: 'cyber-blue',
+    icon: <Wrench className="h-5 w-5" />,
+    intro:
+      "A lot of components in the database had blank descriptions and no recognizable value — imported from old BOMs whose only real signal was a scribbled note. A new backfill pass recovered construction type, tolerance, and rating for thousands of entries, and cross-referenced live data from Nexar/Octopart to fill in what raw notes couldn't. Moderators also got a proper bulk-edit tool for cleaning up components at scale.",
+    items: [
+      'backfill_component_values command recovers resistor/capacitor/inductor values from raw BOM notes text',
+      'Component descriptions backfilled with construction type, tolerance, and voltage/wattage rating',
+      'Nexar/Octopart enrichment for component descriptions, recognizing "Ref. No." style BOM columns',
+      'New PDF part-number reconciler',
+      'Product-scoped BOM filter and a generic bulk-edit action added to the Component admin',
+      'Service worker registration errors are now caught instead of surfacing as unhandled exceptions',
+    ],
+  },
+  {
+    id: 'week-10',
+    label: 'Week 10',
+    dates: 'Aug 10–13, 2026',
+    color: 'cyber-green',
+    icon: <Package className="h-5 w-5" />,
+    intro:
+      "Schematic uploads stopped being PDF-only — KiCad, Altium, Eagle, STEP, DXF, and board-view repair formats (.pcb, .tvw, .fz) are all fair game now, alongside plain zip archives. And Sentry went live in production: real error tracking with release tagging, frontend and backend both, plus cron monitoring so a silently-failing scheduled task doesn't stay silent.",
+    items: [
+      'Schematic uploads now accept KiCad, Altium, Eagle, STEP, and DXF files',
+      'Board-view repair formats added: .pcb, .tvw, .fz, plus plain .zip archives',
+      'Full Sentry setup: frontend error tracking, release tagging, and Celery cron monitoring',
+      'Backend and nginx logs now persist across container recreation',
+      'Removed a hardcoded Weblate API token from the translation sync script',
+    ],
+  },
+  {
+    id: 'week-9',
+    label: 'Week 9',
+    dates: 'Aug 8–9, 2026',
+    color: 'cyber-pink',
+    icon: <Rocket className="h-5 w-5" />,
+    intro:
+      "Junkbin.io got featured on Hackaday — and the comment section told us exactly where the rough edges were. The repo went public. A submission-throttling bug that silently ate photo uploads after the first few got root-caused and fixed. A mobile image-loading bug that looked like a browser crash turned out to be native lazy-loading missing images that were already on-screen when React swapped them in. And two feature requests landed the same day: firmware recovery uploads and OCR-based BOM extraction from scanned service manuals.",
+    items: [
+      'junkbin.io repository made public',
+      'Fixed a submission-throttling bug where a few photos on one product submission could burn through the same rate-limit bucket as spam prevention, silently dropping later uploads',
+      'Fixed images that were already in the viewport failing to load — native lazy-loading\'s eligibility check ran before the element existed in the DOM; replaced with a self-contained IntersectionObserver',
+      'Firmware upload support with an EEPROM component type and per-product firmware counters',
+      'OCR-based schematic BOM extraction from scanned service manuals, restricted to actual service-manual/BOM documents',
+      'Users can now change their own username or delete their own account',
+      'Email notifications when a submission is approved or rejected',
+      'Fixed a stale moderation queue that didn\'t update immediately after approving/rejecting',
+      '.jfif image uploads allowed (was missing from every extension allow-list)',
+      'Version bumped to 0.9.6',
+    ],
+  },
+  {
+    id: 'week-8',
+    label: 'Week 8',
+    dates: 'Jun 11 – Jul 21, 2026',
+    color: 'cyber-yellow',
+    icon: <ShieldCheck className="h-5 w-5" />,
+    intro:
+      "Version 0.9.5. Submitting a product or component that already exists now surfaces a clickable card linking straight to the existing entry instead of a bare validation error. Global search started reaching into teardown notes, schematic notes, and comments, not just titles. AVIF images can be uploaded directly. And SSL certificates now renew themselves — one less thing to remember.",
+    items: [
+      'Duplicate-submission detection: submitting a product/component that already exists shows a linkable suggestion card (thumbnail, category, description excerpt) instead of a generic error',
+      'Global search now searches teardown notes, schematic notes, and comments, not just titles and descriptions',
+      'AVIF image upload support',
+      'Fixed zoomed-in thumbnails on square product photos; thumbnail cache strategy switched to just-in-time regeneration',
+      'New "Appliance" product category',
+      'Seed data for 11 community-restored IoT devices orphaned by manufacturer shutdown (Wink Hub, Iris Smart Hub, Insteon Hub, MyQ, Piper NV, Canary, WeMo Switch, Sonoff Basic R2, Shelly 1)',
+      "Let's Encrypt certificate auto-renewal added to the deploy script",
+      'Fixed newsletter subscribe throttle sharing a cache key with the global anonymous throttle',
+    ],
+  },
+  {
+    id: 'week-7',
+    label: 'Week 7',
+    dates: 'Mar 7 – Apr 2, 2026',
+    color: 'cyber-cyan',
+    icon: <Globe className="h-5 w-5" />,
+    intro:
+      "Version 0.9.5 groundwork. A self-hosted CI/CD pipeline started running the test suite on every push. Then the last mile of internationalization: all 17 non-English languages pushed to 100% coverage via DeepL and MyMemory. A proper About and Contact page arrived, with a Konami-code Easter egg for anyone still reading the source. And a pass of infrastructure hardening closed out the stretch — direct-IP access blocked, duplicate alert emails fixed, and monitoring got less trigger-happy about backup-time CPU spikes.",
+    items: [
+      'Self-hosted CI/CD pipeline with a dedicated dev runner — backend and frontend tests run on every push',
+      'All 17 non-English languages reached 100% translation coverage via DeepL and MyMemory machine translation',
+      'About and Contact pages added, plus a Konami-code Easter egg',
+      'Custom favicon, NUSPI branding, and a proper loading screen',
+      'Fixed the CI test environment (PostgreSQL for search-vector support, jsdom URL polyfill, cookie-based auth test rewrite)',
+      'Direct-IP/unknown-host HTTPS access blocked; Weblate ALLOWED_HOSTS hardened',
+      'Fixed duplicate email notifications caused by three separate bugs',
+      'Reduced false-positive CPU alerts triggered by nightly backup compression',
+      'Fixed nginx health check failing on an unmatched server_name',
+    ],
+  },
   {
     id: 'week-6',
     label: 'Week 6',
@@ -166,6 +276,20 @@ const colorMap: Record<string, { border: string; bg: string; text: string; dot: 
     text: 'text-cyber-yellow',
     dot: 'bg-cyber-yellow',
     badge: 'border-cyber-yellow/50 text-cyber-yellow bg-cyber-yellow/10',
+  },
+  'cyber-purple': {
+    border: 'border-cyber-purple/40',
+    bg: 'bg-cyber-purple/10',
+    text: 'text-cyber-purple',
+    dot: 'bg-cyber-purple',
+    badge: 'border-cyber-purple/50 text-cyber-purple bg-cyber-purple/10',
+  },
+  'cyber-blue': {
+    border: 'border-cyber-blue/40',
+    bg: 'bg-cyber-blue/10',
+    text: 'text-cyber-blue',
+    dot: 'bg-cyber-blue',
+    badge: 'border-cyber-blue/50 text-cyber-blue bg-cyber-blue/10',
   },
 };
 
