@@ -66,6 +66,7 @@ LOCAL_APPS = [
     'apps.api',
     'apps.newsletter',
     'apps.messaging',
+    'apps.notifications',
     'apps.junkbin',
     'apps.recipes',
     'apps.webhooks',
@@ -298,6 +299,14 @@ ACCOUNT_LOGOUT_ON_GET = False
 ACCOUNT_LOGOUT_REDIRECT_URL = '/'
 LOGIN_REDIRECT_URL = '/'
 LOGIN_URL = '/api/auth/login/'
+
+# Web Push (VAPID) -- generate a keypair per-environment with:
+#   python -c "from py_vapid import Vapid; v=Vapid(); v.generate_keys(); print(v.private_pem()); print(v.public_key_bytes())"
+# or the `vapid --gen` CLI from the py-vapid package. Never share a keypair
+# between dev and prod.
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY', default='')
+VAPID_PUBLIC_KEY = env('VAPID_PUBLIC_KEY', default='')
+VAPID_CLAIMS = {'sub': env('VAPID_CONTACT_EMAIL', default='mailto:admin@junkbin.io')}
 
 # Google OAuth Client ID (used by GoogleAuthView for ID token verification)
 OAUTH_GOOGLE_CLIENT_ID = env('OAUTH_GOOGLE_CLIENT_ID', default='')

@@ -438,6 +438,30 @@ export interface UserBlock {
   created_at: string;
 }
 
+export type NotificationCategory =
+  | 'new_message'
+  | 'report_filed'
+  | 'submission_pending'
+  | 'strike_review'
+  | 'account_action'
+  | 'submission_approved'
+  | 'submission_rejected'
+  | 'content_approved'
+  | 'content_rejected'
+  | 'product_comment'
+  | 'submission_comment';
+
+export interface AppNotification {
+  id: string;
+  category: NotificationCategory;
+  title: string;
+  body: string;
+  url: string;
+  is_read: boolean;
+  read_at: string | null;
+  created_at: string;
+}
+
 // Junkbin types
 export interface JunkbinItem {
   id: string;

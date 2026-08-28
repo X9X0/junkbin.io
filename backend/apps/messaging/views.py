@@ -219,6 +219,17 @@ class SendMessageView(APIView):
         from .tasks import notify_new_message
         notify_new_message.delay(str(message.pk))
 
+        # In-app + push notification
+        from apps.notifications.services import notify
+        from apps.notifications.models import Notification
+        notify(
+            recipient, Notification.Category.NEW_MESSAGE,
+            title=f'New message from {sender.username}',
+            body=content[:200],
+            url=f'/messages/{conversation.pk}',
+            actor=sender,
+        )
+
         message = Message.objects.prefetch_related('attachments').get(pk=message.pk)
         response_data = MessageSerializer(message, context={'request': request}).data
         response_data['conversation_id'] = str(conversation.pk)

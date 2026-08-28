@@ -11,6 +11,7 @@ import EditProfileModal from '../components/EditProfileModal';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import ChangeUsernameModal from '../components/ChangeUsernameModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
+import PushNotificationToggle from '../components/PushNotificationToggle';
 import {
   User,
   Shield,
@@ -265,6 +266,8 @@ export default function Profile() {
                   />
                 </button>
               </div>
+
+              <PushNotificationToggle />
 
               <div className="border-t border-cyber-light/20" />
 
