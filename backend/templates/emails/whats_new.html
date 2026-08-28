@@ -22,7 +22,7 @@
 
         <ul style="margin: 0 0 24px; padding-left: 20px;">
             {% for item in items %}
-            <li style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin-bottom: 8px;">{{ item }}</li>
+            <li style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin-bottom: 8px;">{% if item.url %}<a href="{{ item.url }}" style="color: #05d9e8;">{{ item.text }}</a>{% else %}{{ item.text }}{% endif %}</li>
             {% endfor %}
         </ul>
 
@@ -33,7 +33,7 @@
             <h2 style="color: #8a8a9a; font-size: 13px; font-weight: bold; letter-spacing: 1px; text-transform: uppercase; margin: 0 0 14px;">{% trans "Earlier improvements" %}</h2>
             <ul style="margin: 0 0 4px; padding-left: 20px;">
                 {% for item in earlier %}
-                <li style="color: #9a9aa5; font-size: 13px; line-height: 1.6; margin-bottom: 8px;">{{ item }}</li>
+                <li style="color: #9a9aa5; font-size: 13px; line-height: 1.6; margin-bottom: 8px;">{% if item.url %}<a href="{{ item.url }}" style="color: #05d9e8;">{{ item.text }}</a>{% else %}{{ item.text }}{% endif %}</li>
                 {% endfor %}
             </ul>
         </div>

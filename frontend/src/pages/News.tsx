@@ -7,7 +7,7 @@ interface WeekEntry {
   color: string;
   icon: React.ReactNode;
   intro: string;
-  items: string[];
+  items: React.ReactNode[];
 }
 
 const weeks: WeekEntry[] = [
@@ -70,6 +70,17 @@ const weeks: WeekEntry[] = [
     intro:
       "Junkbin.io got featured on Hackaday — and the comment section told us exactly where the rough edges were. The repo went public. A submission-throttling bug that silently ate photo uploads after the first few got root-caused and fixed. A mobile image-loading bug that looked like a browser crash turned out to be native lazy-loading missing images that were already on-screen when React swapped them in. And two feature requests landed the same day: firmware recovery uploads and OCR-based BOM extraction from scanned service manuals.",
     items: [
+      <>
+        Featured on Hackaday:{' '}
+        <a
+          href="https://hackaday.com/2026/08/08/junkbin-a-way-to-efficiently-reuse-your-old-electronics/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyber-cyan hover:underline"
+        >
+          "Junkbin: A Way To Efficiently Reuse Your Old Electronics"
+        </a>
+      </>,
       'junkbin.io repository made public',
       'Fixed a submission-throttling bug where a few photos on one product submission could burn through the same rate-limit bucket as spam prevention, silently dropping later uploads',
       'Fixed images that were already in the viewport failing to load — native lazy-loading\'s eligibility check ran before the element existed in the DOM; replaced with a self-contained IntersectionObserver',
@@ -91,6 +102,17 @@ const weeks: WeekEntry[] = [
     intro:
       "Version 0.9.5. Submitting a product or component that already exists now surfaces a clickable card linking straight to the existing entry instead of a bare validation error. Global search started reaching into teardown notes, schematic notes, and comments, not just titles. AVIF images can be uploaded directly. And SSL certificates now renew themselves — one less thing to remember.",
     items: [
+      <>
+        Exhibited at OpenSauce (Jul 17–19) —{' '}
+        <a
+          href="https://www.opensauce.com/exhibits/junkbin-io"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-cyber-cyan hover:underline"
+        >
+          see the showcase page
+        </a>
+      </>,
       'Duplicate-submission detection: submitting a product/component that already exists shows a linkable suggestion card (thumbnail, category, description excerpt) instead of a generic error',
       'Global search now searches teardown notes, schematic notes, and comments, not just titles and descriptions',
       'AVIF image upload support',

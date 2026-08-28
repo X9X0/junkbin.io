@@ -5,12 +5,12 @@
 What's new on Junkbin.io
 
 {{ intro }}
-{% for item in items %}- {{ item }}
+{% for item in items %}- {{ item.text }}{% if item.url %} ({{ item.url }}){% endif %}
 {% endfor %}
 See the full timeline: {{ site_url }}/news
 {% if earlier %}
 EARLIER IMPROVEMENTS
-{% for item in earlier %}- {{ item }}
+{% for item in earlier %}- {{ item.text }}{% if item.url %} ({{ item.url }}){% endif %}
 {% endfor %}{% endif %}
 ---
 You're receiving this because you're a Junkbin.io member or subscribed to updates.

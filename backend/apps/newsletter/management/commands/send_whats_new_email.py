@@ -23,9 +23,12 @@ week.json shape:
       "week": "Week 12",
       "dates": "Aug 27, 2026",
       "intro": "...",
-      "items": ["...", "..."],
+      "items": ["...", {"text": "...", "url": "https://..."}],
       "earlier": ["...", "..."]   // optional - shown in an "Earlier improvements" section
     }
+
+Each entry in "items"/"earlier" can be a plain string, or an object with
+"text" and an optional "url" to render that one bullet as a link.
 """
 import json
 import time
@@ -35,6 +38,26 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.newsletter.models import Subscriber
 from apps.users.models import User
 from utils.email import send_templated_email
+
+
+def _normalize_bullets(raw, field_name):
+    """Turn a list of str | {"text", "url"?} into a uniform list of
+    {"text": str, "url": str} dicts, so templates never have to branch
+    on the two shapes."""
+    normalized = []
+    for entry in raw:
+        if isinstance(entry, str):
+            normalized.append({'text': entry, 'url': ''})
+        elif isinstance(entry, dict) and isinstance(entry.get('text'), str):
+            url = entry.get('url', '')
+            if not isinstance(url, str):
+                raise CommandError(f'"{field_name}" entry "url" must be a string')
+            normalized.append({'text': entry['text'], 'url': url})
+        else:
+            raise CommandError(
+                f'"{field_name}" entries must be strings or {{"text": ..., "url": ...}} objects'
+            )
+    return normalized
 
 
 class Command(BaseCommand):
@@ -71,11 +94,13 @@ class Command(BaseCommand):
         self.stdout.write(f"{content['week']} ({content['dates']})\n")
         self.stdout.write(content['intro'] + '\n')
         for item in content['items']:
-            self.stdout.write(f'  - {item}')
+            suffix = f" ({item['url']})" if item['url'] else ''
+            self.stdout.write(f"  - {item['text']}{suffix}")
         if content.get('earlier'):
             self.stdout.write('\nEarlier improvements:')
             for item in content['earlier']:
-                self.stdout.write(f'  - {item}')
+                suffix = f" ({item['url']})" if item['url'] else ''
+                self.stdout.write(f"  - {item['text']}{suffix}")
         self.stdout.write('')
 
         if count == 0:
@@ -142,11 +167,13 @@ class Command(BaseCommand):
             missing = [k for k in ('week', 'dates', 'intro', 'items') if not data.get(k)]
             if missing:
                 raise CommandError(f'--file is missing required key(s): {", ".join(missing)}')
-            if not isinstance(data['items'], list) or not all(isinstance(i, str) for i in data['items']):
-                raise CommandError('--file "items" must be a list of strings')
-            earlier = data.get('earlier')
-            if earlier is not None and (not isinstance(earlier, list) or not all(isinstance(i, str) for i in earlier)):
-                raise CommandError('--file "earlier" must be a list of strings')
+            if not isinstance(data['items'], list):
+                raise CommandError('--file "items" must be a list')
+            data['items'] = _normalize_bullets(data['items'], 'items')
+            if data.get('earlier') is not None:
+                if not isinstance(data['earlier'], list):
+                    raise CommandError('--file "earlier" must be a list')
+                data['earlier'] = _normalize_bullets(data['earlier'], 'earlier')
             return data
 
         if not (options.get('week') and options.get('dates') and options.get('intro') and options.get('items')):
@@ -157,6 +184,6 @@ class Command(BaseCommand):
             'week': options['week'],
             'dates': options['dates'],
             'intro': options['intro'],
-            'items': options['items'],
-            'earlier': options.get('earlier'),
+            'items': _normalize_bullets(options['items'], 'items'),
+            'earlier': _normalize_bullets(options['earlier'], 'earlier') if options.get('earlier') else None,
         }
