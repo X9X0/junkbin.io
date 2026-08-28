@@ -9,6 +9,12 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
+# pywebpush defaults ttl=0, which per the Web Push protocol (RFC 8030) means
+# "deliver right now or discard" -- if the device isn't actively connected to
+# the push service at that exact instant (common on mobile), the push service
+# silently drops the message instead of queuing it. Give it real time to land.
+PUSH_TTL_SECONDS = 4 * 60 * 60  # 4 hours
+
 
 @shared_task
 def send_push_to_user(notification_id):
@@ -43,7 +49,7 @@ def _send_one(subscription, payload):
     from pywebpush import webpush, WebPushException
 
     try:
-        webpush(
+        response = webpush(
             subscription_info={
                 'endpoint': subscription.endpoint,
                 'keys': {'p256dh': subscription.p256dh, 'auth': subscription.auth},
@@ -51,6 +57,12 @@ def _send_one(subscription, payload):
             data=payload,
             vapid_private_key=settings.VAPID_PRIVATE_KEY,
             vapid_claims=dict(settings.VAPID_CLAIMS),
+            ttl=PUSH_TTL_SECONDS,
+            headers={'Urgency': 'high'},
+        )
+        logger.info(
+            'Web push sent for subscription %s: push-service status %s',
+            subscription.id, getattr(response, 'status_code', 'unknown'),
         )
     except WebPushException as e:
         status_code = getattr(e.response, 'status_code', None)
