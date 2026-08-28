@@ -12,6 +12,7 @@ import ChangePasswordModal from '../components/ChangePasswordModal';
 import ChangeUsernameModal from '../components/ChangeUsernameModal';
 import DeleteAccountModal from '../components/DeleteAccountModal';
 import PushNotificationToggle from '../components/PushNotificationToggle';
+import MessageForwardingSetting from '../components/MessageForwardingSetting';
 import {
   User,
   Shield,
@@ -28,6 +29,7 @@ import {
   Pencil,
   Lock,
   FileText,
+  Forward,
 } from 'lucide-react';
 
 export default function Profile() {
@@ -314,6 +316,17 @@ export default function Profile() {
               </div>
             </div>
           ) : null}
+        </div>
+
+        {/* Message Forwarding */}
+        <div className="card-cyber p-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <Forward className="h-5 w-5 text-cyber-cyan" />
+            <h2 className="font-display text-lg font-bold text-white">
+              {t('profile.message_forwarding', 'Message Forwarding')}
+            </h2>
+          </div>
+          <MessageForwardingSetting />
         </div>
 
         {/* Blocked Users */}

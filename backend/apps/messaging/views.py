@@ -230,10 +230,86 @@ class SendMessageView(APIView):
             actor=sender,
         )
 
+        self._handle_forwarding(conversation, sender, recipient, content)
+
         message = Message.objects.prefetch_related('attachments').get(pk=message.pk)
         response_data = MessageSerializer(message, context={'request': request}).data
         response_data['conversation_id'] = str(conversation.pk)
         return Response(response_data, status=status.HTTP_201_CREATED)
+
+    @staticmethod
+    def _notify_new_message(conversation, sender, recipient, content, forwarded_from_conversation=None):
+        from .tasks import notify_new_message
+        from apps.notifications.services import notify
+        from apps.notifications.models import Notification
+
+        relay = Message.objects.create(
+            conversation=conversation,
+            sender=sender,
+            content=content,
+            forwarded_from_conversation=forwarded_from_conversation,
+        )
+        conversation.updated_at = timezone.now()
+        conversation.save(update_fields=['updated_at'])
+        notify_new_message.delay(str(relay.pk))
+        notify(
+            recipient, Notification.Category.NEW_MESSAGE,
+            title=f'New message from {sender.username}',
+            body=content[:200],
+            url=f'/messages/{conversation.pk}',
+            actor=sender,
+        )
+        return relay
+
+    def _handle_forwarding(self, conversation, sender, recipient, content):
+        """
+        Delegate messaging: if `recipient` has a forward_messages_to delegate
+        set, mirror the message they just received into a conversation with
+        that delegate. If the delegate replies in that mirrored thread, relay
+        the reply back into whichever original conversation it was most
+        recently forwarded from, attributed to `recipient` (the delegate's
+        identity is never exposed to the original sender).
+        """
+        target = recipient.forward_messages_to
+        if not target or not target.is_active:
+            return
+
+        if sender == target:
+            # The delegate is replying inside the mirrored thread - relay
+            # back into whatever conversation was forwarded here most
+            # recently, so the reply lands with the actual original sender.
+            last_forward = Message.objects.filter(
+                conversation=conversation,
+                forwarded_from_conversation__isnull=False,
+            ).order_by('-created_at').first()
+            if not last_forward or not last_forward.forwarded_from_conversation:
+                return
+            origin_conversation = last_forward.forwarded_from_conversation
+            original_sender = origin_conversation.other_participant(recipient)
+            self._notify_new_message(
+                origin_conversation, recipient, original_sender, content,
+                forwarded_from_conversation=conversation,
+            )
+            return
+
+        # Someone other than the delegate messaged `recipient` - mirror it.
+        if UserBlock.objects.filter(
+            Q(blocker=recipient, blocked_user=target) | Q(blocker=target, blocked_user=recipient)
+        ).exists():
+            return
+
+        p1, p2 = Conversation.ordered_participants(recipient, target)
+        shadow_conversation, _created = Conversation.objects.get_or_create(participant_1=p1, participant_2=p2)
+        if shadow_conversation.pk == conversation.pk:
+            # recipient's own delegate is who they're already talking to.
+            return
+
+        sender_name = sender.username if sender else 'a deleted user'
+        forwarded_content = f'(fwd from {sender_name}) {content}'
+        self._notify_new_message(
+            shadow_conversation, recipient, target, forwarded_content,
+            forwarded_from_conversation=conversation,
+        )
 
 
 class UnreadCountView(APIView):

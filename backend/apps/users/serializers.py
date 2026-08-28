@@ -37,6 +37,12 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     display_name = serializers.CharField(read_only=True)
     badges = serializers.SerializerMethodField()
+    forward_messages_to = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.filter(is_active=True),
+        allow_null=True,
+        required=False,
+    )
+    forward_messages_to_detail = UserSerializer(source='forward_messages_to', read_only=True)
 
     class Meta:
         model = User
@@ -47,7 +53,8 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'reputation_score', 'contribution_count', 'report_count',
             'is_staff', 'is_trusted', 'is_moderator', 'email_verified',
             'oauth_provider', 'preferences', 'created_at', 'updated_at',
-            'last_contribution_at', 'badges'
+            'last_contribution_at', 'badges',
+            'forward_messages_to', 'forward_messages_to_detail',
         ]
         read_only_fields = [
             'id', 'username', 'email', 'reputation_score', 'contribution_count',
@@ -59,6 +66,11 @@ class UserDetailSerializer(serializers.ModelSerializer):
     def get_badges(self, obj):
         from apps.users.badges import get_user_badges_display
         return get_user_badges_display(obj)
+
+    def validate_forward_messages_to(self, value):
+        if value and self.instance and value.pk == self.instance.pk:
+            raise serializers.ValidationError(_('You cannot forward your messages to yourself.'))
+        return value
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):

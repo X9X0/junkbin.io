@@ -20,7 +20,10 @@ self.addEventListener('push', (event) => {
       await self.registration.showNotification(title || 'Junkbin.io', {
         body: body || '',
         icon: '/icons/icon-192.png',
-        badge: '/icons/icon-192.png',
+        // Must be a monochrome silhouette - Android reads only the alpha
+        // channel and paints it solid white in the status bar. Reusing the
+        // full-color app icon here rendered as a plain white square.
+        badge: '/icons/badge-96.png',
         data: { url: url || '/' },
       });
 
