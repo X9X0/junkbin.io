@@ -87,7 +87,8 @@ export default function ImageUpload({
       const bg = bgRemovals[previewFile.preview];
       if (isBgRemovalEligible(previewFile.imageType) && bg?.status === 'done' && bg.useProcessed && bg.resultUrl) {
         const blob = await fetch(bg.resultUrl).then((r) => r.blob());
-        imageToUpload = new File([blob], previewFile.file.name, { type: 'image/png' });
+        const baseName = previewFile.file.name.replace(/\.[^.]+$/, '');
+        imageToUpload = new File([blob], `${baseName}.png`, { type: 'image/png' });
         backgroundRemoved = true;
       }
 
