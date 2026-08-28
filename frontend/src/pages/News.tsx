@@ -13,7 +13,7 @@ interface WeekEntry {
 const weeks: WeekEntry[] = [
   {
     id: 'week-12',
-    label: 'Week 12',
+    label: 'Update 12',
     dates: 'Aug 27, 2026',
     color: 'cyber-purple',
     icon: <Sparkles className="h-5 w-5" />,
@@ -30,7 +30,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-11',
-    label: 'Week 11',
+    label: 'Update 11',
     dates: 'Aug 15, 2026',
     color: 'cyber-blue',
     icon: <Wrench className="h-5 w-5" />,
@@ -47,7 +47,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-10',
-    label: 'Week 10',
+    label: 'Update 10',
     dates: 'Aug 10–13, 2026',
     color: 'cyber-green',
     icon: <Package className="h-5 w-5" />,
@@ -63,7 +63,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-9',
-    label: 'Week 9',
+    label: 'Update 9',
     dates: 'Aug 8–9, 2026',
     color: 'cyber-pink',
     icon: <Rocket className="h-5 w-5" />,
@@ -95,7 +95,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-8',
-    label: 'Week 8',
+    label: 'Update 8',
     dates: 'Jun 11 – Jul 21, 2026',
     color: 'cyber-yellow',
     icon: <ShieldCheck className="h-5 w-5" />,
@@ -125,7 +125,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-7',
-    label: 'Week 7',
+    label: 'Update 7',
     dates: 'Mar 7 – Apr 2, 2026',
     color: 'cyber-cyan',
     icon: <Globe className="h-5 w-5" />,
@@ -145,7 +145,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-6',
-    label: 'Week 6',
+    label: 'Update 6',
     dates: 'Mar 5–6, 2026',
     color: 'cyber-green',
     icon: <Globe className="h-5 w-5" />,
@@ -165,7 +165,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-5',
-    label: 'Week 5',
+    label: 'Update 5',
     dates: 'Mar 3–4, 2026',
     color: 'cyber-cyan',
     icon: <Globe className="h-5 w-5" />,
@@ -187,7 +187,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-4',
-    label: 'Week 4',
+    label: 'Update 4',
     dates: 'Feb 28 – Mar 2, 2026',
     color: 'cyber-yellow',
     icon: <Package className="h-5 w-5" />,
@@ -209,12 +209,12 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-3',
-    label: 'Week 3',
+    label: 'Update 3',
     dates: 'Feb 17–20, 2026',
     color: 'cyber-green',
     icon: <Wrench className="h-5 w-5" />,
     intro:
-      "Great features deserve great documentation, great photos, and a great mobile experience. Week 3 was all about making Junkbin.io feel like a real product: in-app guides, a fully editable profile, mobile camera capture so you can photograph components right from your workbench, and the safety features users had been asking for — block, unblock, and report in the chat window.",
+      "Great features deserve great documentation, great photos, and a great mobile experience. Update 3 was all about making Junkbin.io feel like a real product: in-app guides, a fully editable profile, mobile camera capture so you can photograph components right from your workbench, and the safety features users had been asking for — block, unblock, and report in the chat window.",
     items: [
       'In-app documentation hub: user guide covering every feature, browsing, contributing, and the junkbin',
       'Component images displayed on listing pages with smart type/package default images',
@@ -229,12 +229,12 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-2',
-    label: 'Week 2',
+    label: 'Update 2',
     dates: 'Feb 13–16, 2026',
     color: 'cyber-pink',
     icon: <Cpu className="h-5 w-5" />,
     intro:
-      "If Week 1 was the ignition, Week 2 was the turbocharger. In four days, Junkbin.io grew from a component lookup tool into a full community platform: direct messaging, a trading system, a recipe engine, achievement badges, Google OAuth, analytics dashboards, and live component pricing. This was the feature flood that defined what Junkbin.io would become.",
+      "If Update 1 was the ignition, Update 2 was the turbocharger. In four days, Junkbin.io grew from a component lookup tool into a full community platform: direct messaging, a trading system, a recipe engine, achievement badges, Google OAuth, analytics dashboards, and live component pricing. This was the feature flood that defined what Junkbin.io would become.",
     items: [
       'User-to-user direct messaging with adaptive polling',
       'Community guidelines enforcement: content filtering, warnings, and strike notifications',
@@ -254,7 +254,7 @@ const weeks: WeekEntry[] = [
   },
   {
     id: 'week-1',
-    label: 'Week 1',
+    label: 'Update 1',
     dates: 'Jan 30 – Feb 2, 2026',
     color: 'cyber-cyan',
     icon: <Zap className="h-5 w-5" />,
@@ -327,13 +327,12 @@ export default function News() {
           <h1 className="font-display text-2xl font-bold tracking-wider text-white">
             WHAT'S <span className="text-cyber-pink">NEW</span>
           </h1>
-          <p className="text-xs text-gray-500 font-mono">Development timeline — grouped by week</p>
+          <p className="text-xs text-gray-500 font-mono">Development timeline — grouped by update</p>
         </div>
       </div>
 
       <p className="text-gray-400 text-sm mb-10 max-w-2xl">
         A living record of everything that's been built, fixed, and shipped — straight from the commit log.
-        Every week brings something new to the repair community.
       </p>
 
       {/* Timeline */}

@@ -15,12 +15,12 @@ Usage:
 
     # or inline, no file:
     python manage.py send_whats_new_email \
-        --week "Week 12" --dates "Aug 27, 2026" \
+        --week "Update 12" --dates "Aug 27, 2026" \
         --intro "..." --item "First thing" --item "Second thing"
 
 week.json shape:
     {
-      "week": "Week 12",
+      "week": "Update 12",
       "dates": "Aug 27, 2026",
       "intro": "...",
       "items": ["...", {"text": "...", "url": "https://..."}],
@@ -65,7 +65,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--file', help='Path to a JSON file with week/dates/intro/items (see module docstring)')
-        parser.add_argument('--week', help='e.g. "Week 12"')
+        parser.add_argument('--week', help='e.g. "Update 12"')
         parser.add_argument('--dates', help='e.g. "Aug 27, 2026"')
         parser.add_argument('--intro', help='Intro paragraph')
         parser.add_argument('--item', action='append', dest='items', help='One changelog bullet - repeat for each item')

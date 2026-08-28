@@ -835,6 +835,14 @@ npm run test:coverage  # Coverage report
 - Decide whether this needs backend/DB support or is just a static page linking to an external storefront
 - Natural tie-in with existing "NO USER SERVICEABLE PARTS INSIDE" branding and badge/achievement iconography
 
+### Preview Image Fallback (Aug 28, 2026)
+- ⬜ Product/component cards show a blank placeholder when there's no "overview"/"package" image, even if other image types (PCB, closeup, label, etc.) were submitted. Fall back to any submitted image for the card/preview thumbnail instead of leaving it blank.
+
+### Email Sending Quota (Aug 28, 2026)
+- ⬜ Increase the SMTP provider's sending quota — the first `send_whats_new_email` bulk send (394 real recipients) hit two separate hourly caps: a 300/hr domain-level quota, then (after that reset) a 300/hr per-account (`admin@junkbin.io`) quota. Had to manually stagger delivery across ~2 quota windows to clear the backlog.
+- ⬜ Give `send_whats_new_email` (and any future bulk-send command) a persistent per-recipient send log, so a quota/SMTP failure mid-run can be resumed without manually reconstructing who already got it from stdout — that reconstruction (from a truncated terminal capture, no delivery log) is what made this send slow and fragile to recover from.
+- Consider: smaller batch size with an inter-batch delay, or checking remaining quota via the provider's API before each send, instead of only discovering the cap via a 550 mid-run.
+
 ---
 
 ## Next Steps
