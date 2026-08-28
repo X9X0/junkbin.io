@@ -1,13 +1,22 @@
 """
 Media tools models for Junkbin.io
 
-BackgroundRemovalPreview is deliberately not attached to a Product/
-Component image - it's a throwaway workspace for the pre-submission
-preview step (upload -> auto-remove -> compare/tweak -> decide) in
-ImageUpload.tsx. Nothing here is ever the image actually attached to a
-listing; the frontend uploads whichever version (original or result) the
-user lands on through the normal image-upload endpoints, and these rows
-get swept up by cleanup_stale_previews once they're a few hours old.
+BackgroundRemovalPreview serves two flows:
+
+1. Pre-submission preview (upload -> auto-remove -> compare/tweak ->
+   decide) in ImageUpload.tsx. `product_image`/`component_image` are
+   both null here - nothing in the preview is ever the image actually
+   attached to a listing; the frontend uploads whichever version
+   (original or result) the user lands on through the normal
+   image-upload endpoints. These rows are pure scratch space, swept up
+   by cleanup_bg_removal_previews once they're a few hours old.
+
+2. Retroactive moderator apply-to-existing-image (see apps.media_tools.
+   views.apply/revert) - `product_image` or `component_image` is set,
+   `original` is a server-side copy of that image's content *before*
+   any change, and once /apply/ has run, `applied_at` is set and the
+   row becomes the undo record for that change (excluded from routine
+   cleanup - see cleanup_bg_removal_previews).
 """
 import uuid
 
@@ -45,6 +54,20 @@ class BackgroundRemovalPreview(models.Model):
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)],
     )
     result = models.ImageField(upload_to=bg_removal_upload_path, null=True, blank=True)
+
+    # Set only for the retroactive moderator flow - which existing image
+    # this preview was created from / will be (or was) applied to. At
+    # most one of these is set; both null means a plain pre-submission
+    # preview (flow 1 above).
+    product_image = models.ForeignKey(
+        'products.ProductImage', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='bg_removal_previews',
+    )
+    component_image = models.ForeignKey(
+        'components.ComponentImage', on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='bg_removal_previews',
+    )
+    applied_at = models.DateTimeField(null=True, blank=True)
 
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
     error = models.TextField(blank=True)

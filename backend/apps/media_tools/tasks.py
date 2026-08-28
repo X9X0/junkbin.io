@@ -56,10 +56,14 @@ def _mark_failed(preview_id, message):
 
 @shared_task
 def cleanup_bg_removal_previews():
+    """Sweeps up abandoned scratch-space previews. Applied previews
+    (applied_at is set) are excluded - once /apply/ has run, the row is
+    the undo record for that change, not scratch space, and is kept
+    indefinitely so a moderator can /revert/ it later."""
     from .models import BackgroundRemovalPreview
 
     cutoff = timezone.now() - STALE_AFTER
-    stale = BackgroundRemovalPreview.objects.filter(created_at__lt=cutoff)
+    stale = BackgroundRemovalPreview.objects.filter(created_at__lt=cutoff, applied_at__isnull=True)
     count = 0
     for preview in stale.iterator():
         if preview.original:

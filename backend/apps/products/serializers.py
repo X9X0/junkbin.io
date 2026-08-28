@@ -25,9 +25,13 @@ class ProductImageSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'product', 'image', 'thumbnail', 'medium',
             'image_type', 'caption', 'display_order',
-            'width', 'height', 'uploaded_by', 'uploaded_at', 'is_approved'
+            'width', 'height', 'uploaded_by', 'uploaded_at', 'is_approved',
+            'background_removed', 'has_transparency',
         ]
-        read_only_fields = ['id', 'width', 'height', 'uploaded_at', 'is_approved']
+        read_only_fields = [
+            'id', 'width', 'height', 'uploaded_at', 'is_approved',
+            'has_transparency',
+        ]
 
     def get_uploaded_by(self, obj):
         if obj.uploaded_by:
@@ -56,7 +60,7 @@ class ProductImageUploadSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ProductImage
-        fields = ['image', 'image_type', 'caption', 'display_order']
+        fields = ['image', 'image_type', 'caption', 'display_order', 'background_removed']
 
     def validate_image(self, value):
         """Validate image file and strip EXIF data for privacy."""

@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { components, junkbin } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
@@ -10,6 +10,7 @@ import PricingPanel from '../components/PricingPanel';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
 import DatasheetUpload from '../components/DatasheetUpload';
 import Lightbox from '../components/Lightbox';
+import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen, MessageSquare, Store } from 'lucide-react';
 import type { JunkbinItem } from '../types';
 
@@ -83,6 +84,7 @@ export default function ComponentDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { isAuthenticated, user } = useAuth();
+  const queryClient = useQueryClient();
   const [showJunkbinModal, setShowJunkbinModal] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -248,17 +250,23 @@ export default function ComponentDetail() {
           {component.images && component.images.length > 0 && (
             <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
               {component.images.map((img, idx) => (
-                <button
-                  key={img.id}
-                  onClick={() => setLightboxIndex(idx)}
-                  className="aspect-video bg-cyber-black border border-cyber-light/20 overflow-hidden hover:border-cyber-pink/50 transition-colors cursor-zoom-in"
-                >
-                  <img
-                    src={img.medium || img.image}
-                    alt={img.caption || component.part_number}
-                    className="w-full h-full object-cover"
+                <div key={img.id}>
+                  <button
+                    onClick={() => setLightboxIndex(idx)}
+                    className="w-full aspect-video bg-cyber-black border border-cyber-light/20 overflow-hidden hover:border-cyber-pink/50 transition-colors cursor-zoom-in"
+                  >
+                    <img
+                      src={img.medium || img.image}
+                      alt={img.caption || component.part_number}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                  <RetroactiveBgRemoval
+                    image={img}
+                    kind="component"
+                    onApplied={() => queryClient.invalidateQueries({ queryKey: ['component', id] })}
                   />
-                </button>
+                </div>
               ))}
             </div>
           )}

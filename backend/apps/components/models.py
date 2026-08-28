@@ -12,8 +12,9 @@ from django.core.validators import FileExtensionValidator
 from django.utils.translation import gettext_lazy as _
 from imagekit.models import ImageSpecField
 from imagekit.processors import ResizeToFill, ResizeToFit
+from PIL import Image
 
-from apps.products.models import AlphaToBlack, ALLOWED_IMAGE_EXTENSIONS
+from apps.products.models import AlphaToBlack, ALLOWED_IMAGE_EXTENSIONS, image_has_transparency
 
 
 class Component(models.Model):
@@ -352,6 +353,16 @@ class ComponentImage(models.Model):
         help_text=_('Whether image has been approved by moderator')
     )
 
+    # Background removal (apps.media_tools)
+    background_removed = models.BooleanField(
+        default=False,
+        help_text=_('Whether this image has had its background auto-removed')
+    )
+    has_transparency = models.BooleanField(
+        default=False,
+        help_text=_('Whether this image already has a transparent background')
+    )
+
     class Meta:
         verbose_name = _('component image')
         verbose_name_plural = _('component images')
@@ -369,6 +380,8 @@ class ComponentImage(models.Model):
                 self.width = self.image.width
                 self.height = self.image.height
                 self.file_size = self.image.size
+                with Image.open(self.image) as img:
+                    self.has_transparency = image_has_transparency(img)
             except Exception:
                 pass
         super().save(*args, **kwargs)

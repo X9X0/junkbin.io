@@ -5,6 +5,7 @@ import type {
   ProductComment,
   ProductComponent,
   Component,
+  ComponentImage,
   Schematic,
   Firmware,
   ComponentSuggestion,
@@ -852,6 +853,43 @@ export const bgRemoval = {
 
   reprocess: async (id: string, params: BackgroundRemovalParams): Promise<BackgroundRemovalPreview> => {
     const response = await api.post(`/bg-removal/${id}/reprocess/`, params);
+    return response.data;
+  },
+
+  // Retroactive moderator flow - creates a preview from an already-saved
+  // image (no re-upload) instead of a fresh file.
+  createFromExisting: async (
+    source: { productImageId: string } | { componentImageId: string }
+  ): Promise<BackgroundRemovalPreview> => {
+    const payload = 'productImageId' in source
+      ? { product_image: source.productImageId }
+      : { component_image: source.componentImageId };
+    const response = await api.post('/bg-removal/', payload);
+    return response.data;
+  },
+
+  // Finds the applied preview for an already-processed image, so it can
+  // be reverted without denormalizing a pointer onto the image itself.
+  findApplied: async (
+    source: { productImageId: string } | { componentImageId: string }
+  ): Promise<BackgroundRemovalPreview | null> => {
+    const params = 'productImageId' in source
+      ? { product_image: source.productImageId }
+      : { component_image: source.componentImageId };
+    const response = await api.get('/bg-removal/', { params });
+    const applied = (response.data.results || response.data).find(
+      (p: BackgroundRemovalPreview) => !!p.applied_at
+    );
+    return applied || null;
+  },
+
+  apply: async (id: string): Promise<ProductImage | ComponentImage> => {
+    const response = await api.post(`/bg-removal/${id}/apply/`);
+    return response.data;
+  },
+
+  revert: async (id: string): Promise<ProductImage | ComponentImage> => {
+    const response = await api.post(`/bg-removal/${id}/revert/`);
     return response.data;
   },
 };

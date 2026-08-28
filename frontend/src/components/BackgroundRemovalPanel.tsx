@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Loader2, RotateCcw, Sparkles, ChevronDown, AlertCircle } from 'lucide-react';
+import { Loader2, RotateCcw, Sparkles, ChevronDown, AlertCircle, Check, X } from 'lucide-react';
 import clsx from 'clsx';
 import { bgRemoval } from '../api/endpoints';
 import { MODEL_OPTIONS } from '../constants/bgRemoval';
@@ -29,9 +29,20 @@ interface BackgroundRemovalPanelProps {
   originalPreviewUrl: string;
   state: BgRemovalState;
   onChange: (updates: Partial<BgRemovalState>) => void;
+  /** 'select' (default): Use Processed / Keep Original toggle - decides
+   * which version gets uploaded, nothing touches the server yet.
+   * 'apply': Apply to Live Image / Discard - this preview is already
+   * linked to an existing, published image (the retroactive moderator
+   * flow), so the decision here is a real, immediate server mutation. */
+  mode?: 'select' | 'apply';
+  onApply?: () => void;
+  onDiscard?: () => void;
+  applying?: boolean;
 }
 
-export default function BackgroundRemovalPanel({ originalPreviewUrl, state, onChange }: BackgroundRemovalPanelProps) {
+export default function BackgroundRemovalPanel({
+  originalPreviewUrl, state, onChange, mode = 'select', onApply, onDiscard, applying,
+}: BackgroundRemovalPanelProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [sliderPct, setSliderPct] = useState(50);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -88,7 +99,10 @@ export default function BackgroundRemovalPanel({ originalPreviewUrl, state, onCh
     return (
       <div className="flex items-start gap-2 text-xs font-mono text-cyber-pink py-2">
         <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-        <span>{state.error || 'Background removal failed.'} Original photo will be used.</span>
+        <span>
+          {state.error || 'Background removal failed.'}{' '}
+          {mode === 'select' ? 'Original photo will be used.' : 'Nothing was changed.'}
+        </span>
       </div>
     );
   }
@@ -128,34 +142,56 @@ export default function BackgroundRemovalPanel({ originalPreviewUrl, state, onCh
         <span className="absolute top-1 right-1 text-[10px] font-mono bg-cyber-black/70 text-gray-300 px-1">ORIGINAL</span>
       </div>
 
-      {/* Keep processed / revert to original */}
-      <div className="flex gap-2">
-        <button
-          type="button"
-          onClick={() => onChange({ useProcessed: true })}
-          className={clsx(
-            'flex-1 text-xs font-mono py-1.5 border transition-colors',
-            state.useProcessed
-              ? 'border-cyber-cyan text-cyber-cyan bg-cyber-cyan/10'
-              : 'border-cyber-light/40 text-gray-500 hover:text-white'
-          )}
-        >
-          Use Processed
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange({ useProcessed: false })}
-          className={clsx(
-            'flex-1 flex items-center justify-center gap-1 text-xs font-mono py-1.5 border transition-colors',
-            !state.useProcessed
-              ? 'border-cyber-yellow text-cyber-yellow bg-cyber-yellow/10'
-              : 'border-cyber-light/40 text-gray-500 hover:text-white'
-          )}
-        >
-          <RotateCcw className="h-3 w-3" />
-          Keep Original
-        </button>
-      </div>
+      {mode === 'select' ? (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => onChange({ useProcessed: true })}
+            className={clsx(
+              'flex-1 text-xs font-mono py-1.5 border transition-colors',
+              state.useProcessed
+                ? 'border-cyber-cyan text-cyber-cyan bg-cyber-cyan/10'
+                : 'border-cyber-light/40 text-gray-500 hover:text-white'
+            )}
+          >
+            Use Processed
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({ useProcessed: false })}
+            className={clsx(
+              'flex-1 flex items-center justify-center gap-1 text-xs font-mono py-1.5 border transition-colors',
+              !state.useProcessed
+                ? 'border-cyber-yellow text-cyber-yellow bg-cyber-yellow/10'
+                : 'border-cyber-light/40 text-gray-500 hover:text-white'
+            )}
+          >
+            <RotateCcw className="h-3 w-3" />
+            Keep Original
+          </button>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onApply}
+            disabled={applying}
+            className="flex-1 flex items-center justify-center gap-1 text-xs font-mono py-1.5 border border-cyber-green/50 text-cyber-green hover:bg-cyber-green/10 transition-colors disabled:opacity-50"
+          >
+            {applying ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3 w-3" />}
+            Apply to Live Image
+          </button>
+          <button
+            type="button"
+            onClick={onDiscard}
+            disabled={applying}
+            className="flex-1 flex items-center justify-center gap-1 text-xs font-mono py-1.5 border border-cyber-light/40 text-gray-500 hover:text-white transition-colors disabled:opacity-50"
+          >
+            <X className="h-3 w-3" />
+            Discard
+          </button>
+        </div>
+      )}
 
       {/* Advanced controls */}
       <div>

@@ -29,6 +29,20 @@ class AlphaToBlack:
         return image
 
 
+def image_has_transparency(image):
+    """True if `image` (a PIL Image) has a genuinely transparent background -
+    not just an incidental alpha channel that happens to be fully opaque
+    everywhere. Used to auto-exclude already-transparent uploads from the
+    background-removal moderator tooling, since removing "the background"
+    from an image that doesn't have one doesn't mean anything."""
+    if image.mode == 'P':
+        return 'transparency' in image.info
+    if image.mode in ('RGBA', 'LA'):
+        alpha_min, _alpha_max = image.getchannel('A').getextrema()
+        return alpha_min < 250
+    return False
+
+
 class AdaptiveThumbnail:
     """
     ImageKit processor for product thumbnails.
@@ -368,6 +382,16 @@ class ProductImage(models.Model):
         help_text=_('Whether image has been approved by moderator')
     )
 
+    # Background removal (apps.media_tools)
+    background_removed = models.BooleanField(
+        default=False,
+        help_text=_('Whether this image has had its background auto-removed')
+    )
+    has_transparency = models.BooleanField(
+        default=False,
+        help_text=_('Whether this image already has a transparent background')
+    )
+
     class Meta:
         verbose_name = _('product image')
         verbose_name_plural = _('product images')
@@ -386,6 +410,8 @@ class ProductImage(models.Model):
                 self.width = self.image.width
                 self.height = self.image.height
                 self.file_size = self.image.size
+                with Image.open(self.image) as img:
+                    self.has_transparency = image_has_transparency(img)
             except Exception:
                 pass
         super().save(*args, **kwargs)

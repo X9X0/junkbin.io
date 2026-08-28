@@ -83,15 +83,20 @@ export default function ImageUpload({
       if (!doUpload) throw new Error('No upload function configured');
 
       let imageToUpload: File = previewFile.file;
+      let backgroundRemoved = false;
       const bg = bgRemovals[previewFile.preview];
       if (isBgRemovalEligible(previewFile.imageType) && bg?.status === 'done' && bg.useProcessed && bg.resultUrl) {
         const blob = await fetch(bg.resultUrl).then((r) => r.blob());
         imageToUpload = new File([blob], previewFile.file.name, { type: 'image/png' });
+        backgroundRemoved = true;
       }
 
       const formData = new FormData();
       formData.append('image', imageToUpload);
       formData.append('image_type', previewFile.imageType);
+      if (backgroundRemoved) {
+        formData.append('background_removed', 'true');
+      }
       if (previewFile.caption) {
         formData.append('caption', previewFile.caption);
       }

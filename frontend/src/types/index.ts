@@ -113,6 +113,8 @@ export interface ProductImage {
   uploaded_by?: { id: string; username: string };
   uploaded_at?: string;
   is_approved: boolean;
+  background_removed?: boolean;
+  has_transparency?: boolean;
 }
 
 export interface CreatedBy {
@@ -157,6 +159,8 @@ export interface ComponentImage {
   caption?: string;
   is_default?: boolean;
   is_approved?: boolean;
+  background_removed?: boolean;
+  has_transparency?: boolean;
 }
 
 // Component types
@@ -614,6 +618,9 @@ export interface BackgroundRemovalPreview {
   background_threshold: number;
   erode_size: number;
   created_at: string;
+  product_image?: string | null;
+  component_image?: string | null;
+  applied_at?: string | null;
 }
 
 export interface BackgroundRemovalParams {

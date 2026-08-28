@@ -40,6 +40,7 @@ import clsx from 'clsx';
 import { useState } from 'react';
 import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
+import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 
 // Schematic types that plausibly contain a real parts list/table - circuit
 // diagrams don't, and need the separate OCR + spatial-matching pipeline.
@@ -607,6 +608,13 @@ export default function ProductDetail() {
                             {img.caption}
                           </span>
                         )}
+                      </div>
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <RetroactiveBgRemoval
+                          image={img}
+                          kind="product"
+                          onApplied={() => queryClient.invalidateQueries({ queryKey: ['product', id] })}
+                        />
                       </div>
                     </div>
                   ))}
