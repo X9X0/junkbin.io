@@ -835,6 +835,11 @@ npm run test:coverage  # Coverage report
 - Decide whether this needs backend/DB support or is just a static page linking to an external storefront
 - Natural tie-in with existing "NO USER SERVICEABLE PARTS INSIDE" branding and badge/achievement iconography
 
+### Weblate Sync PR Backlog (Aug 28, 2026)
+- ⬜ 30 open, unmerged PRs on GitHub from the `junkbin-locales` → main sync workflow, dating back to March 8, 2026 (only the first batch of 6, from March 6, was ever merged). Content across them is not monotonically improving — two PRs created 2 minutes apart differed by 2,300 lines, with one reverting `nl` to source/English-fallback content (`_meta.generated: "03-02", "method": "bron"`) — so no single PR can be assumed "best" without per-language review.
+- This PR-based pipeline is a separate path from the actual translation workflow in use (`deployment/sync-translations.sh <lang>` writing directly to `dev`, documented as already having reached 100%/17 languages via that route in March) — worth confirming whether this GitHub PR pipeline is still wanted at all before reconciling it.
+- Decision (2026-08-28): leave the 30 PRs open for now: close without merging (none are reliably current), then trigger one fresh sync for a clean current PR if the pipeline is still wanted — see conversation for full investigation.
+
 ### Preview Image Fallback (Aug 28, 2026)
 - ⬜ Product/component cards show a blank placeholder when there's no "overview"/"package" image, even if other image types (PCB, closeup, label, etc.) were submitted. Fall back to any submitted image for the card/preview thumbnail instead of leaving it blank.
 
