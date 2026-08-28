@@ -166,7 +166,7 @@ class ProductImageAdmin(admin.ModelAdmin):
         'uploaded_by', 'uploaded_at'
     ]
     list_filter = ['image_type', 'uploaded_at']
-    search_fields = ['product__manufacturer', 'product__model_number', 'caption']
+    search_fields = ['product__manufacturer', 'product__model_number', 'product__slug', 'caption']
     readonly_fields = [
         'id', 'image_preview', 'width', 'height',
         'file_size', 'uploaded_by', 'uploaded_at'

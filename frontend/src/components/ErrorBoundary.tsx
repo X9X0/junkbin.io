@@ -26,6 +26,18 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     Sentry.captureException(error, { extra: { componentStack: errorInfo.componentStack } });
+
+    // A deploy replaced the JS bundle while this tab had an old page open,
+    // so a lazy route's chunk hash no longer exists on the server. The fix
+    // is just to reload for the current bundle - guard with sessionStorage
+    // so a genuinely broken chunk doesn't reload-loop forever.
+    const isChunkLoadError = /dynamically imported module|importing a module script failed|loading chunk/i.test(
+      error.message
+    );
+    if (isChunkLoadError && !sessionStorage.getItem('chunk-reload-attempted')) {
+      sessionStorage.setItem('chunk-reload-attempted', '1');
+      window.location.reload();
+    }
   }
 
   render() {

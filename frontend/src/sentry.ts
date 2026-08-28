@@ -16,5 +16,13 @@ if (dsn) {
     // it's metered pay-as-you-go.
     tracesSampleRate: 0.1,
     sendDefaultPii: false,
+    // Noise injected by browser extensions / in-app-browser bridges
+    // (Telegram/social-media webviews, translate tools) that isn't
+    // reachable from our own code - seen recurring in production with no
+    // app-code frames in the stack.
+    ignoreErrors: [
+      'Error invoking postEvent: Method not found',
+      "Failed to execute 'removeChild' on 'Node'",
+    ],
   });
 }

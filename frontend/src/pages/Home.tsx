@@ -214,7 +214,7 @@ export default function Home() {
       </section>
 
       {/* Featured Products */}
-      {featuredProducts && featuredProducts.length > 0 && (
+      {Array.isArray(featuredProducts) && featuredProducts.length > 0 && (
         <section className="py-12">
           <div className="mx-auto max-w-7xl px-4">
             <div className="flex items-center justify-between mb-6">

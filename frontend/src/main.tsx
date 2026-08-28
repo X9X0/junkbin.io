@@ -24,3 +24,9 @@ createRoot(document.getElementById('root')!).render(
     <App />
   </StrictMode>,
 )
+
+// The app has been running fine for a bit, so ErrorBoundary's one-shot
+// chunk-load-failure reload guard (sessionStorage) is safe to reset - a
+// later, unrelated chunk failure (e.g. after the next deploy) should still
+// get its own auto-reload instead of being silently swallowed all tab-life.
+setTimeout(() => sessionStorage.removeItem('chunk-reload-attempted'), 10000)
