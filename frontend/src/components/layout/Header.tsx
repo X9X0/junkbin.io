@@ -493,8 +493,12 @@ export default function Header() {
         {/* Mobile menu */}
         <div
           className={clsx(
-            'md:hidden overflow-hidden transition-all duration-300',
-            isMenuOpen ? 'max-h-[32rem] py-4' : 'max-h-0'
+            'md:hidden overflow-x-hidden overflow-y-auto transition-all duration-300',
+            // Cap at the viewport height remaining below the h-16 sticky header, not a
+            // fixed rem value -- long menus (moderator links, notifications, etc.) were
+            // getting clipped with no way to reach anything past the cutoff. Full menu
+            // is fully visible whenever it fits; only scrolls if it still doesn't.
+            isMenuOpen ? 'max-h-[calc(100vh-4rem)] py-4' : 'max-h-0'
           )}
         >
           <form onSubmit={handleSearch} className="mb-4">
