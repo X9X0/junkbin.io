@@ -116,7 +116,7 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_primary_image(self, obj):
         images = self._visible_images(obj)
-        image = images.filter(image_type='overview').first()
+        image = images.filter(image_type='overview').first() or images.first()
         if image:
             return ProductImageSerializer(image, context=self.context).data
         return None

@@ -840,8 +840,8 @@ npm run test:coverage  # Coverage report
 - This PR-based pipeline is a separate path from the actual translation workflow in use (`deployment/sync-translations.sh <lang>` writing directly to `dev`, documented as already having reached 100%/17 languages via that route in March) — worth confirming whether this GitHub PR pipeline is still wanted at all before reconciling it.
 - Decision (2026-08-28): leave the 30 PRs open for now: close without merging (none are reliably current), then trigger one fresh sync for a clean current PR if the pipeline is still wanted — see conversation for full investigation.
 
-### Preview Image Fallback (Aug 28, 2026)
-- ⬜ Product/component cards show a blank placeholder when there's no "overview"/"package" image, even if other image types (PCB, closeup, label, etc.) were submitted. Fall back to any submitted image for the card/preview thumbnail instead of leaving it blank.
+### Preview Image Fallback (Aug 28, 2026) ✅ COMPLETE
+- ✅ Product cards showed a blank placeholder when there was no "overview" image, even if other image types (PCB, closeup, label, etc.) were submitted. `Product.primary_image` (model property) and `ProductListSerializer.get_primary_image` now fall back to any submitted image when no overview image exists, matching the fallback pattern `_product_duplicate_thumbnail` already used. Components were unaffected — `PrimaryImageMixin` already fell back to any approved image / a `ComponentTypeImage` default.
 
 ### Email Sending Quota (Aug 28, 2026)
 - ⬜ Increase the SMTP provider's sending quota — the first `send_whats_new_email` bulk send (394 real recipients) hit two separate hourly caps: a 300/hr domain-level quota, then (after that reset) a 300/hr per-account (`admin@junkbin.io`) quota. Had to manually stagger delivery across ~2 quota windows to clear the backlog.
