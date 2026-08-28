@@ -23,7 +23,8 @@ week.json shape:
       "week": "Week 12",
       "dates": "Aug 27, 2026",
       "intro": "...",
-      "items": ["...", "..."]
+      "items": ["...", "..."],
+      "earlier": ["...", "..."]   // optional - shown in an "Earlier improvements" section
     }
 """
 import json
@@ -45,6 +46,7 @@ class Command(BaseCommand):
         parser.add_argument('--dates', help='e.g. "Aug 27, 2026"')
         parser.add_argument('--intro', help='Intro paragraph')
         parser.add_argument('--item', action='append', dest='items', help='One changelog bullet - repeat for each item')
+        parser.add_argument('--earlier', action='append', dest='earlier', help='One "earlier improvements" bullet - repeat for each item (optional)')
         parser.add_argument('--dry-run', action='store_true', help='Show recipients and the rendered content without sending')
         parser.add_argument('--yes', action='store_true', help='Skip the confirmation prompt')
 
@@ -70,6 +72,10 @@ class Command(BaseCommand):
         self.stdout.write(content['intro'] + '\n')
         for item in content['items']:
             self.stdout.write(f'  - {item}')
+        if content.get('earlier'):
+            self.stdout.write('\nEarlier improvements:')
+            for item in content['earlier']:
+                self.stdout.write(f'  - {item}')
         self.stdout.write('')
 
         if count == 0:
@@ -108,6 +114,7 @@ class Command(BaseCommand):
                         'dates': content['dates'],
                         'intro': content['intro'],
                         'items': content['items'],
+                        'earlier': content.get('earlier'),
                     },
                     recipient_list=[email],
                 )
@@ -137,6 +144,9 @@ class Command(BaseCommand):
                 raise CommandError(f'--file is missing required key(s): {", ".join(missing)}')
             if not isinstance(data['items'], list) or not all(isinstance(i, str) for i in data['items']):
                 raise CommandError('--file "items" must be a list of strings')
+            earlier = data.get('earlier')
+            if earlier is not None and (not isinstance(earlier, list) or not all(isinstance(i, str) for i in earlier)):
+                raise CommandError('--file "earlier" must be a list of strings')
             return data
 
         if not (options.get('week') and options.get('dates') and options.get('intro') and options.get('items')):
@@ -148,4 +158,5 @@ class Command(BaseCommand):
             'dates': options['dates'],
             'intro': options['intro'],
             'items': options['items'],
+            'earlier': options.get('earlier'),
         }

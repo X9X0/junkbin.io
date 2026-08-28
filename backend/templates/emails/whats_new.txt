@@ -8,7 +8,10 @@ What's new on Junkbin.io
 {% for item in items %}- {{ item }}
 {% endfor %}
 See the full timeline: {{ site_url }}/news
-
+{% if earlier %}
+EARLIER IMPROVEMENTS
+{% for item in earlier %}- {{ item }}
+{% endfor %}{% endif %}
 ---
 You're receiving this because you're a Junkbin.io member or subscribed to updates.
 Members can turn this off from Profile -> Notification Preferences.
