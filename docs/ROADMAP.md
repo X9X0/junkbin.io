@@ -823,6 +823,18 @@ npm run test:coverage  # Coverage report
 - Goal: reduce context lost in text-only back-and-forth, especially during debugging
 - Options to evaluate: browser-based speech recognition, local Whisper instance, or OS-level dictation
 
+### Donation Method
+- ⬜ Add a way for users to financially support the project (server/hosting costs)
+- Options to evaluate: Ko-fi/Buy Me a Coffee embed, GitHub Sponsors, Stripe/Open Collective, crypto address
+- Placement: footer link, About page, possibly a dedicated `/support` page
+- Keep it low-key/optional in tone — matches "person-to-person, no payments facilitated" ethos already stated for Junkbin trades
+
+### Merch Area
+- ⬜ Storefront for branded merch (t-shirts, stickers, enamel pins) using the cyberpunk/NUSPI aesthetic
+- Options to evaluate: print-on-demand integration (Printful/Printify) vs. simple link-out to an external store (e.g. TeePublic/Threadless shop)
+- Decide whether this needs backend/DB support or is just a static page linking to an external storefront
+- Natural tie-in with existing "NO USER SERVICEABLE PARTS INSIDE" branding and badge/achievement iconography
+
 ---
 
 ## Next Steps
