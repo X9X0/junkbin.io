@@ -142,6 +142,17 @@ junkbin.io/
 │   │   │   ├── formatters.py          # Discord embed + Slack Block Kit formatters
 │   │   │   └── tasks.py               # Celery delivery with retry/backoff
 │   │   │
+│   │   ├── media_tools/               # Self-hosted background removal (rembg/ONNX, no external API)
+│   │   │   ├── models.py              # BackgroundRemovalPreview (pre-submit preview + retroactive moderator apply)
+│   │   │   ├── bg_removal.py          # rembg wrapper, composites onto black via AlphaToBlack
+│   │   │   ├── views.py               # create/reprocess/apply/revert - apply/revert are moderator/staff only
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   ├── admin.py
+│   │   │   ├── tasks.py               # process_bg_removal (runs the job in a subprocess, not in-process - see docstring) + hourly cleanup
+│   │   │   ├── management/commands/process_bg_removal_job.py  # actual rembg/pymatting work, isolated per job
+│   │   │   └── tests/
+│   │   │
 │   │   └── api/                       # API configuration
 │   │       ├── models.py              # Admin notification models, SearchQuery (analytics)
 │   │       ├── urls.py                # API root routing + JWT cookie auth

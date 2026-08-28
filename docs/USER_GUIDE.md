@@ -197,6 +197,10 @@ From a product's detail page:
 4. Choose the image type: overview, close-up, backside, or schematic.
 5. Add an optional caption.
 
+**Automatic background removal:** for "Overview" (product) or "Package Photo" (component) shots, the background is automatically removed and replaced with black — no external service, everything runs on our own server. Once it finishes, a before/after slider appears so you can compare the result against your original photo:
+- **Use Processed** / **Keep Original** picks which version actually gets uploaded — nothing is sent to the server until you click **Upload All**.
+- **Advanced** lets you try a different model or turn on edge refinement (slower, and not always better - worth trying if the default result clips part of the subject) before reprocessing.
+
 **Tips for quality images:**
 - Use good, even lighting.
 - Focus on the PCB or component area.
