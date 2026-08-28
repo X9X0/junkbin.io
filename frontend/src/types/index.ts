@@ -601,6 +601,29 @@ export interface AnalyticsDashboardData {
   activity_breakdown: ActivityBreakdown[];
 }
 
+// Background removal (apps.media_tools)
+export interface BackgroundRemovalPreview {
+  id: string;
+  original: string;
+  result: string | null;
+  status: 'pending' | 'done' | 'failed';
+  error: string;
+  model_name: string;
+  alpha_matting: boolean;
+  foreground_threshold: number;
+  background_threshold: number;
+  erode_size: number;
+  created_at: string;
+}
+
+export interface BackgroundRemovalParams {
+  model_name?: string;
+  alpha_matting?: boolean;
+  foreground_threshold?: number;
+  background_threshold?: number;
+  erode_size?: number;
+}
+
 // Search/filter types
 export interface ProductFilters {
   search?: string;

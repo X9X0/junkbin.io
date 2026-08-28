@@ -69,6 +69,7 @@ LOCAL_APPS = [
     'apps.junkbin',
     'apps.recipes',
     'apps.webhooks',
+    'apps.media_tools',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -222,6 +223,7 @@ REST_FRAMEWORK = {
         'messaging': '30/minute',
         'lookup': '20/hour',
         'subscribe': '10/hour',
+        'bg_removal': '40/hour',
     },
 }
 
@@ -363,6 +365,10 @@ CELERY_BEAT_SCHEDULE = {
     'cleanup-old-activity': {
         'task': 'apps.api.tasks.cleanup_old_activity',
         'schedule': crontab(hour=3, minute=30),
+    },
+    'cleanup-bg-removal-previews': {
+        'task': 'apps.media_tools.tasks.cleanup_bg_removal_previews',
+        'schedule': 3600.0,  # hourly
     },
 }
 

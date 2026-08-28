@@ -1,9 +1,13 @@
 import { useState, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { products } from '../api/endpoints';
+import { products, bgRemoval } from '../api/endpoints';
 import { Upload, Camera, X, Loader2, CheckCircle, AlertCircle, Clock, TrendingUp } from 'lucide-react';
 import clsx from 'clsx';
 import axios from 'axios';
+import BackgroundRemovalPanel, { BgRemovalState, DEFAULT_BG_REMOVAL_PARAMS } from './BackgroundRemovalPanel';
+import { BG_REMOVAL_ELIGIBLE_IMAGE_TYPES } from '../constants/bgRemoval';
+
+const isBgRemovalEligible = (imageType: string) => BG_REMOVAL_ELIGIBLE_IMAGE_TYPES.includes(imageType);
 
 interface ImageTypeOption {
   value: string;
@@ -65,6 +69,7 @@ export default function ImageUpload({
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadedCount, setUploadedCount] = useState(0);
   const [uploadedApproved, setUploadedApproved] = useState(true);
+  const [bgRemovals, setBgRemovals] = useState<Record<string, BgRemovalState>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -76,8 +81,16 @@ export default function ImageUpload({
   const uploadMutation = useMutation({
     mutationFn: async (previewFile: PreviewFile) => {
       if (!doUpload) throw new Error('No upload function configured');
+
+      let imageToUpload: File = previewFile.file;
+      const bg = bgRemovals[previewFile.preview];
+      if (isBgRemovalEligible(previewFile.imageType) && bg?.status === 'done' && bg.useProcessed && bg.resultUrl) {
+        const blob = await fetch(bg.resultUrl).then((r) => r.blob());
+        imageToUpload = new File([blob], previewFile.file.name, { type: 'image/png' });
+      }
+
       const formData = new FormData();
-      formData.append('image', previewFile.file);
+      formData.append('image', imageToUpload);
       formData.append('image_type', previewFile.imageType);
       if (previewFile.caption) {
         formData.append('caption', previewFile.caption);
@@ -90,6 +103,43 @@ export default function ImageUpload({
       }
     },
   });
+
+  // Kicks off auto background removal for an eligible (hero/package shot)
+  // file the first time it becomes eligible - a no-op if already started.
+  const maybeStartBgRemoval = (previewFile: PreviewFile) => {
+    if (!isBgRemovalEligible(previewFile.imageType)) return;
+    if (bgRemovals[previewFile.preview]) return;
+
+    setBgRemovals((prev) => ({
+      ...prev,
+      [previewFile.preview]: {
+        id: '',
+        status: 'pending',
+        resultUrl: null,
+        error: null,
+        useProcessed: true,
+        ...DEFAULT_BG_REMOVAL_PARAMS,
+      },
+    }));
+
+    bgRemoval.create(previewFile.file)
+      .then((result) => {
+        setBgRemovals((prev) => ({
+          ...prev,
+          [previewFile.preview]: { ...prev[previewFile.preview], id: result.id },
+        }));
+      })
+      .catch(() => {
+        setBgRemovals((prev) => ({
+          ...prev,
+          [previewFile.preview]: {
+            ...prev[previewFile.preview],
+            status: 'failed',
+            error: 'Could not start background removal.',
+          },
+        }));
+      });
+  };
 
   const handleFiles = (newFiles: FileList | null) => {
     if (!newFiles) return;
@@ -108,6 +158,7 @@ export default function ImageUpload({
     }));
 
     setFiles((prev) => [...prev, ...previews]);
+    previews.forEach(maybeStartBgRemoval);
   };
 
   const handleDrop = (e: React.DragEvent) => {
@@ -128,8 +179,12 @@ export default function ImageUpload({
   const removeFile = (index: number) => {
     setFiles((prev) => {
       const newFiles = [...prev];
-      URL.revokeObjectURL(newFiles[index].preview);
-      newFiles.splice(index, 1);
+      const [removed] = newFiles.splice(index, 1);
+      URL.revokeObjectURL(removed.preview);
+      setBgRemovals((prevBg) => {
+        const { [removed.preview]: _discard, ...rest } = prevBg;
+        return rest;
+      });
       return newFiles;
     });
   };
@@ -302,7 +357,11 @@ export default function ImageUpload({
                 {/* Image type select */}
                 <select
                   value={file.imageType}
-                  onChange={(e) => updateFile(index, { imageType: e.target.value })}
+                  onChange={(e) => {
+                    const imageType = e.target.value;
+                    updateFile(index, { imageType });
+                    maybeStartBgRemoval({ ...file, imageType });
+                  }}
                   className="input-cyber text-sm py-1 mb-2"
                 >
                   {types.map((type) => (
@@ -320,6 +379,20 @@ export default function ImageUpload({
                   onChange={(e) => updateFile(index, { caption: e.target.value })}
                   className="input-cyber text-sm py-1"
                 />
+
+                {/* Auto background removal (hero/package shots only) */}
+                {isBgRemovalEligible(file.imageType) && bgRemovals[file.preview] && (
+                  <BackgroundRemovalPanel
+                    originalPreviewUrl={file.preview}
+                    state={bgRemovals[file.preview]}
+                    onChange={(updates) =>
+                      setBgRemovals((prev) => ({
+                        ...prev,
+                        [file.preview]: { ...prev[file.preview], ...updates },
+                      }))
+                    }
+                  />
+                )}
               </div>
             ))}
           </div>

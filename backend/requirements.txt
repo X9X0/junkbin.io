@@ -45,6 +45,10 @@ Pillow>=10.0.0
 pillow-avif-plugin>=1.4.3
 django-imagekit>=5.0.0
 
+# Self-hosted background removal (no external API) - see apps/media_tools
+rembg[cpu]>=2.0.50
+pymatting>=1.1.12
+
 # ========================================
 # File Storage
 # ========================================

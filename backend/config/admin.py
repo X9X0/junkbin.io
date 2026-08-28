@@ -42,6 +42,7 @@ SIDEBAR_GROUPS = {
     'System': [
         ('api', 'notificationpreference'),
         ('api', 'notificationlog'),
+        ('media_tools', 'backgroundremovalpreview'),
         ('django_celery_beat', 'periodictask'),
         ('django_celery_results', 'taskresult'),
         ('axes', 'accessattempt'),

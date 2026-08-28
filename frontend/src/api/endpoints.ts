@@ -32,6 +32,8 @@ import type {
   RecipeMatchDetail,
   NexarData,
   AnalyticsDashboardData,
+  BackgroundRemovalPreview,
+  BackgroundRemovalParams,
 } from '../types';
 
 // Auth endpoints
@@ -823,6 +825,33 @@ export const analytics = {
 export const newsletter = {
   subscribe: async (email: string, source: string = 'landing'): Promise<{ message: string; email: string }> => {
     const response = await api.post('/newsletter/subscribe/', { email, source });
+    return response.data;
+  },
+};
+
+// Self-hosted background removal preview (apps.media_tools)
+export const bgRemoval = {
+  create: async (file: File, params?: BackgroundRemovalParams): Promise<BackgroundRemovalPreview> => {
+    const formData = new FormData();
+    formData.append('original', file);
+    if (params?.model_name) formData.append('model_name', params.model_name);
+    if (params?.alpha_matting !== undefined) formData.append('alpha_matting', String(params.alpha_matting));
+    if (params?.foreground_threshold !== undefined) formData.append('foreground_threshold', String(params.foreground_threshold));
+    if (params?.background_threshold !== undefined) formData.append('background_threshold', String(params.background_threshold));
+    if (params?.erode_size !== undefined) formData.append('erode_size', String(params.erode_size));
+    const response = await api.post('/bg-removal/', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+  },
+
+  get: async (id: string): Promise<BackgroundRemovalPreview> => {
+    const response = await api.get(`/bg-removal/${id}/`);
+    return response.data;
+  },
+
+  reprocess: async (id: string, params: BackgroundRemovalParams): Promise<BackgroundRemovalPreview> => {
+    const response = await api.post(`/bg-removal/${id}/reprocess/`, params);
     return response.data;
   },
 };

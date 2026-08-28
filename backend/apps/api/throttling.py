@@ -111,3 +111,23 @@ class LookupRateThrottle(UserRateThrottle):
     """
 
     scope = 'lookup'
+
+
+class BgRemovalRateThrottle(UserRateThrottle):
+    """
+    Throttle for background-removal preview requests.
+
+    Each one is a real CPU inference pass (a few seconds), not a cheap DB
+    query - limited more like an upload than a lookup. Staff and
+    moderators are exempt, matching UploadRateThrottle.
+    """
+
+    scope = 'bg_removal'
+
+    def allow_request(self, request, view):
+        user = request.user
+        if user and user.is_authenticated and (
+            user.is_staff or getattr(user, 'is_moderator', False)
+        ):
+            return True
+        return super().allow_request(request, view)

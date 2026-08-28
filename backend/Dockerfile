@@ -27,6 +27,14 @@ COPY requirements.txt /app/
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
+# Background-removal models (apps/media_tools) - baked into the image at
+# build time so runtime never depends on an outside service. /opt is
+# outside the ./backend:/app bind mount used in docker-compose.yml (dev
+# and prod both mount the source tree there), so this survives container
+# recreation regardless of that mount.
+ENV U2NET_HOME=/opt/rembg-models
+RUN python -c "from rembg import new_session; [new_session(m) for m in ('u2net', 'isnet-general-use', 'u2netp')]"
+
 # Baked in at build time so Sentry can tag events with the release that
 # produced them (see config/settings/production.py) - placed after the
 # pip install layer so it doesn't bust that cache on every commit.

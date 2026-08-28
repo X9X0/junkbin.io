@@ -269,6 +269,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'messaging': '30/minute',
     'lookup': '20/hour',
     'subscribe': '10/hour',
+    'bg_removal': '40/hour',
 }
 
 # =============================================================================
