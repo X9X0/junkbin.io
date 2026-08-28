@@ -1,0 +1,38 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0f; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #0d0d14; padding: 30px; border-radius: 8px; border: 1px solid #05d9e8; box-sizing: border-box;">
+
+        <!-- Brand header -->
+        <div style="font-size: 28px; font-weight: bold; margin-bottom: 5px; letter-spacing: 1px;">
+            <span style="color: #ffffff;">JUNK</span><span style="color: #05d9e8;">BIN</span><span style="color: #666b7a;">.IO</span>
+        </div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px; letter-spacing: 2px;">{% trans "NO USER SERVICEABLE PARTS INSIDE" %}</div>
+
+        <span style="display: inline-block; font-size: 11px; font-weight: bold; letter-spacing: 1px; color: #05d9e8; background-color: rgba(5, 217, 232, 0.1); border: 1px solid rgba(5, 217, 232, 0.5); border-radius: 3px; padding: 3px 10px; margin-bottom: 12px;">{{ week }}</span>
+        <span style="display: inline-block; font-size: 12px; color: #8a8a9a; margin-left: 8px;">{{ dates }}</span>
+
+        <h1 style="color: #ffffff; font-size: 22px; margin: 14px 0 16px;">{% trans "What's new on Junkbin.io" %}</h1>
+
+        <p style="color: #c0c0c0; font-size: 15px; line-height: 1.6; font-style: italic; border-left: 2px solid #2a2a3a; padding-left: 16px; margin: 0 0 20px;">{{ intro }}</p>
+
+        <ul style="margin: 0 0 24px; padding-left: 20px;">
+            {% for item in items %}
+            <li style="color: #e0e0e0; font-size: 14px; line-height: 1.6; margin-bottom: 8px;">{{ item }}</li>
+            {% endfor %}
+        </ul>
+
+        <a href="{{ site_url }}/news" style="display: inline-block; background-color: #05d9e8; color: #0a0a0f !important; padding: 12px 30px; text-decoration: none; border-radius: 4px; font-weight: bold; margin: 10px 0 20px;">{% trans "See the full timeline" %}</a>
+
+        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #2a2a3a; color: #666b7a; font-size: 12px;">
+            <p style="color: #666b7a; font-size: 12px;">{% trans "You're receiving this because you're a Junkbin.io member or subscribed to updates." %}</p>
+            <p style="color: #666b7a; font-size: 12px;">{% trans "Members can turn this off from Profile → Notification Preferences." %}</p>
+            <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
+        </div>
+    </div>
+</body>
+</html>

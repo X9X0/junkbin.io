@@ -1,0 +1,16 @@
+{% autoescape off %}Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+{{ week }} ({{ dates }})
+
+What's new on Junkbin.io
+
+{{ intro }}
+{% for item in items %}- {{ item }}
+{% endfor %}
+See the full timeline: {{ site_url }}/news
+
+---
+You're receiving this because you're a Junkbin.io member or subscribed to updates.
+Members can turn this off from Profile -> Notification Preferences.
+Junkbin.io
+{% endautoescape %}
