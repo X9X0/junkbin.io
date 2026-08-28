@@ -20,6 +20,7 @@ const Register = lazy(() => import('./pages/Register'));
 const PasswordReset = lazy(() => import('./pages/PasswordReset'));
 const PasswordResetConfirm = lazy(() => import('./pages/PasswordResetConfirm'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Unsubscribe = lazy(() => import('./pages/Unsubscribe'));
 const Moderation = lazy(() => import('./pages/Moderation'));
 const AnalyticsDashboard = lazy(() => import('./pages/AnalyticsDashboard'));
 const Community = lazy(() => import('./pages/Community'));
@@ -98,6 +99,7 @@ function App() {
                 <Route path="reset-password" element={<PasswordReset />} />
                 <Route path="reset-password/:uid/:token" element={<PasswordResetConfirm />} />
                 <Route path="verify-email/:token" element={<VerifyEmail />} />
+                <Route path="unsubscribe/:token" element={<Unsubscribe />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>

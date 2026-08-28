@@ -1,9 +1,11 @@
 import time
 from datetime import datetime, timedelta, timezone
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from apps.newsletter.models import Subscriber
+from apps.newsletter.tokens import make_unsubscribe_token
 from apps.users.models import User
 from utils.email import send_templated_email
 
@@ -27,18 +29,27 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        subscriber_emails = set(
-            Subscriber.objects.filter(is_active=True).values_list('email', flat=True)
-        )
-
-        user_emails = set()
+        # A registered User's identity takes priority over a same-email
+        # Subscriber row - see send_whats_new_email.py for why.
+        user_map = {}
         for user in User.objects.filter(is_active=True).exclude(email=''):
             prefs = getattr(user, 'preferences', None) or {}
             if prefs.get('email_notifications', True):
-                user_emails.add(user.email)
+                user_map[user.email] = str(user.id)
 
-        recipients = sorted(subscriber_emails | user_emails)
+        subscriber_map = {}
+        for sub in Subscriber.objects.filter(is_active=True):
+            if sub.email not in user_map:
+                subscriber_map[sub.email] = str(sub.id)
+
+        recipients = sorted(
+            [(email, 'user', uid) for email, uid in user_map.items()]
+            + [(email, 'subscriber', sid) for email, sid in subscriber_map.items()],
+            key=lambda r: r[0],
+        )
         count = len(recipients)
+        subscriber_emails = subscriber_map.keys()
+        user_emails = user_map.keys()
 
         if count == 0:
             self.stdout.write(self.style.WARNING('No recipients found.'))
@@ -49,7 +60,7 @@ class Command(BaseCommand):
                 f'DRY RUN — {count} recipient(s) would receive the launch email '
                 f'({len(subscriber_emails)} subscribers, {len(user_emails)} members):\n'
             ))
-            for email in recipients:
+            for email, _kind, _id in recipients:
                 self.stdout.write(f'  {email}')
             return
 
@@ -64,19 +75,21 @@ class Command(BaseCommand):
                 return
 
         days_until_opensauce = max((OPENSAUCE_START - datetime.now(timezone.utc)).days, 0)
-        context = {'days_until_opensauce': days_until_opensauce}
+        site_url = getattr(settings, 'SITE_URL', '')
 
         sent = 0
         failed = 0
 
-        for email in recipients:
+        for email, kind, identifier in recipients:
             self.stdout.write(f'Sending to {email}... ', ending='')
             try:
+                unsubscribe_url = f"{site_url}/unsubscribe/{make_unsubscribe_token(kind, identifier)}"
                 send_templated_email(
                     subject="Junkbin.io is live — and we'll be at OpenSauce 2026",
                     template_name='launch_announcement',
-                    context=context,
+                    context={'days_until_opensauce': days_until_opensauce},
                     recipient_list=[email],
+                    unsubscribe_url=unsubscribe_url,
                 )
                 self.stdout.write(self.style.SUCCESS('OK'))
                 sent += 1

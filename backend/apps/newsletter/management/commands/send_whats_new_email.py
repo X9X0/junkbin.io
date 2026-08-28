@@ -33,9 +33,11 @@ Each entry in "items"/"earlier" can be a plain string, or an object with
 import json
 import time
 
+from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.newsletter.models import Subscriber
+from apps.newsletter.tokens import make_unsubscribe_token
 from apps.users.models import User
 from utils.email import send_templated_email
 
@@ -76,17 +78,30 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         content = self._load_content(options)
 
-        subscriber_emails = set(
-            Subscriber.objects.filter(is_active=True).values_list('email', flat=True)
-        )
-        user_emails = set()
+        # A registered User's identity takes priority over a same-email
+        # Subscriber row: unsubscribing must flip the same email_notifications
+        # flag that governs their account (and everything else gated on it),
+        # or a stale Subscriber row would keep pulling them back into future
+        # sends via the User-side membership check.
+        user_map = {}
         for user in User.objects.filter(is_active=True).exclude(email=''):
             prefs = getattr(user, 'preferences', None) or {}
             if prefs.get('email_notifications', True):
-                user_emails.add(user.email)
+                user_map[user.email] = str(user.id)
 
-        recipients = sorted(subscriber_emails | user_emails)
+        subscriber_map = {}
+        for sub in Subscriber.objects.filter(is_active=True):
+            if sub.email not in user_map:
+                subscriber_map[sub.email] = str(sub.id)
+
+        recipients = sorted(
+            [(email, 'user', uid) for email, uid in user_map.items()]
+            + [(email, 'subscriber', sid) for email, sid in subscriber_map.items()],
+            key=lambda r: r[0],
+        )
         count = len(recipients)
+        subscriber_emails = subscriber_map.keys()
+        user_emails = user_map.keys()
 
         self.stdout.write(self.style.NOTICE(
             f"\nSubject: What's New on Junkbin.io — {content['week']}\n"
@@ -112,7 +127,7 @@ class Command(BaseCommand):
                 f'DRY RUN — {count} recipient(s) would receive this '
                 f'({len(subscriber_emails)} subscribers, {len(user_emails)} members):\n'
             ))
-            for email in recipients:
+            for email, _kind, _id in recipients:
                 self.stdout.write(f'  {email}')
             return
 
@@ -126,11 +141,13 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.WARNING('Aborted.'))
                 return
 
+        site_url = getattr(settings, 'SITE_URL', '')
         sent = 0
         failed = 0
-        for email in recipients:
+        for email, kind, identifier in recipients:
             self.stdout.write(f'Sending to {email}... ', ending='')
             try:
+                unsubscribe_url = f"{site_url}/unsubscribe/{make_unsubscribe_token(kind, identifier)}"
                 send_templated_email(
                     subject=f"What's New on Junkbin.io — {content['week']}",
                     template_name='whats_new',
@@ -142,6 +159,7 @@ class Command(BaseCommand):
                         'earlier': content.get('earlier'),
                     },
                     recipient_list=[email],
+                    unsubscribe_url=unsubscribe_url,
                 )
                 self.stdout.write(self.style.SUCCESS('OK'))
                 sent += 1

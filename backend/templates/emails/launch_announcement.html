@@ -66,6 +66,9 @@
 
         <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #2a2a3a; color: #666b7a; font-size: 12px;">
             <p style="color: #666b7a; font-size: 12px;">You're receiving this because you're a Junkbin.io member or subscribed to launch updates.</p>
+            {% if unsubscribe_url %}
+            <p style="color: #666b7a; font-size: 12px;"><a href="{{ unsubscribe_url }}" style="color: #8a8a9a;">Unsubscribe</a></p>
+            {% endif %}
             <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
         </div>
     </div>

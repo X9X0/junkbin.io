@@ -13,7 +13,8 @@ def send_templated_email(
     template_name,
     context,
     recipient_list,
-    from_email=None
+    from_email=None,
+    unsubscribe_url=None,
 ):
     """
     Send an email using a template.
@@ -24,6 +25,10 @@ def send_templated_email(
         context: Template context dictionary
         recipient_list: List of recipient email addresses
         from_email: Sender email (defaults to DEFAULT_FROM_EMAIL)
+        unsubscribe_url: If set, adds RFC 8058 one-click unsubscribe headers
+            (List-Unsubscribe / List-Unsubscribe-Post) and makes the URL
+            available to the templates as {{ unsubscribe_url }}. Only pass
+            this for bulk/promotional sends - not transactional email.
     """
     from_email = from_email or settings.DEFAULT_FROM_EMAIL
 
@@ -32,17 +37,25 @@ def send_templated_email(
     context['site_url'] = settings.SITE_URL if hasattr(settings, 'SITE_URL') else ''
     context['tagline'] = 'NO USER SERVICEABLE PARTS INSIDE'
     context['year'] = datetime.now().year
+    if unsubscribe_url:
+        context['unsubscribe_url'] = unsubscribe_url
 
     # Render templates
     text_content = render_to_string(f'emails/{template_name}.txt', context)
     html_content = render_to_string(f'emails/{template_name}.html', context)
+
+    headers = {}
+    if unsubscribe_url:
+        headers['List-Unsubscribe'] = f'<{unsubscribe_url}>'
+        headers['List-Unsubscribe-Post'] = 'List-Unsubscribe=One-Click'
 
     # Create email
     email = EmailMultiAlternatives(
         subject=subject,
         body=text_content,
         from_email=from_email,
-        to=recipient_list
+        to=recipient_list,
+        headers=headers or None,
     )
     email.attach_alternative(html_content, 'text/html')
 

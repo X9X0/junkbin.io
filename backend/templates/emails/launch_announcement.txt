@@ -26,4 +26,5 @@ Thanks for believing in the right to repair. We built this for people like you.
 
 ---
 You're receiving this because you're a Junkbin.io member or subscribed to launch updates.
-Junkbin.io
+{% if unsubscribe_url %}Unsubscribe: {{ unsubscribe_url }}
+{% endif %}Junkbin.io

@@ -41,7 +41,11 @@
 
         <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #2a2a3a; color: #666b7a; font-size: 12px;">
             <p style="color: #666b7a; font-size: 12px;">{% trans "You're receiving this because you're a Junkbin.io member or subscribed to updates." %}</p>
+            {% if unsubscribe_url %}
+            <p style="color: #666b7a; font-size: 12px;"><a href="{{ unsubscribe_url }}" style="color: #8a8a9a;">{% trans "Unsubscribe" %}</a></p>
+            {% else %}
             <p style="color: #666b7a; font-size: 12px;">{% trans "Members can turn this off from Profile → Notification Preferences." %}</p>
+            {% endif %}
             <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
         </div>
     </div>

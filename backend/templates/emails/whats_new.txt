@@ -14,6 +14,6 @@ EARLIER IMPROVEMENTS
 {% endfor %}{% endif %}
 ---
 You're receiving this because you're a Junkbin.io member or subscribed to updates.
-Members can turn this off from Profile -> Notification Preferences.
+{% if unsubscribe_url %}Unsubscribe: {{ unsubscribe_url }}{% else %}Members can turn this off from Profile -> Notification Preferences.{% endif %}
 Junkbin.io
 {% endautoescape %}

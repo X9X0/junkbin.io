@@ -828,6 +828,10 @@ export const newsletter = {
     const response = await api.post('/newsletter/subscribe/', { email, source });
     return response.data;
   },
+  unsubscribe: async (token: string): Promise<{ message: string; email: string }> => {
+    const response = await api.get(`/newsletter/unsubscribe/${token}/`);
+    return response.data;
+  },
 };
 
 // Self-hosted background removal preview (apps.media_tools)
