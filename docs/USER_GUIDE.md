@@ -44,6 +44,9 @@
   - [Starting a Conversation](#starting-a-conversation)
   - [Blocking Users](#blocking-users)
   - [Notification Preferences](#notification-preferences)
+- [Moderator Tools](#moderator-tools)
+  - [The Moderation Page](#the-moderation-page)
+  - [Retroactive Background Removal](#retroactive-background-removal)
 
 ---
 
@@ -379,6 +382,36 @@ Control your email notifications from **Profile** > **Notification Preferences**
 | Account | Security and account-related alerts |
 
 A **master switch** lets you disable all email notifications at once.
+
+---
+
+## Moderator Tools
+
+This section is for **moderators and staff** (accounts with `is_moderator` or `is_staff` set). Everything here is hidden entirely for regular users — no menu item, no button, no page — so if you don't see something described below, your account doesn't have the role for it.
+
+### The Moderation Page
+
+A **MOD** link appears in the header nav for moderators/staff, linking to `/moderation`. It has three tabs:
+
+**Pending Content** — everything currently awaiting approval, in one place. Filter by type: Products, Schematics, Firmware, Component Suggestions, Recipes, Images, Component Images, or Datasheets. Approve or reject each item directly from the list; rejecting removes it, approving makes it publicly visible immediately.
+
+> Trusted contributors (25+ approved contributions and 50+ reputation) skip this queue entirely — their submissions publish instantly. This tab only ever shows content from everyone else.
+
+**Reviews** — the outcome log for the 3-strike content-warning system: filter by Cleared, Warning Issued, or Suspended to see what action was taken on a flagged user and why.
+
+**Reports** — content reports filed by users, filterable by status (pending, resolved valid, resolved invalid, dismissed) and by reason. Opening a report shows the reported content and lets you resolve it.
+
+### Retroactive Background Removal
+
+Product and component photos automatically get their background removed on upload for hero/package-style shots (see [Uploading Images](#uploading-images)) — but that only covers images uploaded *after* the feature shipped. For older images, or ones a non-eligible uploader skipped, moderators/staff get a manual tool right on the image itself:
+
+1. Open a product or component's **Images** tab.
+2. Under any eligible image (Product "Overview" or Component "Package Photo" type) that hasn't been processed yet, click **Remove Background**.
+3. The same before/after compare slider and Advanced controls (model choice, edge refinement) from the upload flow appear — this runs against the image already on the server, no re-upload needed.
+4. Click **Apply to Live Image** to commit it (the change is immediate and public), or **Discard** to walk away with nothing changed.
+5. Once applied, an **Undo Background Removal** link takes the button's place — restoring the exact original file if the result turns out to be wrong.
+
+Two images are never offered the tool at all, even to moderators: ones that already had it applied, and ones that already have a transparent background (detected automatically — there's nothing useful for "background removal" to do to an image with no background left).
 
 ---
 
