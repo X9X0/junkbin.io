@@ -70,7 +70,7 @@ class TestCreate:
         response = api_client.post(list_url(), {'original': _test_image_file()}, format='multipart')
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data['status'] == 'pending'
-        assert response.data['model_name'] == 'u2net'
+        assert response.data['model_name'] == 'isnet-general-use'
         mock_delay.assert_called_once()
 
         preview = BackgroundRemovalPreview.objects.get(id=response.data['id'])

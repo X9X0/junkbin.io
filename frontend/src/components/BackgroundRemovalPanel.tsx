@@ -18,7 +18,7 @@ export interface BgRemovalState {
 }
 
 export const DEFAULT_BG_REMOVAL_PARAMS = {
-  modelName: 'u2net',
+  modelName: 'isnet-general-use',
   alphaMatting: false,
   foregroundThreshold: 240,
   backgroundThreshold: 10,

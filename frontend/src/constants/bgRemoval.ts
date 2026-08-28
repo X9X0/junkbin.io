@@ -5,8 +5,8 @@ export interface ModelOption {
 }
 
 export const MODEL_OPTIONS: ModelOption[] = [
-  { value: 'u2net', label: 'General purpose (default)' },
-  { value: 'isnet-general-use', label: 'General purpose (sharper edges, newer model)' },
+  { value: 'isnet-general-use', label: 'General purpose (sharper edges, newer model) (default)' },
+  { value: 'u2net', label: 'General purpose (older model)' },
   { value: 'u2netp', label: 'Fast/lightweight (lower quality)' },
 ];
 

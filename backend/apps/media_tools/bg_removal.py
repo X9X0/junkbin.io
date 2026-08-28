@@ -20,12 +20,12 @@ from apps.products.models import AlphaToBlack
 # Curated subset of rembg's bundled models - general-purpose only, nothing
 # specialized for anime/cloth/etc. that wouldn't apply to component photos.
 MODEL_CHOICES = [
-    ('u2net', 'General purpose (default)'),
-    ('isnet-general-use', 'General purpose (sharper edges, newer model)'),
+    ('isnet-general-use', 'General purpose (sharper edges, newer model) (default)'),
+    ('u2net', 'General purpose (older model)'),
     ('u2netp', 'Fast/lightweight (lower quality)'),
 ]
 MODEL_NAMES = {value for value, _ in MODEL_CHOICES}
-DEFAULT_MODEL = 'u2net'
+DEFAULT_MODEL = 'isnet-general-use'
 
 _sessions = {}
 
