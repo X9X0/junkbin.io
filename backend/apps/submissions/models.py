@@ -138,6 +138,17 @@ class Submission(models.Model):
         if self.submitted_by:
             self.submitted_by.increment_contribution()
 
+        if self.submitted_by:
+            from apps.notifications.services import notify
+            from apps.notifications.models import Notification
+            notify(
+                self.submitted_by, Notification.Category.SUBMISSION_APPROVED,
+                title='Your submission was approved',
+                body=notes,
+                url=f'/products/{self.product.slug}' if self.product else '',
+                actor=reviewer,
+            )
+
     def reject(self, reviewer, notes=''):
         """Reject this submission."""
         from django.utils import timezone
@@ -147,6 +158,17 @@ class Submission(models.Model):
         self.reviewed_at = timezone.now()
         self.review_notes = notes
         self.save()
+
+        if self.submitted_by:
+            from apps.notifications.services import notify
+            from apps.notifications.models import Notification
+            notify(
+                self.submitted_by, Notification.Category.SUBMISSION_REJECTED,
+                title='Your submission was rejected',
+                body=notes,
+                url='/my-submissions',
+                actor=reviewer,
+            )
 
     def request_changes(self, reviewer, notes=''):
         """Request changes to this submission."""

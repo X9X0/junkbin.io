@@ -185,6 +185,7 @@ urlpatterns = [
     path('', include('apps.submissions.urls')),
     path('', include('apps.reports.urls')),
     path('', include('apps.messaging.urls')),
+    path('', include('apps.notifications.urls')),
     path('', include('apps.junkbin.urls')),
     path('', include('apps.recipes.urls')),
     path('', include('apps.media_tools.urls')),

@@ -26,6 +26,7 @@ const AnalyticsDashboard = lazy(() => import('./pages/AnalyticsDashboard'));
 const Community = lazy(() => import('./pages/Community'));
 const SwapShop = lazy(() => import('./pages/SwapShop'));
 const Messages = lazy(() => import('./pages/Messages'));
+const Notifications = lazy(() => import('./pages/Notifications'));
 const MessageThread = lazy(() => import('./pages/MessageThread'));
 const NewConversation = lazy(() => import('./pages/NewConversation'));
 const UserProfile = lazy(() => import('./pages/UserProfile'));
@@ -80,6 +81,7 @@ function App() {
                 <Route path="messages" element={<Messages />} />
                 <Route path="messages/new" element={<NewConversation />} />
                 <Route path="messages/:conversationId" element={<MessageThread />} />
+                <Route path="notifications" element={<Notifications />} />
                 <Route path="recipes/submit" element={<SubmitRecipe />} />
                 <Route path="recipes/:id" element={<RecipeDetail />} />
                 <Route path="recipes" element={<Recipes />} />

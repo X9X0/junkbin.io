@@ -283,8 +283,8 @@ class Product(models.Model):
 
     @property
     def primary_image(self):
-        """Return the primary/overview image."""
-        return self.images.filter(image_type='overview').first()
+        """Return the overview image, falling back to any other submitted image."""
+        return self.images.filter(image_type='overview').first() or self.images.first()
 
     def increment_view_count(self):
         """Increment view count (use F() to avoid race conditions)."""

@@ -55,3 +55,17 @@ def check_strike_threshold(sender, instance, created, **kwargs):
             ).order_by('-created_at')[:10]
 
             review.related_reports.set(recent_reports)
+
+            # In-app + push notification for moderators
+            from django.contrib.auth import get_user_model
+            from django.db.models import Q
+            from apps.notifications.services import notify_staff
+            from apps.notifications.models import Notification
+            User = get_user_model()
+            moderators = User.objects.filter(Q(is_staff=True) | Q(is_moderator=True))
+            notify_staff(
+                moderators, Notification.Category.STRIKE_REVIEW,
+                title=f'Strike review needed: {user.username}',
+                body=f'{user.username} has reached {strike_count} strikes.',
+                url='/moderation',
+            )

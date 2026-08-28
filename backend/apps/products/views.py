@@ -41,6 +41,21 @@ from apps.api.throttling import SubmissionRateThrottle, UploadRateThrottle
 from apps.api.metrics import submission_counter
 
 
+def _notify_content_review(user, content_label, url, approved, notes=''):
+    """Shared in-app + push notification for the approve/reject actions
+    below -- pairs with the existing notify_contribution_reviewed email task."""
+    if not user:
+        return
+    from apps.notifications.services import notify
+    from apps.notifications.models import Notification
+    if approved:
+        notify(user, Notification.Category.CONTENT_APPROVED,
+               title=f'{content_label} approved', body=notes, url=url)
+    else:
+        notify(user, Notification.Category.CONTENT_REJECTED,
+               title=f'{content_label} rejected', body=notes, url=url)
+
+
 @extend_schema_view(
     list=extend_schema(description='List all approved products'),
     retrieve=extend_schema(description='Get detailed product information'),
@@ -787,6 +802,18 @@ class ProductViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         comment = serializer.save()
+
+        if product.created_by and product.created_by != comment.author:
+            from apps.notifications.services import notify
+            from apps.notifications.models import Notification
+            notify(
+                product.created_by, Notification.Category.PRODUCT_COMMENT,
+                title=f'New comment on "{product}" from {comment.author.username}',
+                body=comment.content[:200],
+                url=f'/products/{product.slug}',
+                actor=comment.author,
+            )
+
         return Response(
             ProductCommentSerializer(comment).data,
             status=status.HTTP_201_CREATED
@@ -926,6 +953,8 @@ class ProductViewSet(viewsets.ModelViewSet):
                 str(product.created_by.pk), 'Product', str(product),
                 f'{settings.FRONTEND_URL}/products/{product.pk}', True,
             )
+            _notify_content_review(product.created_by, f'Your product "{product}"',
+                                    f'/products/{product.slug}', approved=True)
 
         return Response({'detail': 'Product approved.'})
 
@@ -942,6 +971,9 @@ class ProductViewSet(viewsets.ModelViewSet):
                 str(product.created_by.pk), 'Product', str(product),
                 '', False, request.data.get('notes', ''),
             )
+            _notify_content_review(product.created_by, f'Your product "{product}"',
+                                    '/my-submissions', approved=False,
+                                    notes=request.data.get('notes', ''))
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1148,6 +1180,8 @@ class SchematicViewSet(viewsets.ModelViewSet):
                 str(schematic.uploaded_by.pk), 'Schematic', schematic.title,
                 f'{settings.FRONTEND_URL}/products/{schematic.product_id}', True,
             )
+            _notify_content_review(schematic.uploaded_by, f'Your schematic "{schematic.title}"',
+                                    f'/products/{schematic.product.slug}', approved=True)
 
         return Response({'detail': 'Schematic approved.'})
 
@@ -1164,6 +1198,9 @@ class SchematicViewSet(viewsets.ModelViewSet):
                 str(schematic.uploaded_by.pk), 'Schematic', schematic.title,
                 '', False, request.data.get('notes', ''),
             )
+            _notify_content_review(schematic.uploaded_by, f'Your schematic "{schematic.title}"',
+                                    '/my-submissions', approved=False,
+                                    notes=request.data.get('notes', ''))
         schematic.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1258,6 +1295,8 @@ class FirmwareViewSet(viewsets.ModelViewSet):
                 str(firmware.uploaded_by.pk), 'Firmware', firmware.title,
                 f'{settings.FRONTEND_URL}/products/{firmware.product_id}', True,
             )
+            _notify_content_review(firmware.uploaded_by, f'Your firmware "{firmware.title}"',
+                                    f'/products/{firmware.product.slug}', approved=True)
 
         return Response({'detail': 'Firmware approved.'})
 
@@ -1274,6 +1313,9 @@ class FirmwareViewSet(viewsets.ModelViewSet):
                 str(firmware.uploaded_by.pk), 'Firmware', firmware.title,
                 '', False, request.data.get('notes', ''),
             )
+            _notify_content_review(firmware.uploaded_by, f'Your firmware "{firmware.title}"',
+                                    '/my-submissions', approved=False,
+                                    notes=request.data.get('notes', ''))
         firmware.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1345,6 +1387,9 @@ class ComponentSuggestionViewSet(viewsets.ModelViewSet):
                 f'{suggestion.part_number} ({suggestion.reference_designator or "?"})',
                 f'{settings.FRONTEND_URL}/components/{component.id}/products', True,
             )
+            _notify_content_review(
+                credited_user, f'Your component suggestion "{suggestion.part_number}"',
+                f'/products/{suggestion.product.slug}', approved=True)
 
         suggestion_id = str(suggestion.id)
         suggestion.delete()
@@ -1369,6 +1414,9 @@ class ComponentSuggestionViewSet(viewsets.ModelViewSet):
                 f'{suggestion.part_number or "?"} ({suggestion.reference_designator or "?"})',
                 '', False, request.data.get('notes', ''),
             )
+            _notify_content_review(
+                suggestion.uploaded_by, f'Your component suggestion "{suggestion.part_number or "?"}"',
+                '/my-submissions', approved=False, notes=request.data.get('notes', ''))
         suggestion.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1407,6 +1455,8 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
                 str(image.uploaded_by.pk), 'Image', image.caption or f'{image.image_type} image',
                 f'{settings.FRONTEND_URL}/products/{image.product_id}', True,
             )
+            _notify_content_review(image.uploaded_by, 'Your image',
+                                    f'/products/{image.product.slug}', approved=True)
 
         return Response({'detail': 'Image approved.'})
 
@@ -1423,5 +1473,8 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
                 str(image.uploaded_by.pk), 'Image', image.caption or f'{image.image_type} image',
                 '', False, request.data.get('notes', ''),
             )
+            _notify_content_review(image.uploaded_by, 'Your image',
+                                    '/my-submissions', approved=False,
+                                    notes=request.data.get('notes', ''))
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

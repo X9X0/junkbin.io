@@ -182,12 +182,18 @@ class TestProductPrimaryImage:
 
         assert product.primary_image == overview
 
-    def test_primary_image_none_when_no_overview(self, product_factory, product_image_factory):
-        """primary_image returns None when no overview image."""
+    def test_primary_image_falls_back_when_no_overview(self, product_factory, product_image_factory):
+        """primary_image falls back to any other image when no overview image exists."""
         product = product_factory()
 
         # Only create non-overview images
-        product_image_factory(product=product, image_type='pcb_top')
+        pcb_top = product_image_factory(product=product, image_type='pcb_top')
+
+        assert product.primary_image == pcb_top
+
+    def test_primary_image_none_when_no_images(self, product_factory):
+        """primary_image returns None when the product has no images at all."""
+        product = product_factory()
 
         assert product.primary_image is None
 

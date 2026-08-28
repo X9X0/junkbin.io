@@ -69,6 +69,24 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             return [SubmissionRateThrottle()]
         return super().get_throttles()
 
+    def perform_create(self, serializer):
+        submission = serializer.save()
+
+        if submission.status == Submission.Status.PENDING:
+            from django.contrib.auth import get_user_model
+            from django.db.models import Q
+            from apps.notifications.services import notify_staff
+            from apps.notifications.models import Notification
+            User = get_user_model()
+            moderators = User.objects.filter(Q(is_staff=True) | Q(is_moderator=True))
+            notify_staff(
+                moderators, Notification.Category.SUBMISSION_PENDING,
+                title='New submission pending review',
+                body=submission.changes_summary,
+                url='/moderation',
+                actor=submission.submitted_by,
+            )
+
     @action(detail=True, methods=['post'])
     def review(self, request, pk=None):
         """Review a submission (approve/reject/request changes)."""
@@ -136,6 +154,21 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         comment = serializer.save()
+
+        # Notify whichever of submitter/reviewer didn't post this comment
+        author = request.user
+        other = submission.reviewed_by if author == submission.submitted_by else submission.submitted_by
+        if other and other != author:
+            from apps.notifications.services import notify
+            from apps.notifications.models import Notification
+            notify(
+                other, Notification.Category.SUBMISSION_COMMENT,
+                title=f'New comment on your submission from {author.username}',
+                body=comment.content[:200],
+                url='/my-submissions',
+                actor=author,
+            )
+
         return Response(
             SubmissionCommentSerializer(comment).data,
             status=status.HTTP_201_CREATED

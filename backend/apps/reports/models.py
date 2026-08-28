@@ -266,3 +266,12 @@ class UserReview(models.Model):
         if status in (self.Status.WARNING_ISSUED, self.Status.RESTRICTED, self.Status.SUSPENDED):
             from .tasks import notify_account_action
             notify_account_action.delay(str(self.pk))
+
+            from apps.notifications.services import notify
+            from apps.notifications.models import Notification
+            notify(
+                self.user, Notification.Category.ACCOUNT_ACTION,
+                title='Account action taken on your account',
+                body=action_taken or self.get_status_display(),
+                url='/profile',
+            )

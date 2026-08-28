@@ -83,6 +83,22 @@ class ReportViewSet(viewsets.ModelViewSet):
             'reporter': report.reporter.username if report.reporter else 'Anonymous',
         })
 
+        # In-app + push notification for moderators
+        from django.contrib.auth import get_user_model
+        from django.db.models import Q
+        from apps.notifications.services import notify_staff
+        from apps.notifications.models import Notification
+        User = get_user_model()
+        moderators = User.objects.filter(Q(is_staff=True) | Q(is_moderator=True))
+        notify_staff(
+            moderators, Notification.Category.REPORT_FILED,
+            title=f'New report: {report.get_reason_display()}',
+            body=f'Filed against {report.content_type.model} by '
+                 f'{report.reporter.username if report.reporter else "Anonymous"}',
+            url='/moderation',
+            actor=report.reporter,
+        )
+
     @action(detail=True, methods=['post'])
     def resolve(self, request, pk=None):
         """Resolve a report."""

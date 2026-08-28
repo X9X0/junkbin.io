@@ -51,6 +51,9 @@ export default defineConfig({
       workbox: {
         skipWaiting: true,
         clientsClaim: true,
+        // Web Push (push/notificationclick) handlers, kept in a separate
+        // file rather than switching to the injectManifest strategy.
+        importScripts: ['/push-sw.js'],
         navigateFallbackDenylist: [/^\/media\//, /^\/static\//, /^\/api\//, /^\/admin\//],
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [

@@ -25,6 +25,7 @@ import type {
   Conversation,
   Message,
   UserBlock,
+  AppNotification,
   UserPreferences,
   JunkbinItem,
   JunkbinSummary,
@@ -703,6 +704,42 @@ export const messaging = {
 
   unblockUser: async (blockId: string): Promise<void> => {
     await api.delete(`/messages/blocks/${blockId}/`);
+  },
+};
+
+// Notifications endpoints
+export const notifications = {
+  list: async (params?: any): Promise<PaginatedResponse<AppNotification>> => {
+    const response = await api.get('/notifications/', { params });
+    return response.data;
+  },
+
+  unreadCount: async (): Promise<{ count: number }> => {
+    const response = await api.get('/notifications/unread-count/');
+    return response.data;
+  },
+
+  markRead: async (id: string): Promise<AppNotification> => {
+    const response = await api.post(`/notifications/${id}/mark-read/`);
+    return response.data;
+  },
+
+  markAllRead: async (): Promise<{ updated: number }> => {
+    const response = await api.post('/notifications/mark-all-read/');
+    return response.data;
+  },
+
+  vapidPublicKey: async (): Promise<{ key: string }> => {
+    const response = await api.get('/notifications/vapid-public-key/');
+    return response.data;
+  },
+
+  pushSubscribe: async (subscription: PushSubscriptionJSON): Promise<void> => {
+    await api.post('/notifications/push-subscribe/', subscription);
+  },
+
+  pushUnsubscribe: async (endpoint: string): Promise<void> => {
+    await api.post('/notifications/push-unsubscribe/', { endpoint });
   },
 };
 

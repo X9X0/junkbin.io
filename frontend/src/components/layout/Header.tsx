@@ -1,12 +1,14 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Award, Archive, Hammer, BookOpen, BarChart3, Store, Globe, Check } from 'lucide-react';
+import { Search, Menu, X, User, LogOut, Plus, Wrench, Package, Cpu, FileText, Loader2, Shield, Trophy, MessageSquare, Bell, Award, Archive, Hammer, BookOpen, BarChart3, Store, Globe, Check } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { search, auth as authApi } from '../../api/endpoints';
 import { useAuth } from '../../context/AuthContext';
 import { useUnreadCount } from '../../hooks/useUnreadCount';
 import { usePendingCount } from '../../hooks/usePendingCount';
+import { useNotificationCount } from '../../hooks/useNotificationCount';
+import NotificationBell from './NotificationBell';
 import clsx from 'clsx';
 
 const LANGUAGES = [
@@ -38,6 +40,7 @@ export default function Header() {
   const queryClient = useQueryClient();
   const unreadCount = useUnreadCount();
   const pendingCount = usePendingCount();
+  const notificationCount = useNotificationCount();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -341,6 +344,7 @@ export default function Header() {
                     </span>
                   )}
                 </Link>
+                <NotificationBell />
                 <div className="relative group">
                   <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                     <User className="h-5 w-5" />
@@ -458,6 +462,10 @@ export default function Header() {
                     </span>
                   )}
                 </Link>
+                <NotificationBell
+                  iconClassName="h-5 w-5"
+                  badgeClassName="absolute top-0.5 right-0.5 min-w-[14px] h-3.5 flex items-center justify-center rounded-full bg-cyber-pink text-[9px] font-mono font-bold text-white px-0.5"
+                />
                 <Link
                   to="/profile"
                   className="p-2 text-gray-400 hover:text-cyber-cyan transition-colors"
@@ -557,6 +565,21 @@ export default function Header() {
                 {unreadCount > 0 && (
                   <span className="ml-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
                     {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </Link>
+            )}
+            {isAuthenticated && (
+              <Link
+                to="/notifications"
+                className="py-2 font-mono text-sm text-gray-400 hover:text-cyber-cyan flex items-center gap-1"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Bell className="h-3.5 w-3.5" />
+                {t('nav.notifications', 'Notifications')}
+                {notificationCount > 0 && (
+                  <span className="ml-1 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-cyber-pink text-[10px] font-mono font-bold text-white px-1">
+                    {notificationCount > 99 ? '99+' : notificationCount}
                   </span>
                 )}
               </Link>
