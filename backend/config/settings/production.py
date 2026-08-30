@@ -268,6 +268,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'search': '60/minute',
     'messaging': '30/minute',
     'polling': '120/minute',
+    'password_change': '10/minute',
     'lookup': '20/hour',
     'subscribe': '10/hour',
     'bg_removal': '40/hour',

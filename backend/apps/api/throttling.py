@@ -149,3 +149,18 @@ class BgRemovalRateThrottle(UserRateThrottle):
         ):
             return True
         return super().allow_request(request, view)
+
+
+class PasswordChangeRateThrottle(UserRateThrottle):
+    """
+    Throttle for changing an already-authenticated user's own password.
+
+    Kept separate from the shared 'auth' scope (login, password reset,
+    OAuth, account delete, etc.): that scope's rate is tuned for brute-
+    force resistance on unauthenticated/security-sensitive actions, and
+    bumping it to be more lenient for password-change retries would have
+    loosened login throttling right along with it - a mistake of the same
+    shape as the polling/PollingRateThrottle split above.
+    """
+
+    scope = 'password_change'
