@@ -8,7 +8,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.http import HttpResponse, Http404
 from django.utils import timezone
+from django.utils.http import content_disposition_header
 
 from .models import Conversation, Message, MessageAttachment, UserBlock
 from .serializers import (
@@ -331,6 +333,41 @@ class UnreadCountView(APIView):
         ).exclude(sender=request.user).count()
 
         return Response({'unread_count': count})
+
+
+class MessageAttachmentDownloadView(APIView):
+    """
+    GET /messages/attachments/{id}/download/
+
+    Serves a message attachment only to the two participants of its
+    conversation. This view does the authorization check only - the actual
+    file bytes are streamed by nginx via X-Accel-Redirect, whose
+    corresponding location is marked `internal` so the underlying
+    /media/messages/ path can't be requested directly.
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            attachment = MessageAttachment.objects.select_related(
+                'message__conversation'
+            ).get(pk=pk)
+        except MessageAttachment.DoesNotExist:
+            raise Http404
+
+        conversation = attachment.message.conversation
+        if request.user not in (conversation.participant_1, conversation.participant_2):
+            # 404, not 403 - don't confirm the attachment exists to non-participants.
+            raise Http404
+
+        response = HttpResponse()
+        response['Content-Type'] = attachment.file_type or 'application/octet-stream'
+        response['Content-Disposition'] = content_disposition_header(
+            False, attachment.original_filename
+        )
+        response['X-Accel-Redirect'] = f'/media/{attachment.file.name}'
+        return response
 
 
 class UserBlockViewSet(viewsets.ModelViewSet):

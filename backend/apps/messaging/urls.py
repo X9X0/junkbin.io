@@ -6,6 +6,7 @@ from rest_framework.routers import DefaultRouter
 
 from .views import (
     ConversationViewSet,
+    MessageAttachmentDownloadView,
     SendMessageView,
     UnreadCountView,
     UserBlockViewSet,
@@ -19,4 +20,9 @@ urlpatterns = [
     path('', include(router.urls)),
     path('messages/send/', SendMessageView.as_view(), name='message-send'),
     path('messages/unread-count/', UnreadCountView.as_view(), name='unread-count'),
+    path(
+        'messages/attachments/<uuid:pk>/download/',
+        MessageAttachmentDownloadView.as_view(),
+        name='attachment-download',
+    ),
 ]
