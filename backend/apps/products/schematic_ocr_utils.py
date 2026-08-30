@@ -148,7 +148,8 @@ def build_candidates_from_schematic_file(file_obj, file_type):
         if page_count > MAX_OCR_PAGES:
             raise ValueError(
                 f'PDF has {page_count} pages - OCR extraction is limited to '
-                f'{MAX_OCR_PAGES} pages. Try extracting a smaller page range first.'
+                f'{MAX_OCR_PAGES} pages. Split the PDF and upload a smaller '
+                f'excerpt as its own schematic if you need to OCR more of it.'
             )
 
         pages = pdf2image.convert_from_bytes(raw, dpi=300)
