@@ -32,6 +32,14 @@ RUN pip install --upgrade pip && \
 # outside the ./backend:/app bind mount used in docker-compose.yml (dev
 # and prod both mount the source tree there), so this survives container
 # recreation regardless of that mount.
+#
+# This only pre-fetches the ONNX model weight files - it deliberately
+# doesn't also run remove() to "warm up" pymatting/numba. Their alpha-
+# matting kernels use @njit(<explicit signature>) with no cache=True, so
+# numba recompiles them from scratch (~100s of real CPU time) on every
+# fresh process unconditionally; there's no cache for a build-time warmup
+# to bake in. See apps/media_tools/bg_removal.py for how that's actually
+# handled (lazy import, kept out of Django's ordinary startup path).
 ENV U2NET_HOME=/opt/rembg-models
 RUN python -c "from rembg import new_session; [new_session(m) for m in ('u2net', 'isnet-general-use', 'u2netp')]"
 
