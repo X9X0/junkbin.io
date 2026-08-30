@@ -274,16 +274,23 @@ class Product(models.Model):
 
         super().save(*args, **kwargs)
 
-        # Update search vector after save (uses SQL so needs pk)
-        Product.objects.filter(pk=self.pk).update(
-            search_vector=(
-                SearchVector('manufacturer', weight='A') +
-                SearchVector('model_number', weight='A') +
-                SearchVector('fcc_id', weight='B') +
-                SearchVector('description', weight='C') +
-                SearchVector('teardown_notes', weight='D')
+        # Update search vector after save (uses SQL so needs pk) - but only
+        # when a field it's actually built from changed. Moderation actions
+        # like approve/reject call save(update_fields=['is_approved']) on
+        # every hot path, and recomputing a 5-field to_tsvector from scratch
+        # on every one of those was pure waste.
+        update_fields = kwargs.get('update_fields')
+        search_fields = {'manufacturer', 'model_number', 'fcc_id', 'description', 'teardown_notes'}
+        if update_fields is None or search_fields & set(update_fields):
+            Product.objects.filter(pk=self.pk).update(
+                search_vector=(
+                    SearchVector('manufacturer', weight='A') +
+                    SearchVector('model_number', weight='A') +
+                    SearchVector('fcc_id', weight='B') +
+                    SearchVector('description', weight='C') +
+                    SearchVector('teardown_notes', weight='D')
+                )
             )
-        )
 
     @property
     def primary_image(self):

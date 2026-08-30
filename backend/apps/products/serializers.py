@@ -119,28 +119,40 @@ class ProductListSerializer(serializers.ModelSerializer):
 
     def get_primary_image(self, obj):
         images = self._visible_images(obj)
-        image = images.filter(image_type='overview').first() or images.first()
+        overview = [img for img in images if img.image_type == 'overview']
+        image = (overview or images or [None])[0]
         if image:
             return ProductImageSerializer(image, context=self.context).data
         return None
 
     def _visible_images(self, obj):
+        # obj.images.all() with no further filter/exclude reuses the
+        # prefetch_related('images') cache from the ViewSet's queryset -
+        # filtering here in Python (not via .filter(), which would issue a
+        # fresh query and silently discard that prefetch) keeps this at
+        # zero extra queries per product instead of one.
         request = self.context.get('request')
-        qs = obj.images.all()
+        images = list(obj.images.all())
         if request and hasattr(request, 'user') and request.user.is_staff:
-            return qs
-        return qs.filter(is_approved=True)
+            return images
+        return [img for img in images if img.is_approved]
 
     def get_image_count(self, obj):
-        return self._visible_images(obj).count()
+        return len(self._visible_images(obj))
 
     def get_schematic_count(self, obj):
+        if hasattr(obj, 'schematic_count_annotated'):
+            return obj.schematic_count_annotated
         return obj.schematics.filter(is_approved=True).count()
 
     def get_firmware_count(self, obj):
+        if hasattr(obj, 'firmware_count_annotated'):
+            return obj.firmware_count_annotated
         return obj.firmware_files.filter(is_approved=True).count()
 
     def get_comment_count(self, obj):
+        if hasattr(obj, 'comment_count_annotated'):
+            return obj.comment_count_annotated
         return obj.comments.count()
 
 
@@ -183,11 +195,13 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         ]
 
     def _visible_images(self, obj):
+        # See ProductListSerializer._visible_images - same prefetch-cache
+        # reasoning applies here.
         request = self.context.get('request')
-        qs = obj.images.all()
+        images = list(obj.images.all())
         if request and hasattr(request, 'user') and request.user.is_staff:
-            return qs
-        return qs.filter(is_approved=True)
+            return images
+        return [img for img in images if img.is_approved]
 
     def get_images(self, obj):
         return ProductImageSerializer(
@@ -195,18 +209,26 @@ class ProductDetailSerializer(serializers.ModelSerializer):
         ).data
 
     def get_image_count(self, obj):
-        return self._visible_images(obj).count()
+        return len(self._visible_images(obj))
 
     def get_schematic_count(self, obj):
+        if hasattr(obj, 'schematic_count_annotated'):
+            return obj.schematic_count_annotated
         return obj.schematics.filter(is_approved=True).count()
 
     def get_firmware_count(self, obj):
+        if hasattr(obj, 'firmware_count_annotated'):
+            return obj.firmware_count_annotated
         return obj.firmware_files.filter(is_approved=True).count()
 
     def get_comment_count(self, obj):
+        if hasattr(obj, 'comment_count_annotated'):
+            return obj.comment_count_annotated
         return obj.comments.count()
 
     def get_repair_report_count(self, obj):
+        if hasattr(obj, 'repair_report_count_annotated'):
+            return obj.repair_report_count_annotated
         return obj.repair_reports.filter(is_approved=True).count()
 
 
@@ -507,6 +529,11 @@ class RepairReportSerializer(serializers.ModelSerializer):
         return None
 
     def get_user_vote(self, obj):
+        # Use prefetched current_user_votes if available (see
+        # ProductViewSet.repairs) instead of a query per report.
+        if hasattr(obj, 'current_user_votes'):
+            votes = obj.current_user_votes
+            return votes[0].vote_type if votes else None
         request = self.context.get('request')
         if not request or not request.user.is_authenticated:
             return None

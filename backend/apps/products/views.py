@@ -74,7 +74,25 @@ class ProductViewSet(viewsets.ModelViewSet):
     ViewSet for product CRUD operations.
     """
 
-    queryset = Product.objects.select_related('created_by').prefetch_related('images')
+    # schematic/firmware/comment/repair-report counts are annotated here
+    # (rather than queried per-object in the serializer) specifically to
+    # avoid an N+1: ProductListSerializer's count fields read these
+    # annotations when present. distinct=True on each is required - with
+    # three Count() annotations joining three different reverse relations
+    # in one query, Django's join fan-out would otherwise multiply rows
+    # and inflate the counts.
+    queryset = Product.objects.select_related('created_by').prefetch_related('images').annotate(
+        schematic_count_annotated=models.Count(
+            'schematics', filter=models.Q(schematics__is_approved=True), distinct=True
+        ),
+        firmware_count_annotated=models.Count(
+            'firmware_files', filter=models.Q(firmware_files__is_approved=True), distinct=True
+        ),
+        comment_count_annotated=models.Count('comments', distinct=True),
+        repair_report_count_annotated=models.Count(
+            'repair_reports', filter=models.Q(repair_reports__is_approved=True), distinct=True
+        ),
+    )
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['manufacturer', 'model_number', 'description', 'fcc_id']
@@ -399,6 +417,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         file = request.FILES.get('file')
         if not file:
             return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        if file.size > 5 * 1024 * 1024:
+            return Response({'detail': 'File too large (max 5MB).'}, status=status.HTTP_400_BAD_REQUEST)
 
         column_mapping_raw = request.data.get('column_mapping', '{}')
         if isinstance(column_mapping_raw, str):
@@ -430,16 +450,37 @@ class ProductViewSet(viewsets.ModelViewSet):
         skipped = 0
         row_errors = []
 
+        # Validate every row up front (no DB access) so the batch prefetch
+        # below can be sized to exactly what the file needs, rather than
+        # querying per row - a get_or_create() per row was the N+1 here for
+        # any BOM re-importing components that already exist (a common
+        # case: re-uploading a revised or similar-family BOM).
+        valid_rows = []
+        for row_num, row in enumerate(reader, start=2):  # row 1 = header
+            cleaned, errors = validate_row(row, column_mapping)
+            if errors:
+                row_errors.append({'row': row_num, 'errors': errors, 'data': dict(row)})
+                skipped += 1
+                continue
+            valid_rows.append(cleaned)
+
+        manufacturers = {c['manufacturer'].strip() for c in valid_rows}
+        part_numbers = {c['part_number'].strip() for c in valid_rows}
+        existing_components = {
+            (c.manufacturer, c.part_number): c
+            for c in Component.objects.filter(
+                manufacturer__in=manufacturers, part_number__in=part_numbers
+            )
+        }
+        already_linked_ids = set(
+            ProductComponent.objects.filter(
+                product=product, component__in=existing_components.values()
+            ).values_list('component_id', flat=True)
+        )
+
         sid = transaction.savepoint()
         try:
-            for row_num, row in enumerate(reader, start=2):  # row 1 = header
-                cleaned, errors = validate_row(row, column_mapping)
-
-                if errors:
-                    row_errors.append({'row': row_num, 'errors': errors, 'data': dict(row)})
-                    skipped += 1
-                    continue
-
+            for cleaned in valid_rows:
                 # Auto-classify component type if not provided
                 comp_type = cleaned.get('component_type')
                 if not comp_type:
@@ -456,19 +497,24 @@ class ProductViewSet(viewsets.ModelViewSet):
                 if cleaned.get('value'):
                     specs = extract_value_from_text(cleaned['value'], comp_type)
 
-                # Get or create the Component
-                component, was_created = Component.objects.get_or_create(
-                    manufacturer=cleaned['manufacturer'].strip(),
-                    part_number=cleaned['part_number'].strip(),
-                    defaults={
-                        'component_type': comp_type,
-                        'package_type': pkg,
-                        'description': cleaned.get('description', ''),
-                        'specifications': specs,
-                        'datasheet_url': cleaned.get('datasheet_url', ''),
-                        'created_by': request.user,
-                    }
-                )
+                manufacturer = cleaned['manufacturer'].strip()
+                part_number = cleaned['part_number'].strip()
+                component = existing_components.get((manufacturer, part_number))
+                was_created = False
+                if component is None:
+                    component, was_created = Component.objects.get_or_create(
+                        manufacturer=manufacturer,
+                        part_number=part_number,
+                        defaults={
+                            'component_type': comp_type,
+                            'package_type': pkg,
+                            'description': cleaned.get('description', ''),
+                            'specifications': specs,
+                            'datasheet_url': cleaned.get('datasheet_url', ''),
+                            'created_by': request.user,
+                        }
+                    )
+                    existing_components[(manufacturer, part_number)] = component
 
                 # Backfill datasheet_url if the component already exists but lacks one
                 if not was_created and cleaned.get('datasheet_url') and not component.datasheet_url:
@@ -481,6 +527,8 @@ class ProductViewSet(viewsets.ModelViewSet):
                     reused += 1
 
                 # Create the ProductComponent link (skip duplicates)
+                if component.pk in already_linked_ids:
+                    continue
                 _, pc_created = ProductComponent.objects.get_or_create(
                     product=product,
                     component=component,
@@ -495,6 +543,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                 )
                 if pc_created:
                     linked += 1
+                    already_linked_ids.add(component.pk)
 
             if dry_run:
                 transaction.savepoint_rollback(sid)
@@ -859,6 +908,26 @@ class ProductViewSet(viewsets.ModelViewSet):
             reports = product.repair_reports.select_related('author', 'product_component__component')
             if not (request.user.is_authenticated and (request.user.is_staff or request.user.is_moderator)):
                 reports = reports.filter(is_approved=True)
+
+            # Prefetch current user's vote for efficient serialization -
+            # same pattern as ProductComponentSerializer/current_user_votes.
+            if request.user.is_authenticated:
+                reports = reports.prefetch_related(
+                    models.Prefetch(
+                        'votes',
+                        queryset=RepairReportVote.objects.filter(user=request.user),
+                        to_attr='current_user_votes'
+                    )
+                )
+            else:
+                reports = reports.prefetch_related(
+                    models.Prefetch(
+                        'votes',
+                        queryset=RepairReportVote.objects.none(),
+                        to_attr='current_user_votes'
+                    )
+                )
+
             page = self.paginate_queryset(reports)
             serializer_context = {'request': request}
             if page is not None:
