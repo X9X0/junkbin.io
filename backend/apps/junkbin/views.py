@@ -2,10 +2,14 @@
 Junkbin views for Junkbin.io API
 """
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.prefetch import GenericPrefetch
 from django.db import models
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from apps.components.models import Component
+from apps.products.models import Product
 
 from .models import JunkbinItem
 from .serializers import (
@@ -24,7 +28,13 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
     - Anyone can browse public "have" items from other users.
     """
 
-    queryset = JunkbinItem.objects.select_related('user', 'content_type')
+    # content_object is a GenericForeignKey (to either Product or
+    # Component), which plain prefetch_related can't batch across mixed
+    # target types - GenericPrefetch runs one query per target model
+    # instead of one query per item on the list page.
+    queryset = JunkbinItem.objects.select_related('user', 'content_type').prefetch_related(
+        GenericPrefetch('content_object', [Product.objects.all(), Component.objects.all()])
+    )
     ordering = ['-created_at']
 
     def get_permissions(self):
