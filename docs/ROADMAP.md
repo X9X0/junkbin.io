@@ -848,6 +848,12 @@ npm run test:coverage  # Coverage report
 - ⬜ Give `send_whats_new_email` (and any future bulk-send command) a persistent per-recipient send log, so a quota/SMTP failure mid-run can be resumed without manually reconstructing who already got it from stdout — that reconstruction (from a truncated terminal capture, no delivery log) is what made this send slow and fragile to recover from.
 - Consider: smaller batch size with an inter-batch delay, or checking remaining quota via the provider's API before each send, instead of only discovering the cap via a 550 mid-run.
 
+### TypeScript 5.9 → 7.x Upgrade (Aug 30, 2026)
+- ⬜ Deliberately deferred, not forgotten. Part of a broader Dependabot-driven dependency upgrade (`deps-upgrade` branch): npm security fixes, django-debug-toolbar, and Python 3.12 + Django 6.0.8 all shipped to `main` same day — TypeScript was the one piece intentionally held back.
+- Why: TypeScript 7.0 ("Project Corsa") is a from-scratch rewrite in Go, not an incremental release — it skipped a numbered 6.x entirely for this. Its old JS-based Compiler API is gone in 7.0, and Microsoft has said a replacement API isn't landing until 7.1 (not released as of this writing). This project's `typescript-eslint` (type-aware lint rules) depends on that API internally, so jumping straight to 7.0.x risks silently breaking type-checked linting until the ecosystem catches up.
+- Before attempting: confirm `typescript-eslint` has shipped real TS 7 support (not just "installs without erroring"), and/or that TS 7.1's restored API has actually landed. Re-run the same verification approach used for the other upgrades this session — real install + the project's actual `lint`/`typecheck`/`build`/`test` scripts, not just changelog-reading.
+- Fallback if the ecosystem is still catching up when this gets picked back up: TypeScript 6.0 exists as a deliberate "bridge" release (last version on the old JS codebase) — a safer intermediate step than jumping straight to 7.x.
+
 ---
 
 ## Next Steps
