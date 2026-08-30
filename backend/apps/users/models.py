@@ -155,7 +155,7 @@ class User(AbstractUser):
         ordering = ['-created_at']
         constraints = [
             models.CheckConstraint(
-                check=~models.Q(forward_messages_to=models.F('id')),
+                condition=~models.Q(forward_messages_to=models.F('id')),
                 name='no_self_message_forward',
             ),
         ]

@@ -52,7 +52,7 @@ class Conversation(models.Model):
                 name='unique_conversation_pair',
             ),
             models.CheckConstraint(
-                check=~models.Q(participant_1=models.F('participant_2')),
+                condition=~models.Q(participant_1=models.F('participant_2')),
                 name='no_self_conversation',
             ),
         ]
@@ -199,7 +199,7 @@ class UserBlock(models.Model):
                 name='unique_user_block',
             ),
             models.CheckConstraint(
-                check=~models.Q(blocker=models.F('blocked_user')),
+                condition=~models.Q(blocker=models.F('blocked_user')),
                 name='no_self_block',
             ),
         ]
