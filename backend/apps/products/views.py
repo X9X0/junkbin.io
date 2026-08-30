@@ -19,7 +19,10 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
 
-from .models import Product, ProductImage, ProductComment, Schematic, Firmware, ComponentSuggestion
+from .models import (
+    Product, ProductImage, ProductComment, Schematic, Firmware,
+    ComponentSuggestion, RepairReport, RepairReportVote,
+)
 from .serializers import (
     ProductListSerializer,
     ProductDetailSerializer,
@@ -33,6 +36,9 @@ from .serializers import (
     FirmwareSerializer,
     FirmwareUploadSerializer,
     ComponentSuggestionSerializer,
+    RepairReportSerializer,
+    RepairReportCreateSerializer,
+    RepairReportVoteSerializer,
 )
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
@@ -101,13 +107,17 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['create', 'add_component', 'batch_add_components',
                            'upload_image', 'upload_schematic', 'upload_firmware',
-                           'comments', 'parse_bom', 'import_bom',
+                           'comments', 'repairs', 'parse_bom', 'import_bom',
                            'extract_bom_pdf', 'submit_bom_suggestions']:
             if self.request.method == 'POST':
                 return [permissions.IsAuthenticated(), IsVerifiedEmail()]
             return [permissions.AllowAny()]
         elif self.action == 'comment_detail':
             return [permissions.IsAuthenticated()]
+        elif self.action == 'repair_detail':
+            return [permissions.IsAuthenticated()]
+        elif self.action == 'repair_vote':
+            return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         elif self.action in ['approve', 'reject', 'pending_counts']:
@@ -119,7 +129,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             if self.request.method == 'POST':
                 return [UploadRateThrottle()]
         if self.action in ['create', 'add_component', 'batch_add_components',
-                           'comments', 'extract_bom_pdf', 'submit_bom_suggestions']:
+                           'comments', 'repairs', 'extract_bom_pdf', 'submit_bom_suggestions']:
             if self.request.method == 'POST':
                 return [SubmissionRateThrottle()]
         return super().get_throttles()
@@ -839,6 +849,110 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         comment.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=True, methods=['get', 'post'])
+    def repairs(self, request, pk=None):
+        """Get or add repair reports on a product."""
+        product = self.get_object()
+
+        if request.method == 'GET':
+            reports = product.repair_reports.select_related('author', 'product_component__component')
+            if not (request.user.is_authenticated and (request.user.is_staff or request.user.is_moderator)):
+                reports = reports.filter(is_approved=True)
+            page = self.paginate_queryset(reports)
+            serializer_context = {'request': request}
+            if page is not None:
+                serializer = RepairReportSerializer(page, many=True, context=serializer_context)
+                return self.get_paginated_response(serializer.data)
+            serializer = RepairReportSerializer(reports, many=True, context=serializer_context)
+            return Response(serializer.data)
+
+        # POST — add repair report
+        serializer = RepairReportCreateSerializer(
+            data=request.data,
+            context={'request': request, 'product': product}
+        )
+        serializer.is_valid(raise_exception=True)
+        report = serializer.save()
+        submission_counter.labels(content_type='repair_report').inc()
+
+        # Auto-approve for trusted users
+        if request.user.can_submit_without_review:
+            report.is_approved = True
+            report.save(update_fields=['is_approved'])
+            request.user.increment_contribution()
+
+        if product.created_by and product.created_by != report.author:
+            from apps.notifications.services import notify
+            from apps.notifications.models import Notification
+            notify(
+                product.created_by, Notification.Category.PRODUCT_REPAIR,
+                title=f'New repair report on "{product}" from {report.author.username}',
+                body=report.title,
+                url=f'/products/{product.slug}',
+                actor=report.author,
+            )
+
+        return Response(
+            RepairReportSerializer(report, context={'request': request}).data,
+            status=status.HTTP_201_CREATED
+        )
+
+    @action(
+        detail=True,
+        methods=['delete'],
+        url_path='repairs/(?P<report_id>[^/.]+)',
+        url_name='repair-detail'
+    )
+    def repair_detail(self, request, pk=None, report_id=None):
+        """Delete a repair report (author or moderator only)."""
+        product = self.get_object()
+        report = get_object_or_404(RepairReport, pk=report_id, product=product)
+
+        if report.author != request.user and not request.user.is_staff and not request.user.is_moderator:
+            return Response(
+                {'detail': 'You do not have permission to delete this repair report.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        report.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(
+        detail=True,
+        methods=['post', 'delete'],
+        url_path='repairs/(?P<report_id>[^/.]+)/vote',
+        url_name='repair-vote'
+    )
+    def repair_vote(self, request, pk=None, report_id=None):
+        """Cast, change, or remove a helpful/not-helpful vote on a repair report."""
+        product = self.get_object()
+        report = get_object_or_404(RepairReport, pk=report_id, product=product, is_approved=True)
+
+        if report.author == request.user:
+            return Response(
+                {'detail': 'You cannot vote on your own repair report.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        if request.method == 'DELETE':
+            deleted, _count = RepairReportVote.objects.filter(
+                repair_report=report, user=request.user
+            ).delete()
+            if not deleted:
+                return Response({'detail': 'No vote to remove.'}, status=status.HTTP_404_NOT_FOUND)
+        else:
+            serializer = RepairReportVoteSerializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            RepairReportVote.objects.update_or_create(
+                repair_report=report,
+                user=request.user,
+                defaults={'vote_type': serializer.validated_data['vote_type']}
+            )
+
+        report.recalculate_votes()
+        report.refresh_from_db()
+        return Response(RepairReportSerializer(report, context={'request': request}).data)
 
     @action(
         detail=True,

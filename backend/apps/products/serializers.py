@@ -5,7 +5,10 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.utils.translation import gettext_lazy as _
 
-from .models import Product, ProductImage, ProductComment, Schematic, Firmware, ComponentSuggestion
+from .models import (
+    Product, ProductImage, ProductComment, Schematic, Firmware,
+    ComponentSuggestion, RepairReport, RepairReportVote,
+)
 from utils.file_validation import validate_image_file, validate_schematic_file
 from utils.image_processing import strip_exif
 
@@ -159,6 +162,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     )
 
     comment_count = serializers.SerializerMethodField()
+    repair_report_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -168,7 +172,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'subcategory', 'year_manufactured', 'fcc_id', 'ic_id',
             'part_number', 'description', 'teardown_notes',
             'component_count', 'image_count', 'schematic_count', 'firmware_count',
-            'comment_count', 'view_count', 'images',
+            'comment_count', 'repair_report_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
             'is_approved', 'is_featured'
         ]
@@ -201,6 +205,9 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_comment_count(self, obj):
         return obj.comments.count()
+
+    def get_repair_report_count(self, obj):
+        return obj.repair_reports.filter(is_approved=True).count()
 
 
 def _product_duplicate_thumbnail(product, request):
@@ -465,3 +472,104 @@ class ProductCommentCreateSerializer(serializers.ModelSerializer):
         validated_data['author'] = self.context['request'].user
         validated_data['product'] = self.context['product']
         return super().create(validated_data)
+
+
+class RepairReportSerializer(serializers.ModelSerializer):
+    """Serializer for reading repair reports."""
+
+    author = CreatedBySerializer(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    product_component = serializers.SerializerMethodField()
+    user_vote = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RepairReport
+        fields = [
+            'id', 'author', 'title', 'symptom', 'diagnostics', 'resolution',
+            'status', 'status_display', 'product_component',
+            'helpful_count', 'unhelpful_count', 'user_vote',
+            'is_approved', 'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+    def get_product_component(self, obj):
+        if obj.product_component:
+            return {
+                'id': str(obj.product_component.id),
+                'reference_designator': obj.product_component.reference_designator,
+                'component': str(obj.product_component.component),
+            }
+        return None
+
+    def get_user_vote(self, obj):
+        request = self.context.get('request')
+        if not request or not request.user.is_authenticated:
+            return None
+        vote = obj.votes.filter(user=request.user).first()
+        return vote.vote_type if vote else None
+
+
+class RepairReportCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating/updating repair reports."""
+
+    class Meta:
+        model = RepairReport
+        fields = ['title', 'symptom', 'diagnostics', 'resolution', 'status', 'product_component']
+
+    def validate_product_component(self, value):
+        if value is not None:
+            product = self.context['product']
+            if value.product_id != product.id:
+                raise serializers.ValidationError(
+                    _('Selected component does not belong to this product.')
+                )
+        return value
+
+    def validate(self, attrs):
+        status = attrs.get('status', RepairReport.Status.UNRESOLVED)
+        resolution = attrs.get('resolution', '').strip()
+        if status == RepairReport.Status.RESOLVED and not resolution:
+            raise serializers.ValidationError({
+                'resolution': _('Resolution is required to mark a repair as resolved.')
+            })
+        return attrs
+
+    def validate_title(self, value):
+        stripped = value.strip()
+        if not stripped:
+            raise serializers.ValidationError(_('Title cannot be empty.'))
+        return stripped
+
+    def validate_symptom(self, value):
+        stripped = value.strip()
+        if not stripped:
+            raise serializers.ValidationError(_('Symptom description cannot be empty.'))
+        return stripped
+
+    def create(self, validated_data):
+        from utils.content_filter import check_content
+
+        text = ' '.join(filter(None, [
+            validated_data.get('title', ''),
+            validated_data.get('symptom', ''),
+            validated_data.get('diagnostics', ''),
+            validated_data.get('resolution', ''),
+        ]))
+        is_clean, _matched = check_content(text)
+        if not is_clean:
+            raise serializers.ValidationError(
+                _('Your report contains prohibited language. '
+                  'Please review our community guidelines.')
+            )
+
+        validated_data['author'] = self.context['request'].user
+        validated_data['product'] = self.context['product']
+        return super().create(validated_data)
+
+
+class RepairReportVoteSerializer(serializers.ModelSerializer):
+    """Write serializer for casting a vote on a repair report."""
+
+    class Meta:
+        model = RepairReportVote
+        fields = ['vote_type']

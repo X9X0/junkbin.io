@@ -881,3 +881,133 @@ class ProductComment(models.Model):
 
     def __str__(self):
         return f'Comment by {self.author} on {self.product}'
+
+
+class RepairReport(models.Model):
+    """
+    Structured repair write-up: symptom, diagnostics, and (if found) the fix.
+
+    Distinct from ProductComment — this is moderated, structured content
+    meant to be scannable and searchable, not a free-for-all discussion.
+    """
+
+    class Status(models.TextChoices):
+        UNRESOLVED = 'unresolved', _('Unresolved')
+        RESOLVED = 'resolved', _('Resolved')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='repair_reports'
+    )
+    product_component = models.ForeignKey(
+        'components.ProductComponent',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='repair_reports',
+        help_text=_('Specific component this repair concerns, if known')
+    )
+
+    title = models.CharField(
+        max_length=200,
+        help_text=_('Short summary, e.g. "USB-C stuck at 5V, no negotiation"')
+    )
+    symptom = models.TextField(
+        help_text=_('Observed behavior — what is/was wrong')
+    )
+    diagnostics = models.TextField(
+        blank=True,
+        help_text=_('Tools used and readings taken')
+    )
+    resolution = models.TextField(
+        blank=True,
+        help_text=_('What fixed it (required once marked resolved)')
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.UNRESOLVED
+    )
+
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='repair_reports'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    is_approved = models.BooleanField(
+        default=False,
+        help_text=_('Whether this repair report has been reviewed/approved')
+    )
+
+    helpful_count = models.PositiveIntegerField(default=0)
+    unhelpful_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        verbose_name = _('repair report')
+        verbose_name_plural = _('repair reports')
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['product', 'is_approved', '-created_at']),
+            models.Index(fields=['status']),
+        ]
+
+    def __str__(self):
+        return f'{self.title} ({self.product})'
+
+    def recalculate_votes(self):
+        self.helpful_count = self.votes.filter(
+            vote_type=RepairReportVote.VoteType.HELPFUL
+        ).count()
+        self.unhelpful_count = self.votes.filter(
+            vote_type=RepairReportVote.VoteType.NOT_HELPFUL
+        ).count()
+        self.save(update_fields=['helpful_count', 'unhelpful_count'])
+
+
+class RepairReportVote(models.Model):
+    """A user's helpful/not-helpful vote on a repair report. One vote per user."""
+
+    class VoteType(models.TextChoices):
+        HELPFUL = 'helpful', _('Helpful')
+        NOT_HELPFUL = 'not_helpful', _('Not Helpful')
+
+    id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False
+    )
+    repair_report = models.ForeignKey(
+        RepairReport,
+        on_delete=models.CASCADE,
+        related_name='votes'
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='repair_report_votes'
+    )
+    vote_type = models.CharField(max_length=15, choices=VoteType.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('repair report vote')
+        verbose_name_plural = _('repair report votes')
+        constraints = [
+            models.UniqueConstraint(
+                fields=['repair_report', 'user'],
+                name='unique_repair_vote_per_user'
+            )
+        ]
+
+    def __str__(self):
+        return f'{self.user} → {self.vote_type} on {self.repair_report}'

@@ -90,6 +90,7 @@ export interface Product {
   schematic_count: number;
   firmware_count: number;
   comment_count?: number;
+  repair_report_count?: number;
   created_by?: CreatedBy;
   created_at: string;
   images?: ProductImage[];
@@ -129,6 +130,33 @@ export interface ProductComment {
   id: string;
   author: CreatedBy;
   content: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RepairReportStatus = 'unresolved' | 'resolved';
+export type RepairReportVoteType = 'helpful' | 'not_helpful';
+
+export interface RepairReportComponentRef {
+  id: string;
+  reference_designator: string;
+  component: string;
+}
+
+export interface RepairReport {
+  id: string;
+  author: CreatedBy;
+  title: string;
+  symptom: string;
+  diagnostics: string;
+  resolution: string;
+  status: RepairReportStatus;
+  status_display: string;
+  product_component: RepairReportComponentRef | null;
+  helpful_count: number;
+  unhelpful_count: number;
+  user_vote: RepairReportVoteType | null;
+  is_approved: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -451,7 +479,8 @@ export type NotificationCategory =
   | 'content_approved'
   | 'content_rejected'
   | 'product_comment'
-  | 'submission_comment';
+  | 'submission_comment'
+  | 'product_repair';
 
 export interface AppNotification {
   id: string;

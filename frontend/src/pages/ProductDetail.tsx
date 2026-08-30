@@ -14,6 +14,7 @@ import ReportModal from '../components/ReportModal';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import EditProductModal from '../components/EditProductModal';
 import ProductComments from '../components/ProductComments';
+import RepairReports from '../components/RepairReports';
 import ComponentVoteButtons from '../components/ComponentVoteButtons';
 import {
   Cpu,
@@ -34,6 +35,7 @@ import {
   HardDrive,
   Sparkles,
   ScanText,
+  Wrench,
 } from 'lucide-react';
 import type { JunkbinItem, Schematic } from '../types';
 import clsx from 'clsx';
@@ -124,7 +126,7 @@ export default function ProductDetail() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'firmware' | 'comments' | 'swap'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'images' | 'components' | 'schematics' | 'firmware' | 'repairs' | 'comments' | 'swap'>('overview');
   const [selectedImage, setSelectedImage] = useState(0);
   const [showAddComponent, setShowAddComponent] = useState(false);
   const [showBomImport, setShowBomImport] = useState(false);
@@ -514,6 +516,7 @@ export default function ProductDetail() {
               { key: 'components', label: t('product_detail.tab_parts'), icon: Cpu },
               { key: 'schematics', label: t('product_detail.tab_docs'), icon: FileText },
               { key: 'firmware', label: t('product_detail.tab_firmware'), icon: HardDrive },
+              { key: 'repairs', label: t('product_detail.tab_repairs'), icon: Wrench, count: product.repair_report_count },
               { key: 'comments', label: t('product_detail.tab_comments'), icon: MessageSquare, count: product.comment_count },
               { key: 'swap', label: t('product_detail.tab_swap'), icon: ArrowLeftRight, count: swapCount?.count },
             ].map(({ key, label, icon: Icon, count }) => (
@@ -1137,6 +1140,10 @@ export default function ProductDetail() {
               </ul>
             </div>
           </div>
+        )}
+
+        {activeTab === 'repairs' && (
+          <RepairReports productId={id!} />
         )}
 
         {activeTab === 'comments' && (
