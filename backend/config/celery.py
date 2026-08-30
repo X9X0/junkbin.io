@@ -46,3 +46,35 @@ def on_task_failure(sender=None, task_id=None, exception=None,
         )
     except Exception:
         pass
+
+
+# Pre-warm the background-removal cache (rembg/pymatting's numba-jitted
+# kernels) once the worker is up, instead of leaving the first real job
+# after a deploy to pay that ~2-minute cost itself. See
+# apps/media_tools/management/commands/warm_bg_removal_cache.py for why
+# this runs as a subprocess rather than being called directly here -
+# same deadlock-avoidance reasoning as process_bg_removal_job. A daemon
+# thread keeps this off the worker's own startup/task-dispatch path, so
+# it can start accepting other task types (messaging, notifications,
+# etc.) immediately rather than waiting on this.
+from celery.signals import worker_ready as worker_ready_signal
+
+
+@worker_ready_signal.connect
+def warm_bg_removal_cache(sender=None, **kwargs):
+    import subprocess
+    import sys
+    import threading
+
+    def _warm():
+        try:
+            subprocess.run(
+                [sys.executable, 'manage.py', 'warm_bg_removal_cache'],
+                cwd='/app',
+                capture_output=True,
+                timeout=180,
+            )
+        except Exception:
+            pass  # best-effort warmup; a real job will still work, just slower
+
+    threading.Thread(target=_warm, daemon=True).start()
