@@ -16,7 +16,6 @@ MIME_TO_EXTENSIONS = {
     'image/gif': ['gif'],
     'image/webp': ['webp'],
     'image/avif': ['avif'],
-    'image/svg+xml': ['svg'],
     'application/pdf': ['pdf'],
 }
 
@@ -29,7 +28,6 @@ EXTENSION_TO_MIMES = {
     'gif': ['image/gif'],
     'webp': ['image/webp'],
     'avif': ['image/avif'],
-    'svg': ['image/svg+xml', 'text/xml', 'application/xml'],
     'pdf': ['application/pdf'],
     # libmagic misidentifies stored (non-deflate) zips as application/octet-stream,
     # which is common for archives of already-compressed binary board-view data.
