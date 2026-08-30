@@ -7,7 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Count, OuterRef, Q, Subquery
 from django.http import HttpResponse, Http404
 from django.utils import timezone
 from django.utils.http import content_disposition_header
@@ -45,19 +45,48 @@ class ConversationViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        return Conversation.objects.filter(
+        queryset = Conversation.objects.filter(
             Q(participant_1=user) | Q(participant_2=user)
-        ).select_related(
-            'participant_1', 'participant_2'
-        ).prefetch_related('messages').order_by('-updated_at')
+        ).select_related('participant_1', 'participant_2')
+
+        if self.action == 'list':
+            # Last-message preview and unread count computed as subquery/
+            # annotation columns on the conversation row itself, instead of
+            # prefetching every message in every conversation just to read
+            # off the newest one and re-query for a filtered count -
+            # that prefetch was both unbounded (full message history, every
+            # conversation) and not actually used by the serializer, which
+            # re-queried per row regardless (see ConversationListSerializer).
+            last_message_qs = Message.objects.filter(
+                conversation=OuterRef('pk')
+            ).order_by('-created_at')
+            queryset = queryset.annotate(
+                last_message_content=Subquery(last_message_qs.values('content')[:1]),
+                last_message_sender_id=Subquery(last_message_qs.values('sender_id')[:1]),
+                last_message_created_at=Subquery(last_message_qs.values('created_at')[:1]),
+                last_message_is_read=Subquery(last_message_qs.values('is_read')[:1]),
+                unread_count_annotated=Count(
+                    'messages',
+                    filter=Q(messages__is_read=False) & ~Q(messages__sender=user),
+                    distinct=True,
+                ),
+            )
+
+        return queryset.order_by('-updated_at')
 
     def retrieve(self, request, *args, **kwargs):
         conversation = self.get_object()
-        # Mark all unread messages from other participant as read
-        Message.objects.filter(
+        # MessageThread.tsx polls this endpoint every 10s specifically to
+        # keep read-state current while a thread is open, so most polls
+        # find nothing new. An UPDATE takes a row lock and writes WAL even
+        # when it matches zero rows; a plain SELECT EXISTS doesn't, and is
+        # what nearly every one of these polls actually needs.
+        unread = Message.objects.filter(
             conversation=conversation,
             is_read=False,
-        ).exclude(sender=request.user).update(is_read=True)
+        ).exclude(sender=request.user)
+        if unread.exists():
+            unread.update(is_read=True)
 
         serializer = self.get_serializer(conversation)
         return Response(serializer.data)
