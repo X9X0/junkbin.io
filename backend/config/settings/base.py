@@ -34,6 +34,11 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.sites',
+    # Was implicitly relied on for SearchVectorField (Product/Component/
+    # Recipe.search_vector) without being registered - worked anyway
+    # against Postgres directly, but Django 6.0 added a system check
+    # (postgres.E005) that now enforces this explicitly.
+    'django.contrib.postgres',
 ]
 
 THIRD_PARTY_APPS = [
