@@ -6,6 +6,7 @@ from rest_framework.views import APIView
 
 from .models import Notification, PushSubscription
 from .serializers import NotificationSerializer, PushSubscribeSerializer
+from apps.api.throttling import PollingRateThrottle
 
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
@@ -17,6 +18,7 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     """
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [PollingRateThrottle]
 
     def get_queryset(self):
         return Notification.objects.filter(recipient=self.request.user)

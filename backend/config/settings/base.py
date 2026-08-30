@@ -222,6 +222,7 @@ REST_FRAMEWORK = {
         'report': '10/hour',
         'search': '60/minute',
         'messaging': '30/minute',
+        'polling': '120/minute',
         'lookup': '20/hour',
         'subscribe': '10/hour',
         'bg_removal': '40/hour',

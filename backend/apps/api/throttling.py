@@ -103,6 +103,24 @@ class MessageRateThrottle(UserRateThrottle):
     scope = 'messaging'
 
 
+class PollingRateThrottle(UserRateThrottle):
+    """
+    Throttle for read-only badge/status polling (unread counts, conversation
+    and notification polling).
+
+    Kept separate from the default 'user' scope: these endpoints are polled
+    on a short interval while a message thread or the messages page is open,
+    and would otherwise share a budget with unrelated endpoints like
+    /api/auth/me/ - exhausting it looks like login itself failing, since the
+    post-login "am I authenticated" check gets throttled along with
+    everything else. Also kept separate from 'messaging' (MessageRateThrottle)
+    since that scope guards against message-send spam, a different usage
+    pattern than passive polling.
+    """
+
+    scope = 'polling'
+
+
 class LookupRateThrottle(UserRateThrottle):
     """
     Throttle for external API lookups (Nexar/Octopart).

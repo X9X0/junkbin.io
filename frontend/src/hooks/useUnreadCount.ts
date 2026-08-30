@@ -10,7 +10,7 @@ export function useUnreadCount(): number {
   const location = useLocation();
 
   const isMessagesPage = location.pathname.startsWith('/messages');
-  const interval = isMessagesPage ? 5000 : 30000;
+  const interval = isMessagesPage ? 10000 : 30000;
 
   const { data } = useQuery({
     queryKey: ['unreadCount'],

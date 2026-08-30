@@ -26,7 +26,7 @@ export default function Messages() {
     queryKey: ['conversations'],
     queryFn: () => messaging.conversations(),
     enabled: isAuthenticated,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   if (!authLoading && !isAuthenticated) {

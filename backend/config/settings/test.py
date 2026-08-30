@@ -58,6 +58,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'upload': '1000/hour',
     'search': '1000/hour',
     'messaging': '1000/hour',
+    'polling': '1000/hour',
     'report': '1000/hour',
     'lookup': '1000/hour',
     'subscribe': '1000/hour',
