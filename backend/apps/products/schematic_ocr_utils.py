@@ -119,6 +119,13 @@ def extract_candidates_from_page(image, page_number):
     return candidates
 
 
+# Rendering at 300 DPI and running Tesseract OCR per page is genuinely slow
+# (multiple seconds/page) and runs synchronously in the request cycle - this
+# bounds the worst case for a moderator OCR-scanning an oversized manual
+# rather than leaving it fully unbounded.
+MAX_OCR_PAGES = 30
+
+
 def build_candidates_from_schematic_file(file_obj, file_type):
     """
     Run OCR extraction across every page/image of a schematic file.
@@ -134,6 +141,16 @@ def build_candidates_from_schematic_file(file_obj, file_type):
 
     if file_type == 'pdf':
         import pdf2image
+        # Page count via pdfinfo is cheap (no rendering) - checked before
+        # the expensive per-page render+OCR work below.
+        info = pdf2image.pdfinfo_from_bytes(raw)
+        page_count = info.get('Pages', 0)
+        if page_count > MAX_OCR_PAGES:
+            raise ValueError(
+                f'PDF has {page_count} pages - OCR extraction is limited to '
+                f'{MAX_OCR_PAGES} pages. Try extracting a smaller page range first.'
+            )
+
         pages = pdf2image.convert_from_bytes(raw, dpi=300)
         for page_number, image in enumerate(pages, start=1):
             candidates.extend(extract_candidates_from_page(image, page_number))

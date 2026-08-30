@@ -159,6 +159,12 @@ class User(AbstractUser):
                 name='no_self_message_forward',
             ),
         ]
+        indexes = [
+            # UserViewSet.ordering_fields/default ordering - the community
+            # leaderboard sorts on these.
+            models.Index(fields=['-reputation_score']),
+            models.Index(fields=['-contribution_count']),
+        ]
 
     def __str__(self):
         return self.username

@@ -72,10 +72,19 @@ class ConversationListSerializer(serializers.ModelSerializer):
         return MessageParticipantSerializer(other).data
 
     def get_last_message(self, obj):
-        if hasattr(obj, '_prefetched_last_message'):
-            last = obj._prefetched_last_message
-        else:
-            last = obj.messages.order_by('-created_at').first()
+        # Populated as annotation columns by ConversationViewSet.get_queryset
+        # (list action only) - a message row is never actually fetched just
+        # to build this preview.
+        if hasattr(obj, 'last_message_created_at'):
+            if obj.last_message_created_at is None:
+                return None
+            return {
+                'content': (obj.last_message_content or '')[:120],
+                'sender_id': str(obj.last_message_sender_id) if obj.last_message_sender_id else None,
+                'created_at': obj.last_message_created_at.isoformat(),
+                'is_read': obj.last_message_is_read,
+            }
+        last = obj.messages.order_by('-created_at').first()
         if last:
             return {
                 'content': last.content[:120],
@@ -86,6 +95,8 @@ class ConversationListSerializer(serializers.ModelSerializer):
         return None
 
     def get_unread_count(self, obj):
+        if hasattr(obj, 'unread_count_annotated'):
+            return obj.unread_count_annotated
         request = self.context.get('request')
         return obj.messages.filter(is_read=False).exclude(sender=request.user).count()
 
