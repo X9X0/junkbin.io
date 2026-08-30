@@ -82,7 +82,11 @@ class AdaptiveThumbnail:
 
 # Allowed file extensions for uploads
 ALLOWED_SCHEMATIC_EXTENSIONS = [
-    'pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'svg', 'zip',
+    # SVG is intentionally excluded: it's an XML/script-capable format and
+    # nginx serves /media/ files directly with no sanitization or CSP, so an
+    # uploaded SVG could carry a stored-XSS payload that runs in-origin for
+    # anyone (notably moderators) who opens it. PDF/PNG/etc. cover the need.
+    'pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'zip',
     # Altium Designer (OLE compound file format)
     'schdoc', 'pcbdoc', 'prjpcb',
     # KiCad >=6 (S-expression text format)
