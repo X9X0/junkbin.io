@@ -7,6 +7,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
 from rest_framework.throttling import ScopedRateThrottle
+
+from apps.api.throttling import PasswordChangeRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
@@ -226,8 +228,7 @@ class PasswordChangeView(APIView):
     """Change password for authenticated user."""
 
     permission_classes = [permissions.IsAuthenticated]
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'auth'
+    throttle_classes = [PasswordChangeRateThrottle]
 
     @extend_schema(
         description='Change user password',
