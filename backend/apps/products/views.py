@@ -417,8 +417,8 @@ class ProductViewSet(viewsets.ModelViewSet):
         file = request.FILES.get('file')
         if not file:
             return Response({'detail': 'No file provided.'}, status=status.HTTP_400_BAD_REQUEST)
-        if file.size > 5 * 1024 * 1024:
-            return Response({'detail': 'File too large (max 5MB).'}, status=status.HTTP_400_BAD_REQUEST)
+        if file.size > 10 * 1024 * 1024:
+            return Response({'detail': 'File too large (max 10MB).'}, status=status.HTTP_400_BAD_REQUEST)
 
         column_mapping_raw = request.data.get('column_mapping', '{}')
         if isinstance(column_mapping_raw, str):
