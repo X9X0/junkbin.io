@@ -19,7 +19,7 @@ from .serializers import (
     UserBlockSerializer,
 )
 from apps.api.permissions import IsVerifiedEmail
-from apps.api.throttling import MessageRateThrottle
+from apps.api.throttling import MessageRateThrottle, PollingRateThrottle
 
 User = get_user_model()
 
@@ -34,6 +34,7 @@ class ConversationViewSet(viewsets.ReadOnlyModelViewSet):
     """
 
     permission_classes = [permissions.IsAuthenticated, IsVerifiedEmail]
+    throttle_classes = [PollingRateThrottle]
 
     def get_serializer_class(self):
         if self.action == 'list':
@@ -320,6 +321,7 @@ class UnreadCountView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [PollingRateThrottle]
 
     def get(self, request):
         count = Message.objects.filter(

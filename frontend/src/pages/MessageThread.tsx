@@ -85,7 +85,7 @@ export default function MessageThread() {
     queryKey: ['conversation', conversationId],
     queryFn: () => messaging.conversation(conversationId!),
     enabled: !!conversationId,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   // Fetch messages
@@ -93,7 +93,7 @@ export default function MessageThread() {
     queryKey: ['messages', conversationId, page],
     queryFn: () => messaging.messages(conversationId!, { page }),
     enabled: !!conversationId,
-    refetchInterval: 5000,
+    refetchInterval: 10000,
   });
 
   // Determine the other participant from the conversation detail.
