@@ -59,11 +59,18 @@ class AdminIPWhitelistMiddleware:
         return self.get_response(request)
 
     def _get_client_ip(self, request):
-        """Extract client IP from request, considering proxy headers."""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            # Take the first IP in the chain (original client)
-            return x_forwarded_for.split(',')[0].strip()
+        """Extract client IP from request, considering proxy headers.
+
+        Deliberately does NOT use X-Forwarded-For: nginx appends to that
+        header rather than replacing it (`$proxy_add_x_forwarded_for`), so a
+        client-supplied value survives as the first entry - trusting it lets
+        anyone spoof their way past the whitelist. X-Real-IP is always
+        overwritten by nginx to the actual connecting address
+        (`$remote_addr`), so it can't be forged the same way.
+        """
+        x_real_ip = request.META.get('HTTP_X_REAL_IP')
+        if x_real_ip:
+            return x_real_ip.strip()
         return request.META.get('REMOTE_ADDR', '')
 
     def _is_ip_allowed(self, client_ip, allowed_ips):
