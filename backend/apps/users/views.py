@@ -226,6 +226,8 @@ class PasswordChangeView(APIView):
     """Change password for authenticated user."""
 
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'auth'
 
     @extend_schema(
         description='Change user password',
