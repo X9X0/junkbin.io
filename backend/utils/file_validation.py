@@ -6,7 +6,7 @@ Provides magic byte verification to ensure uploaded files match their claimed ty
 import magic
 from django.core.exceptions import ValidationError
 
-from apps.products.models import ALLOWED_SCHEMATIC_EXTENSIONS
+from apps.products.models import ALLOWED_FIRMWARE_EXTENSIONS, ALLOWED_SCHEMATIC_EXTENSIONS
 
 
 # MIME type to allowed extensions mapping
@@ -69,6 +69,16 @@ EXTENSION_TO_MIMES = {
     # unrelated specific format (e.g. image/x-tga), which would reject
     # legitimate uploads. These two extensions fall back to allowlist-only
     # gating via ALLOWED_SCHEMATIC_EXTENSIONS.
+
+    # Intel HEX firmware images are plain ASCII text, each line starting
+    # with ':'. libmagic recognizes the format specifically on most
+    # systems (text/x-hex) but falls back to generic text/plain on others.
+    'hex': ['text/x-hex', 'text/plain'],
+    # No MIME/signature entry for 'bin', 'rom', 'img', 'dump', or 'fw' —
+    # these are, by definition, raw memory/flash dumps with no header
+    # format to check. Same reasoning as .tvw/.fz above: allowlist-only
+    # gating via ALLOWED_FIRMWARE_EXTENSIONS is the honest option here,
+    # not a fake signature that would just reject real uploads.
 }
 
 # Raw content signatures checked in addition to the MIME class above, for
@@ -83,6 +93,10 @@ EXTENSION_SIGNATURES = {
     'step': [b'ISO-10303-21'],
     'stp': [b'ISO-10303-21'],
     'pcb': [b'XZZPCB'],
+    'elf': [b'\x7fELF'],
+    # Weak but real: every line of a genuine Intel HEX file starts with
+    # ':', so a file with none anywhere in the first 2KB isn't one.
+    'hex': [b':'],
 }
 
 
@@ -181,3 +195,19 @@ def validate_schematic_file(file):
         str: The detected MIME type
     """
     return validate_file_magic(file, ALLOWED_SCHEMATIC_EXTENSIONS)
+
+
+def validate_firmware_file(file):
+    """
+    Validate that a file is an allowed firmware type.
+
+    Args:
+        file: Django UploadedFile
+
+    Raises:
+        ValidationError: If file is not an allowed firmware type
+
+    Returns:
+        str: The detected MIME type
+    """
+    return validate_file_magic(file, ALLOWED_FIRMWARE_EXTENSIONS)

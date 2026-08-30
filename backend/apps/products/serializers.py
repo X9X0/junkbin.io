@@ -9,7 +9,7 @@ from .models import (
     Product, ProductImage, ProductComment, Schematic, Firmware,
     ComponentSuggestion, RepairReport, RepairReportVote,
 )
-from utils.file_validation import validate_image_file, validate_schematic_file
+from utils.file_validation import validate_firmware_file, validate_image_file, validate_schematic_file
 from utils.image_processing import strip_exif
 
 User = get_user_model()
@@ -398,6 +398,11 @@ class FirmwareUploadSerializer(serializers.ModelSerializer):
             'file', 'title', 'description', 'version', 'chip_architecture',
             'source_type', 'source_url', 'source_notes'
         ]
+
+    def validate_file(self, value):
+        """Validate firmware file content matches extension using magic bytes."""
+        validate_firmware_file(value)
+        return value
 
     def create(self, validated_data):
         validated_data['uploaded_by'] = self.context['request'].user
