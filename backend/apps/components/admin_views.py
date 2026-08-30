@@ -144,20 +144,53 @@ def bulk_edit_components_action(request):
         messages.error(request, str(exc))
         return redirect('admin-component-bulk-edit')
 
-    updated = 0
+    # Same request -> same IP for every log entry, so this is computed once
+    # rather than re-derived per component inside AdminAuditLog.log_action.
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    ip_address = (
+        x_forwarded_for.split(',')[0].strip() if x_forwarded_for
+        else request.META.get('REMOTE_ADDR')
+    )
+    admin_user = request.user if request.user.is_authenticated else None
+
+    to_update = []
+    audit_logs = []
     for component in components:
         old_value = getattr(component, field_name)
         if old_value == value:
             continue
         setattr(component, field_name, value)
-        component.save(update_fields=[field_name])
-        AdminAuditLog.log_action(
-            request,
-            AdminAuditLog.ActionType.COMPONENT_BULK_EDITED,
-            component,
-            {'field': field_name, 'old_value': str(old_value), 'new_value': str(value)},
-        )
-        updated += 1
+        to_update.append(component)
+        audit_logs.append(AdminAuditLog(
+            admin_user=admin_user,
+            action_type=AdminAuditLog.ActionType.COMPONENT_BULK_EDITED,
+            target_model='Component',
+            target_id=str(component.pk),
+            target_repr=str(component)[:255],
+            details={'field': field_name, 'old_value': str(old_value), 'new_value': str(value)},
+            ip_address=ip_address,
+        ))
+
+    if to_update:
+        Component.objects.bulk_update(to_update, [field_name])
+        # bulk_update() writes columns directly and does not call each
+        # instance's save() - which normally also recomputes search_vector.
+        # Redo it here in one query if the edited field feeds that vector,
+        # so bulk-editing doesn't silently leave search results stale.
+        search_vector_fields = {'part_number', 'manufacturer', 'typical_function', 'description'}
+        if field_name in search_vector_fields:
+            from django.contrib.postgres.search import SearchVector
+            Component.objects.filter(pk__in=[c.pk for c in to_update]).update(
+                search_vector=(
+                    SearchVector('part_number', weight='A') +
+                    SearchVector('manufacturer', weight='A') +
+                    SearchVector('typical_function', weight='B') +
+                    SearchVector('description', weight='C')
+                )
+            )
+    if audit_logs:
+        AdminAuditLog.objects.bulk_create(audit_logs)
+    updated = len(to_update)
 
     del request.session['bulk_edit_component_ids']
     unchanged = len(components) - updated
