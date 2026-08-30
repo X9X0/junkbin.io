@@ -7,7 +7,10 @@ from django.contrib import admin
 from django.http import HttpResponse
 from django.utils.html import format_html
 
-from .models import Product, ProductImage, ProductComment, Schematic, Firmware, ComponentSuggestion
+from .models import (
+    Product, ProductImage, ProductComment, Schematic, Firmware,
+    ComponentSuggestion, RepairReport,
+)
 
 
 class ProductImageInline(admin.TabularInline):
@@ -368,3 +371,26 @@ class ProductCommentAdmin(admin.ModelAdmin):
     def content_preview(self, obj):
         return obj.content[:80] + '...' if len(obj.content) > 80 else obj.content
     content_preview.short_description = 'Content'
+
+
+@admin.register(RepairReport)
+class RepairReportAdmin(admin.ModelAdmin):
+    """Admin for repair reports — moderation queue lives here."""
+
+    list_display = ['title', 'product', 'author', 'status', 'is_approved', 'created_at']
+    list_filter = ['status', 'is_approved', 'created_at']
+    search_fields = ['title', 'symptom', 'author__username', 'product__manufacturer', 'product__model_number']
+    readonly_fields = ['id', 'created_at', 'updated_at', 'helpful_count', 'unhelpful_count']
+    ordering = ['-created_at']
+    autocomplete_fields = ['product', 'product_component']
+    actions = ['approve_reports', 'reject_reports']
+
+    def approve_reports(self, request, queryset):
+        updated = queryset.update(is_approved=True)
+        self.message_user(request, f'{updated} repair report(s) approved.')
+    approve_reports.short_description = 'Approve selected repair reports'
+
+    def reject_reports(self, request, queryset):
+        updated = queryset.update(is_approved=False)
+        self.message_user(request, f'{updated} repair report(s) rejected.')
+    reject_reports.short_description = 'Reject selected repair reports'

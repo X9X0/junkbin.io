@@ -28,6 +28,7 @@ class Notification(models.Model):
         CONTENT_REJECTED = 'content_rejected', _('Content Rejected')
         PRODUCT_COMMENT = 'product_comment', _('Product Comment')
         SUBMISSION_COMMENT = 'submission_comment', _('Submission Comment')
+        PRODUCT_REPAIR = 'product_repair', _('New Repair Report')
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 

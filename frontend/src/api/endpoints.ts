@@ -3,6 +3,7 @@ import type {
   Product,
   ProductImage,
   ProductComment,
+  RepairReport,
   ProductComponent,
   Component,
   ComponentImage,
@@ -186,6 +187,43 @@ export const products = {
 
   deleteComment: async (productId: string, commentId: string): Promise<void> => {
     await api.delete(`/products/${productId}/comments/${commentId}/`);
+  },
+
+  repairs: async (id: string, page?: number): Promise<PaginatedResponse<RepairReport>> => {
+    const response = await api.get(`/products/${id}/repairs/`, { params: { page } });
+    return response.data;
+  },
+
+  addRepairReport: async (id: string, data: {
+    title: string;
+    symptom: string;
+    diagnostics?: string;
+    resolution?: string;
+    status?: string;
+    product_component?: string | null;
+  }): Promise<RepairReport> => {
+    const response = await api.post(`/products/${id}/repairs/`, data);
+    return response.data;
+  },
+
+  deleteRepairReport: async (productId: string, reportId: string): Promise<void> => {
+    await api.delete(`/products/${productId}/repairs/${reportId}/`);
+  },
+
+  voteRepairReport: async (
+    productId: string,
+    reportId: string,
+    voteType: 'helpful' | 'not_helpful'
+  ): Promise<RepairReport> => {
+    const response = await api.post(`/products/${productId}/repairs/${reportId}/vote/`, {
+      vote_type: voteType,
+    });
+    return response.data;
+  },
+
+  removeRepairReportVote: async (productId: string, reportId: string): Promise<RepairReport> => {
+    const response = await api.delete(`/products/${productId}/repairs/${reportId}/vote/`);
+    return response.data;
   },
 
   uploadSchematic: async (id: string, formData: FormData): Promise<Schematic> => {
