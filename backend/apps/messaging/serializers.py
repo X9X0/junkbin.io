@@ -3,6 +3,7 @@ Messaging serializers for Junkbin.io API
 """
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 
 from .models import Conversation, Message, MessageAttachment, UserBlock
@@ -30,7 +31,7 @@ class MessageAttachmentSerializer(serializers.ModelSerializer):
 
     def get_url(self, obj):
         request = self.context.get('request')
-        url = obj.file.url
+        url = reverse('attachment-download', kwargs={'pk': obj.pk})
         if request:
             return request.build_absolute_uri(url)
         return url
