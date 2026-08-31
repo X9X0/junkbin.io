@@ -182,7 +182,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'id', 'slug', 'manufacturer', 'model_number', 'revision',
             'region', 'region_display', 'category', 'category_display',
             'subcategory', 'year_manufactured', 'fcc_id', 'ic_id',
-            'part_number', 'description', 'teardown_notes',
+            'part_number', 'description', 'teardown_notes', 'source_url',
             'component_count', 'image_count', 'schematic_count', 'firmware_count',
             'comment_count', 'repair_report_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
@@ -252,7 +252,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'id', 'slug', 'manufacturer', 'model_number', 'revision', 'region',
             'category', 'subcategory', 'year_manufactured',
             'fcc_id', 'ic_id', 'part_number', 'description', 'teardown_notes',
-            'is_approved'
+            'source_url', 'is_approved'
         ]
         read_only_fields = ['id', 'slug', 'is_approved']
         # Disable DRF's auto-generated UniqueTogetherValidator (from the model's
@@ -268,6 +268,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
             'part_number': {'required': False, 'default': ''},
             'description': {'required': False, 'default': ''},
             'teardown_notes': {'required': False, 'default': ''},
+            'source_url': {'required': False, 'default': ''},
         }
 
     def validate(self, attrs):

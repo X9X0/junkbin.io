@@ -16,6 +16,7 @@ import EditProductModal from '../components/EditProductModal';
 import ProductComments from '../components/ProductComments';
 import RepairReports from '../components/RepairReports';
 import ComponentVoteButtons from '../components/ComponentVoteButtons';
+import { linkify } from '../utils/linkify';
 import {
   Cpu,
   FileText,
@@ -399,7 +400,21 @@ export default function ProductDetail() {
               {product.description && (
                 <div className="border-t border-cyber-light/30 pt-4">
                   <span className="text-gray-500 text-sm">{t('product_detail.label_description')}</span>
-                  <p className="text-gray-300 mt-1">{product.description}</p>
+                  <p className="text-gray-300 mt-1">{linkify(product.description)}</p>
+                </div>
+              )}
+
+              {product.source_url && (
+                <div className="border-t border-cyber-light/30 pt-4">
+                  <a
+                    href={product.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-cyber-cyan transition-colors"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    {t('product_detail.source')}
+                  </a>
                 </div>
               )}
 
@@ -550,8 +565,8 @@ export default function ProductDetail() {
                 <h3 className="font-display text-lg font-semibold text-white mb-4">
                   {t('product_detail.teardown_title')}
                 </h3>
-                <div className="prose prose-invert max-w-none text-gray-300">
-                  {product.teardown_notes}
+                <div className="prose prose-invert max-w-none text-gray-300 whitespace-pre-line">
+                  {linkify(product.teardown_notes)}
                 </div>
               </div>
             ) : (

@@ -31,6 +31,7 @@ export default function EditProductModal({
   const [fccId, setFccId] = useState('');
   const [description, setDescription] = useState('');
   const [teardownNotes, setTeardownNotes] = useState('');
+  const [sourceUrl, setSourceUrl] = useState('');
 
   useEffect(() => {
     if (isOpen) {
@@ -43,6 +44,7 @@ export default function EditProductModal({
       setFccId(product.fcc_id || '');
       setDescription(product.description || '');
       setTeardownNotes(product.teardown_notes || '');
+      setSourceUrl(product.source_url || '');
       setError('');
     }
   }, [isOpen, product]);
@@ -73,6 +75,7 @@ export default function EditProductModal({
     if (fccId) data.fcc_id = fccId;
     if (description) data.description = description;
     data.teardown_notes = teardownNotes;
+    data.source_url = sourceUrl;
     mutation.mutate(data);
   };
 
@@ -225,6 +228,19 @@ export default function EditProductModal({
               rows={5}
               placeholder="Disassembly steps, component locations, repair tips..."
               className="input-cyber resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-mono text-gray-500 uppercase mb-1">
+              Source URL
+            </label>
+            <input
+              type="url"
+              value={sourceUrl}
+              onChange={(e) => setSourceUrl(e.target.value)}
+              placeholder="https://..."
+              className="input-cyber"
             />
           </div>
 
