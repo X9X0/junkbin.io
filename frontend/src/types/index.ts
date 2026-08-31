@@ -83,6 +83,7 @@ export interface Product {
   year_manufactured?: number;
   description?: string;
   teardown_notes?: string;
+  source_url?: string;
   is_approved: boolean;
   is_featured: boolean;
   component_count: number;

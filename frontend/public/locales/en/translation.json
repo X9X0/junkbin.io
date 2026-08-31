@@ -1062,6 +1062,7 @@
     "label_ic_id": "IC ID",
     "label_part_number": "Part Number",
     "label_description": "Description",
+    "source": "Source",
     "add_image_btn": "ADD",
     "add_plus": "+ ADD"
   },

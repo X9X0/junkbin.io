@@ -190,6 +190,10 @@ class Product(models.Model):
         blank=True,
         help_text=_('Notes about the teardown process')
     )
+    source_url = models.URLField(
+        blank=True,
+        help_text=_('External source (e.g. wiki page) this documentation was derived from')
+    )
 
     # URL slug for SEO-friendly URLs
     slug = models.SlugField(

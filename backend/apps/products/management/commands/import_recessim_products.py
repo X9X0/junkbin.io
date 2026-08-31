@@ -862,6 +862,7 @@ class Command(BaseCommand):
                         category=entry["category"],
                         description=entry.get("description", ""),
                         teardown_notes=full_notes,
+                        source_url=entry["source_url"],
                         created_by=admin,
                         is_approved=True,
                     ),
