@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Junkbin.io certificate expiry monitor daily
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

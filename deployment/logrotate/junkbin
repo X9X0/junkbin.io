@@ -27,3 +27,26 @@
     notifempty
     copytruncate
 }
+
+# certbot renewal output from the cron installed by junkbin-deploy.sh.
+# Small and append-only, but rotated so a chatty failure loop can't fill /var.
+/var/log/junkbin-certbot-renew.log {
+    monthly
+    missingok
+    rotate 12
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}
+
+# Backup cron output from the cron installed by junkbin-deploy.sh.
+/var/log/junkbin-backup.log {
+    monthly
+    missingok
+    rotate 12
+    compress
+    delaycompress
+    notifempty
+    copytruncate
+}
