@@ -18,7 +18,6 @@ set -euo pipefail
 
 WARNING_THRESHOLD="${CERT_WARN_DAYS:-21}"
 CRITICAL_THRESHOLD="${CERT_CRIT_DAYS:-7}"
-ADMIN_EMAIL="${JUNKBIN_ADMIN_EMAIL:-root}"
 HOSTNAME=$(hostname -f 2>/dev/null || hostname)
 DOMAIN="${JUNKBIN_DOMAIN:-junkbin.io}"
 JUNKBIN_DIR="${JUNKBIN_DIR:-/root/junkbin.io}"
@@ -53,6 +52,16 @@ SMTP_PASSWORD="$(read_env EMAIL_HOST_PASSWORD)"
 SMTP_SSL="$(read_env EMAIL_USE_SSL)"
 SMTP_PORT="${SMTP_PORT:-465}"
 SMTP_SSL="${SMTP_SSL:-True}"
+
+# Who gets alerted. Resolved from .env so the address lives in exactly one
+# place on the server and never in version control - this repo is public.
+# ALERT_EMAIL takes precedence and accepts a comma-separated list, so alerts can
+# go somewhere a person actually reads without disturbing ADMIN_EMAIL, which the
+# app and certbot registration also use. JUNKBIN_ADMIN_EMAIL still overrides
+# both, for testing.
+ADMIN_EMAIL="${JUNKBIN_ADMIN_EMAIL:-$(read_env ALERT_EMAIL)}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-$(read_env ADMIN_EMAIL)}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-root}"
 
 # Every hostname that must have a valid cert. A cert can renew for the apex and
 # still leave a subdomain stale - they are separate lineages.
@@ -152,7 +161,7 @@ alert() {
         return 0
     fi
 
-    logger -t junkbin-cert-monitor "ALERT DELIVERY FAILED - no SMTP relay and no working mail(1)"
+    logger -t junkbin-cert-monitor "ALERT DELIVERY FAILED - no SMTP relay and no working mail(1); intended recipient: ${ADMIN_EMAIL}"
     echo "$subject" >&2
     return 1
 }

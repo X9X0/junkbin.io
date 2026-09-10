@@ -678,10 +678,11 @@ install_cert_monitor() {
 
     chmod +x "${DEPLOY_DIR}/deployment/cert-monitor.sh"
 
-    # Without this the monitor's alerts go to local mail for root, which nobody
-    # reads - that is half of why the Sep 2026 expiry went unnoticed.
+    # Deliberately no email address here: the monitor resolves the recipient
+    # from the project's .env (ALERT_EMAIL, else ADMIN_EMAIL), so the address
+    # lives in exactly one place on the server and never in this repo, which is
+    # public. JUNKBIN_DIR below is what lets the monitor find that .env.
     cat > /etc/default/junkbin-monitor << ENVEOF
-JUNKBIN_ADMIN_EMAIL=${ADMIN_EMAIL:-root}
 JUNKBIN_DOMAIN=${DOMAIN}
 JUNKBIN_DIR=${DEPLOY_DIR}
 JUNKBIN_CERT_HOSTS="${DOMAIN} www.${DOMAIN} translate.${DOMAIN}"
