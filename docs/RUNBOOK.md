@@ -14,8 +14,9 @@
 6. [Backup & Restore](#backup--restore)
 7. [Fresh Server Deployment](#fresh-server-deployment)
 8. [SSL Certificate Management](#ssl-certificate-management)
-9. [Troubleshooting](#troubleshooting)
-10. [Architecture Reference](#architecture-reference)
+9. [Monitoring & Alerting](#monitoring--alerting)
+10. [Troubleshooting](#troubleshooting)
+11. [Architecture Reference](#architecture-reference)
 
 ---
 
@@ -477,6 +478,113 @@ docker compose -f docker-compose.yml start nginx
 
 Note `translate.junkbin.io` is a **separate certificate lineage** — renewing the
 apex does not renew it. Check both.
+
+---
+
+## Monitoring & Alerting
+
+Two systemd timers watch for the failures most likely to take the site down
+quietly. Both are silent when healthy — **no news is good news**, which also
+means a broken monitor is indistinguishable from a healthy system unless you
+check it. See [Verifying alerts still work](#verifying-alerts-still-work).
+
+| Timer | Runs | Watches | Warns at | Critical at |
+|---|---|---|---|---|
+| `junkbin-cert-monitor.timer` | daily | TLS cert expiry, all 3 hostnames | 21 days | 7 days, or expired |
+| `junkbin-disk-monitor.timer` | hourly | root filesystem usage | 80% | 90% |
+
+```bash
+systemctl list-timers 'junkbin*' --all
+journalctl -t junkbin-cert-monitor --since '7 days ago'
+journalctl -t junkbin-disk-monitor --since '7 days ago'
+```
+
+### Why these exist
+
+The certificates expired on 2026-09-09 because the renewal cron had been failing
+for roughly a month and nothing was watching. The renewal bug is fixed, but the
+deeper problem was the absence of a second pair of eyes — so the cert monitor
+checks the certificate **served over TLS**, not the files on disk. That also
+catches "renewed successfully but nginx was never reloaded", which happened
+during that very incident.
+
+### Where alerts go
+
+Both monitors resolve the recipient from `.env`, first non-empty wins:
+
+| Source | Notes |
+|---|---|
+| `JUNKBIN_ADMIN_EMAIL` env var | override, for testing only |
+| `ALERT_EMAIL` in `.env` | **the one to edit** — comma-separated list allowed |
+| `ADMIN_EMAIL` in `.env` | fallback |
+| `root` | last resort, effectively means nobody |
+
+`ALERT_EMAIL` is deliberately separate from `ADMIN_EMAIL`, which is also the
+certbot registration address and the app's sending identity — changing one
+should not silently change the others.
+
+To change who gets paged, edit `ALERT_EMAIL` in `.env`. No restart or reinstall
+is needed; the monitors read it on each run. **Do not put addresses in
+`/etc/default/junkbin-monitor`** — that file exists only to supply `JUNKBIN_DIR`
+so the monitors can find `.env`.
+
+### How alerts are delivered
+
+Through the app's authenticated SMTP relay (`deployment/alert-lib.sh`, shared by
+both monitors), *not* `mail(1)`.
+
+This is deliberate and worth preserving: **this host has no `mail` binary, and
+exim is installed but not running.** Any monitor that calls `mail -s` here
+delivers to nothing, falls back to stderr, and has its output swallowed by the
+systemd timer. A local MTA is not the fix either — mail from a cloud IP with no
+SPF or DKIM is mostly spam-filtered, which recreates the same silence one layer
+down.
+
+Delivery outcome is always logged, including failure:
+
+```bash
+journalctl -t junkbin-cert-monitor | grep -E 'delivered|DELIVERY FAILED'
+```
+
+A line reading `ALERT DELIVERY FAILED` names the intended recipient, and means
+alerts are not reaching anyone — treat it as urgent as the alert itself.
+
+### Verifying alerts still work
+
+Silence is ambiguous, so test delivery periodically — and always after changing
+`.env`, SMTP credentials, or the mail provider. Lower a threshold to force an
+alert against a perfectly healthy system:
+
+```bash
+# Forces a WARNING; nothing is actually wrong
+DISK_WARN_PCT=1 DISK_CRIT_PCT=99 /root/junkbin.io/deployment/disk-monitor.sh
+CERT_WARN_DAYS=9999 CERT_CRIT_DAYS=0 /root/junkbin.io/deployment/cert-monitor.sh
+
+# Then confirm it actually went out
+journalctl -t junkbin-disk-monitor -n 2
+journalctl -t junkbin-cert-monitor -n 2
+```
+
+Expect `alert delivered via SMTP to <recipients>`. Check the inbox too — a
+relay that accepts a message has not proven it escaped a spam filter.
+
+### Installing or reinstalling a monitor
+
+`junkbin-deploy.sh` does this automatically. By hand, or after editing a unit
+file (a `git pull` alone does **not** take effect — the unit must be re-copied
+and systemd reloaded):
+
+```bash
+cd /root/junkbin.io
+sed "s|__DEPLOY_DIR__|$PWD|g" deployment/systemd/junkbin-cert-monitor.service \
+    > /etc/systemd/system/junkbin-cert-monitor.service
+cp deployment/systemd/junkbin-cert-monitor.timer /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable --now junkbin-cert-monitor.timer
+```
+
+The units ship with a `__DEPLOY_DIR__` placeholder rather than a literal path;
+substitute it or the service will point at a directory that does not exist.
 
 ---
 
