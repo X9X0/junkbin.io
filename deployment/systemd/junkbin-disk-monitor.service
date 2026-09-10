@@ -1,6 +1,11 @@
 [Unit]
 Description=Junkbin.io Disk Space Monitor
-After=network.target
+# network-online, not plain network.target: alerts now go out over SMTP, so a
+# disk-full condition detected at boot would otherwise fire before the network
+# is routable and fail to send. network.target only means networking has
+# started, not that a connection is usable.
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
