@@ -1,0 +1,14 @@
+[Unit]
+Description=Junkbin.io SSL Certificate Expiry Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Optional (leading '-' = don't fail if absent). Written by install_cert_monitor()
+# in junkbin-deploy.sh; sets JUNKBIN_ADMIN_EMAIL, JUNKBIN_DOMAIN, JUNKBIN_DIR
+# and the CERT_* thresholds. Without it, alerts fall back to local mail for root.
+EnvironmentFile=-/etc/default/junkbin-monitor
+# __DEPLOY_DIR__ is substituted with the real install path by
+# install_cert_monitor() in junkbin-deploy.sh. Installing by hand? Replace it.
+ExecStart=__DEPLOY_DIR__/deployment/cert-monitor.sh

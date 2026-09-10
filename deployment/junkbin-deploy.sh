@@ -26,6 +26,15 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+# SSL certificate renewal
+CERT_RENEW_LOG="${CERT_RENEW_LOG:-/var/log/junkbin-certbot-renew.log}"
+CERT_WARN_DAYS="${CERT_WARN_DAYS:-21}"
+
+# Backups. Target defaults to the project's own ./backups (set in setup_backups
+# once DEPLOY_DIR is known) because that is where the off-host puller looks for
+# junkbin_backup_*.tar.gz - see docs/RUNBOOK.md, "Off-host backups".
+BACKUP_LOG="${BACKUP_LOG:-/var/log/junkbin-backup.log}"
+
 # ASCII Art Banner
 print_banner() {
     echo -e "${CYAN}"
@@ -611,6 +620,13 @@ setup_ssl() {
 # Setup certbot auto-renewal cron job
 # Note: certbot's systemd timer only renews the cert files — it does NOT reload
 # nginx inside Docker. This cron job handles both: renewal + nginx reload.
+#
+# The renewal MUST invoke the /opt/certbot venv binary by absolute path. The
+# renewal configs specify `authenticator = dns-hostinger`, and that plugin lives
+# only in the venv (see setup_ssl). cron's PATH is /usr/bin:/bin — it does not
+# include the /usr/local/bin symlink — so a bare `certbot` resolves to the
+# distro package from install_dependencies(), which has no dns-hostinger plugin
+# and fails on every run. That silently expired the certs once already.
 setup_cert_renewal() {
     log_step "Setting up SSL certificate auto-renewal..."
 
@@ -620,15 +636,66 @@ setup_cert_renewal() {
     fi
 
     DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-    RENEWAL_CMD="certbot renew --quiet && docker compose -f ${DEPLOY_DIR}/docker-compose.yml exec -T nginx nginx -s reload"
 
-    # Add only if not already present
-    if crontab -l 2>/dev/null | grep -q "certbot renew"; then
-        log_info "Cert renewal cron already exists — skipping"
+    # Prefer the venv certbot (has certbot-dns-hostinger); fall back to system.
+    if [ -x /opt/certbot/bin/certbot ]; then
+        CERTBOT_BIN=/opt/certbot/bin/certbot
     else
-        (crontab -l 2>/dev/null; echo "0 3,15 * * * ${RENEWAL_CMD}") | crontab -
-        log_info "Cert renewal cron added (runs at 03:00 and 15:00 daily)"
+        CERTBOT_BIN="$(command -v certbot || echo /usr/bin/certbot)"
+        log_warn "/opt/certbot venv missing - using ${CERTBOT_BIN}, which may lack the dns-hostinger plugin"
     fi
+
+    DOCKER_BIN="$(command -v docker || echo /usr/bin/docker)"
+
+    # --deploy-hook fires only when a cert was actually renewed, so nginx is
+    # reloaded on renewal rather than twice a day regardless. Output is appended
+    # to a log rather than --quiet'd into the void, so a failing renewal leaves
+    # a trail instead of expiring in silence.
+    RENEWAL_CMD="${CERTBOT_BIN} renew --deploy-hook '${DOCKER_BIN} compose -f ${DEPLOY_DIR}/docker-compose.yml exec -T nginx nginx -s reload' >> ${CERT_RENEW_LOG} 2>&1"
+
+    # Replace any existing entry rather than skipping: re-running this installer
+    # must repair a stale or broken renewal line, not leave it in place.
+    if crontab -l 2>/dev/null | grep -q "certbot renew"; then
+        crontab -l 2>/dev/null | grep -v "certbot renew" | crontab -
+        log_info "Removed stale cert renewal cron entry"
+    fi
+    (crontab -l 2>/dev/null; echo "0 3,15 * * * ${RENEWAL_CMD}") | crontab -
+    log_info "Cert renewal cron installed (03:00 and 15:00 daily, logging to ${CERT_RENEW_LOG})"
+
+    install_cert_monitor
+}
+
+# Install the certificate expiry monitor (systemd timer, daily).
+# The renewal cron above fixes the known failure; this catches the next unknown
+# one by alerting on days-until-expiry regardless of *why* renewal stalled.
+install_cert_monitor() {
+    DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+    if [ ! -f "${DEPLOY_DIR}/deployment/cert-monitor.sh" ]; then
+        log_warn "cert-monitor.sh not found - skipping expiry monitor"
+        return
+    fi
+
+    chmod +x "${DEPLOY_DIR}/deployment/cert-monitor.sh"
+
+    # Without this the monitor's alerts go to local mail for root, which nobody
+    # reads - that is half of why the Sep 2026 expiry went unnoticed.
+    cat > /etc/default/junkbin-monitor << ENVEOF
+JUNKBIN_ADMIN_EMAIL=${ADMIN_EMAIL:-root}
+JUNKBIN_DOMAIN=${DOMAIN}
+JUNKBIN_DIR=${DEPLOY_DIR}
+JUNKBIN_CERT_HOSTS="${DOMAIN} www.${DOMAIN} translate.${DOMAIN}"
+CERT_RENEW_LOG=${CERT_RENEW_LOG}
+CERT_WARN_DAYS=${CERT_WARN_DAYS}
+ENVEOF
+    chmod 644 /etc/default/junkbin-monitor
+
+    install_systemd_unit "${DEPLOY_DIR}/deployment/systemd/junkbin-cert-monitor.service"
+    install_systemd_unit "${DEPLOY_DIR}/deployment/systemd/junkbin-cert-monitor.timer"
+
+    systemctl daemon-reload
+    systemctl enable --now junkbin-cert-monitor.timer
+    log_info "Cert expiry monitor enabled (daily; warns at ${CERT_WARN_DAYS:-21} days)"
 }
 
 # Deploy application
@@ -686,30 +753,38 @@ setup_logrotate() {
     fi
 }
 
+# Install a systemd unit, substituting __DEPLOY_DIR__ with the real install path.
+# The shipped units use that placeholder rather than a literal path: they used to
+# hardcode /opt/junkbin.io, which exists on no environment we run - prod is
+# /root/junkbin.io and the dev VM is /home/scap/junkbin.io. Nothing has broken
+# from this yet only because these units are not currently installed on prod at
+# all; installing them as-shipped would have given junkbin.service a nonexistent
+# WorkingDirectory and the disk monitor a nonexistent ExecStart.
+install_systemd_unit() {
+    local src="$1" name
+    name="$(basename "$src")"
+
+    if [ ! -f "$src" ]; then
+        log_warn "${name} not found — skipping"
+        return 1
+    fi
+
+    sed "s|__DEPLOY_DIR__|${DEPLOY_DIR}|g" "$src" > "/etc/systemd/system/${name}"
+    log_info "Installed ${name}"
+}
+
 # Setup systemd service and disk monitor
 setup_systemd() {
     log_step "Setting up systemd services..."
 
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    SYSTEMD_SRC="$SCRIPT_DIR/systemd"
+    DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    SYSTEMD_SRC="${DEPLOY_DIR}/deployment/systemd"
 
-    if [ ! -d "$SYSTEMD_SRC" ]; then
-        SYSTEMD_SRC="$(pwd)/deployment/systemd"
-    fi
+    install_systemd_unit "$SYSTEMD_SRC/junkbin.service"
 
-    # Install main service
-    if [ -f "$SYSTEMD_SRC/junkbin.service" ]; then
-        cp "$SYSTEMD_SRC/junkbin.service" /etc/systemd/system/junkbin.service
-        log_info "Installed junkbin.service"
-    else
-        log_warn "junkbin.service not found — skipping"
-    fi
-
-    # Install disk monitor service and timer
-    if [ -f "$SYSTEMD_SRC/junkbin-disk-monitor.service" ]; then
-        cp "$SYSTEMD_SRC/junkbin-disk-monitor.service" /etc/systemd/system/
-        cp "$SYSTEMD_SRC/junkbin-disk-monitor.timer" /etc/systemd/system/
-        log_info "Installed disk monitor service and timer"
+    if install_systemd_unit "$SYSTEMD_SRC/junkbin-disk-monitor.service"; then
+        install_systemd_unit "$SYSTEMD_SRC/junkbin-disk-monitor.timer"
+        chmod +x "${DEPLOY_DIR}/deployment/disk-monitor.sh" 2>/dev/null || true
     fi
 
     systemctl daemon-reload
@@ -722,28 +797,53 @@ setup_systemd() {
 }
 
 # Setup backup cron job
+#
+# This used to write its own inline backup script and cron that, while the real
+# deployment/backup.sh sat unused. The inline version was silently broken:
+#   - it cd'd to a hardcoded /opt/junkbin.io with no `|| exit`
+#   - `pg_dump | gzip` without pipefail writes a valid 20-byte empty archive when
+#     pg_dump fails, so a total failure still looked like a successful backup
+#   - combined with `find -mtime +30 -delete`, 30 days of that silently deleted
+#     every genuine backup
+#   - it tarred ./backend/media, but media lives in the media_files Docker volume
+#     at /app/media and nothing bind-mounts that path
+# deployment/backup.sh gets all of this right, so cron that instead.
 setup_backups() {
     log_step "Setting up automated backups..."
-    
-    mkdir -p /opt/junkbin-backups
-    
-    # Create backup script
-    cat > /opt/junkbin-backups/backup.sh << 'EOF'
-#!/bin/bash
-BACKUP_DIR="/opt/junkbin-backups"
-DATE=$(date +%Y%m%d_%H%M%S)
-cd /opt/junkbin.io
-docker compose exec -T postgres pg_dump -U junkbin junkbin | gzip > "$BACKUP_DIR/db_$DATE.sql.gz"
-tar -czf "$BACKUP_DIR/media_$DATE.tar.gz" backend/media/
-find "$BACKUP_DIR" -name "*.gz" -mtime +30 -delete
-EOF
-    
-    chmod +x /opt/junkbin-backups/backup.sh
-    
-    # Add to crontab (daily at 2 AM)
-    (crontab -l 2>/dev/null; echo "0 2 * * * /opt/junkbin-backups/backup.sh") | crontab -
-    
-    log_info "Backup system configured (daily at 2 AM)"
+
+    DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+    BACKUP_SCRIPT="${DEPLOY_DIR}/deployment/backup.sh"
+
+    if [ ! -f "$BACKUP_SCRIPT" ]; then
+        log_warn "deployment/backup.sh not found — skipping backup setup"
+        return
+    fi
+
+    # Must stay ./backups: the off-host pull job fetches junkbin_backup_*.tar.gz
+    # from there twice daily. Writing anywhere else silently orphans off-host
+    # backups while the local ones still look fine.
+    BACKUP_TARGET_DIR="${BACKUP_TARGET_DIR:-${DEPLOY_DIR}/backups}"
+
+    mkdir -p "$BACKUP_TARGET_DIR"
+    chmod +x "$BACKUP_SCRIPT"
+
+    # On failure, echo to stdout so cron mails the operator - backup.sh runs
+    # under `set -e` and exits non-zero if a container is missing or pg_dump dies.
+    BACKUP_CMD="${BACKUP_SCRIPT} ${BACKUP_TARGET_DIR} >> ${BACKUP_LOG} 2>&1 || echo \"Junkbin backup FAILED - see ${BACKUP_LOG}\""
+
+    # Replace any existing entry, including the old /opt/junkbin-backups/backup.sh
+    # line, so re-running this installer repairs a broken backup rather than
+    # leaving it in place.
+    if crontab -l 2>/dev/null | grep -qE "junkbin-backups/backup.sh|deployment/backup.sh"; then
+        crontab -l 2>/dev/null | grep -vE "junkbin-backups/backup.sh|deployment/backup.sh" | crontab -
+        log_info "Removed stale backup cron entry"
+    fi
+    # 02:00 and 14:00, matching what prod already runs: the off-host pull job
+    # fetches at ~02:15 and ~14:15, so a once-daily backup would leave the
+    # afternoon pull with nothing new to collect.
+    (crontab -l 2>/dev/null; echo "0 2,14 * * * ${BACKUP_CMD}") | crontab -
+
+    log_info "Backup cron installed (02:00 and 14:00 -> ${BACKUP_TARGET_DIR}, logging to ${BACKUP_LOG})"
 }
 
 # Print success message

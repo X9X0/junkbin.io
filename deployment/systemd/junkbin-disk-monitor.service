@@ -4,4 +4,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/opt/junkbin.io/deployment/disk-monitor.sh
+# Substituted with the real install path by install_systemd_unit() in
+# junkbin-deploy.sh. Installing by hand? Replace __DEPLOY_DIR__.
+EnvironmentFile=-/etc/default/junkbin-monitor
+ExecStart=__DEPLOY_DIR__/deployment/disk-monitor.sh

@@ -40,7 +40,7 @@ Junkbin.io is a Django + React application running entirely in Docker Compose.
 - `junkbinio_media_files` — uploaded images, PDFs, schematics
 - `junkbinio_frontend_build` — compiled React assets (ephemeral, rebuilt on deploy)
 
-**Project root:** `/home/scap/junkbin.io` (or wherever the repo was cloned)
+**Project root:** `/root/junkbin.io` on the production server. Verify with `docker inspect junkbin_nginx --format "{{range .Mounts}}{{.Source}}{{\"\\n\"}}{{end}}"` rather than assuming — this document previously named the maintainer's *dev* path here, which sent a 2026-09-09 incident response `cd`-ing into a nonexistent directory.
 
 ---
 
@@ -65,7 +65,7 @@ You need all of these before you can operate the site:
 ssh user@<server-ip>
 
 # Check all containers are running
-cd /home/scap/junkbin.io
+cd /root/junkbin.io
 docker compose -f docker-compose.yml ps
 
 # All of these should show "running" or "Up":
@@ -89,7 +89,7 @@ Each line should show `SUCCESS`. If the log hasn't updated in over 24 hours, the
 ### Step 4 — Confirm you can deploy an update
 
 ```bash
-cd /home/scap/junkbin.io
+cd /root/junkbin.io
 ./deployment/update.sh --skip-pull   # dry run with existing code
 ```
 
@@ -105,7 +105,7 @@ If that works without errors, you can deploy updates.
 
 ## Secrets & Credentials Inventory
 
-All secrets live in `/home/scap/junkbin.io/.env` on the server. **This file is not in version control.**
+All secrets live in `/root/junkbin.io/.env` on the server. **This file is not in version control.**
 
 ### What's in .env
 
@@ -123,14 +123,14 @@ All secrets live in `/home/scap/junkbin.io/.env` on the server. **This file is n
 
 ```bash
 # Copy .env to a secure location off-server (e.g., password manager, encrypted drive)
-cat /home/scap/junkbin.io/.env
+cat /root/junkbin.io/.env
 ```
 
 The `deployment/backup.sh` script automatically includes `.env.backup` in each backup archive. Treat backup archives as sensitive — they contain credentials.
 
 ### SSL certificates
 
-Managed by Let's Encrypt / Certbot. Certificates live at `/etc/letsencrypt/live/junkbin.io/`. They auto-renew via a cron job. See [SSL Certificate Management](#ssl-certificate-management).
+Managed by Let's Encrypt / Certbot via the DNS-01 challenge (`certbot-dns-hostinger`, installed in the `/opt/certbot` venv). Certificates live at `/etc/letsencrypt/live/junkbin.io/`. They auto-renew via a cron job, with a daily expiry monitor as backstop. See [SSL Certificate Management](#ssl-certificate-management).
 
 ---
 
@@ -141,7 +141,7 @@ All commands run from the project root. Production uses the explicit `-f docker-
 ### Check status
 
 ```bash
-cd /home/scap/junkbin.io
+cd /root/junkbin.io
 docker compose -f docker-compose.yml ps
 ```
 
@@ -206,7 +206,7 @@ docker system df   # shows how much Docker is using
 Use the `update.sh` script — it handles git pull, image rebuild, volume cleanup, migrations, and static files in the correct order.
 
 ```bash
-cd /home/scap/junkbin.io
+cd /root/junkbin.io
 ./deployment/update.sh
 ```
 
@@ -243,7 +243,7 @@ docker compose -f docker-compose.yml up -d frontend nginx
 ### Taking a backup
 
 ```bash
-cd /home/scap/junkbin.io
+cd /root/junkbin.io
 ./deployment/backup.sh
 ```
 
@@ -254,6 +254,35 @@ Backups are saved to `./backups/` as `junkbin_backup_YYYYMMDD_HHMMSS.tar.gz`. Ea
 - `manifest.txt` — metadata
 
 Backups older than 30 days are automatically pruned.
+
+### Automated backups
+
+A root cron entry runs `deployment/backup.sh` at 02:00 and 14:00, writing to
+`./backups/` (where the off-host puller looks, ~15 minutes later each time) and
+logging to `/var/log/junkbin-backup.log`:
+
+```bash
+sudo crontab -l | grep backup.sh
+sudo tail -30 /var/log/junkbin-backup.log
+```
+
+> **If you see `/opt/junkbin-backups/backup.sh` in the crontab, it is the old
+> broken job — replace it.** That script `cd`'d to a hardcoded `/opt/junkbin.io`,
+> piped `pg_dump` into `gzip` without `pipefail` (so a failed dump still produced
+> a valid, empty `.gz` that looked like a successful backup), and pruned
+> `*.gz` older than 30 days — which would delete genuine backups while leaving
+> the empty ones. It also archived `./backend/media`, but media lives in the
+> `media_files` Docker volume at `/app/media`. Re-running
+> `sudo ./deployment/junkbin-deploy.sh` replaces the entry.
+
+### Verifying a backup is real
+
+Size alone is the tell — an empty dump still compresses to a valid archive:
+
+```bash
+ls -lh backups/ | tail -5              # a real archive is MBs, not bytes
+tar -tzf backups/junkbin_backup_*.tar.gz | head   # should list database.sql, media.tar.gz, manifest.txt
+```
 
 ### Off-host backups (automated)
 
@@ -279,7 +308,7 @@ If you see `SKIP` entries, that means the archive already existed locally — no
 The restore script is interactive — it shows a menu so you can choose what to restore.
 
 ```bash
-cd /home/scap/junkbin.io
+cd /root/junkbin.io
 ./deployment/restore.sh backups/junkbin_backup_20260228_020000.tar.gz
 ```
 
@@ -356,18 +385,60 @@ Certificates are issued by Let's Encrypt and managed by Certbot.
 ### Check certificate status
 
 ```bash
-certbot certificates
-# or
-openssl s_client -connect junkbin.io:443 -servername junkbin.io 2>/dev/null | openssl x509 -noout -dates
+sudo /opt/certbot/bin/certbot certificates
+
+# Or check what is actually being served (catches "renewed but nginx not reloaded"):
+for h in junkbin.io www.junkbin.io translate.junkbin.io; do
+  echo "== $h"
+  echo | openssl s_client -servername "$h" -connect "$h:443" 2>/dev/null | openssl x509 -noout -dates
+done
 ```
 
 ### Manual renewal
 
-Certificates auto-renew via cron. If you need to renew manually:
+> **Always use the absolute venv path `/opt/certbot/bin/certbot`.**
+> These certs use the `dns-hostinger` DNS-01 authenticator, and that plugin is
+> installed **only** in the `/opt/certbot` venv. A bare `certbot` resolves to the
+> distro package, which has no such plugin and will fail. This is exactly how the
+> certs expired in Sep 2026 — the renewal cron called bare `certbot` and cron's
+> PATH (`/usr/bin:/bin`) excludes the `/usr/local/bin` symlink.
 
 ```bash
-# The renewal hooks stop/start nginx automatically
-certbot renew
+sudo /opt/certbot/bin/certbot renew
+docker compose -f docker-compose.yml exec -T nginx nginx -s reload
+```
+
+### Auto-renewal
+
+A root cron entry runs at 03:00 and 15:00 daily:
+
+```bash
+sudo crontab -l | grep certbot
+```
+
+It calls the venv certbot by absolute path and reloads nginx via
+`--deploy-hook`, so the reload fires only on an actual renewal. Output is
+appended to `/var/log/junkbin-certbot-renew.log` — check there first when a
+renewal is suspect:
+
+```bash
+sudo tail -50 /var/log/junkbin-certbot-renew.log
+```
+
+Re-running `sudo ./deployment/junkbin-deploy.sh` replaces a stale or broken
+renewal cron entry rather than skipping it.
+
+### Expiry monitoring
+
+`deployment/cert-monitor.sh` runs daily via `junkbin-cert-monitor.timer` and
+emails `JUNKBIN_ADMIN_EMAIL` when any host is within 21 days of expiry
+(critical at 7 days, and when already expired). It inspects the cert **served
+over TLS**, not the files on disk, so it also catches "renewed on disk but nginx
+was never reloaded".
+
+```bash
+systemctl status junkbin-cert-monitor.timer
+sudo /root/junkbin.io/deployment/cert-monitor.sh   # run on demand
 ```
 
 ### Certificate location
@@ -381,16 +452,31 @@ These are bind-mounted into the nginx container via `docker-compose.yml` (`/etc/
 
 ### If the certificate expires and the site is down
 
+First just try a normal renewal — the DNS-01 challenge does not need port 80,
+so nginx can keep running:
+
 ```bash
-# Stop nginx
+sudo /opt/certbot/bin/certbot renew
+cd /root/junkbin.io && docker compose -f docker-compose.yml exec -T nginx nginx -s reload
+```
+
+Only if the Hostinger DNS credentials are the problem (check
+`/etc/letsencrypt/hostinger.ini` and the renewal log) fall back to standalone,
+which needs port 80 free:
+
+```bash
+# Stop nginx so certbot can bind port 80
 docker compose -f docker-compose.yml stop nginx
 
-# Renew using standalone mode (certbot handles port 80 itself)
-certbot certonly --standalone -d junkbin.io -d www.junkbin.io
+sudo /opt/certbot/bin/certbot certonly --standalone -d junkbin.io -d www.junkbin.io
+sudo /opt/certbot/bin/certbot certonly --standalone -d translate.junkbin.io
 
 # Start nginx again
 docker compose -f docker-compose.yml start nginx
 ```
+
+Note `translate.junkbin.io` is a **separate certificate lineage** — renewing the
+apex does not renew it. Check both.
 
 ---
 
@@ -427,7 +513,7 @@ Common causes:
 
 ```bash
 df -h
-du -sh /home/scap/junkbin.io/backups/*   # old backups
+du -sh /root/junkbin.io/backups/*   # old backups
 docker system prune -f                    # remove unused Docker images/layers
 ```
 
@@ -438,8 +524,8 @@ docker system prune -f                    # remove unused Docker images/layers
 docker exec junkbin_postgres pg_isready -U junkbin
 
 # Check DATABASE_URL in .env matches POSTGRES_* vars
-grep DATABASE_URL /home/scap/junkbin.io/.env
-grep POSTGRES_ /home/scap/junkbin.io/.env
+grep DATABASE_URL /root/junkbin.io/.env
+grep POSTGRES_ /root/junkbin.io/.env
 ```
 
 ### Admin login not working / locked out
