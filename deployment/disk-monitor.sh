@@ -10,10 +10,17 @@
 
 set -euo pipefail
 
-WARNING_THRESHOLD=80
-CRITICAL_THRESHOLD=90
-ADMIN_EMAIL="${JUNKBIN_ADMIN_EMAIL:-root}"
+WARNING_THRESHOLD="${DISK_WARN_PCT:-80}"
+CRITICAL_THRESHOLD="${DISK_CRIT_PCT:-90}"
 HOSTNAME=$(hostname -f 2>/dev/null || hostname)
+
+# Shared delivery: read_env, SMTP config, ADMIN_EMAIL resolution, alert().
+# This previously called `mail -s` directly, which delivers nowhere on this
+# host - no mail(1) binary and no running MTA - so every disk alert would have
+# been silently discarded. See alert-lib.sh.
+ALERT_TAG=junkbin-disk-monitor
+# shellcheck source=deployment/alert-lib.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/alert-lib.sh"
 
 # Get disk usage percentage for root filesystem
 USAGE=$(df / | awk 'NR==2 {print $5}' | tr -d '%')
@@ -33,9 +40,7 @@ $(du -sh /var/lib/docker/*/ 2>/dev/null | sort -rh | head -5 || echo 'Unable to 
 
 Immediate action required to prevent service disruption."
 
-    echo "$BODY" | mail -s "$SUBJECT" "$ADMIN_EMAIL" 2>/dev/null || \
-        echo "$SUBJECT" >&2
-    logger -t junkbin-disk-monitor "CRITICAL: disk usage at ${USAGE}%"
+    alert "$SUBJECT" "$BODY" "CRITICAL: disk usage at ${USAGE}%" || true
 
 elif [ "$USAGE" -ge "$WARNING_THRESHOLD" ]; then
     SUBJECT="[WARNING] Junkbin.io disk usage at ${USAGE}% on ${HOSTNAME}"
@@ -46,7 +51,5 @@ $(df -h /)
 
 Consider running: docker system prune -f"
 
-    echo "$BODY" | mail -s "$SUBJECT" "$ADMIN_EMAIL" 2>/dev/null || \
-        echo "$SUBJECT" >&2
-    logger -t junkbin-disk-monitor "WARNING: disk usage at ${USAGE}%"
+    alert "$SUBJECT" "$BODY" "WARNING: disk usage at ${USAGE}%" || true
 fi
