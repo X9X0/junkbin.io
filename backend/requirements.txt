@@ -25,7 +25,7 @@ dj-database-url==3.1.2
 # ========================================
 # Authentication & Authorization
 # ========================================
-django-allauth[socialaccount]==65.19.1
+django-allauth[socialaccount]==65.19.2
 djangorestframework-simplejwt==5.5.1
 PyJWT==2.13.0
 requests==2.34.2
