@@ -73,7 +73,7 @@ boto3==1.43.82
 # ========================================
 django-ratelimit==4.1.0
 django-csp==4.0
-django-permissions-policy==4.31.0
+django-permissions-policy==4.33.0
 python-magic==0.4.27
 django-axes==8.3.1
 
