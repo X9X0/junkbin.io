@@ -27,7 +27,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
         model = ProductImage
         fields = [
             'id', 'product', 'image', 'thumbnail', 'medium',
-            'image_type', 'caption', 'display_order',
+            'image_type', 'caption', 'display_order', 'is_primary',
             'width', 'height', 'uploaded_by', 'uploaded_at', 'is_approved',
             'background_removed', 'has_transparency',
         ]
@@ -118,9 +118,13 @@ class ProductListSerializer(serializers.ModelSerializer):
         ]
 
     def get_primary_image(self, obj):
+        # Same precedence as Product.primary_image: an explicitly chosen
+        # preview wins, then an overview shot, then whatever exists. Filtered
+        # in Python to keep reusing the prefetch cache (see _visible_images).
         images = self._visible_images(obj)
+        chosen = [img for img in images if img.is_primary]
         overview = [img for img in images if img.image_type == 'overview']
-        image = (overview or images or [None])[0]
+        image = (chosen or overview or images or [None])[0]
         if image:
             return ProductImageSerializer(image, context=self.context).data
         return None

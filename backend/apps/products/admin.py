@@ -3,7 +3,7 @@ Product admin configuration for Junkbin.io
 """
 import csv
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.http import HttpResponse
 from django.utils.html import format_html
 
@@ -20,7 +20,7 @@ class ProductImageInline(admin.TabularInline):
     extra = 1
     readonly_fields = ['thumbnail_preview', 'uploaded_at', 'uploaded_by']
     fields = [
-        'thumbnail_preview', 'image', 'image_type',
+        'thumbnail_preview', 'image', 'image_type', 'is_primary',
         'caption', 'display_order', 'uploaded_by', 'uploaded_at'
     ]
 
@@ -165,21 +165,53 @@ class ProductImageAdmin(admin.ModelAdmin):
     """Admin for product images."""
 
     list_display = [
-        'product', 'image_type', 'caption', 'display_order',
+        'product', 'image_type', 'is_primary', 'caption', 'display_order',
         'uploaded_by', 'uploaded_at'
     ]
-    list_filter = ['image_type', 'uploaded_at']
+    list_editable = ['is_primary']
+    list_filter = ['image_type', 'is_primary', 'uploaded_at']
     search_fields = ['product__manufacturer', 'product__model_number', 'product__slug', 'caption']
     readonly_fields = [
         'id', 'image_preview', 'width', 'height',
         'file_size', 'uploaded_by', 'uploaded_at'
     ]
     ordering = ['-uploaded_at']
+    actions = ['set_as_preview_image', 'clear_preview_image']
+
+    @admin.action(description='Set as preview image for its product')
+    def set_as_preview_image(self, request, queryset):
+        # One preview per product, so a selection covering two images of the
+        # same product is ambiguous - refuse it rather than silently pick one.
+        seen, clashes = {}, set()
+        for image in queryset.select_related('product'):
+            if image.product_id in seen:
+                clashes.add(str(image.product))
+            seen[image.product_id] = image
+        if clashes:
+            self.message_user(
+                request,
+                'Select only one image per product. Multiple selected for: '
+                + ', '.join(sorted(clashes)),
+                level=messages.ERROR,
+            )
+            return
+        for image in seen.values():
+            image.make_primary()
+        self.message_user(request, f'{len(seen)} preview image(s) set.')
+
+    @admin.action(description='Clear preview image flag')
+    def clear_preview_image(self, request, queryset):
+        updated = queryset.update(is_primary=False)
+        self.message_user(
+            request,
+            f'{updated} image(s) no longer marked as preview. '
+            'Those products fall back to their first overview image.',
+        )
 
     fieldsets = (
         (None, {'fields': ('id', 'product', 'image', 'image_preview')}),
         ('Details', {'fields': (
-            'image_type', 'caption', 'display_order'
+            'image_type', 'is_primary', 'caption', 'display_order'
         )}),
         ('Technical', {'fields': (
             'width', 'height', 'file_size'
