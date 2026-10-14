@@ -396,19 +396,14 @@ maxretry = 5
 [sshd]
 enabled = true
 port = 22
-logpath = /var/log/auth.log
 backend = systemd
-
-[nginx-http-auth]
-enabled = true
-port = 80,443
-logpath = /var/log/nginx/error.log
-
-[nginx-limit-req]
-enabled = true
-port = 80,443
-logpath = /var/log/nginx/error.log
 EOF
+    # No nginx jails: nginx runs in a container, so its logs aren't at
+    # /var/log/nginx on the host (a missing logpath stops fail2ban from
+    # starting at all), our nginx config uses neither auth_basic nor
+    # limit_req so those filters would never match, and host firewall bans
+    # don't cover Docker-published ports anyway. API abuse is handled by
+    # DRF throttling.
     
     systemctl enable fail2ban
     systemctl restart fail2ban
