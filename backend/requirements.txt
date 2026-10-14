@@ -49,7 +49,7 @@ django-celery-results==2.6.0
 # ========================================
 # Web Push notifications
 # ========================================
-pywebpush==2.4.0
+pywebpush==2.5.0
 
 # ========================================
 # Image Processing
