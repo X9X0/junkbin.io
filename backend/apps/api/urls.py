@@ -18,7 +18,7 @@ from rest_framework_simplejwt.views import (
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import UserActivity
-from .views import APIRootView, SearchView, HealthCheckView, StatsView, AnalyticsView
+from .views import APIRootView, SearchView, HealthCheckView, StatsView, AnalyticsView, staff_auth_check
 
 
 @method_decorator(ensure_csrf_cookie, name='dispatch')
@@ -166,6 +166,7 @@ urlpatterns = [
 
     # Health Check & Stats
     path('health/', HealthCheckView.as_view(), name='health-check'),
+    path('auth/staff-check/', staff_auth_check, name='staff-auth-check'),
     path('stats/', StatsView.as_view(), name='stats'),
     path('analytics/', AnalyticsView.as_view(), name='analytics'),
 

@@ -26,6 +26,10 @@ CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=['https://junkbi
 # =============================================================================
 # SECURE_SSL_REDIRECT can be disabled for local Docker testing without SSL
 SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+# Prometheus scrapes backend:8000/metrics over plain HTTP on the internal
+# network (nginx denies /metrics externally) - redirecting it to https just
+# times out the scrape.
+SECURE_REDIRECT_EXEMPT = [r'^metrics$']
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
 CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)

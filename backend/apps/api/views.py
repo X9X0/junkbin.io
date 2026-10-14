@@ -12,7 +12,8 @@ from rest_framework.reverse import reverse
 from django.db.models import Q
 from django.contrib.postgres.search import SearchQuery, SearchRank
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
+from django.http import HttpResponse
+from django.views.decorators.cache import cache_page, never_cache
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .throttling import SearchRateThrottle
 from .metrics import search_counter, search_latency
@@ -370,6 +371,21 @@ class StatsView(APIView):
             'firmware': Firmware.objects.filter(is_approved=True).count(),
             'contributors': User.objects.filter(contribution_count__gt=0).count(),
         })
+
+
+@never_cache
+def staff_auth_check(request):
+    """
+    nginx auth_request target guarding staff-only proxied tools (Prometheus).
+
+    Plain Django view so it sees the admin session cookie and skips DRF
+    throttling - nginx calls it on every request to the protected location.
+    """
+    if not request.user.is_authenticated:
+        return HttpResponse(status=401)
+    if not request.user.is_staff:
+        return HttpResponse(status=403)
+    return HttpResponse(status=204)
 
 
 class HealthCheckView(APIView):
