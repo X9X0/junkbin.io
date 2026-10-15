@@ -14,6 +14,7 @@ from drf_spectacular.views import (
 )
 from rest_framework.permissions import IsAdminUser
 from apps.api.admin_views import system_status, system_status_json
+from apps.api.seo import robots_txt, sitemap_xml
 from apps.components.admin_views import bulk_edit_components, bulk_edit_components_action
 from apps.users.admin_views import user_contributions, user_contributions_action
 
@@ -38,6 +39,10 @@ urlpatterns = [
 
     # API v1
     path('api/', include('apps.api.urls')),
+
+    # Crawler files for the SPA (nginx proxies these two exact paths here)
+    path('robots.txt', robots_txt, name='robots-txt'),
+    path('sitemap.xml', sitemap_xml, name='sitemap-xml'),
 
     # API Documentation (staff only)
     path('api/schema/', SpectacularAPIView.as_view(permission_classes=[IsAdminUser]), name='schema'),
