@@ -657,6 +657,22 @@ setup_cert_renewal() {
     (crontab -l 2>/dev/null; echo "0 3,15 * * * ${RENEWAL_CMD}") | crontab -
     log_info "Cert renewal cron installed (03:00 and 15:00 daily, logging to ${CERT_RENEW_LOG})"
 
+    # The distro certbot package ships its own renewal timer, which runs the
+    # plugin-less /usr/bin/certbot and so can never renew these certs. Mask it
+    # (only the timer - the package itself owns /etc/letsencrypt and cli.ini,
+    # so removing it is riskier than leaving it) so the cron above is the one
+    # renewal path. Masking also stops a package update re-enabling it.
+    if [ "$CERTBOT_BIN" = /opt/certbot/bin/certbot ]; then
+        for timer in certbot-renew.timer certbot.timer; do
+            if systemctl list-unit-files "$timer" &> /dev/null \
+                && systemctl list-unit-files "$timer" | grep -q "^$timer"; then
+                systemctl disable --now "$timer" &> /dev/null || true
+                systemctl mask "$timer" &> /dev/null || true
+                log_info "Masked distro ${timer} (renewal runs from cron via the venv)"
+            fi
+        done
+    fi
+
     install_cert_monitor
 }
 

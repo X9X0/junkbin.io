@@ -429,6 +429,22 @@ sudo tail -50 /var/log/junkbin-certbot-renew.log
 Re-running `sudo ./deployment/junkbin-deploy.sh` replaces a stale or broken
 renewal cron entry rather than skipping it.
 
+The cron entry is the **only** renewal path. The distro `certbot` package's own
+`certbot-renew.timer` runs the plugin-less `/usr/bin/certbot`, which can never
+renew these certs, so it is masked (the deploy script does this too). Don't
+unmask it, and don't `dnf remove certbot` to get rid of it — that package owns
+`/etc/letsencrypt` and `cli.ini`. To prove the real path works end to end
+(Let's Encrypt staging, no real cert changes):
+
+```bash
+sudo /opt/certbot/bin/certbot renew --dry-run
+systemctl is-enabled certbot-renew.timer   # expect: masked
+```
+
+The venv's `python3` is a symlink to the system `/usr/bin/python3`, so after a
+dnf update that changes the Python minor version, re-run the dry run — the
+venv may need recreating.
+
 ### Expiry monitoring
 
 `deployment/cert-monitor.sh` runs daily via `junkbin-cert-monitor.timer` and
