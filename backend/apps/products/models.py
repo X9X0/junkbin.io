@@ -298,8 +298,12 @@ class Product(models.Model):
 
     @property
     def primary_image(self):
-        """Return the overview image, falling back to any other submitted image."""
-        return self.images.filter(image_type='overview').first() or self.images.first()
+        """Return the admin-chosen preview image, else an overview image, else any."""
+        return (
+            self.images.filter(is_primary=True).first()
+            or self.images.filter(image_type='overview').first()
+            or self.images.first()
+        )
 
     def increment_view_count(self):
         """Increment view count (use F() to avoid race conditions)."""
@@ -376,6 +380,11 @@ class ProductImage(models.Model):
         default=0,
         help_text=_('Order in image gallery')
     )
+    is_primary = models.BooleanField(
+        default=False,
+        help_text=_('Use this image as the product preview. Only one image per '
+                    'product can be primary; setting it here clears the others.')
+    )
 
     # Upload info
     uploaded_by = models.ForeignKey(
@@ -414,9 +423,24 @@ class ProductImage(models.Model):
         indexes = [
             models.Index(fields=['is_approved', '-uploaded_at']),
         ]
+        constraints = [
+            # A product can nominate at most one preview image. Enforced in the
+            # database as well as in save(), so a bulk update or a raw import
+            # can't leave two images both claiming to be the preview.
+            models.UniqueConstraint(
+                fields=['product'],
+                condition=models.Q(is_primary=True),
+                name='unique_primary_image_per_product',
+            ),
+        ]
 
     def __str__(self):
         return f'{self.product} - {self.get_image_type_display()}'
+
+    def make_primary(self):
+        """Promote this image to be the product's preview image."""
+        self.is_primary = True
+        self.save(update_fields=['is_primary'])
 
     def save(self, *args, **kwargs):
         # Auto-populate image dimensions
@@ -429,6 +453,13 @@ class ProductImage(models.Model):
                     self.has_transparency = image_has_transparency(img)
             except Exception:
                 pass
+        # Only one image per product may be the preview, so stand down any
+        # sibling first - otherwise the partial unique constraint rejects
+        # this write.
+        if self.is_primary:
+            ProductImage.objects.filter(
+                product_id=self.product_id, is_primary=True
+            ).exclude(pk=self.pk).update(is_primary=False)
         super().save(*args, **kwargs)
 
 
