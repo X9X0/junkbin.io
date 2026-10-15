@@ -3,6 +3,7 @@ import pytest
 from django.db import IntegrityError, transaction
 
 from apps.products.models import ProductImage
+from apps.products.serializers import ProductDetailSerializer
 
 
 @pytest.mark.django_db
@@ -105,3 +106,36 @@ class TestPrimaryImageSelection:
         later.save(update_fields=['is_primary'])
 
         assert product.primary_image == first
+
+
+@pytest.mark.django_db
+class TestDetailGalleryOrder:
+    """The detail page gallery opens on the chosen preview image."""
+
+    def _gallery_ids(self, product):
+        return [img['id'] for img in ProductDetailSerializer(product).data['images']]
+
+    def test_primary_image_comes_first(
+            self, product_factory, product_image_factory):
+        product = product_factory(is_approved=True)
+        first = product_image_factory(
+            product=product, display_order=0, is_approved=True)
+        second = product_image_factory(
+            product=product, display_order=1, is_approved=True)
+        chosen = product_image_factory(
+            product=product, display_order=2, is_approved=True)
+
+        chosen.make_primary()
+
+        assert self._gallery_ids(product) == [
+            str(chosen.pk), str(first.pk), str(second.pk)]
+
+    def test_display_order_kept_without_a_primary(
+            self, product_factory, product_image_factory):
+        product = product_factory(is_approved=True)
+        first = product_image_factory(
+            product=product, display_order=0, is_approved=True)
+        second = product_image_factory(
+            product=product, display_order=1, is_approved=True)
+
+        assert self._gallery_ids(product) == [str(first.pk), str(second.pk)]
