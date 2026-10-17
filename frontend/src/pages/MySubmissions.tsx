@@ -6,6 +6,7 @@ import { Package, FileText, Wrench, Cpu, Loader2 } from 'lucide-react';
 import clsx from 'clsx';
 import type { Product, Schematic, Recipe, Component } from '../types';
 import { useTranslation } from 'react-i18next';
+import ProductName from '../components/ProductName';
 
 type TabType = 'products' | 'schematics' | 'recipes' | 'components';
 
@@ -176,7 +177,7 @@ function ProductsList({ items }: { items: Product[] }) {
               <span className="text-xs font-mono text-cyber-cyan">{product.manufacturer}</span>
               <StatusBadge approved={product.is_approved} />
             </div>
-            <h3 className="text-white font-semibold truncate">{product.model_number}</h3>
+            <h3 className="text-white font-semibold"><ProductName product={product} /></h3>
           </div>
           <div className="text-xs text-gray-500 font-mono flex-shrink-0 hidden sm:block">
             {formatDate(product.created_at)}

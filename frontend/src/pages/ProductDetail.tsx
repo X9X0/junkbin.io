@@ -44,6 +44,7 @@ import { useState } from 'react';
 import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
 import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
+import { productNameText } from '../components/ProductName';
 
 // Schematic types that plausibly contain a real parts list/table - circuit
 // diagrams don't, and need the separate OCR + spatial-matching pipeline.
@@ -223,7 +224,7 @@ export default function ProductDetail() {
           <ChevronRight className="h-4 w-4" />
           <span className="text-gray-400">{product.manufacturer}</span>
           <ChevronRight className="h-4 w-4" />
-          <span className="text-white">{product.model_number}</span>
+          <span className="text-white">{productNameText(product, t('products.revision'))}</span>
         </nav>
 
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
@@ -306,7 +307,7 @@ export default function ProductDetail() {
                   {product.model_number}
                 </h1>
                 {product.revision && (
-                  <div className="text-gray-500 font-mono text-sm mt-1">
+                  <div className="text-cyber-cyan font-mono text-lg mt-1">
                     {t('product_detail.revision')} {product.revision}
                   </div>
                 )}
@@ -1232,7 +1233,7 @@ export default function ProductDetail() {
         onClose={() => setShowReportModal(false)}
         contentType="products.product"
         objectId={id!}
-        itemName={`${product?.manufacturer} ${product?.model_number}`}
+        itemName={`${product?.manufacturer} ${product ? productNameText(product, t('products.revision')) : ''}`}
       />
 
       {/* Add to My Junkbin Modal */}
@@ -1241,7 +1242,7 @@ export default function ProductDetail() {
         onClose={() => setShowJunkbinModal(false)}
         contentType="product"
         objectId={id!}
-        itemName={`${product?.manufacturer} ${product?.model_number}`}
+        itemName={`${product?.manufacturer} ${product ? productNameText(product, t('products.revision')) : ''}`}
       />
 
       {/* Edit Product Modal */}

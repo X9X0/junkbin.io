@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import Pagination from '../components/Pagination';
 import { ProductGridSkeleton } from '../components/Skeleton';
 import LazyImage from '../components/LazyImage';
+import ProductName from '../components/ProductName';
 
 // Category labels are short UI strings; "All Categories" is translated below.
 // The rest are kept as-is since they are category display names.
@@ -215,14 +216,8 @@ export default function Products() {
                   </div>
 
                   <h3 className="font-semibold text-white group-hover:text-cyber-cyan transition-colors truncate">
-                    {product.model_number}
+                    <ProductName product={product} />
                   </h3>
-
-                  {product.revision && (
-                    <div className="text-xs text-gray-500 font-mono">
-                      {t('products.revision')} {product.revision}
-                    </div>
-                  )}
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
                     <span className="badge-cyber text-gray-400 border-gray-600">

@@ -2,7 +2,7 @@
 Import board BOM bundles (one JSON file per board) as a Product with its
 components, factory-approved alternates and generic passives.
 
-    manage.py import_board_bom PATH [PATH ...] [--dry-run] [--user NAME]
+    manage.py import_board_bom PATH [PATH ...] [--dry-run] [--user NAME] [--skip-components]
 
 PATH is a bundle.json or a directory searched recursively for them. Bundle:
 
@@ -32,8 +32,9 @@ Generic passives come through as ordinary components (manufacturer "Generic",
 part_number a spec string such as "RES 10K 1% 1/10W 0603") whose
 "equivalents" are verified current parts.
 
-Re-running is safe: a product this command created is updated in place and its
-imported components replaced; a product that already exists without this
+Re-running is safe: a product this command created is found by its source tag
+(so a corrected revision or description updates it in place) and its imported
+components replaced; a product that already exists without this
 bundle's source tag (somebody else's work) is left alone. New products are
 created unapproved. Existing components are reused as they are, never edited.
 """
@@ -70,8 +71,10 @@ class Command(BaseCommand):
         parser.add_argument('paths', nargs='+')
         parser.add_argument('--dry-run', action='store_true', help='Report, then roll back')
         parser.add_argument('--user', help='Username recorded as creator (default: first superuser)')
-        parser.add_argument('--documents-only', action='store_true',
-                            help='Only sync documents on products this import already created')
+        parser.add_argument('--skip-components', '--documents-only', dest='skip_components',
+                            action='store_true',
+                            help='On products this import already created, update the product fields '
+                                 '(revision, description, ...) and documents; leave components alone')
 
     def handle(self, *args, **options):
         files = []
@@ -96,7 +99,7 @@ class Command(BaseCommand):
                 raise CommandError(f'{path}: unsupported bundle_version {bundle.get("bundle_version")}')
             try:
                 with transaction.atomic():
-                    if options['documents_only']:
+                    if options['skip_components']:
                         result = self.sync_documents_only(bundle, user, path.parent, options['dry_run'])
                     else:
                         result = self.import_bundle(bundle, user, path.parent, options['dry_run'])
@@ -116,13 +119,12 @@ class Command(BaseCommand):
         result = {'products_created': 0, 'products_updated': 0, 'products_skipped': 0,
                   'components_created': 0, 'placements': 0, 'cross_refs': 0,
                   'documents_added': 0, 'documents_kept': 0, 'documents_removed': 0}
-        product = Product.objects.filter(
-            manufacturer=p['manufacturer'], model_number=p['model_number'],
-            revision=p.get('revision', ''), region='global').first()
-        if product and tag not in (product.teardown_notes or ''):
+        product = self.find_product(bundle)
+        if product is None:
             result['products_skipped'] = 1
             return result
         if product:
+            self.update_identity(product, p)
             product.product_components.filter(notes__startswith=f'[{tag}]').delete()
             result['products_updated'] = 1
         else:
@@ -165,16 +167,38 @@ class Command(BaseCommand):
         self.import_documents(bundle, product, user, folder, dry_run, result)
         return result
 
-    def sync_documents_only(self, bundle, user, folder, dry_run):
+    @staticmethod
+    def find_product(bundle):
+        """This import's product (found by source tag, so a corrected revision updates it
+        in place), False when there is none yet, None when the name belongs to a product
+        somebody else created - which is never touched."""
         p = bundle['product']
-        result = {'products_skipped': 0, 'documents_added': 0, 'documents_kept': 0, 'documents_removed': 0}
-        product = Product.objects.filter(
+        tagged = Product.objects.filter(teardown_notes__startswith=f"[{bundle['source_tag']}]").first()
+        same_name = Product.objects.filter(
             manufacturer=p['manufacturer'], model_number=p['model_number'],
-            revision=p.get('revision', ''), region='global',
-            teardown_notes__contains=bundle['source_tag']).first()
+            revision=p.get('revision', ''), region='global').first()
+        if same_name and same_name != tagged:
+            return None
+        return tagged or False
+
+    @staticmethod
+    def update_identity(product, p):
+        fields = {'revision': p.get('revision', ''), 'description': p.get('description', ''),
+                  'year_manufactured': p.get('year_manufactured'), 'category': p['category'],
+                  'subcategory': p.get('subcategory', '')}
+        changed = [k for k, v in fields.items() if getattr(product, k) != v]
+        for k in changed:
+            setattr(product, k, fields[k])
+        if changed:
+            product.save(update_fields=changed)
+
+    def sync_documents_only(self, bundle, user, folder, dry_run):
+        result = {'products_skipped': 0, 'documents_added': 0, 'documents_kept': 0, 'documents_removed': 0}
+        product = self.find_product(bundle)
         if not product:
             result['products_skipped'] = 1
             return result
+        self.update_identity(product, bundle['product'])
         self.import_documents(bundle, product, user, folder, dry_run, result)
         return result
 

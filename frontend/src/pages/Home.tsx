@@ -15,6 +15,7 @@ import {
   Search,
 } from 'lucide-react';
 import { COMPONENT_TYPES } from '../constants/componentTypes';
+import ProductName from '../components/ProductName';
 
 export default function Home() {
   const { t } = useTranslation();
@@ -249,8 +250,8 @@ export default function Home() {
                   <div className="text-xs font-mono text-cyber-cyan mb-1 truncate">
                     {product.manufacturer}
                   </div>
-                  <div className="text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors truncate">
-                    {product.model_number}
+                  <div className="text-sm font-semibold text-white group-hover:text-cyber-cyan transition-colors">
+                    <ProductName product={product} />
                   </div>
                   <div className="flex items-center gap-3 mt-2 text-[10px] text-gray-500 font-mono">
                     <span>{product.component_count} {t('home.parts')}</span>

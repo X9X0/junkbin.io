@@ -13,6 +13,7 @@ import Lightbox from '../components/Lightbox';
 import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen, MessageSquare, Store } from 'lucide-react';
 import type { JunkbinItem } from '../types';
+import ProductName from '../components/ProductName';
 
 function CompactSwapCard({ item, currentUserId, isAuthenticated, t }: {
   item: JunkbinItem;
@@ -462,14 +463,8 @@ export default function ComponentDetail() {
                   </div>
 
                   <h3 className="font-semibold text-white group-hover:text-cyber-cyan transition-colors truncate">
-                    {product.model_number}
+                    <ProductName product={product} />
                   </h3>
-
-                  {product.revision && (
-                    <div className="text-xs text-gray-500 font-mono">
-                      Rev: {product.revision}
-                    </div>
-                  )}
 
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-gray-500">
                     <span className="badge-cyber text-gray-400 border-gray-600">

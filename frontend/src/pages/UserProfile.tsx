@@ -20,6 +20,7 @@ import {
   AlertCircle,
   Archive,
 } from 'lucide-react';
+import ProductName from '../components/ProductName';
 
 export default function UserProfile() {
   const { t } = useTranslation();
@@ -314,8 +315,8 @@ export default function UserProfile() {
                     <span className="text-xs font-mono text-cyber-cyan">
                       {product.manufacturer}
                     </span>
-                    <h3 className="font-semibold text-white group-hover:text-cyber-cyan transition-colors truncate">
-                      {product.model_number}
+                    <h3 className="font-semibold text-white group-hover:text-cyber-cyan transition-colors">
+                      <ProductName product={product} />
                     </h3>
                     <div className="text-xs text-gray-500 mt-1">
                       {product.category_display || product.category}

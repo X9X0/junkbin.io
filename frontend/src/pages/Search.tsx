@@ -15,12 +15,14 @@ import {
 import clsx from 'clsx';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import ProductName from '../components/ProductName';
 
 interface SearchResult {
   products: Array<{
     id: string;
     manufacturer: string;
     model_number: string;
+    revision?: string;
     category: string;
     category_display?: string;
     primary_image?: { thumbnail?: string };
@@ -217,8 +219,8 @@ export default function Search() {
                             <div className="text-cyber-cyan font-mono text-xs mb-1">
                               {product.manufacturer}
                             </div>
-                            <h3 className="font-semibold text-white group-hover:text-cyber-cyan transition-colors truncate">
-                              {product.model_number}
+                            <h3 className="font-semibold text-white group-hover:text-cyber-cyan transition-colors">
+                              <ProductName product={product} />
                             </h3>
                             <span className="badge-cyber text-gray-400 border-gray-600 text-[10px] mt-1">
                               {product.category_display || product.category}

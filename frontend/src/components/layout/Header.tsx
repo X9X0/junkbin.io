@@ -10,6 +10,7 @@ import { usePendingCount } from '../../hooks/usePendingCount';
 import { useNotificationCount } from '../../hooks/useNotificationCount';
 import NotificationBell from './NotificationBell';
 import clsx from 'clsx';
+import ProductName from '../ProductName';
 
 const LANGUAGES = [
   { code: 'en', label: 'English' },
@@ -231,7 +232,7 @@ export default function Header() {
                       >
                         <Package className="h-4 w-4 text-cyber-cyan flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm text-white truncate">{p.model_number}</div>
+                          <div className="text-sm text-white"><ProductName product={p} /></div>
                           <div className="text-xs text-gray-500 truncate">{p.manufacturer}</div>
                         </div>
                         <span className="text-[10px] text-gray-600 uppercase">Product</span>

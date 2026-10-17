@@ -193,7 +193,22 @@ def test_documents_only_leaves_components_alone(tmp_path, settings, user_factory
     plain = _write(tmp_path, _bundle(), 'first')
     _run(plain)
     placements = set(ProductComponent.objects.values_list('pk', flat=True))
-    out = _run(_with_doc(tmp_path, name='second'), '--documents-only')
+    out = _run(_with_doc(tmp_path, name='second'), '--skip-components')
     assert 'documents added 1' in out
     assert set(ProductComponent.objects.values_list('pk', flat=True)) == placements
     assert Schematic.objects.count() == 1
+
+
+def test_corrected_revision_updates_the_same_product(tmp_path, user_factory):
+    user_factory(is_superuser=True, is_staff=True)
+    bundle = _bundle()
+    bundle['product']['revision'] = 'R1.03.(SERVER)'
+    _run(_write(tmp_path, bundle, 'first'))
+    product = Product.objects.get()
+    bundle['product']['revision'] = '1.03 (server)'
+    bundle['product']['description'] = 'Same circuit board as: ASUS X Rev 1.0 (99% of placements identical).'
+    _run(_write(tmp_path, bundle, 'second'), '--skip-components')
+    assert Product.objects.count() == 1
+    product.refresh_from_db()
+    assert product.revision == '1.03 (server)'
+    assert 'Same circuit board as' in product.description
