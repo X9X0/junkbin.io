@@ -1,6 +1,7 @@
 """
 Component views for Junkbin.io API
 """
+import logging
 from datetime import timedelta
 
 from rest_framework import viewsets, status, permissions
@@ -36,6 +37,9 @@ from .serializers import (
 from .filters import ComponentFilter, ProductComponentFilter
 from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
 from apps.api.throttling import LookupRateThrottle
+
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema_view(
@@ -271,7 +275,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         Result is cached in the component's specifications field.
         """
         from django.utils import timezone
-        from .nexar import get_client
+        from .nexar import NexarError, get_client
 
         component = self.get_object()
         client = get_client()
@@ -284,6 +288,12 @@ class ComponentViewSet(viewsets.ModelViewSet):
 
         try:
             result = client.search_mpn(component.part_number, component.manufacturer)
+        except NexarError:
+            logger.exception('Nexar refused lookup for %s', component.part_number)
+            return Response(
+                {'detail': 'Part lookups are unavailable right now (provider limit reached).'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         except Exception:
             return Response(
                 {'detail': 'Nexar API request failed. Try again later.'},
