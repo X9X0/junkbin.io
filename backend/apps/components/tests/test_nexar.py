@@ -1,11 +1,13 @@
 """
-Tests for the Nexar client's handling of refused queries and the lookup view.
+Tests for part lookups: Nexar refusals, the DigiKey/Mouser fallback, and the lookup view.
 """
 from unittest.mock import MagicMock, patch
 
 import pytest
 from rest_framework.test import APIClient
 
+from apps.components import lookup
+from apps.components.distributors import DistributorError, same_maker, same_mpn
 from apps.components.nexar import NexarClient, NexarError
 
 QUOTA_BODY = {
@@ -36,14 +38,93 @@ def test_search_mpn_returns_none_when_no_results():
         assert _client().search_mpn('NOPE') is None
 
 
+def _provider(result=None, error=None, configured=True):
+    client = MagicMock(is_configured=configured)
+    if error:
+        client.search_mpn.side_effect = error
+    else:
+        client.search_mpn.return_value = result
+    return client
+
+
+def _answer(source, specs=0, price=1.0):
+    return {
+        'source': source, 'mpn': 'LM358DR', 'manufacturer': 'Texas Instruments',
+        'description': f'{source} description', 'datasheet_url': None, 'status': 'Active',
+        'specs': [{'name': f's{i}', 'value': 'v'} for i in range(specs)],
+        'sellers': [{'name': source, 'url': '', 'offers': [
+            {'stock': 1, 'price': price, 'currency': 'USD', 'qty_min': 1, 'buy_url': ''}]}],
+    }
+
+
+def _patch_providers(nexar, digikey, mouser):
+    return (patch('apps.components.lookup.get_client', return_value=nexar),
+            patch('apps.components.lookup.get_digikey', return_value=digikey),
+            patch('apps.components.lookup.get_mouser', return_value=mouser))
+
+
+@pytest.fixture
+def clear_cache():
+    from django.core.cache import cache
+    cache.delete(lookup.NEXAR_PAUSE_KEY)
+    yield
+    cache.delete(lookup.NEXAR_PAUSE_KEY)
+
+
+def test_lookup_merges_distributors_when_nexar_refuses(clear_cache):
+    nexar = _provider(error=NexarError('You have exceeded your part limit of 100.'))
+    a, b, c = _patch_providers(nexar, _provider(_answer('digikey', specs=15, price=0.2)),
+                               _provider(_answer('mouser', price=0.1)))
+    with a, b, c:
+        result = lookup.lookup_part('LM358DR', 'TI')
+    assert result['sources'] == ['digikey', 'mouser']
+    assert result['description'] == 'digikey description'      # most specs leads
+    assert [s['name'] for s in result['sellers']] == ['mouser', 'digikey']  # cheapest first
+
+
+def test_lookup_pauses_nexar_after_refusal(clear_cache):
+    nexar = _provider(error=NexarError('part limit'))
+    a, b, c = _patch_providers(nexar, _provider(None), _provider(None))
+    with a, b, c:
+        assert lookup.lookup_part('X') is None
+        assert lookup.lookup_part('Y') is None
+    assert nexar.search_mpn.call_count == 1
+
+
+def test_lookup_prefers_nexar_hit(clear_cache):
+    digikey = _provider(_answer('digikey'))
+    a, b, c = _patch_providers(_provider(_answer('nexar')), digikey, _provider(None))
+    with a, b, c:
+        assert lookup.lookup_part('LM358DR')['sources'] == ['nexar']
+    digikey.search_mpn.assert_not_called()
+
+
+def test_lookup_unavailable_when_no_provider_answers(clear_cache):
+    a, b, c = _patch_providers(_provider(error=NexarError('limit')),
+                               _provider(error=DistributorError('HTTP 429')),
+                               _provider(configured=False))
+    with a, b, c, pytest.raises(lookup.LookupUnavailable):
+        lookup.lookup_part('LM358DR')
+
+
 @pytest.mark.django_db
-def test_lookup_view_reports_provider_limit_as_503(component_factory, user_factory):
+def test_lookup_view_reports_unavailable_as_503(component_factory, user_factory):
     component = component_factory()
     api = APIClient()
     api.force_authenticate(user_factory())
-    fake = MagicMock(is_configured=True)
-    fake.search_mpn.side_effect = NexarError('You have exceeded your part limit of 100.')
-    with patch('apps.components.nexar.get_client', return_value=fake):
+    with patch('apps.components.lookup.lookup_part', side_effect=lookup.LookupUnavailable('none')):
         resp = api.post(f'/api/components/{component.pk}/lookup/')
     assert resp.status_code == 503
-    assert 'limit' in resp.data['detail']
+    assert 'unavailable' in resp.data['detail']
+
+
+def test_same_mpn_ignores_punctuation_and_case():
+    assert same_mpn('RC0603FR-0710KL', 'rc0603fr0710kl')
+    assert not same_mpn('LM358DR', 'LM358DR2G')
+
+
+def test_same_maker_handles_bom_abbreviations():
+    assert same_maker('NS', 'Texas Instruments')
+    assert same_maker('PHILIPS', 'Nexperia USA Inc.')
+    assert same_maker('VISHAY(SILICONIX)', 'Vishay Siliconix')
+    assert not same_maker('ROHM', 'Texas Instruments')

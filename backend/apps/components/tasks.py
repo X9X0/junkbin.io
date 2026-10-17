@@ -15,8 +15,8 @@ def enrich_component(self, component_id):
     Fetch pricing, availability, and datasheet data from Nexar
     for a single component. Stores result in specifications['nexar_data'].
     """
+    from .lookup import LookupUnavailable, lookup_part
     from .models import Component
-    from .nexar import get_client
 
     try:
         component = Component.objects.get(pk=component_id)
@@ -24,13 +24,11 @@ def enrich_component(self, component_id):
         logger.warning("Component %s not found, skipping enrichment", component_id)
         return
 
-    client = get_client()
-    if not client.is_configured:
-        logger.info("Nexar API not configured, skipping enrichment")
-        return
-
     try:
-        result = client.search_mpn(component.part_number, component.manufacturer)
+        result = lookup_part(component.part_number, component.manufacturer)
+    except LookupUnavailable:
+        logger.info("No part lookup provider available, skipping enrichment")
+        return
     except Exception as exc:
         logger.exception("Nexar lookup failed for %s", component.part_number)
         raise self.retry(exc=exc)

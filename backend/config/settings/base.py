@@ -618,6 +618,12 @@ REGIONS = [
 NEXAR_CLIENT_ID = env('NEXAR_CLIENT_ID', default='')
 NEXAR_CLIENT_SECRET = env('NEXAR_CLIENT_SECRET', default='')
 
+# DigiKey Product Information v4 (OAuth2 client credentials) and Mouser Search API.
+# Fallback part lookups when Nexar has no answer or is out of quota.
+DIGIKEY_CLIENT_ID = env('DIGIKEY_CLIENT_ID', default='')
+DIGIKEY_CLIENT_SECRET = env('DIGIKEY_CLIENT_SECRET', default='')
+MOUSER_API_KEY = env('MOUSER_API_KEY', default='')
+
 # Site URL for webhook embeds
 SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
