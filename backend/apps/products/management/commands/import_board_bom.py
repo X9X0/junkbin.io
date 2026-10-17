@@ -22,6 +22,12 @@ PATH is a bundle.json or a directory searched recursively for them. Bundle:
       }]
     }
 
+Optional "documents": [{"file": "docs/x.zip" (relative to the bundle), "md5",
+"schematic_type", "title", "description", "source_notes"}] become Schematic
+records on the product (unapproved, source type leaked). A file whose md5 is
+already on the product is not uploaded again; documents this import added
+earlier that are no longer in the bundle are removed.
+
 Generic passives come through as ordinary components (manufacturer "Generic",
 part_number a spec string such as "RES 10K 1% 1/10W 0603") whose
 "equivalents" are verified current parts.
@@ -35,11 +41,12 @@ import json
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
+from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.components.models import Component, ProductComponent
-from apps.products.models import Product
+from apps.products.models import Product, Schematic
 
 REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length
 
@@ -87,7 +94,7 @@ class Command(BaseCommand):
                 raise CommandError(f'{path}: unsupported bundle_version {bundle.get("bundle_version")}')
             try:
                 with transaction.atomic():
-                    result = self.import_bundle(bundle, user)
+                    result = self.import_bundle(bundle, user, path.parent, options['dry_run'])
                     if options['dry_run']:
                         raise _Rollback(result)
             except _Rollback as rb:
@@ -98,11 +105,12 @@ class Command(BaseCommand):
         prefix = 'DRY RUN (rolled back) - ' if options['dry_run'] else ''
         self.stdout.write(self.style.SUCCESS(f'{prefix}{len(files)} bundles: {_fmt(totals)}'))
 
-    def import_bundle(self, bundle, user):
+    def import_bundle(self, bundle, user, folder, dry_run=False):
         tag = bundle['source_tag']
         p = bundle['product']
         result = {'products_created': 0, 'products_updated': 0, 'products_skipped': 0,
-                  'components_created': 0, 'placements': 0, 'cross_refs': 0}
+                  'components_created': 0, 'placements': 0, 'cross_refs': 0,
+                  'documents_added': 0, 'documents_kept': 0, 'documents_removed': 0}
         product = Product.objects.filter(
             manufacturer=p['manufacturer'], model_number=p['model_number'],
             revision=p.get('revision', ''), region='global').first()
@@ -149,7 +157,46 @@ class Command(BaseCommand):
         product.update_component_count()
         for component in Component.objects.filter(product_components__product=product).distinct():
             component.update_usage_count()
+        self.import_documents(bundle, product, user, folder, dry_run, result)
         return result
+
+    @staticmethod
+    def import_documents(bundle, product, user, folder, dry_run, result):
+        tag = bundle['source_tag']
+        wanted = {d['md5'] for d in bundle.get('documents', [])}
+        ours = product.schematics.filter(source_notes__startswith=f'[{tag}]')
+        have = {}
+        for sch in product.schematics.all():
+            marker = sch.source_notes.rsplit('md5:', 1)
+            if len(marker) == 2:
+                have[marker[1].strip()] = sch
+        for sch in ours:
+            md5 = sch.source_notes.rsplit('md5:', 1)[-1].strip()
+            if md5 not in wanted:
+                if not dry_run:
+                    sch.file.delete(save=False)
+                    sch.delete()
+                result['documents_removed'] += 1
+        for doc in bundle.get('documents', []):
+            if doc['md5'] in have:
+                result['documents_kept'] += 1
+                continue
+            path = folder / doc['file']
+            if not path.is_file():
+                raise CommandError(f'{path}: document missing')
+            result['documents_added'] += 1
+            if dry_run:
+                continue            # nothing written to storage on a dry run
+            with path.open('rb') as fh:
+                Schematic.objects.create(
+                    product=product, file=File(fh, name=path.name),
+                    schematic_type=doc.get('schematic_type') or Schematic.SchematicType.OTHER,
+                    title=doc['title'][:300], description=doc.get('description', ''),
+                    version=product.revision,
+                    source_type=Schematic.SourceType.LEAKED,
+                    source_notes=f"[{tag}] {doc.get('source_notes', '')} md5:{doc['md5']}",
+                    uploaded_by=user, is_approved=False,
+                )
 
     @staticmethod
     def get_component(c, user):

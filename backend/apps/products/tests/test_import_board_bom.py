@@ -133,3 +133,54 @@ def test_dry_run_rolls_back(tmp_path, user_factory):
     assert 'DRY RUN' in out and 'products created 1' in out
     assert not Product.objects.exists()
     assert not Component.objects.exists()
+
+
+def _with_doc(tmp_path, name='Asus_P4SD-VX_R2.01', content=b'PK fake zip'):
+    import hashlib
+    folder = _write(tmp_path, _bundle(), name)
+    (folder / 'docs').mkdir()
+    (folder / 'docs' / '60-M8LA4J-C06.zip').write_bytes(content)
+    bundle = json.loads((folder / 'bundle.json').read_text())
+    bundle['documents'] = [{
+        'file': 'docs/60-M8LA4J-C06.zip', 'md5': hashlib.md5(content).hexdigest(),
+        'schematic_type': 'other', 'title': 'Factory files: 60-M8LA4J-C06 (30 files)',
+        'description': 'All files from the build folder', 'source_notes': 'letus.repair collection: x/',
+    }]
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    return folder
+
+
+def test_documents_are_attached_once_unapproved(tmp_path, settings, user_factory):
+    from apps.products.models import Schematic
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    folder = _with_doc(tmp_path)
+    _run(folder)
+    docs = Schematic.objects.all()
+    assert docs.count() == 1
+    doc = docs.get()
+    assert not doc.is_approved and doc.source_type == 'leaked' and doc.file_type == 'zip'
+    assert doc.version == 'R2.01'
+    assert 'documents kept 1' in _run(folder)
+    assert Schematic.objects.count() == 1
+
+
+def test_document_dropped_from_bundle_is_removed(tmp_path, settings, user_factory):
+    from apps.products.models import Schematic
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    folder = _with_doc(tmp_path)
+    _run(folder)
+    bundle = json.loads((folder / 'bundle.json').read_text())
+    bundle['documents'] = []
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    _run(folder)
+    assert not Schematic.objects.exists()
+
+
+def test_dry_run_writes_no_documents(tmp_path, settings, user_factory):
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    out = _run(_with_doc(tmp_path), '--dry-run')
+    assert 'documents added 1' in out
+    assert not (tmp_path / 'media').exists() or not any((tmp_path / 'media').rglob('*.zip'))
