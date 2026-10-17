@@ -184,3 +184,16 @@ def test_dry_run_writes_no_documents(tmp_path, settings, user_factory):
     out = _run(_with_doc(tmp_path), '--dry-run')
     assert 'documents added 1' in out
     assert not (tmp_path / 'media').exists() or not any((tmp_path / 'media').rglob('*.zip'))
+
+
+def test_documents_only_leaves_components_alone(tmp_path, settings, user_factory):
+    from apps.products.models import Schematic
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    plain = _write(tmp_path, _bundle(), 'first')
+    _run(plain)
+    placements = set(ProductComponent.objects.values_list('pk', flat=True))
+    out = _run(_with_doc(tmp_path, name='second'), '--documents-only')
+    assert 'documents added 1' in out
+    assert set(ProductComponent.objects.values_list('pk', flat=True)) == placements
+    assert Schematic.objects.count() == 1

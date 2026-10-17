@@ -70,6 +70,8 @@ class Command(BaseCommand):
         parser.add_argument('paths', nargs='+')
         parser.add_argument('--dry-run', action='store_true', help='Report, then roll back')
         parser.add_argument('--user', help='Username recorded as creator (default: first superuser)')
+        parser.add_argument('--documents-only', action='store_true',
+                            help='Only sync documents on products this import already created')
 
     def handle(self, *args, **options):
         files = []
@@ -94,7 +96,10 @@ class Command(BaseCommand):
                 raise CommandError(f'{path}: unsupported bundle_version {bundle.get("bundle_version")}')
             try:
                 with transaction.atomic():
-                    result = self.import_bundle(bundle, user, path.parent, options['dry_run'])
+                    if options['documents_only']:
+                        result = self.sync_documents_only(bundle, user, path.parent, options['dry_run'])
+                    else:
+                        result = self.import_bundle(bundle, user, path.parent, options['dry_run'])
                     if options['dry_run']:
                         raise _Rollback(result)
             except _Rollback as rb:
@@ -157,6 +162,19 @@ class Command(BaseCommand):
         product.update_component_count()
         for component in Component.objects.filter(product_components__product=product).distinct():
             component.update_usage_count()
+        self.import_documents(bundle, product, user, folder, dry_run, result)
+        return result
+
+    def sync_documents_only(self, bundle, user, folder, dry_run):
+        p = bundle['product']
+        result = {'products_skipped': 0, 'documents_added': 0, 'documents_kept': 0, 'documents_removed': 0}
+        product = Product.objects.filter(
+            manufacturer=p['manufacturer'], model_number=p['model_number'],
+            revision=p.get('revision', ''), region='global',
+            teardown_notes__contains=bundle['source_tag']).first()
+        if not product:
+            result['products_skipped'] = 1
+            return result
         self.import_documents(bundle, product, user, folder, dry_run, result)
         return result
 
