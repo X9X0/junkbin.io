@@ -212,3 +212,22 @@ def test_corrected_revision_updates_the_same_product(tmp_path, user_factory):
     product.refresh_from_db()
     assert product.revision == '1.03 (server)'
     assert 'Same circuit board as' in product.description
+
+
+def test_attach_to_existing_adds_documents_only(tmp_path, settings, user_factory, product_factory):
+    from apps.products.models import Schematic
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    product = product_factory(manufacturer='ASUS', model_number='P4SD-VX', revision='R2.01',
+                              region='global', description='curated', teardown_notes='by a contributor')
+    folder = _with_doc(tmp_path)
+    bundle = json.loads((folder / 'bundle.json').read_text())
+    bundle.update(components=[], attach_to_existing=True, source_tag='norway-schem:x')
+    bundle['product']['description'] = 'import text'
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    out = _run(folder)
+    assert 'products attached 1' in out
+    product.refresh_from_db()
+    assert product.description == 'curated'
+    assert Schematic.objects.filter(product=product).count() == 1
+    assert Product.objects.count() == 1

@@ -28,6 +28,9 @@ records on the product (unapproved, source type leaked). A file whose md5 is
 already on the product is not uploaded again; documents this import added
 earlier that are no longer in the bundle are removed.
 
+With "attach_to_existing": true, a bundle whose product already exists under
+another owner adds its documents to that product and changes nothing else.
+
 Generic passives come through as ordinary components (manufacturer "Generic",
 part_number a spec string such as "RES 10K 1% 1/10W 0603") whose
 "equivalents" are verified current parts.
@@ -121,6 +124,12 @@ class Command(BaseCommand):
                   'documents_added': 0, 'documents_kept': 0, 'documents_removed': 0}
         product = self.find_product(bundle)
         if product is None:
+            existing = self.existing_product(bundle)
+            if bundle.get('attach_to_existing') and existing:
+                # somebody else's product (or another import's): add documents, touch nothing else
+                result['products_attached'] = 1
+                self.import_documents(bundle, existing, user, folder, dry_run, result)
+                return result
             result['products_skipped'] = 1
             return result
         if product:
@@ -180,6 +189,13 @@ class Command(BaseCommand):
         if same_name and same_name != tagged:
             return None
         return tagged or False
+
+    @staticmethod
+    def existing_product(bundle):
+        p = bundle['product']
+        return Product.objects.filter(
+            manufacturer__iexact=p['manufacturer'], model_number__iexact=p['model_number'],
+            revision__iexact=p.get('revision', ''), region='global').first()
 
     @staticmethod
     def update_identity(product, p):
