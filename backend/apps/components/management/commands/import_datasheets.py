@@ -9,7 +9,9 @@ DIR holds matches.json and the files it names:
      "matches": [{"manufacturer", "part_number", "file": "files/x.pdf", "md5", "title", "source_notes"}]}
 
 Components are found by manufacturer + part number (case-insensitive), so the
-same export works on any copy of the site. A file whose md5 is already
+same export works on any copy of the site. A match with a "create" object
+({"component_type", "description"}) creates the component when it is missing
+(unverified, specifications.source = "datasheet"). A file whose md5 is already
 attached to the component is skipped. Datasheets are created unapproved with
 source type "mirror".
 """
@@ -46,11 +48,22 @@ class Command(BaseCommand):
         user = (User.objects.filter(username=options['user']).first() if options['user']
                 else User.objects.filter(is_superuser=True).order_by('date_joined').first())
 
-        counts = {'attached': 0, 'already_attached': 0, 'component_missing': 0}
+        counts = {'components_created': 0, 'attached': 0, 'already_attached': 0, 'component_missing': 0}
         with transaction.atomic():
             for m in data['matches']:
                 component = Component.objects.filter(manufacturer__iexact=m['manufacturer'],
                                                      part_number__iexact=m['part_number']).first()
+                if not component and m.get('create'):
+                    # same part number under another maker is a different component: never borrow it
+                    counts['components_created'] += 1
+                    if options['dry_run']:
+                        counts['attached'] += 1
+                        continue
+                    component = Component.objects.create(
+                        manufacturer=m['manufacturer'][:200], part_number=m['part_number'][:200],
+                        component_type=m['create'].get('component_type') or 'ic',
+                        description=(m['create'].get('description') or '')[:2000],
+                        specifications={'source': 'datasheet'}, created_by=user)
                 if not component:
                     counts['component_missing'] += 1
                     continue

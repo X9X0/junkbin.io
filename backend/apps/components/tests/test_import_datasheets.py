@@ -52,3 +52,23 @@ def test_dry_run_and_missing_component(tmp_path, settings, component_factory, us
     assert not ComponentDatasheet.objects.exists()
     comp.delete()
     assert 'component missing 1' in _run(folder)
+
+
+def test_creates_missing_component_when_asked(tmp_path, settings, user_factory):
+    from apps.components.models import Component
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    content = b'%PDF-1.4 new part'
+    (tmp_path / 'files').mkdir()
+    (tmp_path / 'files' / '9.pdf').write_bytes(content)
+    (tmp_path / 'matches.json').write_text(json.dumps({'version': 1, 'source_tag': 'norway-ds-new', 'matches': [{
+        'manufacturer': 'Sanyo', 'part_number': '2SC3042', 'file': 'files/9.pdf',
+        'md5': hashlib.md5(content).hexdigest(), 'title': '2SC3042', 'source_notes': 'x',
+        'create': {'component_type': 'transistor', 'description': 'NPN Triple Diffused Planar Silicon Transistor'}}]}))
+    assert 'components created 1' in _run(tmp_path)
+    comp = Component.objects.get(part_number='2SC3042')
+    assert comp.component_type == 'transistor' and not comp.is_verified
+    assert comp.specifications == {'source': 'datasheet'}
+    assert comp.datasheets.count() == 1
+    assert 'already attached 1' in _run(tmp_path)          # re-run: nothing new
+    assert Component.objects.filter(part_number='2SC3042').count() == 1
