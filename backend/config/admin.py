@@ -33,6 +33,7 @@ SIDEBAR_GROUPS = {
     'Moderation': [
         ('reports', 'report'),
         ('reports', 'userreview'),
+        ('components', 'productrequest'),
     ],
     'Users': [
         ('users', 'user'),

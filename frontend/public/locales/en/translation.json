@@ -1,4 +1,29 @@
 {
+  "missing_part": {
+    "searching": "Not in junkbin yet — checking distributors for {{query}}…",
+    "rate_limited": "You've searched distributors a lot in the last hour. Try again a little later.",
+    "unavailable": "Distributor search isn't available right now. Try again later.",
+    "added_title": "Added to junkbin",
+    "added_desc": "Found at a distributor and added to the catalogue, so the next person finds it straight away.",
+    "not_found": "No distributor lists {{query}}. Check the part number, or add the component yourself.",
+    "similar_title": "Similar parts at distributors",
+    "datasheet": "Datasheet",
+    "view": "View",
+    "add": "Add",
+    "source_note": "Results from DigiKey and Mouser.",
+    "repair_title": "What are you repairing?",
+    "repair_desc": "Tell us which product needs the {{part}}. You can add the product yourself, or ask a moderator to add it.",
+    "manufacturer_placeholder": "Manufacturer (e.g. Onkyo)",
+    "model_placeholder": "Model (e.g. TX-SR507)",
+    "notes_placeholder": "What's wrong with it? (optional)",
+    "create_product": "Create this product",
+    "ask_moderator": "Ask a moderator to add it",
+    "request_sent": "Thanks — a moderator will add this product and link the part.",
+    "request_failed": "Couldn't send that. Please try again.",
+    "add_want": "Add this part to my Swap Shop wants",
+    "want_added": "Added to your Swap Shop wants.",
+    "signup_for_wants": "Sign up to track this part in your Swap Shop wants"
+  },
   "_meta": { "generated": "2026-03-02", "method": "source" },
 
   "nav": {

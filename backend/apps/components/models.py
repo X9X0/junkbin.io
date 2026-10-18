@@ -787,3 +787,65 @@ class ComponentVote(models.Model):
 
     def __str__(self):
         return f'{self.user} → {self.vote_type} on {self.product_component}'
+
+
+class ExternalPartSearch(models.Model):
+    """
+    Cached distributor results (DigiKey/Mouser/Nexar) for a part-number search
+    the site's own catalogue had no match for. Every uncached search spends
+    daily API quota, so results are reused for a week across all users.
+    """
+
+    query = models.CharField(max_length=60, unique=True, help_text=_('Normalised search text'))
+    results = models.JSONField(default=list, blank=True)
+    sources = models.JSONField(default=list, blank=True)
+    fetched_at = models.DateTimeField()
+    search_count = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        verbose_name = _('external part search')
+        verbose_name_plural = _('external part searches')
+        ordering = ['-fetched_at']
+
+    def __str__(self):
+        return f'{self.query} ({len(self.results)} results)'
+
+
+class ProductRequest(models.Model):
+    """
+    "I need this part for <product>" - filed after a component search when the
+    searcher won't create the product themselves. Lands in the moderation queue;
+    a moderator creates the product (linking the component) or dismisses it.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('Pending')
+        CREATED = 'created', _('Product created')
+        DISMISSED = 'dismissed', _('Dismissed')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    component = models.ForeignKey(Component, on_delete=models.SET_NULL, null=True, blank=True,
+                                  related_name='product_requests')
+    manufacturer = models.CharField(max_length=200)
+    model_number = models.CharField(max_length=200)
+    notes = models.TextField(blank=True, max_length=2000)
+    search_query = models.CharField(max_length=60, blank=True)
+    requested_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                     related_name='product_requests')
+    session_key = models.CharField(max_length=64, blank=True,
+                                   help_text=_('Anonymous requester, so the request can be claimed at signup'))
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True)
+    created_product = models.ForeignKey('products.Product', on_delete=models.SET_NULL, null=True, blank=True,
+                                        related_name='+')
+    handled_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='+')
+    handled_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = _('product request')
+        verbose_name_plural = _('product requests')
+
+    def __str__(self):
+        return f'{self.manufacturer} {self.model_number} (needs {self.component})'

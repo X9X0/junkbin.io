@@ -11,6 +11,7 @@ import ResolveReportModal from '../components/moderation/ResolveReportModal';
 import UserReviewPanel from '../components/moderation/UserReviewPanel';
 import { parseApiError } from '../utils/formErrors';
 import clsx from 'clsx';
+import ProductRequestsPanel from '../components/ProductRequestsPanel';
 
 const reportStatusColors: Record<string, string> = {
   pending: 'border-cyber-yellow/50 text-cyber-yellow',
@@ -447,7 +448,7 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
 /* Pending Content Tab                                                */
 /* ------------------------------------------------------------------ */
 
-type ContentFilter = 'all' | 'products' | 'schematics' | 'firmware' | 'component_suggestions' | 'recipes' | 'images' | 'component_images' | 'datasheets';
+type ContentFilter = 'all' | 'products' | 'schematics' | 'firmware' | 'component_suggestions' | 'recipes' | 'images' | 'component_images' | 'datasheets' | 'product_requests';
 
 type PendingItem =
   | { type: 'product'; data: Product }
@@ -816,7 +817,7 @@ function PendingContentTab() {
       {/* Sub-filter */}
       <div className="card-cyber p-4 mb-6">
         <div className="flex gap-2 flex-wrap">
-          {(['all', 'products', 'schematics', 'firmware', 'component_suggestions', 'recipes', 'images', 'component_images', 'datasheets'] as ContentFilter[]).map((f) => (
+          {(['all', 'products', 'schematics', 'firmware', 'component_suggestions', 'recipes', 'images', 'component_images', 'datasheets', 'product_requests'] as ContentFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setContentFilter(f)}
@@ -838,6 +839,8 @@ function PendingContentTab() {
           {actionError}
         </div>
       )}
+
+      {(contentFilter === 'all' || contentFilter === 'product_requests') && <ProductRequestsPanel />}
 
       {/* Results */}
       {isLoading ? (

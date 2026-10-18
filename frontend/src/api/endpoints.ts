@@ -37,6 +37,8 @@ import type {
   AnalyticsDashboardData,
   BackgroundRemovalPreview,
   BackgroundRemovalParams,
+  ExternalSearchResponse,
+  ProductRequest,
 } from '../types';
 
 // Auth endpoints
@@ -290,7 +292,7 @@ export const products = {
     await api.post(`/products/${id}/reject/`);
   },
 
-  pendingCounts: async (): Promise<{ products: number; schematics: number; firmware: number; recipes: number; images: number; component_images: number; datasheets: number; component_suggestions: number }> => {
+  pendingCounts: async (): Promise<{ products: number; schematics: number; firmware: number; recipes: number; images: number; component_images: number; datasheets: number; component_suggestions: number; product_requests: number }> => {
     const response = await api.get('/products/pending_counts/');
     return response.data;
   },
@@ -387,6 +389,17 @@ export const components = {
 
   lookup: async (id: string): Promise<NexarData> => {
     const response = await api.post(`/components/${id}/lookup/`);
+    return response.data;
+  },
+
+  // Distributor search for a part number the catalogue doesn't have; exact matches are added
+  externalSearch: async (q: string): Promise<ExternalSearchResponse> => {
+    const response = await api.get('/components/external-search/', { params: { q } });
+    return response.data;
+  },
+
+  externalAdd: async (data: { query: string; mpn: string; manufacturer: string }): Promise<{ id: string; created: boolean }> => {
+    const response = await api.post('/components/external-add/', data);
     return response.data;
   },
 
@@ -535,6 +548,32 @@ export const firmware = {
 
   reject: async (id: string): Promise<void> => {
     await api.post(`/firmware/${id}/reject/`);
+  },
+};
+
+// "What are you repairing?" requests filed after a component search
+export const productRequests = {
+  create: async (data: {
+    manufacturer: string; model_number: string; notes?: string; component?: string;
+    search_query?: string; website?: string;
+  }): Promise<ProductRequest> => {
+    const response = await api.post('/product-requests/', data);
+    return response.data;
+  },
+
+  list: async (params?: any): Promise<PaginatedResponse<ProductRequest>> => {
+    const response = await api.get('/product-requests/', { params });
+    return response.data;
+  },
+
+  fulfil: async (id: string, category: string): Promise<ProductRequest> => {
+    const response = await api.post(`/product-requests/${id}/fulfil/`, { category });
+    return response.data;
+  },
+
+  dismiss: async (id: string): Promise<ProductRequest> => {
+    const response = await api.post(`/product-requests/${id}/dismiss/`);
+    return response.data;
   },
 };
 

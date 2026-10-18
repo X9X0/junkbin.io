@@ -8,6 +8,7 @@ import clsx from 'clsx';
 import Pagination from '../components/Pagination';
 import { ComponentGridSkeleton } from '../components/Skeleton';
 import { COMPONENT_TYPES } from '../constants/componentTypes';
+import MissingPartPanel from '../components/MissingPartPanel';
 
 export default function Components() {
   const { t } = useTranslation();
@@ -287,6 +288,7 @@ export default function Components() {
             <Link to="/submit" className="btn-cyber">
               {t('components.add_component')}
             </Link>
+            {search && <MissingPartPanel query={search} />}
           </div>
         )}
 

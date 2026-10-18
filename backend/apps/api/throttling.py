@@ -164,3 +164,16 @@ class PasswordChangeRateThrottle(UserRateThrottle):
     """
 
     scope = 'password_change'
+
+
+class ExternalSearchRateThrottle(UserRateThrottle):
+    """Distributor searches for part numbers the site doesn't have (signed-in users).
+    Each uncached search spends DigiKey/Mouser daily quota."""
+
+    scope = 'external_search'
+
+
+class ExternalSearchAnonRateThrottle(AnonRateThrottle):
+    """Distributor searches by visitors who aren't signed in, per IP."""
+
+    scope = 'external_search_anon'

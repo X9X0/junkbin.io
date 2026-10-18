@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { products } from '../api/endpoints';
 import api from '../api/client';
@@ -64,9 +65,11 @@ export default function Submit() {
   const [dsSourceUrl, setDsSourceUrl] = useState('');
 
   // Product form state
+  // "Create this product" from a component search pre-fills maker and model
+  const [searchParams] = useSearchParams();
   const [productData, setProductData] = useState<ProductFormData>({
-    manufacturer: '',
-    model_number: '',
+    manufacturer: searchParams.get('manufacturer') || '',
+    model_number: searchParams.get('model_number') || '',
     revision: '',
     region: 'global',
     category: '',

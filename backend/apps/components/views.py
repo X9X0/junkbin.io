@@ -19,7 +19,10 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 from utils.cache import staff_key_prefix
 from apps.api.metrics import component_view_counter
 
-from .models import Component, ComponentImage, ComponentDatasheet, ComponentViewStats, ProductComponent, ComponentVote
+from .models import (
+    Component, ComponentDatasheet, ComponentImage, ComponentViewStats, ComponentVote, ProductComponent,
+    ProductRequest,
+)
 from .serializers import (
     ComponentListSerializer,
     ComponentDetailSerializer,
@@ -36,7 +39,9 @@ from .serializers import (
 )
 from .filters import ComponentFilter, ProductComponentFilter
 from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
-from apps.api.throttling import LookupRateThrottle
+from apps.api.throttling import (
+    ExternalSearchAnonRateThrottle, ExternalSearchRateThrottle, LookupRateThrottle,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -67,7 +72,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
         return ComponentDetailSerializer
 
     def get_permissions(self):
-        if self.action in ['create', 'add_cross_reference', 'upload_image', 'upload_datasheet']:
+        if self.action in ['create', 'add_cross_reference', 'upload_image', 'upload_datasheet', 'external_add']:
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action == 'lookup':
             return [permissions.IsAuthenticated()]
@@ -259,6 +264,59 @@ class ComponentViewSet(viewsets.ModelViewSet):
 
         component.cross_references.add(other_component)
         return Response({'detail': 'Cross-reference added'})
+
+    @action(
+        detail=False,
+        methods=['get'],
+        url_path='external-search',
+        throttle_classes=[ExternalSearchRateThrottle, ExternalSearchAnonRateThrottle],
+    )
+    def external_search(self, request):
+        """
+        Distributor results (DigiKey/Mouser) for a part number the catalogue
+        doesn't have. ?q=LM358DR. Cached for a week; see external_search.py.
+        """
+        from .external_search import SearchUnavailable, looks_like_part_number, normalise, search
+
+        query = request.query_params.get('q', '')
+        if not looks_like_part_number(query):
+            return Response({'detail': 'Enter a part number (letters and digits, no spaces).'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        local = Component.objects.filter(part_number__iexact=normalise(query)).values('id', 'manufacturer',
+                                                                                       'part_number')[:5]
+        try:
+            results, cached = search(query)
+        except SearchUnavailable as exc:
+            return Response({'detail': f'Distributor search is unavailable right now ({exc}).'},
+                            status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        added = auto_add_exact(results, normalise(query), request.user)
+        return Response({'query': normalise(query), 'cached': cached, 'local_matches': list(local),
+                         'added': added, 'results': results})
+
+    @action(
+        detail=False,
+        methods=['post'],
+        url_path='external-add',
+    )
+    def external_add(self, request):
+        """
+        Add a distributor result to the catalogue. Only a result returned by an
+        earlier external-search (still cached) can be added; it lands unverified.
+        Body: {"query": ..., "mpn": ..., "manufacturer": ...}
+        """
+        from .external_search import normalise
+        from .models import ExternalPartSearch
+
+        cached = ExternalPartSearch.objects.filter(query=normalise(request.data.get('query', ''))).first()
+        mpn, maker = request.data.get('mpn', ''), request.data.get('manufacturer', '')
+        hit = next((r for r in (cached.results if cached else [])
+                    if r['mpn'] == mpn and r['manufacturer'] == maker), None)
+        if not hit:
+            return Response({'detail': 'Search for the part first; only search results can be added.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        component, created = component_from_result(hit, request.user)
+        return Response({'id': str(component.id), 'created': created},
+                        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     @action(
         detail=True,
@@ -671,3 +729,155 @@ class ComponentDatasheetViewSet(viewsets.ModelViewSet):
 
 # Import models for cross_reference action
 from django.db import models
+
+
+TYPE_HINTS = [   # (component_type, words in the distributor's category/description)
+    ('mosfet', r'MOSFET|\bFET\b'), ('transistor', r'TRANSISTOR|\bBJT\b'), ('diode', r'DIODE|RECTIFIER|ZENER|TVS'),
+    ('led', r'\bLED'), ('regulator', r'REGULATOR|\bLDO\b|DC[ -]DC|PMIC|VOLTAGE REFERENCE'),
+    ('opamp', r'OP ?AMP|OPERATIONAL AMPLIFIER|COMPARATOR'), ('mcu', r'MICROCONTROLLER|\bMCU\b'),
+    ('eeprom', r'EEPROM|FLASH|MEMORY|SRAM|DRAM'), ('crystal', r'CRYSTAL|OSCILLATOR|RESONATOR'),
+    ('resistor', r'RESISTOR'), ('capacitor', r'CAPACITOR'), ('ferrite', r'FERRITE|BEAD'),
+    ('inductor', r'INDUCTOR|CHOKE'), ('fuse', r'\bFUSE|PTC'), ('connector', r'CONNECTOR|HEADER|SOCKET'),
+    ('switch', r'SWITCH'), ('relay', r'RELAY'), ('transformer', r'TRANSFORMER'), ('sensor', r'SENSOR'),
+    ('rf_module', r'\bRF\b.*MODULE|WIRELESS MODULE'), ('balun', r'BALUN|FILTER'), ('ic', r'\bIC\b|INTEGRATED CIRCUIT'),
+]
+
+
+def component_from_result(hit, user):
+    """(component, created) for a distributor result; existing components are reused untouched."""
+    existing = Component.objects.filter(manufacturer__iexact=hit['manufacturer'],
+                                        part_number__iexact=hit['mpn']).first()
+    if existing:
+        return existing, False
+    return Component.objects.create(
+        part_number=hit['mpn'][:200], manufacturer=hit['manufacturer'][:200],
+        component_type=guess_component_type(hit),
+        description=(hit.get('description') or '')[:2000],
+        datasheet_url=(hit.get('datasheet_url') or '')[:200],
+        specifications={'nexar_data': {**hit, 'last_updated': timezone.now().isoformat()},
+                        'source': 'distributor_search'},
+        created_by=user if user and user.is_authenticated else None,
+    ), True
+
+
+def auto_add_exact(results, query, user):
+    """A search for a part the catalogue lacks adds it when a distributor lists exactly
+    that part number (or, failing that, the part plus a short packing code) under a
+    named maker - typos and partial queries add nothing."""
+    import re
+    from .distributors import same_mpn
+    norm = lambda x: re.sub(r'[^A-Z0-9]', '', (x or '').upper())
+    picks = [h for h in results if same_mpn(h.get('mpn'), query) and h.get('manufacturer')]
+    if not picks:
+        # only packaged variants are sold ('MP2307DN' -> 'MP2307DN-LF-Z'): add the best-stocked
+        # one that is the searched part plus a short packing code
+        variants = [h for h in results if h.get('manufacturer') and norm(h.get('mpn')).startswith(norm(query))
+                    and 0 < len(norm(h.get('mpn'))) - len(norm(query)) <= 6]
+        picks = sorted(variants, key=lambda h: -(h.get('stock') or 0))[:1]
+    added = []
+    for hit in picks:
+        component, created = component_from_result(hit, user)
+        added.append({'id': str(component.id), 'manufacturer': component.manufacturer,
+                      'part_number': component.part_number, 'created': created})
+    return added
+
+
+def guess_component_type(result):
+    import re
+    text = f"{result.get('category', '')} {result.get('description', '')}".upper()
+    for kind, pattern in TYPE_HINTS:
+        if re.search(pattern, text):
+            return kind
+    return 'ic'
+
+
+class ProductRequestViewSet(viewsets.GenericViewSet):
+    """
+    "What are you repairing?" after a component search. Anyone may file a request
+    (rate-limited; the hidden 'website' field is a spam trap); moderators list,
+    fulfil (create the product and link the part) or dismiss them.
+    """
+
+    queryset = ProductRequest.objects.select_related('component', 'requested_by', 'created_product')
+
+    def get_permissions(self):
+        from apps.api.permissions import IsModeratorOrAdmin
+        if self.action == 'create':
+            return [permissions.AllowAny()]
+        return [IsModeratorOrAdmin()]
+
+    def get_throttles(self):
+        from apps.api.throttling import SubmissionRateThrottle
+        if self.action == 'create':
+            return [SubmissionRateThrottle()]
+        return super().get_throttles()
+
+    @staticmethod
+    def as_dict(r):
+        return {
+            'id': str(r.id), 'manufacturer': r.manufacturer, 'model_number': r.model_number, 'notes': r.notes,
+            'search_query': r.search_query, 'status': r.status, 'created_at': r.created_at,
+            'component': r.component and {'id': str(r.component.id), 'manufacturer': r.component.manufacturer,
+                                          'part_number': r.component.part_number},
+            'requested_by': r.requested_by and {'id': str(r.requested_by.id), 'username': r.requested_by.username},
+            'created_product': r.created_product and {'id': str(r.created_product.id),
+                                                      'slug': r.created_product.slug},
+        }
+
+    def list(self, request):
+        qs = self.get_queryset()
+        if request.query_params.get('status'):
+            qs = qs.filter(status=request.query_params['status'])
+        page = self.paginate_queryset(qs)
+        return self.get_paginated_response([self.as_dict(r) for r in page])
+
+    def create(self, request):
+        data = request.data
+        manufacturer = (data.get('manufacturer') or '').strip()[:200]
+        model_number = (data.get('model_number') or '').strip()[:200]
+        if not manufacturer or not model_number:
+            return Response({'detail': 'Manufacturer and model are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if data.get('website'):                         # spam trap: humans never see this field
+            return Response({'detail': 'Thanks!'}, status=status.HTTP_201_CREATED)
+        component = Component.objects.filter(pk=data.get('component')).first() if data.get('component') else None
+        session_key = ''
+        if not request.user.is_authenticated:
+            if not request.session.session_key:
+                request.session.save()
+            session_key = request.session.session_key or ''
+        r = ProductRequest.objects.create(
+            component=component, manufacturer=manufacturer, model_number=model_number,
+            notes=(data.get('notes') or '')[:2000], search_query=(data.get('search_query') or '')[:60],
+            requested_by=request.user if request.user.is_authenticated else None, session_key=session_key)
+        return Response(self.as_dict(r), status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'])
+    def fulfil(self, request, pk=None):
+        """Create the product (or use the existing one), link the requested part, close the request."""
+        from apps.products.models import Product
+        r = self.get_object()
+        if r.status != r.Status.PENDING:
+            return Response({'detail': 'Already handled.'}, status=status.HTTP_400_BAD_REQUEST)
+        category = request.data.get('category') or 'other'
+        product = Product.objects.filter(manufacturer__iexact=r.manufacturer, model_number__iexact=r.model_number,
+                                         revision='', region='global').first()
+        if not product:
+            product = Product.objects.create(
+                manufacturer=r.manufacturer, model_number=r.model_number, category=category,
+                description=r.notes, created_by=r.requested_by or request.user, is_approved=True)
+        if r.component and not product.product_components.filter(component=r.component).exists():
+            ProductComponent.objects.create(
+                product=product, component=r.component, quantity=1,
+                notes='Added from a product request after a component search.',
+                created_by=r.requested_by or request.user)
+        r.status, r.created_product, r.handled_by, r.handled_at = (r.Status.CREATED, product, request.user,
+                                                                   timezone.now())
+        r.save(update_fields=['status', 'created_product', 'handled_by', 'handled_at'])
+        return Response(self.as_dict(r))
+
+    @action(detail=True, methods=['post'])
+    def dismiss(self, request, pk=None):
+        r = self.get_object()
+        r.status, r.handled_by, r.handled_at = r.Status.DISMISSED, request.user, timezone.now()
+        r.save(update_fields=['status', 'handled_by', 'handled_at'])
+        return Response(self.as_dict(r))

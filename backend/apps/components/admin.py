@@ -12,6 +12,7 @@ from import_export.admin import ImportExportActionModelAdmin
 from apps.products.models import Product
 
 from .models import Component, ComponentImage, ComponentTypeImage, ComponentDatasheet, ProductComponent, ComponentVote, ComponentViewStats
+from .models import ExternalPartSearch, ProductRequest
 from .resources import ComponentResource, ProductComponentResource
 
 
@@ -396,3 +397,18 @@ class ComponentTypeImageAdmin(admin.ModelAdmin):
             )
         return '-'
     image_preview.short_description = 'Preview'
+
+
+@admin.register(ProductRequest)
+class ProductRequestAdmin(admin.ModelAdmin):
+    list_display = ('manufacturer', 'model_number', 'component', 'status', 'requested_by', 'created_at')
+    list_filter = ('status',)
+    search_fields = ('manufacturer', 'model_number', 'search_query', 'component__part_number')
+    raw_id_fields = ('component', 'requested_by', 'created_product', 'handled_by')
+
+
+@admin.register(ExternalPartSearch)
+class ExternalPartSearchAdmin(admin.ModelAdmin):
+    list_display = ('query', 'search_count', 'fetched_at')
+    search_fields = ('query',)
+    readonly_fields = ('query', 'results', 'sources', 'fetched_at', 'search_count')

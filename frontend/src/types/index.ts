@@ -622,6 +622,42 @@ export interface NexarData {
   last_updated: string;
 }
 
+// Distributor search for parts the catalogue lacks
+export interface ExternalPart {
+  mpn: string;
+  manufacturer: string;
+  description: string;
+  datasheet_url: string | null;
+  product_url?: string;
+  status?: string;
+  category?: string;
+  stock?: number;
+  specs: NexarSpec[];
+  sellers: Seller[];
+  sources: string[];
+}
+
+export interface ExternalSearchResponse {
+  query: string;
+  cached: boolean;
+  local_matches: { id: string; manufacturer: string; part_number: string }[];
+  added: { id: string; manufacturer: string; part_number: string; created: boolean }[];
+  results: ExternalPart[];
+}
+
+export interface ProductRequest {
+  id: string;
+  manufacturer: string;
+  model_number: string;
+  notes: string;
+  search_query: string;
+  status: 'pending' | 'created' | 'dismissed';
+  created_at: string;
+  component: { id: string; manufacturer: string; part_number: string } | null;
+  requested_by: { id: string; username: string } | null;
+  created_product: { id: string; slug: string } | null;
+}
+
 // Analytics types
 export interface DailyActiveUsers {
   date: string;

@@ -62,6 +62,8 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'password_change': '1000/hour',
     'report': '1000/hour',
     'lookup': '1000/hour',
+    'external_search': '1000/hour',
+    'external_search_anon': '1000/hour',
     'subscribe': '1000/hour',
     'bg_removal': '1000/hour',
 }
