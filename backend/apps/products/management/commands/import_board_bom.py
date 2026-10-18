@@ -35,7 +35,8 @@ Generic passives come through as ordinary components (manufacturer "Generic",
 part_number a spec string such as "RES 10K 1% 1/10W 0603") whose
 "equivalents" are verified current parts.
 
-Re-running is safe: a product this command created is found by its source tag
+Products and BOM rows carry the bundle's source tag in import_source (never
+shown on the site). Re-running is safe: a product this command created is found by its source tag
 (so a corrected revision or description updates it in place) and its imported
 components replaced; a product that already exists without this
 bundle's source tag (somebody else's work) is left alone. New products are
@@ -50,9 +51,29 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.components.models import Component, ProductComponent
-from apps.products.models import Product, Schematic
+from apps.products.import_text import bom_component_type, clean_text, clean_title
+from apps.products.models import Product, ProductImage, Schematic
 
-REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length
+REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length or 100_000
+
+
+PACKAGE = r'(?:PLCC|SOT|SOD|SOP|SSOP|TSSOP|QFN|DFN|QFP|LQFP|TQFP|BGA|DPAK|D2PAK|TO|SOIC|SO|DIP|SMA|SMB|SMC)-?\d*[A-Z]?'
+
+
+def alternate_description(primary):
+    """'Factory-approved alternate to SST 39VF512-90-4C-NH (eeprom, PLCC32)'."""
+    import re
+    line = primary.get('description', '').split(';')[0].upper()
+    package = re.search(rf'(?<![A-Z0-9])({PACKAGE})(?![A-Z])', line)
+    hint = ', '.join(x for x in (primary.get('component_type', '').replace('_', ' '),
+                                  package.group(1) if package else '') if x and x != 'other')
+    text = f"Factory-approved alternate to {primary['manufacturer']} {primary['part_number']}"
+    return f'{text} ({hint})' if hint else text
+
+
+def full_description(bundle):
+    """The product description plus where the data came from (shown on the product page)."""
+    return clean_text(f"{bundle['product'].get('description', '')} {bundle.get('source_note', '')}".strip())
 
 
 def refdes_chunks(refdes, limit=REFDES_MAX):
@@ -133,8 +154,8 @@ class Command(BaseCommand):
             result['products_skipped'] = 1
             return result
         if product:
-            self.update_identity(product, p)
-            product.product_components.filter(notes__startswith=f'[{tag}]').delete()
+            self.update_identity(product, {**p, 'description': full_description(bundle)})
+            product.product_components.filter(import_source=tag).delete()
             result['products_updated'] = 1
         else:
             product = Product.objects.create(
@@ -142,8 +163,7 @@ class Command(BaseCommand):
                 revision=p.get('revision', ''), region='global',
                 category=p['category'], subcategory=p.get('subcategory', ''),
                 year_manufactured=p.get('year_manufactured'),
-                description=p.get('description', ''),
-                teardown_notes=f"[{tag}] {bundle.get('source_note', '')}".strip(),
+                description=full_description(bundle), import_source=tag,
                 created_by=user, is_approved=False,
             )
             result['products_created'] = 1
@@ -152,7 +172,12 @@ class Command(BaseCommand):
             component, created = self.get_component(c, user)
             result['components_created'] += created
             for ref in c.get('alternates', []) + c.get('equivalents', []):
-                other, created = self.get_component({**c, **ref} if 'component_type' not in ref else ref, user)
+                if 'component_type' in ref:                 # a full record (generic passive's equivalent)
+                    spec = ref
+                else:                                       # a factory-approved second source: describe it as
+                    spec = {**c, **ref, 'specifications': {},   # such - the BOM line names the primary part
+                            'description': alternate_description(c)}
+                other, created = self.get_component(spec, user)
                 result['components_created'] += created
                 if other.pk != component.pk and not component.cross_references.filter(pk=other.pk).exists():
                     component.cross_references.add(other)
@@ -164,7 +189,7 @@ class Command(BaseCommand):
                     product=product, component=component,
                     reference_designator=', '.join(chunk),
                     quantity=len(chunk) if chunk else c.get('quantity') or 1,
-                    notes=f"[{tag}] {c.get('notes', '')}".strip(),
+                    notes=clean_text(c.get('notes', '')), import_source=tag,
                     submission_level=ProductComponent.SubmissionLevel.ADVANCED,
                     created_by=user,
                 )
@@ -174,6 +199,7 @@ class Command(BaseCommand):
         for component in Component.objects.filter(product_components__product=product).distinct():
             component.update_usage_count()
         self.import_documents(bundle, product, user, folder, dry_run, result)
+        self.import_images(bundle, product, user, folder, dry_run, result)
         return result
 
     @staticmethod
@@ -182,7 +208,7 @@ class Command(BaseCommand):
         in place), False when there is none yet, None when the name belongs to a product
         somebody else created - which is never touched."""
         p = bundle['product']
-        tagged = Product.objects.filter(teardown_notes__startswith=f"[{bundle['source_tag']}]").first()
+        tagged = Product.objects.filter(import_source=bundle['source_tag']).first()
         same_name = Product.objects.filter(
             manufacturer=p['manufacturer'], model_number=p['model_number'],
             revision=p.get('revision', ''), region='global').first()
@@ -214,9 +240,30 @@ class Command(BaseCommand):
         if not product:
             result['products_skipped'] = 1
             return result
-        self.update_identity(product, bundle['product'])
+        self.update_identity(product, {**bundle['product'], 'description': full_description(bundle)})
         self.import_documents(bundle, product, user, folder, dry_run, result)
+        self.import_images(bundle, product, user, folder, dry_run, result)
         return result
+
+    @staticmethod
+    def import_images(bundle, product, user, folder, dry_run, result):
+        """Bundle "images" (e.g. a document's first page as a cover): added once, unapproved,
+        preview image only when the product has no picture yet."""
+        for img in bundle.get('images', []):
+            if product.images.filter(caption=img['caption'][:200]).exists():
+                continue
+            result['images_added'] = result.get('images_added', 0) + 1
+            if dry_run:
+                continue
+            path = folder / img['file']
+            if not path.is_file():
+                raise CommandError(f'{path}: image missing')
+            with path.open('rb') as fh:
+                ProductImage.objects.create(
+                    product=product, image=File(fh, name=f'{product.pk}-cover.jpg'),
+                    image_type=img.get('image_type') or ProductImage.ImageType.OTHER,
+                    caption=img['caption'][:200], is_primary=not product.images.exists(),
+                    uploaded_by=user, is_approved=False)
 
     @staticmethod
     def import_documents(bundle, product, user, folder, dry_run, result):
@@ -249,7 +296,7 @@ class Command(BaseCommand):
                 Schematic.objects.create(
                     product=product, file=File(fh, name=path.name),
                     schematic_type=doc.get('schematic_type') or Schematic.SchematicType.OTHER,
-                    title=doc['title'][:300], description=doc.get('description', ''),
+                    title=clean_title(doc['title'])[:300], description=doc.get('description', ''),
                     version=product.revision,
                     source_type=Schematic.SourceType.LEAKED,
                     source_notes=f"[{tag}] {doc.get('source_notes', '')} md5:{doc['md5']}",
@@ -264,9 +311,11 @@ class Command(BaseCommand):
             return component, 0
         return Component.objects.create(
             manufacturer=c['manufacturer'], part_number=c['part_number'],
-            component_type=c.get('component_type') or 'other',
+            component_type=(bom_component_type(c.get('description', ''))
+                            if c.get('component_type') in (None, '', 'ic', 'other') and c.get('manufacturer') != 'Generic'
+                            else None) or c.get('component_type') or 'other',
             package_type=c.get('package_type', '')[:50],
-            description=c.get('description', ''),
+            description=clean_text(c.get('description', '')),
             specifications=c.get('specifications') or {},
             created_by=user,
         ), 1

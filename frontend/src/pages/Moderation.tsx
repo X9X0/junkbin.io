@@ -12,6 +12,7 @@ import UserReviewPanel from '../components/moderation/UserReviewPanel';
 import { parseApiError } from '../utils/formErrors';
 import clsx from 'clsx';
 import ProductRequestsPanel from '../components/ProductRequestsPanel';
+import ImportReviewPanel from '../components/moderation/ImportReviewPanel';
 
 const reportStatusColors: Record<string, string> = {
   pending: 'border-cyber-yellow/50 text-cyber-yellow',
@@ -134,6 +135,18 @@ export default function Moderation() {
             <AlertTriangle className="h-4 w-4" />
             {t('moderation.tab_reports')}
           </button>
+          <button
+            onClick={() => updateFilter('tab', 'imports')}
+            className={clsx(
+              'px-4 py-3 font-mono text-sm border-b-2 transition-colors flex items-center gap-2',
+              tab === 'imports'
+                ? 'border-cyber-yellow text-cyber-yellow'
+                : 'border-transparent text-gray-500 hover:text-gray-300'
+            )}
+          >
+            <CheckCircle className="h-4 w-4" />
+            {t('moderation.tab_imports')}
+          </button>
         </div>
 
         {tab === 'pending' ? (
@@ -146,6 +159,8 @@ export default function Moderation() {
             goToPage={goToPage}
             onReview={setSelectedReviewId}
           />
+        ) : tab === 'imports' ? (
+          <ImportReviewPanel />
         ) : tab === 'reports' ? (
           <ReportsTab
             status={status}

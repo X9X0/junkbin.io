@@ -223,6 +223,14 @@ class Product(models.Model):
     )
 
     # Statistics (denormalized for performance)
+    import_source = models.CharField(
+        max_length=120, blank=True, db_index=True,
+        help_text=_('Bulk-import batch tag (e.g. norway-bom:Asus_P4SD-VX_R2.01); never shown on the site')
+    )
+    bom_bonus_tier = models.PositiveSmallIntegerField(
+        default=0,
+        help_text=_('Highest BOM-size bonus tier already paid to the creator (0, 10, 25 or 50 components)')
+    )
     component_count = models.PositiveIntegerField(
         default=0,
         help_text=_('Number of documented components')
@@ -1057,3 +1065,30 @@ class RepairReportVote(models.Model):
 
     def __str__(self):
         return f'{self.user} → {self.vote_type} on {self.repair_report}'
+
+
+class ImportReview(models.Model):
+    """
+    A person's verdict on one item of a bulk-import batch (a product or component the
+    import created). A batch can be bulk-approved only once enough randomly drawn items
+    have been reviewed and none is flagged.
+    """
+
+    class Verdict(models.TextChoices):
+        CORRECT = 'correct', _('Correct')
+        FLAGGED = 'flagged', _('Flagged')
+
+    batch = models.CharField(max_length=40, db_index=True)
+    item_type = models.CharField(max_length=20)          # product | component | datasheet
+    object_id = models.UUIDField()
+    verdict = models.CharField(max_length=10, choices=Verdict.choices)
+    note = models.TextField(blank=True, max_length=2000)
+    reviewer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='+')
+    reviewed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['batch', 'item_type', 'object_id'], name='unique_import_review')]
+        ordering = ['-reviewed_at']
+
+    def __str__(self):
+        return f'{self.batch} {self.item_type} {self.object_id}: {self.verdict}'

@@ -24,6 +24,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.components.models import Component, ComponentDatasheet
+from apps.products.import_text import clean_description, clean_title
 
 
 class Command(BaseCommand):
@@ -62,7 +63,7 @@ class Command(BaseCommand):
                     component = Component.objects.create(
                         manufacturer=m['manufacturer'][:200], part_number=m['part_number'][:200],
                         component_type=m['create'].get('component_type') or 'ic',
-                        description=(m['create'].get('description') or '')[:2000],
+                        description=clean_description(m['create'].get('description') or ''),
                         specifications={'source': 'datasheet'}, created_by=user)
                 if not component:
                     counts['component_missing'] += 1
@@ -79,7 +80,7 @@ class Command(BaseCommand):
                     raise CommandError(f'{path} missing')
                 with path.open('rb') as fh:
                     ComponentDatasheet.objects.create(
-                        component=component, file=File(fh, name=path.name), title=m['title'][:300],
+                        component=component, file=File(fh, name=path.name), title=clean_title(m['title'])[:300],
                         source_type=ComponentDatasheet.SourceType.MIRROR,
                         source_notes=f"[{tag}] {m.get('source_notes', '')} {marker}",
                         uploaded_by=user, is_approved=False,

@@ -5,6 +5,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
 from .views import (
+    ClaimPointsView,
     UserViewSet,
     UserRegistrationView,
     CurrentUserView,
@@ -29,6 +30,7 @@ urlpatterns = [
     path('auth/verify-email/', EmailVerificationView.as_view(), name='verify-email'),
     path('auth/resend-verification/', ResendVerificationView.as_view(), name='resend-verification'),
     path('auth/me/', CurrentUserView.as_view(), name='current-user'),
+    path('auth/claim-points/', ClaimPointsView.as_view(), name='claim-points'),
     path('auth/password/change/', PasswordChangeView.as_view(), name='password-change'),
     path('auth/username/change/', UsernameChangeView.as_view(), name='username-change'),
     path('auth/account/delete/', AccountDeleteView.as_view(), name='account-delete'),

@@ -76,6 +76,18 @@ export default function MissingPartPanel({ query }: { query: string }) {
             </Link>
           ))}
           <p className="text-gray-500 text-xs mt-2">{t('missing_part.added_desc')}</p>
+          {isAuthenticated && data.discovery_points_awarded > 0 && (
+            <p className="text-cyber-yellow text-xs mt-1 font-mono">
+              {t('missing_part.points_awarded', { count: data.discovery_points_awarded })}
+            </p>
+          )}
+          {!isAuthenticated && data.pending_points > 0 && (
+            <p className="text-xs mt-1">
+              <Link to="/register" className="text-cyber-yellow hover:underline font-mono">
+                {t('missing_part.points_pending', { count: data.pending_points, bonus: 5 })}
+              </Link>
+            </p>
+          )}
         </div>
       ) : data.results.length === 0 ? (
         <div className="card-cyber p-5 text-gray-400 text-sm">{t('missing_part.not_found', { query: data.query })}</div>

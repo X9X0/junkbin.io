@@ -22,7 +22,11 @@
     "request_failed": "Couldn't send that. Please try again.",
     "add_want": "Add this part to my Swap Shop wants",
     "want_added": "Added to your Swap Shop wants.",
-    "signup_for_wants": "Sign up to track this part in your Swap Shop wants"
+    "signup_for_wants": "Sign up to track this part in your Swap Shop wants",
+    "points_awarded_one": "+{{count}} discovery point for finding a new part",
+    "points_awarded_other": "+{{count}} discovery points for finding new parts",
+    "points_pending_one": "Sign up within 7 days to claim {{count}} discovery point (+{{bonus}} bonus)",
+    "points_pending_other": "Sign up within 7 days to claim {{count}} discovery points (+{{bonus}} bonus)"
   },
   "_meta": { "generated": "2026-03-02", "method": "source" },
 
@@ -672,6 +676,8 @@
   },
 
   "profile": {
+    "discovery_points_one": "+{{count}} discovery point",
+    "discovery_points_other": "+{{count}} discovery points",
     "loading": "LOADING...",
     "not_logged_in": "NOT LOGGED IN",
     "please_log_in": "Please log in to view your profile.",
@@ -899,6 +905,7 @@
   },
 
   "moderation": {
+    "tab_imports": "Import review",
     "title": "MODERATION DASHBOARD",
     "access_denied": "ACCESS DENIED",
     "access_denied_desc": "You need moderator privileges to access this page.",
@@ -967,6 +974,8 @@
   },
 
   "product_detail": {
+    "refdes_more_one": "+{{count}} more",
+    "refdes_more_other": "+{{count}} more",
     "loading": "LOADING...",
     "loading_data": "LOADING PRODUCT DATA...",
     "not_found_title": "PRODUCT NOT FOUND",

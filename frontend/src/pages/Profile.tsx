@@ -196,6 +196,11 @@ export default function Profile() {
               <Award className="h-3.5 w-3.5" />
               {t('profile.reputation')}
             </div>
+            {(user.discovery_points || 0) > 0 && (
+              <div className="text-[10px] font-mono text-cyber-yellow mt-1">
+                {t('profile.discovery_points', { count: user.discovery_points })}
+              </div>
+            )}
           </div>
 
           <div className="card-cyber p-4 text-center">

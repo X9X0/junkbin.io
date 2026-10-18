@@ -289,9 +289,13 @@ class ComponentViewSet(viewsets.ModelViewSet):
         except SearchUnavailable as exc:
             return Response({'detail': f'Distributor search is unavailable right now ({exc}).'},
                             status=status.HTTP_503_SERVICE_UNAVAILABLE)
-        added = auto_add_exact(results, normalise(query), request.user)
+        from apps.users.points import pending_for_session
+        added = auto_add_exact(results, normalise(query), request)
+        points = sum(a.get('points', 0) for a in added)
         return Response({'query': normalise(query), 'cached': cached, 'local_matches': list(local),
-                         'added': added, 'results': results})
+                         'added': added, 'results': results, 'discovery_points_awarded': points,
+                         'pending_points': 0 if request.user.is_authenticated
+                         else pending_for_session(request.session.session_key)})
 
     @action(
         detail=False,
@@ -760,7 +764,7 @@ def component_from_result(hit, user):
     ), True
 
 
-def auto_add_exact(results, query, user):
+def auto_add_exact(results, query, request):
     """A search for a part the catalogue lacks adds it when a distributor lists exactly
     that part number (or, failing that, the part plus a short packing code) under a
     named maker - typos and partial queries add nothing."""
@@ -774,11 +778,13 @@ def auto_add_exact(results, query, user):
         variants = [h for h in results if h.get('manufacturer') and norm(h.get('mpn')).startswith(norm(query))
                     and 0 < len(norm(h.get('mpn'))) - len(norm(query)) <= 6]
         picks = sorted(variants, key=lambda h: -(h.get('stock') or 0))[:1]
+    from apps.users.points import award_discovery
     added = []
     for hit in picks:
-        component, created = component_from_result(hit, user)
+        component, created = component_from_result(hit, request.user)
+        points = award_discovery(request, component) if created else 0
         added.append({'id': str(component.id), 'manufacturer': component.manufacturer,
-                      'part_number': component.part_number, 'created': created})
+                      'part_number': component.part_number, 'created': created, 'points': points})
     return added
 
 
@@ -873,6 +879,8 @@ class ProductRequestViewSet(viewsets.GenericViewSet):
         r.status, r.created_product, r.handled_by, r.handled_at = (r.Status.CREATED, product, request.user,
                                                                    timezone.now())
         r.save(update_fields=['status', 'created_product', 'handled_by', 'handled_at'])
+        from apps.users.points import award_request_fulfilled
+        award_request_fulfilled(r)
         return Response(self.as_dict(r))
 
     @action(detail=True, methods=['post'])

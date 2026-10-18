@@ -45,6 +45,7 @@ import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
 import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 import { productNameText } from '../components/ProductName';
+import RefdesList from '../components/RefdesList';
 
 // Schematic types that plausibly contain a real parts list/table - circuit
 // diagrams don't, and need the separate OCR + spatial-matching pipeline.
@@ -739,8 +740,8 @@ export default function ProductDetail() {
                           key={pc.id}
                           className="border-b border-cyber-light/20 hover:bg-cyber-light/10"
                         >
-                          <td className="py-3 px-4 font-mono text-cyber-cyan">
-                            {pc.reference_designator || '-'}
+                          <td className="py-3 px-4 font-mono text-cyber-cyan max-w-[16rem]">
+                            {pc.reference_designator ? <RefdesList value={pc.reference_designator} /> : '-'}
                           </td>
                           <td className="py-3 px-4">
                             <Link
@@ -749,6 +750,9 @@ export default function ProductDetail() {
                             >
                               {pc.component.part_number}
                             </Link>
+                            {pc.notes && (
+                              <div className="text-xs text-gray-500 mt-0.5 max-w-md line-clamp-2" title={pc.notes}>{pc.notes}</div>
+                            )}
                           </td>
                           <td className="py-3 px-4 font-mono text-cyber-yellow text-sm">
                             {pc.component.primary_value || '-'}
@@ -791,9 +795,7 @@ export default function ProductDetail() {
                           </div>
                         </div>
                         {pc.reference_designator && (
-                          <span className="font-mono text-cyber-cyan text-sm flex-shrink-0">
-                            {pc.reference_designator}
-                          </span>
+                          <RefdesList value={pc.reference_designator} limit={4} className="font-mono text-cyber-cyan text-sm text-right" />
                         )}
                       </div>
                       <div className="flex items-center justify-between gap-2 mt-2">
@@ -807,6 +809,7 @@ export default function ProductDetail() {
                         </div>
                         <ComponentVoteButtons pc={pc} productId={id!} compact />
                       </div>
+                      {pc.notes && <div className="text-xs text-gray-500 mt-2 line-clamp-2">{pc.notes}</div>}
                     </Link>
                   ))}
                 </div>

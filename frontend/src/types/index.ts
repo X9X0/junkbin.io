@@ -19,6 +19,7 @@ export interface User {
   location?: string;
   website?: string;
   reputation_score: number;
+  discovery_points?: number;
   contribution_count: number;
   is_staff: boolean;
   is_trusted: boolean;
@@ -47,6 +48,7 @@ export interface PublicUser {
   location?: string;
   website?: string;
   reputation_score: number;
+  discovery_points?: number;
   contribution_count: number;
   is_trusted: boolean;
   created_at: string;
@@ -641,8 +643,10 @@ export interface ExternalSearchResponse {
   query: string;
   cached: boolean;
   local_matches: { id: string; manufacturer: string; part_number: string }[];
-  added: { id: string; manufacturer: string; part_number: string; created: boolean }[];
+  added: { id: string; manufacturer: string; part_number: string; created: boolean; points?: number }[];
   results: ExternalPart[];
+  discovery_points_awarded: number;
+  pending_points: number;
 }
 
 export interface ProductRequest {

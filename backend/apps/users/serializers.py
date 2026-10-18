@@ -19,11 +19,11 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'id', 'username', 'display_name', 'bio', 'avatar',
-            'location', 'website', 'reputation_score',
+            'location', 'website', 'reputation_score', 'discovery_points',
             'contribution_count', 'is_trusted', 'created_at', 'badges'
         ]
         read_only_fields = [
-            'id', 'reputation_score', 'contribution_count',
+            'id', 'reputation_score', 'discovery_points', 'contribution_count',
             'is_trusted', 'created_at'
         ]
 
@@ -50,14 +50,14 @@ class UserDetailSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'display_name', 'bio', 'avatar', 'location', 'website',
             'preferred_language',
-            'reputation_score', 'contribution_count', 'report_count',
+            'reputation_score', 'discovery_points', 'contribution_count', 'report_count',
             'is_staff', 'is_trusted', 'is_moderator', 'email_verified',
             'oauth_provider', 'preferences', 'created_at', 'updated_at',
             'last_contribution_at', 'badges',
             'forward_messages_to', 'forward_messages_to_detail',
         ]
         read_only_fields = [
-            'id', 'username', 'email', 'reputation_score', 'contribution_count',
+            'id', 'username', 'email', 'reputation_score', 'discovery_points', 'contribution_count',
             'report_count', 'is_staff', 'is_trusted', 'is_moderator',
             'email_verified', 'oauth_provider', 'created_at', 'updated_at',
             'last_contribution_at'

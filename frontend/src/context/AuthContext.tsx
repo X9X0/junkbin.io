@@ -27,6 +27,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Points earned while signed out move to the account once its email is verified
+  const claimPoints = async (userData: User) => {
+    if (!userData.email_verified) return;
+    try {
+      const res = await auth.claimPoints();
+      if (res.claimed > 0) setUser({ ...userData, discovery_points: res.discovery_points ?? userData.discovery_points });
+    } catch {
+      // nothing to claim, or the endpoint is unavailable - never block sign-in on it
+    }
+  };
+
   useEffect(() => {
     // First get CSRF token, then check auth status
     auth.getCsrfToken()
@@ -34,6 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .then((userData) => {
         setUser(userData);
         applyUserLanguage(userData);
+        claimPoints(userData);
       })
       .catch(() => {
         // Not authenticated or token invalid
@@ -48,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = await auth.me();
     setUser(userData);
     applyUserLanguage(userData);
+    claimPoints(userData);
   };
 
   const register = async (data: RegisterData) => {
@@ -61,6 +74,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = await auth.me();
     setUser(userData);
     applyUserLanguage(userData);
+    claimPoints(userData);
     return { created: result.created };
   };
 
@@ -69,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userData = await auth.me();
     setUser(userData);
     applyUserLanguage(userData);
+    claimPoints(userData);
     return { created: result.created };
   };
 

@@ -1132,6 +1132,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 
         if product.created_by:
             product.created_by.increment_contribution()
+            from apps.users.points import award_bom_bonus
+            award_bom_bonus(product)
             notify_contribution_reviewed.delay(
                 str(product.created_by.pk), 'Product', str(product),
                 f'{settings.FRONTEND_URL}/products/{product.pk}', True,
@@ -1662,3 +1664,74 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
                                     notes=request.data.get('notes', ''))
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ImportReviewViewSet(viewsets.ViewSet):
+    """
+    Moderators review random samples of each bulk-import batch before it is approved.
+
+        GET  /import-review/                      batches with progress and whether they can be approved
+        GET  /import-review/next/?batch=&n=10     unreviewed random items with their evidence
+        POST /import-review/verdict/              {batch, item_type, object_id, verdict, note}
+        GET  /import-review/flagged/?batch=       flagged items with notes
+        POST /import-review/approve/              {batch, force}  (force: superusers only)
+    """
+
+    def get_permissions(self):
+        return [IsModeratorOrAdmin()]
+
+    def list(self, request):
+        from .import_review import BATCHES, stats
+        return Response([stats(b) for b in BATCHES])
+
+    @action(detail=False, methods=['get'])
+    def next(self, request):
+        from .import_review import BATCHES, evidence, next_items
+        batch = request.query_params.get('batch', '')
+        if batch not in BATCHES:
+            return Response({'detail': 'Unknown batch.'}, status=status.HTTP_400_BAD_REQUEST)
+        n = min(int(request.query_params.get('n', 10) or 10), 50)
+        return Response([evidence(batch, obj) for obj in next_items(batch, n)])
+
+    @action(detail=False, methods=['post'])
+    def verdict(self, request):
+        from .import_review import BATCHES, items
+        from .models import ImportReview
+        batch, verdict = request.data.get('batch'), request.data.get('verdict')
+        if batch not in BATCHES or verdict not in ImportReview.Verdict.values:
+            return Response({'detail': 'batch and verdict (correct|flagged) required.'},
+                            status=status.HTTP_400_BAD_REQUEST)
+        object_id = request.data.get('object_id')
+        if not items(batch).filter(pk=object_id).exists():
+            return Response({'detail': 'Item is not part of this batch.'}, status=status.HTTP_400_BAD_REQUEST)
+        review, _ = ImportReview.objects.update_or_create(
+            batch=batch, item_type=BATCHES[batch]['item_type'], object_id=object_id,
+            defaults={'verdict': verdict, 'note': (request.data.get('note') or '')[:2000], 'reviewer': request.user})
+        return Response({'verdict': review.verdict})
+
+    @action(detail=False, methods=['get'])
+    def flagged(self, request):
+        from .import_review import BATCHES, evidence, items
+        from .models import ImportReview
+        batch = request.query_params.get('batch', '')
+        if batch not in BATCHES:
+            return Response({'detail': 'Unknown batch.'}, status=status.HTTP_400_BAD_REQUEST)
+        out = []
+        for r in ImportReview.objects.filter(batch=batch, verdict=ImportReview.Verdict.FLAGGED):
+            obj = items(batch).filter(pk=r.object_id).first()
+            if obj:
+                out.append({**evidence(batch, obj), 'note': r.note,
+                            'reviewer': r.reviewer.username if r.reviewer else None})
+        return Response(out)
+
+    @action(detail=False, methods=['post'])
+    def approve(self, request):
+        from .import_review import BATCHES, approve_batch
+        batch = request.data.get('batch')
+        if batch not in BATCHES:
+            return Response({'detail': 'Unknown batch.'}, status=status.HTTP_400_BAD_REQUEST)
+        force = bool(request.data.get('force')) and request.user.is_superuser
+        try:
+            return Response(approve_batch(batch, request.user, force=force))
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)

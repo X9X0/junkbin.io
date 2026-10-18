@@ -558,8 +558,7 @@ class ProductComponent(models.Model):
     )
 
     # Location on PCB
-    reference_designator = models.CharField(
-        max_length=255,
+    reference_designator = models.TextField(
         blank=True,
         help_text=_('Reference designator(s), e.g. "U1" or "C1, C3, C8, C10"')
     )
@@ -571,6 +570,10 @@ class ProductComponent(models.Model):
         max_length=200,
         blank=True,
         help_text=_('Description of location (near HDMI port, on power board, etc.)')
+    )
+    import_source = models.CharField(
+        max_length=120, blank=True, db_index=True,
+        help_text=_('Bulk-import batch tag; never shown on the site')
     )
     board_name = models.CharField(
         max_length=100,
@@ -665,6 +668,11 @@ class ProductComponent(models.Model):
         if is_new:
             self.product.update_component_count()
             self.component.update_usage_count()
+            # a creator growing the BOM of their approved product may reach a bonus tier
+            if (self.product.is_approved and self.created_by_id and
+                    self.created_by_id == self.product.created_by_id):
+                from apps.users.points import award_bom_bonus
+                award_bom_bonus(self.product)
 
     def delete(self, *args, **kwargs):
         product = self.product

@@ -7,6 +7,7 @@ import uuid
 
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 
@@ -77,6 +78,10 @@ class User(AbstractUser):
     reputation_score = models.IntegerField(
         default=0,
         help_text=_('Calculated reputation based on contributions and reviews')
+    )
+    discovery_points = models.PositiveIntegerField(
+        default=0,
+        help_text=_('Points for growing the catalogue by searching (separate from reputation; never counts toward trust)')
     )
     contribution_count = models.PositiveIntegerField(
         default=0,
@@ -410,3 +415,34 @@ class AdminAuditLog(models.Model):
             details=details or {},
             ip_address=ip_address,
         )
+
+
+class PointsLedger(models.Model):
+    """
+    Every discovery-point award and every BOM bonus, one row each. Rows for a
+    visitor who isn't signed in carry their session key and no user; they are
+    claimed (user set) when that browser signs in with a verified email.
+    """
+
+    class Kind(models.TextChoices):
+        DISCOVERY = 'discovery', _('New part found by search')
+        REQUEST_FULFILLED = 'request_fulfilled', _('Requested product created')
+        SIGNUP_BONUS = 'signup_bonus', _('Claimed discovery points at signup')
+        BOM_BONUS = 'bom_bonus', _('Product with a real BOM approved')
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True,
+                             related_name='points_ledger')
+    session_key = models.CharField(max_length=64, blank=True, db_index=True)
+    kind = models.CharField(max_length=30, choices=Kind.choices)
+    points = models.IntegerField()
+    counts_toward_reputation = models.BooleanField(default=False)
+    object_ref = models.CharField(max_length=100, blank=True, help_text=_('What earned it, e.g. component:<id>'))
+    created_at = models.DateTimeField(auto_now_add=True)
+    claimed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['user', 'kind', 'created_at'])]
+
+    def __str__(self):
+        return f'{self.user or self.session_key[:8]} {self.kind} {self.points:+d}'

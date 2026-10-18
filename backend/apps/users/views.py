@@ -764,3 +764,21 @@ class GitHubAuthView(APIView):
         )
         set_token_cookies(response, access_token_str, refresh_token_str)
         return response
+
+
+class ClaimPointsView(APIView):
+    """
+    Claim discovery points this browser earned before signing in (within 7 days).
+    Requires a verified email; the frontend calls it after login and after verification.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from .points import claim_session_points, pending_for_session
+        key = request.session.session_key or ''
+        if not request.user.email_verified:
+            return Response({'claimed': 0, 'pending': pending_for_session(key),
+                             'detail': 'Verify your email to claim these points.'})
+        claimed = claim_session_points(request.user, key)
+        request.user.refresh_from_db(fields=['discovery_points'])
+        return Response({'claimed': claimed, 'discovery_points': request.user.discovery_points})

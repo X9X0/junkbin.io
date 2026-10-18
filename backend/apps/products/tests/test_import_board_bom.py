@@ -68,10 +68,10 @@ def _run(*args):
 
 
 def test_refdes_chunks_fit_the_column():
-    refs = [f'C{i}' for i in range(1, 200)]
-    chunks = list(refdes_chunks(refs, limit=255))
+    refs = [f'C{i}' for i in range(1, 900)]
+    chunks = list(refdes_chunks(refs, limit=2000))
     assert [r for c in chunks for r in c] == refs
-    assert all(len(', '.join(c)) <= 255 for c in chunks)
+    assert all(len(', '.join(c)) <= 2000 for c in chunks)
 
 
 def test_import_creates_unapproved_product_components_and_cross_refs(tmp_path, user_factory):
@@ -81,10 +81,15 @@ def test_import_creates_unapproved_product_components_and_cross_refs(tmp_path, u
     product = Product.objects.get(manufacturer='ASUS', model_number='P4SD-VX', revision='R2.01')
     assert not product.is_approved
     assert product.category == 'desktop' and product.subcategory == 'Motherboard'
-    assert 'norway-bom:Asus_P4SD-VX_R2.01' in product.teardown_notes
+    assert product.import_source == 'norway-bom:Asus_P4SD-VX_R2.01'
+    assert product.teardown_notes == ''                                 # nothing internal on display
+    assert 'factory production BOM' in product.description
+    assert not ProductComponent.objects.filter(notes__startswith='[').exists()
 
     opamp = Component.objects.get(manufacturer='Texas Instruments', part_number='LM358DR')
     assert opamp.cross_references.filter(part_number='LM358MX').exists()
+    alternate = Component.objects.get(part_number='LM358MX')                # described as an alternate,
+    assert alternate.description.startswith('Factory-approved alternate to Texas Instruments LM358DR')  # not as LM358DR
     generic = Component.objects.get(manufacturer='Generic', part_number='RES 10K 1% 1/10W 0603')
     assert generic.specifications['resistance_ohm'] == 10000.0
     yageo = Component.objects.get(manufacturer='YAGEO', part_number='RC0603FR-0710KL')
@@ -92,8 +97,7 @@ def test_import_creates_unapproved_product_components_and_cross_refs(tmp_path, u
     assert yageo.cross_references.filter(pk=generic.pk).exists()      # symmetrical
 
     placements = ProductComponent.objects.filter(product=product, component=generic)
-    assert sum(p.quantity for p in placements) == 80                   # split across rows
-    assert all(len(p.reference_designator) <= 255 for p in placements)
+    assert placements.count() == 1 and placements.get().quantity == 80   # one row holds all 80 positions
     assert product.component_count == ProductComponent.objects.filter(product=product).count()
     assert generic.__class__.objects.get(pk=generic.pk).usage_count == placements.count()
 
@@ -212,6 +216,7 @@ def test_corrected_revision_updates_the_same_product(tmp_path, user_factory):
     product.refresh_from_db()
     assert product.revision == '1.03 (server)'
     assert 'Same circuit board as' in product.description
+    assert 'factory production BOM' in product.description             # provenance kept on update
 
 
 def test_attach_to_existing_adds_documents_only(tmp_path, settings, user_factory, product_factory):
@@ -231,3 +236,24 @@ def test_attach_to_existing_adds_documents_only(tmp_path, settings, user_factory
     assert product.description == 'curated'
     assert Schematic.objects.filter(product=product).count() == 1
     assert Product.objects.count() == 1
+
+
+def test_cover_image_added_once_as_preview(tmp_path, settings, user_factory):
+    from io import BytesIO
+    from PIL import Image
+    from apps.products.models import ProductImage
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    folder = _write(tmp_path, _bundle(), 'cover')
+    (folder / 'docs').mkdir()
+    buf = BytesIO()
+    Image.new('RGB', (40, 30), 'white').save(buf, 'JPEG')
+    (folder / 'docs' / 'cover.jpg').write_bytes(buf.getvalue())
+    bundle = json.loads((folder / 'bundle.json').read_text())
+    bundle['images'] = [{'file': 'docs/cover.jpg', 'md5': 'x', 'caption': 'First page of the schematic: X',
+                         'image_type': 'schematic'}]
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    _run(folder)
+    _run(folder, '--skip-components')
+    img = ProductImage.objects.get()
+    assert img.is_primary and not img.is_approved and img.image_type == 'schematic'

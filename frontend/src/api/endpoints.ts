@@ -58,6 +58,12 @@ export const auth = {
     return response.data;
   },
 
+  // Discovery points this browser earned before signing in (needs a verified email)
+  claimPoints: async (): Promise<{ claimed: number; discovery_points?: number; pending?: number }> => {
+    const response = await api.post('/auth/claim-points/');
+    return response.data;
+  },
+
   me: async (): Promise<User> => {
     const response = await api.get('/auth/me/');
     return response.data;
@@ -575,6 +581,30 @@ export const productRequests = {
     const response = await api.post(`/product-requests/${id}/dismiss/`);
     return response.data;
   },
+};
+
+// Bulk-import batch review (moderators)
+export interface ImportBatch {
+  batch: string; label: string; item_type: string; total: number; reviewed: number; correct: number;
+  flagged: number; target: number; unapproved: number; can_approve: boolean;
+}
+export interface ImportReviewItem {
+  item_type: 'product' | 'component' | 'datasheet'; id: string; slug?: string; title: string; revision?: string;
+  category?: string; subcategory?: string; year?: number | null; description?: string; component_count?: number;
+  component_id?: string; image?: string | null; note?: string; reviewer?: string | null;
+  documents: { title: string; type: string; url: string; description?: string }[];
+  bom_sample?: { ref: string; part: string; maker: string; notes: string }[];
+}
+export const importReview = {
+  batches: async (): Promise<ImportBatch[]> => (await api.get('/import-review/')).data,
+  next: async (batch: string, n = 10): Promise<ImportReviewItem[]> =>
+    (await api.get('/import-review/next/', { params: { batch, n } })).data,
+  verdict: async (data: { batch: string; object_id: string; verdict: 'correct' | 'flagged'; note?: string }) =>
+    (await api.post('/import-review/verdict/', data)).data,
+  flagged: async (batch: string): Promise<ImportReviewItem[]> =>
+    (await api.get('/import-review/flagged/', { params: { batch } })).data,
+  approve: async (batch: string): Promise<Record<string, number | string>> =>
+    (await api.post('/import-review/approve/', { batch })).data,
 };
 
 // Component suggestions (machine-extracted BOM candidates) - moderation
