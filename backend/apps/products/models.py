@@ -101,7 +101,7 @@ ALLOWED_SCHEMATIC_EXTENSIONS = [
     'pcb', 'tvw', 'fz',
 ]
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
-ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip']
+ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip', 'fd']
 
 
 def product_image_path(instance, filename):
@@ -1079,7 +1079,7 @@ class ImportReview(models.Model):
         FLAGGED = 'flagged', _('Flagged')
 
     batch = models.CharField(max_length=40, db_index=True)
-    item_type = models.CharField(max_length=20)          # product | component | datasheet
+    item_type = models.CharField(max_length=20)          # product | component | datasheet | firmware
     object_id = models.UUIDField()
     verdict = models.CharField(max_length=10, choices=Verdict.choices)
     note = models.TextField(blank=True, max_length=2000)

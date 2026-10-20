@@ -22,6 +22,10 @@ PATH is a bundle.json or a directory searched recursively for them. Bundle:
       }]
     }
 
+Optional "firmware": [{"file", "md5", "title", "description", "version",
+"chip_architecture", "source_notes"}] - flash dumps, stored unmodified as the
+product's Firmware (unapproved, source type "dumped").
+
 Optional "documents": [{"file": "docs/x.zip" (relative to the bundle), "md5",
 "schematic_type", "title", "description", "source_notes"}] become Schematic
 records on the product (unapproved, source type leaked). A file whose md5 is
@@ -52,7 +56,7 @@ from django.db import transaction
 
 from apps.components.models import Component, ProductComponent
 from apps.products.import_text import bom_component_type, clean_text, clean_title
-from apps.products.models import Product, ProductImage, Schematic
+from apps.products.models import Firmware, Product, ProductImage, Schematic
 
 REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length or 100_000
 
@@ -150,6 +154,7 @@ class Command(BaseCommand):
                 # somebody else's product (or another import's): add documents, touch nothing else
                 result['products_attached'] = 1
                 self.import_documents(bundle, existing, user, folder, dry_run, result)
+                self.import_firmware(bundle, existing, user, folder, dry_run, result)
                 return result
             result['products_skipped'] = 1
             return result
@@ -200,6 +205,7 @@ class Command(BaseCommand):
             component.update_usage_count()
         self.import_documents(bundle, product, user, folder, dry_run, result)
         self.import_images(bundle, product, user, folder, dry_run, result)
+        self.import_firmware(bundle, product, user, folder, dry_run, result)
         return result
 
     @staticmethod
@@ -243,6 +249,7 @@ class Command(BaseCommand):
         self.update_identity(product, {**bundle['product'], 'description': full_description(bundle)})
         self.import_documents(bundle, product, user, folder, dry_run, result)
         self.import_images(bundle, product, user, folder, dry_run, result)
+        self.import_firmware(bundle, product, user, folder, dry_run, result)
         return result
 
     @staticmethod
@@ -264,6 +271,43 @@ class Command(BaseCommand):
                     image_type=img.get('image_type') or ProductImage.ImageType.OTHER,
                     caption=img['caption'][:200], is_primary=not product.images.exists(),
                     uploaded_by=user, is_approved=False)
+
+    @staticmethod
+    def import_firmware(bundle, product, user, folder, dry_run, result):
+        """Bundle "firmware" (flash dumps, imported unmodified): added once per md5, unapproved;
+        files this import added earlier that the bundle no longer lists are removed."""
+        tag = bundle['source_tag']
+        wanted = {f['md5'] for f in bundle.get('firmware', [])}
+        have = {}
+        for fw in product.firmware_files.all():
+            marker = fw.source_notes.rsplit('md5:', 1)
+            if len(marker) == 2:
+                have[marker[1].strip()] = fw
+        for md5, fw in have.items():
+            if fw.source_notes.startswith(f'[{tag}]') and md5 not in wanted:
+                if not dry_run:
+                    fw.file.delete(save=False)
+                    fw.delete()
+                result['firmware_removed'] = result.get('firmware_removed', 0) + 1
+        for item in bundle.get('firmware', []):
+            if item['md5'] in have:
+                result['firmware_kept'] = result.get('firmware_kept', 0) + 1
+                continue
+            path = folder / item['file']
+            if not path.is_file():
+                raise CommandError(f'{path}: firmware file missing')
+            result['firmware_added'] = result.get('firmware_added', 0) + 1
+            if dry_run:
+                continue
+            with path.open('rb') as fh:
+                Firmware.objects.create(
+                    product=product, file=File(fh, name=path.name),
+                    title=clean_title(item['title'])[:300], description=item.get('description', ''),
+                    version=item.get('version', '')[:50], chip_architecture=item.get('chip_architecture', '')[:100],
+                    source_type=Firmware.SourceType.DUMPED,
+                    source_notes=f"[{tag}] {item.get('source_notes', '')} md5:{item['md5']}",
+                    uploaded_by=user, is_approved=False,
+                )
 
     @staticmethod
     def import_documents(bundle, product, user, folder, dry_run, result):

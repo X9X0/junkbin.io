@@ -105,7 +105,7 @@ function FlaggedList({ batch }: { batch: string }) {
 }
 
 function ItemLink({ item }: { item: ImportReviewItem }) {
-  const to = item.item_type === 'product' ? `/products/${item.slug || item.id}`
+  const to = item.item_type === 'product' || item.item_type === 'firmware' ? `/products/${item.slug || item.id}`
     : `/components/${item.item_type === 'component' ? item.id : item.component_id}`;
   return (
     <Link to={to} target="_blank" className="text-white hover:text-cyber-cyan">
@@ -183,7 +183,9 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
               </table>
             )}
             <p className="text-xs text-gray-500 mb-3">
-              Check: is this the right product/part, revision and category, and do the documents belong to it?
+              {item.item_type === 'firmware'
+                ? 'Check: does the label and file name fit this product (brand, model, category)? Use Flag if the product name was misread from the label.'
+                : 'Check: is this the right product/part, revision and category, and do the documents belong to it?'}
             </p>
             <textarea className="input-cyber w-full mb-3 text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)}
               placeholder="If flagging: what's wrong? (wrong model, wrong revision, not a schematic, …)" />

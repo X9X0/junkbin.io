@@ -11,7 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.components.models import Component, ComponentDatasheet
-from .models import ImportReview, Product, ProductImage, Schematic
+from .models import Firmware, ImportReview, Product, ProductImage, Schematic
 
 SAMPLE_TARGET = 100
 
@@ -21,6 +21,7 @@ BATCHES = {
     'norway-svc': {'label': 'Products from service manuals', 'item_type': 'product'},
     'norway-ds-new': {'label': 'Components created from datasheets', 'item_type': 'component'},
     'norway-ds': {'label': 'Datasheets attached to existing components', 'item_type': 'datasheet'},
+    'norway-fw': {'label': 'Firmware / BIOS flash dumps (mostly laptops)', 'item_type': 'firmware'},
 }
 
 
@@ -33,6 +34,8 @@ def items(batch):
         return Product.objects.filter(import_source__startswith=f'{batch}:')
     if kind == 'component':
         return Component.objects.filter(datasheets__source_notes__startswith=f'[{batch}]').distinct()
+    if kind == 'firmware':
+        return Firmware.objects.filter(source_notes__startswith=f'[{batch}:')
     return ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]')
 
 
@@ -53,7 +56,7 @@ def stats(batch):
 
 def unapproved_count(batch):
     kind = BATCHES[batch]['item_type']
-    if kind == 'product':
+    if kind in ('product', 'firmware'):
         return items(batch).filter(is_approved=False).count()
     return ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]', is_approved=False).count()
 
@@ -82,6 +85,17 @@ def evidence(batch, obj):
             'image': image.image.url if image else None,
             'bom_sample': [{'ref': r.reference_designator[:60], 'part': r.component.part_number,
                             'maker': r.component.manufacturer, 'notes': r.notes[:160]} for r in rows],
+        }
+    if kind == 'firmware':
+        product = obj.product
+        return {
+            'item_type': 'firmware', 'id': str(obj.pk), 'slug': product.slug,
+            'title': f'{product.manufacturer} {product.model_number}', 'revision': product.revision,
+            'category': product.get_category_display(), 'description': obj.description,
+            'documents': [{'title': obj.title, 'type': 'Firmware', 'url': obj.file.url,
+                           'description': f'{obj.file_size or 0:,} bytes'
+                                          + (f' · {obj.version}' if obj.version else '')
+                                          + (f' · {obj.chip_architecture}' if obj.chip_architecture else '')}],
         }
     if kind == 'component':
         ds = obj.datasheets.filter(source_notes__startswith=f'[{batch}]').first()
@@ -115,6 +129,12 @@ def approve_batch(batch, user=None, force=False):
                                                        is_approved=False).update(is_approved=True)
         counts['images'] = ProductImage.objects.filter(product__in=products, caption__startswith='First page of',
                                                        is_approved=False).update(is_approved=True)
+    elif kind == 'firmware':
+        files = items(batch)
+        counts['products'] = Product.objects.filter(pk__in=files.values('product_id'),
+                                                    import_source__startswith=f'{batch}:',
+                                                    is_approved=False).update(is_approved=True)
+        counts['firmware'] = files.filter(is_approved=False).update(is_approved=True)
     else:
         counts['datasheets'] = ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]',
                                                                  is_approved=False).update(is_approved=True)

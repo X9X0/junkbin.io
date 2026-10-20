@@ -74,3 +74,26 @@ def test_only_moderators_and_force_only_for_superusers(product_factory, user_fac
     admin = user_factory(is_staff=True, is_superuser=True)
     assert _api(admin).post('/api/import-review/approve/', {'batch': 'norway-schem', 'force': True},
                             format='json').status_code == 200
+
+
+def test_firmware_batch_approves_files_and_the_products_it_created(product_factory, user_factory, moderator,
+                                                                    tmp_path, settings):
+    from django.core.files.base import ContentFile
+    from apps.products.models import Firmware
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    ours = product_factory(import_source='norway-fw:Dell_Latitude_E6530', is_approved=False, category='laptop')
+    theirs = product_factory(is_approved=False)                      # somebody's pending submission
+    files = [Firmware.objects.create(product=p, file=ContentFile(b'\xff' * 16, name='x.bin'), title='dump',
+                                     source_notes=f'[norway-fw:{p.pk}] path md5:{i}')
+             for i, p in enumerate((ours, theirs))]
+    api = _api(moderator)
+    items = api.get('/api/import-review/next/', {'batch': 'norway-fw', 'n': 10}).data
+    assert {i['id'] for i in items} == {str(f.pk) for f in files}
+    assert items[0]['item_type'] == 'firmware' and items[0]['documents'][0]['type'] == 'Firmware'
+    for i in items:
+        api.post('/api/import-review/verdict/', {'batch': 'norway-fw', 'object_id': i['id'],
+                                                 'verdict': 'correct'}, format='json')
+    resp = api.post('/api/import-review/approve/', {'batch': 'norway-fw'}, format='json')
+    assert resp.status_code == 200 and resp.data['firmware'] == 2 and resp.data['products'] == 1
+    ours.refresh_from_db(), theirs.refresh_from_db()
+    assert ours.is_approved and not theirs.is_approved                # never approves others' products

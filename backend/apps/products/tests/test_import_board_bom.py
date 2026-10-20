@@ -257,3 +257,61 @@ def test_cover_image_added_once_as_preview(tmp_path, settings, user_factory):
     _run(folder, '--skip-components')
     img = ProductImage.objects.get()
     assert img.is_primary and not img.is_approved and img.image_type == 'schematic'
+
+
+def _with_firmware(tmp_path, name='Dell_Latitude_E6530', content=b'\xffBIOS image\x00' * 64, **product):
+    import hashlib
+    bundle = _bundle(source_tag=f'norway-fw:{name}', attach_to_existing=True, components=[],
+                     product={'manufacturer': 'Dell', 'model_number': 'Latitude E6530', 'revision': '',
+                              'category': 'laptop', 'subcategory': '', 'description': 'Dell Latitude E6530.',
+                              **product})
+    folder = _write(tmp_path, bundle, name)
+    (folder / 'firmware').mkdir()
+    (folder / 'firmware' / '94001_EN25Q64.BIN').write_bytes(content)
+    bundle['firmware'] = [{
+        'file': 'firmware/94001_EN25Q64.BIN', 'md5': hashlib.md5(content).hexdigest(),
+        'title': 'EN25Q64.BIN - Dell Latitude E6530 flash dump', 'version': '', 'chip_architecture': 'EN25Q64',
+        'description': 'Flash dump filed as "Dell Latitude E6530 (LA-7762P Rev. 1.0)".',
+        'source_notes': 'Unsorted/x/EN25Q64.BIN (letus.repair file 94001)',
+    }]
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    return folder
+
+
+def test_firmware_is_stored_unmodified_unapproved_once(tmp_path, settings, user_factory):
+    from apps.products.models import Firmware
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    content = b'\xffBIOS image\x00MSDM' * 64
+    folder = _with_firmware(tmp_path, content=content)
+    assert 'firmware added 1' in _run(folder)
+    fw = Firmware.objects.get()
+    assert not fw.is_approved and fw.source_type == 'dumped' and fw.chip_architecture == 'EN25Q64'
+    assert fw.product.category == 'laptop' and not fw.product.is_approved
+    with fw.file.open('rb') as fh:
+        assert fh.read() == content                                    # byte for byte as dumped
+    assert 'firmware kept 1' in _run(folder)
+    assert Firmware.objects.count() == 1
+
+
+def test_firmware_attaches_to_someone_elses_product(tmp_path, settings, user_factory, product_factory):
+    from apps.products.models import Firmware
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    product = product_factory(manufacturer='Dell', model_number='Latitude E6530', revision='', region='global',
+                              description='curated')
+    out = _run(_with_firmware(tmp_path))
+    assert 'products attached 1' in out
+    product.refresh_from_db()
+    assert product.description == 'curated'
+    assert Firmware.objects.filter(product=product).count() == 1
+
+
+def test_firmware_dry_run_writes_nothing(tmp_path, settings, user_factory):
+    from apps.products.models import Firmware
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    out = _run(_with_firmware(tmp_path), '--dry-run')
+    assert 'firmware added 1' in out
+    assert Firmware.objects.count() == 0
+    assert not (tmp_path / 'media').exists() or not any((tmp_path / 'media').rglob('*.BIN'))

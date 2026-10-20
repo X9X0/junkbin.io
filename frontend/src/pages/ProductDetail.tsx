@@ -1085,7 +1085,7 @@ export default function ProductDetail() {
                           )}
                           <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                             <span>{fw.file_type?.toUpperCase()}</span>
-                            {fw.version && <span>v{fw.version}</span>}
+                            {fw.version && <span>{/^\d/.test(fw.version) ? `v${fw.version}` : fw.version}</span>}
                             {fw.file_size && (
                               <span>{(fw.file_size / 1024 / 1024).toFixed(1)} MB</span>
                             )}
