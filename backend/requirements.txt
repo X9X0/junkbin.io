@@ -54,7 +54,7 @@ pywebpush==2.4.0
 # ========================================
 # Image Processing
 # ========================================
-Pillow==12.3.0
+Pillow==13.0.0
 pillow-avif-plugin==1.6.0
 django-imagekit==6.1.0
 
