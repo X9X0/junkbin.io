@@ -101,7 +101,7 @@ ALLOWED_SCHEMATIC_EXTENSIONS = [
     'pcb', 'tvw', 'fz',
 ]
 ALLOWED_IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp', 'avif']
-ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip', 'fd']
+ALLOWED_FIRMWARE_EXTENSIONS = ['bin', 'hex', 'rom', 'img', 'dump', 'fw', 'elf', 'zip', 'fd', 'cap', 'wph', 'fl1', 'fl2', 'bio', 'eep']
 
 
 def product_image_path(instance, filename):
