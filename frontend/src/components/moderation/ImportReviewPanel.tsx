@@ -105,7 +105,7 @@ function FlaggedList({ batch }: { batch: string }) {
 }
 
 function ItemLink({ item }: { item: ImportReviewItem }) {
-  const to = item.item_type === 'product' || item.item_type === 'firmware' ? `/products/${item.slug || item.id}`
+  const to = ['product', 'firmware', 'image'].includes(item.item_type) ? `/products/${item.slug || item.id}`
     : `/components/${item.item_type === 'component' ? item.id : item.component_id}`;
   return (
     <Link to={to} target="_blank" className="text-white hover:text-cyber-cyan">
@@ -185,6 +185,8 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
             <p className="text-xs text-gray-500 mb-3">
               {item.item_type === 'firmware'
                 ? 'Check: does the label and file name fit this product (brand, model, category)? Use Flag if the product name was misread from the label.'
+                : item.item_type === 'image'
+                ? 'Check: is this photo of this product (or, when the caption says series, of its series)? Flag a part, a different model, a placeholder or a badly cut-out photo.'
                 : 'Check: is this the right product/part, revision and category, and do the documents belong to it?'}
             </p>
             <textarea className="input-cyber w-full mb-3 text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)}

@@ -408,6 +408,17 @@ class ProductImage(models.Model):
     height = models.PositiveIntegerField(null=True, blank=True)
     file_size = models.PositiveIntegerField(null=True, blank=True)
 
+    # Source attribution (images found online rather than uploaded by a member)
+    source_url = models.URLField(
+        max_length=1000,
+        blank=True,
+        help_text=_('Page this image was found on')
+    )
+    source_notes = models.TextField(
+        blank=True,
+        help_text=_('Attribution and source information')
+    )
+
     # Moderation
     is_approved = models.BooleanField(
         default=False,

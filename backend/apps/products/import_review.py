@@ -22,6 +22,7 @@ BATCHES = {
     'norway-ds-new': {'label': 'Components created from datasheets', 'item_type': 'component'},
     'norway-ds': {'label': 'Datasheets attached to existing components', 'item_type': 'datasheet'},
     'norway-fw': {'label': 'Firmware / BIOS flash dumps (mostly laptops)', 'item_type': 'firmware'},
+    'image-search': {'label': 'Product photos found by image search', 'item_type': 'image'},
 }
 
 
@@ -36,6 +37,8 @@ def items(batch):
         return Component.objects.filter(datasheets__source_notes__startswith=f'[{batch}]').distinct()
     if kind == 'firmware':
         return Firmware.objects.filter(source_notes__startswith=f'[{batch}:')
+    if kind == 'image':
+        return ProductImage.objects.filter(source_notes__startswith=f'[{batch}]')
     return ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]')
 
 
@@ -56,7 +59,7 @@ def stats(batch):
 
 def unapproved_count(batch):
     kind = BATCHES[batch]['item_type']
-    if kind in ('product', 'firmware'):
+    if kind in ('product', 'firmware', 'image'):
         return items(batch).filter(is_approved=False).count()
     return ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]', is_approved=False).count()
 
@@ -97,6 +100,17 @@ def evidence(batch, obj):
                                           + (f' · {obj.version}' if obj.version else '')
                                           + (f' · {obj.chip_architecture}' if obj.chip_architecture else '')}],
         }
+    if kind == 'image':
+        product = obj.product
+        return {
+            'item_type': 'image', 'id': str(obj.pk), 'slug': product.slug,
+            'title': f'{product.manufacturer} {product.model_number}', 'revision': product.revision,
+            'category': product.get_category_display(), 'description': obj.caption,
+            'documents': [{'title': obj.source_url, 'type': 'Found on', 'url': obj.source_url,
+                           'description': obj.source_notes.removeprefix(f'[{batch}]').strip()}]
+                         if obj.source_url else [],
+            'image': obj.image.url,
+        }
     if kind == 'component':
         ds = obj.datasheets.filter(source_notes__startswith=f'[{batch}]').first()
         return {
@@ -135,6 +149,8 @@ def approve_batch(batch, user=None, force=False):
                                                     import_source__startswith=f'{batch}:',
                                                     is_approved=False).update(is_approved=True)
         counts['firmware'] = files.filter(is_approved=False).update(is_approved=True)
+    elif kind == 'image':
+        counts['images'] = items(batch).filter(is_approved=False).update(is_approved=True)
     else:
         counts['datasheets'] = ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]',
                                                                  is_approved=False).update(is_approved=True)
