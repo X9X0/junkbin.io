@@ -11,6 +11,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.components.models import Component, ComponentDatasheet
+from utils.cache import clear_page_cache
 from .models import Firmware, ImportReview, Product, ProductImage, Schematic
 
 SAMPLE_TARGET = 100
@@ -155,4 +156,5 @@ def approve_batch(batch, user=None, force=False):
         counts['datasheets'] = ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]',
                                                                  is_approved=False).update(is_approved=True)
     counts['approved_at'] = timezone.now().isoformat()
+    clear_page_cache()               # cached lists and counts would hide the batch for up to an hour
     return counts

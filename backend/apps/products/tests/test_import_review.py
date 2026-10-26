@@ -97,3 +97,11 @@ def test_firmware_batch_approves_files_and_the_products_it_created(product_facto
     assert resp.status_code == 200 and resp.data['firmware'] == 2 and resp.data['products'] == 1
     ours.refresh_from_db(), theirs.refresh_from_db()
     assert ours.is_approved and not theirs.is_approved                # never approves others' products
+
+
+def test_approved_batch_shows_in_cached_lists_at_once(product_factory):
+    _batch(product_factory, 3)
+    anon = APIClient()
+    assert anon.get('/api/products/').data['count'] == 0         # this response is now cached
+    import_review.approve_batch('norway-schem', force=True)
+    assert anon.get('/api/products/').data['count'] == 3
