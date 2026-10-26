@@ -14,6 +14,7 @@ import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus, Pencil, FileText, Download, BookOpen, MessageSquare, Store } from 'lucide-react';
 import type { JunkbinItem } from '../types';
 import ProductName from '../components/ProductName';
+import { RATING_COLUMNS } from '../utils/ratings';
 
 function CompactSwapCard({ item, currentUserId, isAuthenticated, t }: {
   item: JunkbinItem;
@@ -194,6 +195,26 @@ export default function ComponentDetail() {
               {component.description && (
                 <p className="text-gray-400 mb-4">{component.description}</p>
               )}
+
+              {(() => {
+                const rows = RATING_COLUMNS
+                  .filter((key) => component.ratings?.[key])
+                  .map((key) => [t(`ratings.${key}`), component.ratings![key]!.text]);
+                if (component.package_type) rows.push([t('ratings.package'), component.package_type]);
+                const bValue = component.specifications?.b_value_k;
+                if (bValue) rows.push([t('ratings.b_value'), `${bValue} K`]);
+                if (rows.length === 0) return null;
+                return (
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 mb-4 max-w-md font-mono text-sm">
+                    {rows.map(([label, text]) => (
+                      <div key={label} className="contents">
+                        <dt className="text-gray-500">{label}</dt>
+                        <dd className="text-white">{text}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                );
+              })()}
 
               <div className="flex flex-wrap items-center gap-4 mt-2">
                 {component.datasheet_url && (

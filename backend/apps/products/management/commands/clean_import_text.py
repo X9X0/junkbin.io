@@ -27,8 +27,7 @@ class Command(BaseCommand):
                                                  'title', clean_title)
             counts['datasheet titles'] = self.fix(ComponentDatasheet.objects.filter(source_notes__startswith='[norway-'),
                                                   'title', clean_title)
-            counts['datasheet-made component descriptions'] = self.fix(
-                Component.objects.filter(specifications__source='datasheet'), 'description', clean_description)
+            counts['datasheet-made component descriptions'] = self.fix_datasheet_descriptions()
             counts['imported component descriptions'] = self.fix(
                 Component.objects.filter(product_components__import_source__gt='').distinct(), 'description', clean_text)
             counts['product descriptions'] = self.fix(Product.objects.exclude(import_source=''),
@@ -56,6 +55,19 @@ class Command(BaseCommand):
                 batch = []
         if batch:
             model.objects.bulk_update(batch, [field])
+        return total
+
+    @staticmethod
+    def fix_datasheet_descriptions():
+        """Components made from a datasheet: its title, without banners and the Features column."""
+        batch, total = [], 0
+        for comp in Component.objects.filter(specifications__source='datasheet').only('pk', 'part_number', 'description'):
+            new = clean_description(comp.description, part_number=comp.part_number)
+            if new != comp.description:
+                comp.description = new
+                batch.append(comp)
+                total += 1
+        Component.objects.bulk_update(batch, ['description'], batch_size=500)
         return total
 
     @staticmethod

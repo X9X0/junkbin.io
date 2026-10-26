@@ -16,7 +16,8 @@ PATH is a bundle.json or a directory searched recursively for them. Bundle:
           "part_number", "manufacturer", "component_type", "package_type",
           "description", "specifications": {}, "reference_designators": ["U1", ...],
           "quantity", "notes",
-          "alternates":  [{"part_number", "manufacturer"}],   # factory-approved second sources
+          "alternates":  [{"part_number", "manufacturer", "description"}],   # factory-approved second
+                                                       # sources; description = the alternate's own BOM line
           "equivalents": [{"part_number", "manufacturer", "component_type",
                            "package_type", "description", "specifications"}]
       }]
@@ -44,7 +45,11 @@ shown on the site). Re-running is safe: a product this command created is found 
 (so a corrected revision or description updates it in place) and its imported
 components replaced; a product that already exists without this
 bundle's source tag (somebody else's work) is left alone. New products are
-created unapproved. Existing components are reused as they are, never edited.
+created unapproved. Existing components are reused, never edited - except that ratings
+and a package they lack are filled in from the BOM line (apps.components.spec_fill).
+A new component's description is its own BOM line without the factory's markers and
+MAKER/PART echo; its ratings (value, voltage, power, current, tolerance, ...), package
+and type are read from that line and checked against its part number.
 """
 import json
 from pathlib import Path
@@ -55,9 +60,12 @@ from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
 from apps.components.models import Component, ProductComponent
+from apps.components.spec_fill import fill, plan
+from apps.components.spec_parse import clean_bom_text, ic_package
 from apps.products.import_text import bom_component_type, clean_text, clean_title
 from apps.products.models import Firmware, Product, ProductImage, Schematic
 
+PASSIVE_TYPES = ('resistor', 'capacitor', 'inductor', 'ferrite', 'crystal', 'thermistor', 'fuse')
 REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length or 100_000
 
 
@@ -177,10 +185,14 @@ class Command(BaseCommand):
             component, created = self.get_component(c, user)
             result['components_created'] += created
             for ref in c.get('alternates', []) + c.get('equivalents', []):
-                if 'component_type' in ref:                 # a full record (generic passive's equivalent)
-                    spec = ref
-                else:                                       # a factory-approved second source: describe it as
-                    spec = {**c, **ref, 'specifications': {},   # such - the BOM line names the primary part
+                if 'component_type' in ref and c['manufacturer'] == 'Generic':
+                    # a current part suggested for a generic line - not something the factory approved
+                    spec = {'specifications': {}, **ref,
+                            'description': ref.get('description') or f"Current equivalent of Generic {c['part_number']}"}
+                elif ref.get('description'):                # a full record, or an alternate with its own BOM line
+                    spec = {'component_type': '', 'specifications': {}, **ref}
+                else:                                       # older bundles: describe it as a second source
+                    spec = {**c, **ref, 'specifications': {},   # (the BOM line names the primary part)
                             'description': alternate_description(c)}
                 other, created = self.get_component(spec, user)
                 result['components_created'] += created
@@ -349,20 +361,37 @@ class Command(BaseCommand):
 
     @staticmethod
     def get_component(c, user):
+        """The component for a bundle entry. A new one gets its ratings, package and type from its
+        own BOM line; an existing one is never edited, except that ratings and a package it lacks
+        are filled in from the line."""
+        line = c.get('description', '')
+        own_line = (c.get('manufacturer') != 'Generic'          # these describe another part's line:
+                    and not line.startswith(('Factory-approved alternate', 'Current equivalent')))
         component = Component.objects.filter(
             manufacturer__iexact=c['manufacturer'], part_number__iexact=c['part_number']).first()
         if component:
+            if own_line:
+                fill(component, line)
             return component, 0
-        return Component.objects.create(
+        component = Component(
             manufacturer=c['manufacturer'], part_number=c['part_number'],
-            component_type=(bom_component_type(c.get('description', ''))
+            component_type=(bom_component_type(line)
                             if c.get('component_type') in (None, '', 'ic', 'other') and c.get('manufacturer') != 'Generic'
                             else None) or c.get('component_type') or 'other',
             package_type=c.get('package_type', '')[:50],
-            description=clean_text(c.get('description', '')),
+            description=clean_bom_text(clean_text(line)) if own_line else clean_text(line),
             specifications=c.get('specifications') or {},
             created_by=user,
-        ), 1
+        )
+        if own_line:
+            planned = plan(component, line)
+            component.specifications, component.package_type = planned['specs'], planned['package']
+            if planned['type'] and component.manufacturer != 'Generic':
+                component.component_type = planned['type']
+            elif not component.package_type and component.component_type not in PASSIVE_TYPES:
+                component.package_type = ic_package(line) or ''
+        component.save()
+        return component, 1
 
 
 class _Rollback(Exception):

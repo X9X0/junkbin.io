@@ -105,3 +105,14 @@ def test_approved_batch_shows_in_cached_lists_at_once(product_factory):
     assert anon.get('/api/products/').data['count'] == 0         # this response is now cached
     import_review.approve_batch('norway-schem', force=True)
     assert anon.get('/api/products/').data['count'] == 3
+
+
+def test_cached_list_is_per_user(product_factory, user_factory):
+    from django.core.cache import cache
+    cache.clear()                                                 # earlier tests' anonymous pages
+    owner = user_factory()
+    product_factory(is_approved=False, created_by=owner)
+    me = APIClient()
+    me.force_authenticate(owner)
+    assert me.get('/api/products/').data['count'] == 1           # cached for the owner...
+    assert APIClient().get('/api/products/').data['count'] == 0  # ...never served to anyone else

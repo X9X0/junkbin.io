@@ -1321,6 +1321,30 @@
     "ro": "Română",
     "hu": "Magyar",
     "tr": "Türkçe"
+  },
+
+  "ratings": {
+    "value": "Value",
+    "voltage": "Voltage",
+    "power": "Power",
+    "current": "Current",
+    "tolerance": "Tolerance",
+    "dielectric": "Dielectric",
+    "load": "Load capacitance",
+    "configuration": "Configuration",
+    "package": "Package",
+    "b_value": "B value",
+    "sort_by": "Sort by {{column}}",
+    "at_least": "Rated at least:",
+    "voltage_min_placeholder": "Voltage, e.g. 50V",
+    "voltage_min_hint": "Parts rated for at least this voltage - a replacement must meet or exceed the original",
+    "power_min_placeholder": "Power, e.g. 1/4W",
+    "power_min_hint": "Parts rated for at least this power (1/4W, 0.25W, 250mW)",
+    "current_min_placeholder": "Current, e.g. 2A",
+    "current_min_hint": "Parts rated for at least this current (2A, 500mA)",
+    "tolerance_placeholder": "Tolerance, e.g. 5%",
+    "tolerance_hint": "Exact tolerance: 1%, 5%, 0.25pF, +80/-20%",
+    "any_dielectric": "Any dielectric"
   }
 }
 

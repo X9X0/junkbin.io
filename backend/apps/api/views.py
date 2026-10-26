@@ -18,7 +18,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from .throttling import SearchRateThrottle
 from .metrics import search_counter, search_latency
 
-from utils.cache import staff_key_prefix
+from utils.cache import cache_page_per_user
 
 from django.contrib.auth import get_user_model
 from apps.products.models import Product
@@ -107,7 +107,7 @@ class SearchView(APIView):
         ],
         responses={200: dict}
     )
-    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
+    @method_decorator(cache_page_per_user(60 * 5))
     def get(self, request):
         query = request.query_params.get('q', '').strip()
         search_type = request.query_params.get('type', 'all')

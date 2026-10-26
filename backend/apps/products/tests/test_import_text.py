@@ -34,8 +34,34 @@ def test_clean_title_drops_download_site_junk():
 def test_clean_description_from_datasheet_title_page():
     raw = (' 捷多邦，您值得信赖的PCB打样专家！ F71858AD F71858AD Hardware Monitor, KBC with GPIO & ACPI '
            'Release Date: Aug, 2010 Version: V0.12P Aug, 2010 V0.12P')
-    assert clean_description(raw) == 'F71858AD Hardware Monitor, KBC with GPIO & ACPI'
+    assert clean_description(raw, part_number='F71858AD') == 'Hardware Monitor, KBC with GPIO & ACPI'
     assert clean_description('注文コード No. N 2 9 7 7 2SC4478 大信号トランジスタ') == ''   # no English left
+
+
+@pytest.mark.parametrize('pn, raw, title', [
+    ('MAX1602', '19-1125;; 9/96 Single-Channel CardBus and PCMCIA VCC/VPP Power-Switching Network '
+                '_______________General Description ____________________________Features',
+     'Single-Channel CardBus and PCMCIA VCC/VPP Power-Switching Network'),
+    ('MAX1617', '19-1265;; 3/98 KIT ATION EVALU B L E AVAIL A Remote/Local Temperature Sensor with SMBus Serial '
+                'Interface ______General Description',
+     'Remote/Local Temperature Sensor with SMBus Serial Interface'),
+    ('ISL6612', '® ISL6612, ISL6613 February 26, 2007 FN9153.8 Advanced Synchronous Rectified Buck Features MOSFET '
+                'Drivers with Protection Features • Pin-to-pin Compatible',
+     'Advanced Synchronous Rectified Buck MOSFET Drivers with Protection'),
+    ('SN7400', 'SN5400, SN54LS00, SN54S00 SN7400, SN74LS00, SN74S00 QUADRUPLE 2-INPUT POSITIVE-NAND GATES '
+               'PRODUCTION DATA information is current', 'QUADRUPLE 2-INPUT POSITIVE-NAND GATES'),
+    ('FAN7382', 'FAN7382 Half-Bridge Gate-Driver IC FAN7382 Half-Bridge Gate-Driver IC Features Description',
+     'Half-Bridge Gate-Driver IC'),
+    ('2SC4921', 'NPN Epitaxial Planar Silicon Transistor 2SC4921 Muting Circuit, Driver Applications Features Package '
+                'Dimensions · High DC current gain.',
+     'NPN Epitaxial Planar Silicon Transistor 2SC4921 Muting Circuit, Driver Applications'),
+    ('G950', 'Global Mixed-mode Technology Inc. G950 2.5V 1A Regulator Features General Description',
+     '2.5V 1A Regulator'),
+    ('ISL6265', 'ISL6265 ESIGNS ® O R NEW D E D F PART R E C O MMEND PLACEMENT N OT DR E MENDE May 13, 2009', ''),
+])
+def test_datasheet_title(pn, raw, title):
+    assert clean_description(raw, part_number=pn) == title
+    assert clean_description(title, part_number=pn) == title             # idempotent
 
 
 @pytest.mark.parametrize('line, kind', [

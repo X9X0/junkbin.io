@@ -63,7 +63,7 @@ class Command(BaseCommand):
                     component = Component.objects.create(
                         manufacturer=m['manufacturer'][:200], part_number=m['part_number'][:200],
                         component_type=m['create'].get('component_type') or 'ic',
-                        description=clean_description(m['create'].get('description') or ''),
+                        description=clean_description(m['create'].get('description') or '', part_number=m['part_number']),
                         specifications={'source': 'datasheet'}, created_by=user)
                 if not component:
                     counts['component_missing'] += 1

@@ -1,3 +1,5 @@
+import type { Ratings } from '../utils/ratings';
+
 // Badge types
 export interface Badge {
   slug: string;
@@ -206,6 +208,7 @@ export interface Component {
   description?: string;
   package_type?: string;
   primary_value?: string;
+  ratings?: Ratings;
   typical_function?: string;
   datasheet_url?: string;
   usage_count: number;
@@ -214,7 +217,7 @@ export interface Component {
   created_by?: CreatedBy;
   primary_image?: ComponentImage | null;
   manufacturer_aliases?: string[];
-  specifications?: Record<string, string>;
+  specifications?: Record<string, string | number>;
   octopart_url?: string;
   alternative_part_numbers?: string[];
   cross_references?: Component[];

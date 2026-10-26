@@ -5,6 +5,7 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
 from .models import Component, ComponentImage, ComponentTypeImage, ComponentDatasheet, ProductComponent, ComponentVote
+from .spec_fill import fill
 from utils.file_validation import validate_image_file
 from utils.image_processing import strip_exif
 
@@ -165,6 +166,7 @@ class ComponentListSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         read_only=True
     )
     primary_value = serializers.CharField(read_only=True)
+    ratings = serializers.DictField(read_only=True)
     primary_image = serializers.SerializerMethodField()
 
     class Meta:
@@ -172,7 +174,7 @@ class ComponentListSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         fields = [
             'id', 'part_number', 'manufacturer', 'component_type',
             'component_type_display', 'package_type', 'typical_function',
-            'primary_value', 'primary_image', 'datasheet_url',
+            'primary_value', 'ratings', 'primary_image', 'datasheet_url',
             'usage_count', 'is_verified'
         ]
 
@@ -185,6 +187,8 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         read_only=True
     )
     created_by = CreatedBySerializer(read_only=True)
+    primary_value = serializers.CharField(read_only=True)
+    ratings = serializers.DictField(read_only=True)
     cross_references = ComponentListSerializer(many=True, read_only=True)
     pricing_data = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
@@ -196,7 +200,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         fields = [
             'id', 'part_number', 'manufacturer', 'manufacturer_aliases',
             'component_type', 'component_type_display', 'package_type',
-            'description', 'typical_function', 'specifications',
+            'description', 'typical_function', 'specifications', 'primary_value', 'ratings',
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at', 'pricing_data',
@@ -296,7 +300,9 @@ class ComponentCreateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user
-        return super().create(validated_data)
+        component = super().create(validated_data)
+        fill(component)          # ratings the description or part number give and the form left empty
+        return component
 
 
 class ProductComponentSerializer(serializers.ModelSerializer):

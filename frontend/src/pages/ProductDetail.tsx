@@ -37,15 +37,20 @@ import {
   Sparkles,
   ScanText,
   Wrench,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 import type { JunkbinItem, Schematic } from '../types';
 import clsx from 'clsx';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import LazyImage from '../components/LazyImage';
 import Lightbox from '../components/Lightbox';
 import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 import { productNameText } from '../components/ProductName';
 import RefdesList from '../components/RefdesList';
+import {
+  type BomSortKey, hasPackageColumn, ratingText, sortBom, visibleRatingColumns,
+} from '../utils/ratings';
 
 // Schematic types that plausibly contain a real parts list/table - circuit
 // diagrams don't, and need the separate OCR + spatial-matching pipeline.
@@ -154,6 +159,17 @@ export default function ProductDetail() {
     queryFn: () => products.components(id!),
     enabled: !!id && activeTab === 'components',
   });
+
+  // BOM table: a column per rating the parts on this board have, sortable by any column
+  const [bomSort, setBomSort] = useState<{ key: BomSortKey; dir: 1 | -1 } | null>(null);
+  const ratingColumns = useMemo(() => visibleRatingColumns(componentList), [componentList]);
+  const showPackage = useMemo(() => hasPackageColumn(componentList), [componentList]);
+  const bomRows = useMemo(
+    () => (componentList && bomSort ? sortBom(componentList, bomSort.key, bomSort.dir) : componentList ?? []),
+    [componentList, bomSort],
+  );
+  const toggleBomSort = (key: BomSortKey) =>
+    setBomSort((cur) => (cur?.key === key ? (cur.dir === 1 ? { key, dir: -1 } : null) : { key, dir: 1 }));
 
   const { data: schematicList } = useQuery({
     queryKey: ['product', id, 'schematics'],
@@ -725,17 +741,34 @@ export default function ProductDetail() {
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-cyber-light/30 text-left">
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_ref')}</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_part')}</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_value')}</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_manufacturer')}</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_type')}</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_qty')}</th>
-                        <th className="py-3 px-4 font-mono text-xs text-gray-500">{t('product_detail.col_notes')}</th>
+                        {([
+                          ['ref', t('product_detail.col_ref')],
+                          ['part', t('product_detail.col_part')],
+                          ...ratingColumns.map((key) => [key, t(`ratings.${key}`)]),
+                          ...(showPackage ? [['package', t('ratings.package')]] : []),
+                          ['manufacturer', t('product_detail.col_manufacturer')],
+                          ['type', t('product_detail.col_type')],
+                          ['qty', t('product_detail.col_qty')],
+                        ] as [BomSortKey, string][]).map(([key, label]) => (
+                          <th key={key} className="py-3 px-3 font-mono text-xs text-gray-500 whitespace-nowrap">
+                            <button
+                              type="button"
+                              onClick={() => toggleBomSort(key)}
+                              className="inline-flex items-center gap-1 hover:text-white"
+                              title={t('ratings.sort_by', { column: label })}
+                            >
+                              {label}
+                              {bomSort?.key === key && (bomSort.dir === 1
+                                ? <ChevronUp className="h-3 w-3" />
+                                : <ChevronDown className="h-3 w-3" />)}
+                            </button>
+                          </th>
+                        ))}
+                        <th className="py-3 px-3 font-mono text-xs text-gray-500">{t('product_detail.col_notes')}</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {componentList.map((pc: any) => (
+                      {bomRows.map((pc: any) => (
                         <tr
                           key={pc.id}
                           className="border-b border-cyber-light/20 hover:bg-cyber-light/10"
@@ -754,9 +787,20 @@ export default function ProductDetail() {
                               <div className="text-xs text-gray-500 mt-0.5 max-w-md line-clamp-2" title={pc.notes}>{pc.notes}</div>
                             )}
                           </td>
-                          <td className="py-3 px-4 font-mono text-cyber-yellow text-sm">
-                            {pc.component.primary_value || '-'}
-                          </td>
+                          {ratingColumns.map((key) => (
+                            <td
+                              key={key}
+                              className={clsx('py-3 px-3 font-mono text-sm whitespace-nowrap',
+                                key === 'value' ? 'text-cyber-yellow' : 'text-gray-300')}
+                            >
+                              {ratingText(pc, key) || <span className="text-gray-600">-</span>}
+                            </td>
+                          ))}
+                          {showPackage && (
+                            <td className="py-3 px-3 font-mono text-sm text-gray-300 whitespace-nowrap">
+                              {pc.component.package_type || <span className="text-gray-600">-</span>}
+                            </td>
+                          )}
                           <td className="py-3 px-4 text-gray-400">
                             {pc.component.manufacturer}
                           </td>
@@ -776,7 +820,7 @@ export default function ProductDetail() {
                 </div>
                 {/* Mobile card view */}
                 <div className="md:hidden space-y-3">
-                  {componentList.map((pc: any) => (
+                  {bomRows.map((pc: any) => (
                     <Link
                       key={pc.id}
                       to={`/components/${pc.component.id}/products`}
@@ -789,10 +833,19 @@ export default function ProductDetail() {
                           </div>
                           <div className="text-xs text-gray-400 truncate">
                             {pc.component.manufacturer}
-                            {pc.component.primary_value && (
-                              <span className="ml-2 text-cyber-yellow">{pc.component.primary_value}</span>
+                            {ratingText(pc, 'value') && (
+                              <span className="ml-2 text-cyber-yellow">{ratingText(pc, 'value')}</span>
                             )}
                           </div>
+                          {(() => {
+                            const rest = [
+                              ...ratingColumns.filter((key) => key !== 'value').map((key) => ratingText(pc, key)),
+                              pc.component.package_type,
+                            ].filter(Boolean);
+                            return rest.length > 0 && (
+                              <div className="text-xs font-mono text-gray-300 truncate">{rest.join(' · ')}</div>
+                            );
+                          })()}
                         </div>
                         {pc.reference_designator && (
                           <RefdesList value={pc.reference_designator} limit={4} className="font-mono text-cyber-cyan text-sm text-right" />

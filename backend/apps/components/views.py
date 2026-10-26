@@ -16,9 +16,10 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
-from utils.cache import staff_key_prefix
+from utils.cache import cache_page_per_user
 from apps.api.metrics import component_view_counter
 
+from .spec_fill import fill
 from .models import (
     Component, ComponentDatasheet, ComponentImage, ComponentViewStats, ComponentVote, ProductComponent,
     ProductRequest,
@@ -83,7 +84,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
             return [permissions.IsAdminUser()]
         return [permissions.AllowAny()]
 
-    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
+    @method_decorator(cache_page_per_user(60 * 5))
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -753,7 +754,7 @@ def component_from_result(hit, user):
                                         part_number__iexact=hit['mpn']).first()
     if existing:
         return existing, False
-    return Component.objects.create(
+    component = Component.objects.create(
         part_number=hit['mpn'][:200], manufacturer=hit['manufacturer'][:200],
         component_type=guess_component_type(hit),
         description=(hit.get('description') or '')[:2000],
@@ -761,7 +762,9 @@ def component_from_result(hit, user):
         specifications={'nexar_data': {**hit, 'last_updated': timezone.now().isoformat()},
                         'source': 'distributor_search'},
         created_by=user if user and user.is_authenticated else None,
-    ), True
+    )
+    fill(component)              # 'RES SMD 10K OHM 1% 1/10W 0603' -> resistance, tolerance, power, package
+    return component, True
 
 
 def auto_add_exact(results, query, request):

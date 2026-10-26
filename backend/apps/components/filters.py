@@ -8,6 +8,22 @@ from django.contrib.postgres.search import SearchQuery, SearchRank
 from .models import Component, ProductComponent
 from .value_search import parse_value_query, spec_key_candidates
 
+import re
+from fractions import Fraction
+
+
+def parse_rating(text, unit):
+    """'50V' -> 50.0, '1/4W' -> 0.25, '62.5mW' -> 0.0625, '500mA'/'500MA' -> 0.5, '2kV' -> 2000; a bare
+    number is taken in the base unit. None when the text isn't a rating in that unit."""
+    m = re.fullmatch(rf'\s*(\d+/\d+|\d*\.?\d+)\s*([mMkK]?)\s*({unit})?\s*', text or '', re.I)
+    if not m:
+        return None
+    number = float(Fraction(m.group(1))) if '/' in m.group(1) else float(m.group(1))
+    prefix = m.group(2)
+    if prefix and not m.group(3):
+        return None                       # '5m' alone: milli-what?
+    return number * {'': 1, 'm': 1e-3, 'M': 1e-3, 'k': 1e3, 'K': 1e3}[prefix]   # no mega-volts/watts/amps
+
 
 class ComponentFilter(django_filters.FilterSet):
     """
@@ -20,6 +36,13 @@ class ComponentFilter(django_filters.FilterSet):
     # Structured value search (e.g. "10k", "4.7uF", "16MHz") against
     # specifications, not free text - see value_search.py.
     value = django_filters.CharFilter(method='filter_value')
+
+    # Ratings a replacement must meet or exceed: "50V", "1/4W", "500mA"
+    voltage_min = django_filters.CharFilter(method='filter_rating_min')
+    power_min = django_filters.CharFilter(method='filter_rating_min')
+    current_min = django_filters.CharFilter(method='filter_rating_min')
+    tolerance = django_filters.CharFilter(method='filter_tolerance')
+    dielectric = django_filters.CharFilter(method='filter_dielectric')
 
     # Exact and partial matches
     part_number = django_filters.CharFilter(lookup_expr='icontains')
@@ -56,10 +79,18 @@ class ComponentFilter(django_filters.FilterSet):
     class Meta:
         model = Component
         fields = [
-            'q', 'value', 'part_number', 'manufacturer', 'component_type',
+            'q', 'value', 'voltage_min', 'power_min', 'current_min', 'tolerance', 'dielectric',
+            'part_number', 'manufacturer', 'component_type',
             'package_type', 'typical_function', 'is_verified',
             'has_datasheet', 'min_usage'
         ]
+
+    RATING_KEYS = {
+        'voltage_min': ('V', ('voltage_v', 'vds_v', 'vce_v')),
+        'power_min': ('W', ('power_w',)),
+        'current_min': ('A', ('current_a', 'iout_a', 'output_a', 'charge_current_a', 'irated_a')),
+    }
+    DIELECTRIC_ALIASES = {'NPO': 'C0G', 'NP0': 'C0G', 'COG': 'C0G'}
 
     def filter_value(self, queryset, name, value):
         """
@@ -82,6 +113,35 @@ class ComponentFilter(django_filters.FilterSet):
         for key, lo, hi in candidates:
             q |= Q(**{f'specifications__{key}__gte': lo, f'specifications__{key}__lte': hi})
         return queryset.filter(q)
+
+    def filter_rating_min(self, queryset, name, value):
+        """Components rated at least this much ("50V", "1/4W", "0.25", "500mA"). Like the value
+        filter, text that isn't a rating matches nothing rather than being ignored."""
+        unit, keys = self.RATING_KEYS[name]
+        amount = parse_rating(value, unit)
+        if amount is None:
+            return queryset.none()
+        q = Q()
+        for key in keys:
+            q |= Q(**{f'specifications__{key}__gte': amount * (1 - 1e-6)})
+        return queryset.filter(q)
+
+    def filter_tolerance(self, queryset, name, value):
+        """Exact tolerance: '5', '5%', '±5%', '0.25pF', '+80/-20%'."""
+        v = value.strip().replace(' ', '').lstrip('±')
+        if not v:
+            return queryset
+        if re.fullmatch(r'\d+(?:\.\d+)?', v):
+            v += '%'
+        number = re.fullmatch(r'(\d+(?:\.\d+)?)%', v)
+        q = Q(specifications__tolerance__iexact=v) | Q(specifications__tolerance__iexact=f'±{v}')
+        if number:
+            q |= Q(specifications__tolerance_pct=float(number.group(1)))
+        return queryset.filter(q)
+
+    def filter_dielectric(self, queryset, name, value):
+        v = value.strip().upper()
+        return queryset.filter(specifications__dielectric__iexact=self.DIELECTRIC_ALIASES.get(v, v)) if v else queryset
 
     def filter_search(self, queryset, name, value):
         """

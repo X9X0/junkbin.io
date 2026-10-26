@@ -172,8 +172,11 @@ class Component(models.Model):
                            ('capacitance_pf', self._format_farads_from_pf),
                            ('capacitance_uf', self._format_farads_from_uf)],
             'inductor':   [('inductance_uh', self._format_henries_from_uh),
-                           ('inductance_nh', self._format_henries_from_nh)],
-            'ferrite':    [('impedance_ohm', lambda v: f'{v} \u03A9 @ {specs.get("frequency_mhz", "?")} MHz')],
+                           ('inductance_nh', self._format_henries_from_nh),
+                           ('impedance_ohm', lambda v: f'{v:g} \u03A9')],     # common-mode chokes
+            'thermistor': [('resistance_ohm', self._format_ohms)],
+            'ferrite':    [('impedance_ohm', lambda v: f'{v:g} \u03A9 @ {specs["frequency_mhz"]:g} MHz'
+                            if isinstance(specs.get('frequency_mhz'), (int, float)) else f'{v:g} \u03A9')],
             'crystal':    [('frequency_mhz', lambda v: self._format_freq(v))],
             'ic':         [('frequency_ghz', lambda v: f'{v} GHz'),
                            ('frequency_mhz', lambda v: self._format_freq(v)),
@@ -218,6 +221,77 @@ class Component(models.Model):
                 return formatter(val)
 
         return ''
+
+    # rating columns, in display order: (name, specification keys, formatter)
+    RATING_KEYS = (
+        ('voltage', ('voltage_v', 'vds_v', 'vce_v')),
+        ('power', ('power_w',)),
+        ('current', ('current_a', 'iout_a', 'output_a', 'charge_current_a', 'irated_a')),
+        ('tolerance', ('tolerance', 'tolerance_pct', 'tolerance_ppm')),
+        ('dielectric', ('dielectric',)),
+    )
+    COMMON_WATTS = {1 / 20: '1/20', 1 / 16: '1/16', 1 / 10: '1/10', 1 / 8: '1/8', 1 / 4: '1/4', 1 / 2: '1/2',
+                    3 / 4: '3/4'}
+
+    @property
+    def ratings(self):
+        """Display-ready ratings for BOM columns and the specifications table:
+        {name: {'text': '50 V', 'sort': 50.0}}; only what the component has.
+        'sort' is the number in base units (ohm, farad, henry, hertz, volt, watt, amp)."""
+        specs = self.specifications or {}
+        out = {}
+        value = self.primary_value
+        if value:
+            out['value'] = {'text': value, 'sort': self._value_si(specs)}
+        for name, keys in self.RATING_KEYS:
+            key = next((k for k in keys if specs.get(k) not in (None, '')), None)
+            if key is None:
+                continue
+            v = specs[key]
+            if name == 'tolerance':
+                text = (f'±{v:g}%' if key == 'tolerance_pct' and isinstance(v, (int, float))
+                        else f'±{v:g} ppm' if key == 'tolerance_ppm' and isinstance(v, (int, float))
+                        else (str(v) if str(v)[:1] in '±+' else f'±{v}'))
+                out[name] = {'text': text, 'sort': self._tolerance_si(text)}
+            elif name == 'dielectric':
+                out[name] = {'text': str(v), 'sort': None}
+            elif isinstance(v, (int, float)):
+                out[name] = {'text': self._format_rating(name, abs(v)), 'sort': float(abs(v))}
+        if specs.get('load_pf') is not None:
+            out['load'] = {'text': f"{specs['load_pf']:g} pF", 'sort': float(specs['load_pf'])}
+        if specs.get('configuration'):
+            size = specs.get('size_on_bom')
+            out['configuration'] = {'text': specs['configuration'] + (f' ({size})' if size else ''), 'sort': None}
+        return out
+
+    @classmethod
+    def _format_rating(cls, name, v):
+        if name == 'voltage':
+            return f'{v / 1000:g} kV' if v >= 1000 else f'{v:g} V'
+        if name == 'current':
+            return f'{v * 1000:g} mA' if v < 1 else f'{v:g} A'
+        if name == 'power':
+            frac = next((f for w, f in cls.COMMON_WATTS.items() if abs(w - v) < 1e-9), None)
+            return f'{frac} W' if frac else (f'{v * 1000:g} mW' if v < 0.05 else f'{v:g} W')
+        return f'{v:g}'
+
+    @staticmethod
+    def _tolerance_si(text):
+        import re
+        m = re.search(r'(\d+(?:\.\d+)?)', text or '')
+        return float(m.group(1)) if m and '%' in text and '+80' not in text else None
+
+    @staticmethod
+    def _value_si(specs):
+        """The main value in base units, for sorting."""
+        scale = {'resistance_ohm': 1, 'capacitance_pf': 1e-12, 'capacitance_nf': 1e-9, 'capacitance_uf': 1e-6,
+                 'inductance_uh': 1e-6, 'inductance_nh': 1e-9, 'impedance_ohm': 1, 'frequency_mhz': 1e6,
+                 'frequency_ghz': 1e9, 'frequency_khz': 1e3}
+        for key, mult in scale.items():
+            v = specs.get(key)
+            if isinstance(v, (int, float)):
+                return float(v) * mult
+        return None
 
     @staticmethod
     def _format_ohms(val):

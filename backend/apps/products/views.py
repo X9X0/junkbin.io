@@ -17,7 +17,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_spectacular.utils import extend_schema, extend_schema_view
 
-from utils.cache import staff_key_prefix
+from apps.components.spec_fill import fill
+from utils.cache import cache_page_per_user
 
 from .models import (
     Product, ProductImage, ProductComment, Schematic, Firmware,
@@ -161,7 +162,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             return super().list(request, *args, **kwargs)
         return self._cached_list(request, *args, **kwargs)
 
-    @method_decorator(cache_page(60 * 5, key_prefix=staff_key_prefix))
+    @method_decorator(cache_page_per_user(60 * 5))
     def _cached_list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
@@ -320,6 +321,7 @@ class ProductViewSet(viewsets.ModelViewSet):
                     }
                 )
                 if was_created:
+                    fill(component)      # ratings from the description and part number
                     created += 1
                 else:
                     reused += 1
@@ -515,6 +517,8 @@ class ProductViewSet(viewsets.ModelViewSet):
                         }
                     )
                     existing_components[(manufacturer, part_number)] = component
+                    if was_created:
+                        fill(component)  # what the Value column didn't give, from description and part number
 
                 # Backfill datasheet_url if the component already exists but lacks one
                 if not was_created and cleaned.get('datasheet_url') and not component.datasheet_url:
@@ -1553,6 +1557,8 @@ class ComponentSuggestionViewSet(viewsets.ModelViewSet):
                 'created_by': credited_user,
             }
         )
+        if _created:
+            fill(component)
 
         product_component, pc_created = ProductComponent.objects.get_or_create(
             product=suggestion.product,

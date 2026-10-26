@@ -315,3 +315,56 @@ def test_firmware_dry_run_writes_nothing(tmp_path, settings, user_factory):
     assert 'firmware added 1' in out
     assert Firmware.objects.count() == 0
     assert not (tmp_path / 'media').exists() or not any((tmp_path / 'media').rglob('*.BIN'))
+
+
+def test_new_components_get_ratings_package_and_type_from_their_own_line(tmp_path, user_factory):
+    user_factory(is_superuser=True, is_staff=True)
+    line = 'P MLCC 15PF/50V (0402) NPO 5% TAIYO/UMK105CH150JW-F <G>'
+    _run(_write(tmp_path, _bundle(components=[{
+        'part_number': 'UMK105CH150JW-F', 'manufacturer': 'TAIYO YUDEN', 'component_type': 'ic',
+        'package_type': '', 'description': line, 'specifications': {}, 'reference_designators': ['C3016', 'C3017'],
+        'quantity': 2, 'notes': f'Factory BOM line: {line}',
+        'alternates': [{'part_number': 'CC0402JRNPO9BN150', 'manufacturer': 'YAGEO', 'component_type': 'ic',
+                        'description': 'MLCC 15PF/50V (0402)NPO 5% YAGEO/CC0402JRNPO9BN150'}],
+        'equivalents': []}])))
+    cap = Component.objects.get(part_number='UMK105CH150JW-F')
+    assert cap.component_type == 'capacitor' and cap.package_type == '0402'
+    assert cap.description == 'MLCC 15PF/50V (0402) NPO 5%'
+    # the part number says CH (the line loosely says NPO); everything else agrees
+    assert cap.specifications == {'capacitance_pf': 15.0, 'voltage_v': 50, 'tolerance': '5%', 'dielectric': 'CH'}
+    assert ProductComponent.objects.get(component=cap).notes == f'Factory BOM line: {line}'   # untouched
+    alt = Component.objects.get(part_number='CC0402JRNPO9BN150')
+    assert alt.description == 'MLCC 15PF/50V (0402)NPO 5%'            # its own line, not the primary's
+    assert alt.component_type == 'capacitor' and alt.specifications['capacitance_pf'] == 15.0
+    assert list(cap.cross_references.all()) == [alt]
+
+
+def test_existing_component_only_gets_missing_ratings(tmp_path, user_factory, component_factory):
+    user_factory(is_superuser=True, is_staff=True)
+    mine = component_factory(manufacturer='Texas Instruments', part_number='LM358DR', component_type='opamp',
+                             package_type='', description='My dual op-amp', specifications={})
+    cap = component_factory(manufacturer='YAGEO', part_number='RC0603FR-0710KL', component_type='resistor',
+                            package_type='', description='checked by hand',
+                            specifications={'resistance_ohm': 10000.0, 'power_w': 0.25})
+    _run(_write(tmp_path, _bundle(components=[
+        {**_bundle()['components'][0], 'alternates': []},
+        {'part_number': 'RC0603FR-0710KL', 'manufacturer': 'YAGEO', 'component_type': 'resistor',
+         'package_type': '', 'description': 'RES 10K OHM 1/10W (0603) 1% YAGEO/RC0603FR-0710KL',
+         'specifications': {}, 'reference_designators': ['R1'], 'quantity': 1, 'notes': '',
+         'alternates': [], 'equivalents': []}])))
+    mine.refresh_from_db()
+    cap.refresh_from_db()
+    assert mine.description == 'My dual op-amp' and mine.component_type == 'opamp'
+    assert cap.description == 'checked by hand'
+    assert cap.specifications == {'resistance_ohm': 10000.0, 'power_w': 0.25, 'tolerance': '1%'}  # 0.25 kept
+    assert cap.package_type == '0603'
+
+
+def test_generic_equivalent_is_not_called_a_factory_alternate(tmp_path, user_factory):
+    user_factory(is_superuser=True, is_staff=True)
+    bundle = _bundle()
+    bundle['components'][1]['equivalents'][0]['description'] = ''
+    _run(_write(tmp_path, bundle))
+    eq = Component.objects.get(part_number='RC0603FR-0710KL')
+    assert eq.description == 'Current equivalent of Generic RES 10K 1% 1/10W 0603'
+    assert eq.specifications == {'resistance_ohm': 10000.0, 'tolerance': '1%', 'power_w': 0.1}

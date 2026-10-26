@@ -9,6 +9,10 @@ import Pagination from '../components/Pagination';
 import { ComponentGridSkeleton } from '../components/Skeleton';
 import { COMPONENT_TYPES } from '../constants/componentTypes';
 import MissingPartPanel from '../components/MissingPartPanel';
+import { RATING_COLUMNS } from '../utils/ratings';
+
+const RATING_FILTERS = ['voltage_min', 'power_min', 'current_min', 'tolerance', 'dielectric'] as const;
+const DIELECTRICS = ['C0G', 'X7R', 'X5R', 'Y5V', 'CH', 'electrolytic', 'tantalum', 'polymer'];
 
 export default function Components() {
   const { t } = useTranslation();
@@ -21,10 +25,15 @@ export default function Components() {
   const value = searchParams.get('value') || '';
   const ordering = searchParams.get('ordering') || '-usage_count';
   const page = parseInt(searchParams.get('page') || '1', 10);
+  // ratings: voltage/power/current are minimums (a replacement must meet or exceed them)
+  const ratingFilters = Object.fromEntries(
+    RATING_FILTERS.map((name) => [name, searchParams.get(name) || '']).filter(([, v]) => v),
+  );
 
+  const filters = { search, component_type: componentType, package_type: packageType, value, ordering, page, ...ratingFilters };
   const { data, isLoading } = useQuery({
-    queryKey: ['components', { search, component_type: componentType, package_type: packageType, value, ordering, page }],
-    queryFn: () => components.list({ search, component_type: componentType, package_type: packageType, value, ordering, page }),
+    queryKey: ['components', filters],
+    queryFn: () => components.list(filters),
   });
 
   const pageSize = 20;
@@ -159,6 +168,39 @@ export default function Components() {
               </button>
             </div>
           </div>
+          <div className="flex flex-wrap items-center gap-3 mt-3 text-sm">
+            <span className="text-gray-500 font-mono text-xs">{t('ratings.at_least')}</span>
+            {(['voltage_min', 'power_min', 'current_min'] as const).map((name) => (
+              <input
+                key={name}
+                type="text"
+                value={searchParams.get(name) || ''}
+                onChange={(e) => updateFilter(name, e.target.value)}
+                placeholder={t(`ratings.${name}_placeholder`)}
+                title={t(`ratings.${name}_hint`)}
+                className="input-cyber w-full sm:w-32 py-1.5"
+              />
+            ))}
+            <input
+              type="text"
+              value={searchParams.get('tolerance') || ''}
+              onChange={(e) => updateFilter('tolerance', e.target.value)}
+              placeholder={t('ratings.tolerance_placeholder')}
+              title={t('ratings.tolerance_hint')}
+              className="input-cyber w-full sm:w-32 py-1.5"
+            />
+            <div className="relative w-full sm:w-40">
+              <select
+                value={searchParams.get('dielectric') || ''}
+                onChange={(e) => updateFilter('dielectric', e.target.value)}
+                className="input-cyber appearance-none pr-10 w-full py-1.5"
+              >
+                <option value="">{t('ratings.any_dielectric')}</option>
+                {DIELECTRICS.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-500 pointer-events-none" />
+            </div>
+          </div>
         </div>
 
         {/* Results count */}
@@ -234,6 +276,11 @@ export default function Components() {
                   {component.primary_value && (
                     <div className="font-mono text-sm text-cyber-yellow mt-1">
                       {component.primary_value}
+                      {(() => {
+                        const rest = RATING_COLUMNS.filter((key) => key !== 'value')
+                          .map((key) => component.ratings?.[key]?.text).filter(Boolean);
+                        return rest.length > 0 && <span className="text-gray-400"> · {rest.join(' · ')}</span>;
+                      })()}
                     </div>
                   )}
 

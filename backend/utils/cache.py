@@ -1,7 +1,10 @@
 """
 Cache utilities for Junkbin.io
 """
+import functools
+
 from django.core.cache import cache
+from django.views.decorators.cache import cache_page
 
 PAGE_CACHE_PATTERN = '*views.decorators.cache.cache_*'
 
@@ -16,6 +19,18 @@ def staff_key_prefix(request):
     if request.user.is_authenticated:
         return f'v1:user:{request.user.pk}'
     return 'v1:anon'
+
+
+def cache_page_per_user(timeout):
+    """cache_page keyed by staff_key_prefix(request), so a signed-in user's own unapproved
+    items are never served to anyone else. (cache_page's key_prefix must be a string; passing
+    staff_key_prefix itself made every visitor share one entry.)"""
+    def decorator(view):
+        @functools.wraps(view)
+        def wrapped(request, *args, **kwargs):
+            return cache_page(timeout, key_prefix=staff_key_prefix(request))(view)(request, *args, **kwargs)
+        return wrapped
+    return decorator
 
 
 def clear_page_cache():
