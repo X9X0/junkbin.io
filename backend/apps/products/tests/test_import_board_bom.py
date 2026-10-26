@@ -92,7 +92,7 @@ def test_import_creates_unapproved_product_components_and_cross_refs(tmp_path, u
     assert alternate.description.startswith('Factory-approved alternate to Texas Instruments LM358DR')  # not as LM358DR
     generic = Component.objects.get(manufacturer='Generic', part_number='RES 10K 1% 1/10W 0603')
     assert generic.specifications['resistance_ohm'] == 10000.0
-    yageo = Component.objects.get(manufacturer='YAGEO', part_number='RC0603FR-0710KL')
+    yageo = Component.objects.get(manufacturer='Yageo', part_number='RC0603FR-0710KL')    # the bundle's 'YAGEO'
     assert generic.cross_references.filter(pk=yageo.pk).exists()
     assert yageo.cross_references.filter(pk=generic.pk).exists()      # symmetrical
 

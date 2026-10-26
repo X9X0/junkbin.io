@@ -28,9 +28,11 @@ import re
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
+from apps.components.makers import canonical_part
 from apps.components.models import Component, ProductComponent
 from apps.components.spec_fill import plan
-from apps.components.spec_parse import VALUE_KEYS, clean_bom_text, decode_mpn, ic_package, kind_of, parse_description
+from apps.components.spec_parse import (VALUE_KEYS, clean_bom_text, decode_mpn, derive, ic_package, kind_of,
+                                        parse_description)
 from apps.products.import_text import bom_component_type, clean_description, clean_text
 from utils.cache import clear_page_cache
 
@@ -54,17 +56,26 @@ def machine_made(desc, all_lines):
     return (d.startswith(PLACEHOLDER) or d in all_lines or clean_bom_text(d) != re.sub(r'\s+', ' ', d.strip()))
 
 
+SERVICE_NOTE = re.compile(r'^Service manual parts list, pages? [\d, ]+: ')
+def _has_value(specs):
+    return any(k in specs for k in VALUE_KEYS)
+
+
 MAJORITY = 0.9      # share of a part's placements whose lines must agree for their rating to stand
 
 
 def own_line(lines):
-    """(text, disagree, majority): the part's most used own line; the ratings its lines give
+    """(text, disagree, majority): the part's most used own line that gives a value, else its most
+    used line (a bare 'R-CHIP' says less than 'R-CHIP;2Kohm,5%,...'); the ratings its lines give
     different values for ('package' when they name different chip sizes) - a factory BOM can
     list one part as 400mA and as 600mA; and, of those, the ones that nearly all of the part's
     placements agree on, with that value (52 lines at 10A, one at 6A: 10A)."""
-    seen = {}
+    seen, best = {}, None
     for text, count in lines:
-        _, specs, package = parse_description(text)
+        found = derive('', '', text)        # some manuals give the vendor part number: 'CL10A226MP8NUNE'
+        specs, package = found['specs'], found['package']
+        if best is None and any(k in specs for k in VALUE_KEYS):
+            best = text
         if package and re.fullmatch(r'\d{4}', package):
             specs = {**specs, 'package': package}       # case sizes; a can's 8x11 vs 8x11.5 is the same part
         for key, value in specs.items():
@@ -77,7 +88,7 @@ def own_line(lines):
             value, count = values.most_common(1)[0]
             if count >= MAJORITY * sum(values.values()):
                 majority[key] = value
-    return lines[0][0], sorted(disagree), majority
+    return best or lines[0][0], sorted(disagree), majority
 
 
 class Command(BaseCommand):
@@ -93,7 +104,23 @@ class Command(BaseCommand):
         lines = {}
         if options['lines']:
             with open(options['lines'], encoding='utf-8') as fh:
-                lines = {k: v for k, v in json.load(fh).items()}
+                for key, found in json.load(fh).items():
+                    # keyed as the export spelled the maker; the site may spell it otherwise
+                    maker, part = canonical_part(*key.split('|', 1))
+                    lines.setdefault(f'{maker.upper()}|{part.upper()}', []).extend(found)
+        # a service manual's line, kept in each placement's notes: one manual lists 2007-000137 as
+        # 'R-CHIP', another as 'R-CHIP;2Kohm,5%,1/16W,TP,1005'
+        manual_lines = collections.defaultdict(collections.Counter)
+        for maker, part, notes in ProductComponent.objects.filter(notes__startswith='Service manual parts list') \
+                .values_list('component__manufacturer', 'component__part_number', 'notes'):
+            line = SERVICE_NOTE.sub('', notes)
+            if line:
+                manual_lines[f'{maker.upper()}|{part.upper()}'][line] += 1
+        manual_only = set(manual_lines) - set(lines)
+        for key, found in manual_lines.items():
+            lines.setdefault(key, []).extend([text, n] for text, n in found.items())
+        for found in lines.values():
+            found.sort(key=lambda line: -line[1])           # most used first
         all_lines = {t for v in lines.values() for t, _ in v}
         # components an importer wrote: placed by an import, or a suggested equivalent of a generic part
         imported = set(ProductComponent.objects.exclude(import_source='').values_list('component_id', flat=True))
@@ -105,7 +132,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             for comp in Component.objects.order_by('manufacturer', 'part_number').iterator(chunk_size=500):
                 counts['components'] += 1
-                change = self.refresh(comp, lines, all_lines, options['types'], imported)
+                change = self.refresh(comp, lines, all_lines, options['types'], imported, manual_only)
                 if not change:
                     continue
                 for key in ('descriptions', 'specs', 'corrected', 'removed', 'packages', 'types', 'conflicts',
@@ -135,7 +162,7 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS(prefix + ', '.join(f'{k}: {v}' for k, v in counts.items())))
 
     @staticmethod
-    def refresh(comp, lines, all_lines, fix_types, imported):
+    def refresh(comp, lines, all_lines, fix_types, imported, manual_only=frozenset()):
         """Changes for one component (applied to `comp`, not saved), or None."""
         if comp.manufacturer == 'Generic':
             return None         # generic passives carry full specs
@@ -157,7 +184,8 @@ class Command(BaseCommand):
             return out if out['fields'] else None
         out = {'id': str(comp.pk), 'manufacturer': comp.manufacturer, 'part_number': comp.part_number,
                'type': comp.component_type, 'description': comp.description, 'fields': []}
-        mine = lines.get(f'{comp.manufacturer.upper()}|{comp.part_number.upper()}')
+        key = f'{comp.manufacturer.upper()}|{comp.part_number.upper()}'
+        mine = lines.get(key)
         made = machine_made(comp.description, all_lines)
         text, disagree, majority = own_line(mine) if mine else (comp.description, [], {})
         decoded = decode_mpn(comp.manufacturer, comp.part_number)
@@ -169,7 +197,12 @@ class Command(BaseCommand):
             text = ''           # these name another part's line: nothing in them is about this one
         out['text'] = text
         new = None
-        if made and mine:
+        if made and mine and key in manual_only:
+            # manuals word one part differently ('PESD5V0L5UV', 'DIODE-TVS'): a description is only
+            # replaced by a line that gives the values it lacks
+            if _has_value(parse_description(text)[1]) and not _has_value(parse_description(comp.description)[1]):
+                new = clean_bom_text(clean_text(text))
+        elif made and mine:
             new = clean_bom_text(clean_text(text))
         elif made and comp.description.startswith(EQUIVALENT_OF_GENERIC):
             new = 'Current equivalent of ' + comp.description[len(PLACEHOLDER + ' to '):].split(' (')[0]

@@ -225,3 +225,37 @@ def test_alternates_typed_ic_get_their_kind_from_their_bom_line(tmp_path, compon
     guard.refresh_from_db()
     assert socket.component_type == 'socket'
     assert guard.component_type == 'ic'
+
+
+def test_values_from_another_manuals_line_for_the_same_part(component_factory, product_factory):
+    # one manual lists 2007-000137 as 'R-CHIP', another with its values
+    res = component_factory(manufacturer='Samsung', part_number='2007-000137', component_type='resistor',
+                            package_type='', description='R-CHIP', specifications={})
+    diode = component_factory(manufacturer='Samsung', part_number='0406-001506', component_type='diode',
+                              package_type='', description='UCLAMP0541Z', specifications={})
+    for comp, notes in ((res, 'Service manual parts list, page 20: R-CHIP'),
+                        (res, 'Service manual parts list, pages 16, 17: R-CHIP;2Kohm,5%,1/16W,TP,1005'),
+                        (diode, 'Service manual parts list, page 9: UCLAMP0541Z'),
+                        (diode, 'Service manual parts list, page 12: DIODE-TVS'),
+                        (diode, 'Service manual parts list, page 14: DIODE-TVS')):
+        ProductComponent.objects.create(product=product_factory(), component=comp, notes=notes,
+                                        import_source='norway-svc:x')
+    _run('--types')
+    res.refresh_from_db()
+    diode.refresh_from_db()
+    assert res.specifications == {'resistance_ohm': 2000.0, 'tolerance': '5%', 'power_w': 0.0625}
+    assert res.description == 'R-CHIP;2Kohm,5%,1/16W,TP,1005' and res.package_type == '0402'
+    assert diode.description == 'UCLAMP0541Z'       # another manual's wording is no better
+
+
+def test_a_manuals_vendor_part_number_gives_the_values(component_factory, product_factory):
+    cap = component_factory(manufacturer='Samsung', part_number='2203-007781', component_type='capacitor',
+                            package_type='', description='C-CERAMIC,CHIP', specifications={})
+    for notes in ('Service manual parts list, page 3: C-CERAMIC,CHIP',
+                  'Service manual parts list, page 8: CL10A226MP8NUNE'):
+        ProductComponent.objects.create(product=product_factory(), component=cap, notes=notes,
+                                        import_source='norway-svc:x')
+    _run()
+    cap.refresh_from_db()
+    assert cap.specifications['capacitance_pf'] == 22e6 and cap.specifications['voltage_v'] == 10
+    assert cap.description == 'C-CERAMIC,CHIP'

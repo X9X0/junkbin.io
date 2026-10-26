@@ -4,6 +4,7 @@ Component serializers for Junkbin.io API
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 
+from .makers import canonical_maker
 from .models import Component, ComponentImage, ComponentTypeImage, ComponentDatasheet, ProductComponent, ComponentVote
 from .spec_fill import fill
 from utils.file_validation import validate_image_file
@@ -269,6 +270,8 @@ class ComponentCreateSerializer(serializers.ModelSerializer):
         validators = []
 
     def validate(self, attrs):
+        if 'manufacturer' in attrs:     # 'YAGEO' is the site's 'Yageo': one maker, no duplicate parts
+            attrs['manufacturer'] = canonical_maker(attrs['manufacturer'])
         # Check for duplicate
         queryset = Component.objects.filter(
             manufacturer__iexact=attrs['manufacturer'],

@@ -16,6 +16,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 
+from apps.components.makers import canonical_part
 from apps.components.models import Component
 from utils.cache import clear_page_cache
 
@@ -33,11 +34,15 @@ class Command(BaseCommand):
         ids = {(m.upper(), p.upper()): pk
                for pk, m, p in Component.objects.values_list('pk', 'manufacturer', 'part_number')}
         through = Component.cross_references.through
+
+        def key_id(ref):            # the pairs name makers as the export spelled them
+            maker, part = canonical_part(*ref)
+            return ids.get((maker.upper(), part.upper()))
         found, missing, removed = 0, 0, 0
         with transaction.atomic():
             batch = Q(pk__in=[])
             for n, (a, b) in enumerate(pairs, 1):
-                ia, ib = ids.get((a[0].upper(), a[1].upper())), ids.get((b[0].upper(), b[1].upper()))
+                ia, ib = key_id(a), key_id(b)
                 if not ia or not ib:
                     missing += 1
                     continue
@@ -47,9 +52,7 @@ class Command(BaseCommand):
                     removed += through.objects.filter(batch).delete()[0]
                     batch = Q(pk__in=[])
             removed += through.objects.filter(batch).delete()[0]
-            touched = Component.objects.filter(pk__in={i for pair in pairs for i in (
-                ids.get((pair[0][0].upper(), pair[0][1].upper())), ids.get((pair[1][0].upper(), pair[1][1].upper())))
-                if i})
+            touched = Component.objects.filter(pk__in={i for pair in pairs for i in map(key_id, pair) if i})
             if options['dry_run']:
                 transaction.set_rollback(True)
         if not options['dry_run'] and removed:

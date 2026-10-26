@@ -133,3 +133,14 @@ def test_description_that_is_another_makers_part_number_is_decoded():
 ])
 def test_ic_package(text, package):
     assert ic_package(text) == package
+
+
+@pytest.mark.parametrize('line, ohms, mhz', [
+    ('BEAD-SMD;30ohm,2012,TP,15.9OHM/30MHz', 30.0, None),        # 30 MHz is the second figure's
+    ('FERRITE BEAD 600OHM@100MHZ 0603', 600.0, 100.0),
+    ('Chip ferrite bead, 120 ohm @ 100 MHz, 0603', 120.0, 100.0),
+    ('FERRITE BEAD(0603)220OHM/600mA', 220.0, None),
+])
+def test_bead_frequency_belongs_to_its_impedance(line, ohms, mhz):
+    _, specs, _ = parse_description(line)
+    assert specs.get('impedance_ohm') == ohms and specs.get('frequency_mhz') == mhz

@@ -23,6 +23,7 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from apps.components.makers import canonical_part
 from apps.components.management.commands.refresh_component_specs import datasheet_type
 from apps.components.models import Component, ComponentDatasheet
 from apps.products.import_text import clean_description, clean_title
@@ -53,6 +54,7 @@ class Command(BaseCommand):
         counts = {'components_created': 0, 'attached': 0, 'already_attached': 0, 'component_missing': 0}
         with transaction.atomic():
             for m in data['matches']:
+                m['manufacturer'], m['part_number'] = canonical_part(m['manufacturer'], m['part_number'])
                 component = Component.objects.filter(manufacturer__iexact=m['manufacturer'],
                                                      part_number__iexact=m['part_number']).first()
                 if not component and m.get('create'):

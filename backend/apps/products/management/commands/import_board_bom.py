@@ -59,6 +59,7 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from apps.components.makers import canonical_part
 from apps.components.models import Component, ProductComponent
 from apps.components.spec_fill import fill, plan
 from apps.components.spec_parse import clean_bom_text, ic_package
@@ -367,14 +368,14 @@ class Command(BaseCommand):
         line = c.get('description', '')
         own_line = (c.get('manufacturer') != 'Generic'          # these describe another part's line:
                     and not line.startswith(('Factory-approved alternate', 'Current equivalent')))
-        component = Component.objects.filter(
-            manufacturer__iexact=c['manufacturer'], part_number__iexact=c['part_number']).first()
+        maker, part = canonical_part(c['manufacturer'], c['part_number'])      # 'YAGEO' -> 'Yageo'
+        component = Component.objects.filter(manufacturer__iexact=maker, part_number__iexact=part).first()
         if component:
             if own_line:
                 fill(component, line)
             return component, 0
         component = Component(
-            manufacturer=c['manufacturer'], part_number=c['part_number'],
+            manufacturer=maker, part_number=part,
             component_type=(bom_component_type(line)
                             if c.get('component_type') in (None, '', 'ic', 'other') and c.get('manufacturer') != 'Generic'
                             else None) or c.get('component_type') or 'other',

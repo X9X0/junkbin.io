@@ -204,6 +204,18 @@ def _hertz_mhz(u):
     return round(_num(m.group(1)) * {'KHZ': 1e-3, 'MHZ': 1, 'GHZ': 1e3}[m.group(2)], 9)
 
 
+def _impedance(u):
+    """(ohms, MHz) of a bead or choke. The frequency is the impedance's when it is quoted with
+    it ('600OHM@100MHZ'), or when the line names one impedance; 'BEAD-SMD;30ohm,2012,TP,
+    15.9OHM/30MHz' rates 30 ohm, and 30 MHz belongs to the second figure."""
+    found = list(re.finditer(r'(?<![\d.])(\d+(?:\.\d+)?)\s*OHM', u))
+    if not found:
+        return None, _hertz_mhz(u)
+    m = found[0]
+    pair = re.match(r'S?\s*(?:@|/|AT\b)?\s*\d+(?:\.\d+)?\s*(?:MHZ|KHZ|GHZ)\b', u[m.end():])
+    return _num(m.group(1)), _hertz_mhz(u[m.end():]) if pair or len(found) == 1 else None
+
+
 # ---- description -> specs -------------------------------------------------------
 def parse_description(text, component_type=''):
     """(kind, specs, package) read from a description; kind None when it names no passive.
@@ -265,14 +277,10 @@ def parse_description(text, component_type=''):
         if m and not s['tolerance']:
             s['tolerance'] = f'±{_num(m.group(1)):g}nH'
     elif kind == 'cm_choke':
-        m = re.search(r'(?<![\d.])(\d+(?:\.\d+)?)\s*OHM', u)
-        s['impedance_ohm'] = _num(m.group(1)) if m else None
-        s['frequency_mhz'] = _hertz_mhz(u)
+        s['impedance_ohm'], s['frequency_mhz'] = _impedance(u)
         s['current_a'] = _current(u)
     elif kind == 'ferrite':
-        m = re.search(r'(?<![\d.])(\d+(?:\.\d+)?)\s*OHM', u)
-        s['impedance_ohm'] = _num(m.group(1)) if m else None
-        s['frequency_mhz'] = _hertz_mhz(u)
+        s['impedance_ohm'], s['frequency_mhz'] = _impedance(u)
         s['current_a'] = _current(u)
     elif kind == 'thermistor':
         s['resistance_ohm'] = _ohms(u, raw) or _bare_ohms(re.sub(r'^\S+', '', u))
