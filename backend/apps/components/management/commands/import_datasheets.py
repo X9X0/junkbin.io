@@ -23,6 +23,7 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from apps.components.management.commands.refresh_component_specs import datasheet_type
 from apps.components.models import Component, ComponentDatasheet
 from apps.products.import_text import clean_description, clean_title
 
@@ -60,11 +61,15 @@ class Command(BaseCommand):
                     if options['dry_run']:
                         counts['attached'] += 1
                         continue
-                    component = Component.objects.create(
+                    component = Component(
                         manufacturer=m['manufacturer'][:200], part_number=m['part_number'][:200],
                         component_type=m['create'].get('component_type') or 'ic',
-                        description=clean_description(m['create'].get('description') or '', part_number=m['part_number']),
+                        description=m['create'].get('description') or '',
                         specifications={'source': 'datasheet'}, created_by=user)
+                    # typed from the whole title-page text, before it is cut down to the title
+                    component.component_type = datasheet_type(component) or component.component_type
+                    component.description = clean_description(component.description, part_number=m['part_number'])
+                    component.save()
                 if not component:
                     counts['component_missing'] += 1
                     continue

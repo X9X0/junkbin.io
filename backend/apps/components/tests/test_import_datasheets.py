@@ -72,3 +72,21 @@ def test_creates_missing_component_when_asked(tmp_path, settings, user_factory):
     assert comp.datasheets.count() == 1
     assert 'already attached 1' in _run(tmp_path)          # re-run: nothing new
     assert Component.objects.filter(part_number='2SC3042').count() == 1
+
+
+def test_new_component_is_typed_by_function_not_keyword(tmp_path, settings, user_factory):
+    from apps.components.models import Component
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    content = b'%PDF-1.4 driver'
+    (tmp_path / 'files').mkdir()
+    (tmp_path / 'files' / '7.pdf').write_bytes(content)
+    (tmp_path / 'matches.json').write_text(json.dumps({'version': 1, 'source_tag': 'norway-ds-new', 'matches': [{
+        'manufacturer': 'Intersil', 'part_number': 'ISL6612', 'file': 'files/7.pdf',
+        'md5': hashlib.md5(content).hexdigest(), 'title': 'ISL6612', 'source_notes': 'x',
+        'create': {'component_type': 'mosfet',
+                   'description': 'ISL6612 Advanced Synchronous Rectified Buck MOSFET Driver Features'}}]}))
+    _run(tmp_path)
+    comp = Component.objects.get(part_number='ISL6612')
+    assert comp.component_type == 'ic'
+    assert comp.description == 'Advanced Synchronous Rectified Buck MOSFET Driver'

@@ -251,5 +251,7 @@ def bom_component_type(description):
     d = re.sub(r'^P\s+', '', (description or '').strip().upper())
     for kind, pattern in BOM_TYPES:
         if re.search(pattern, d):
+            if re.search(r'\bIC\b', d) and kind not in ('regulator', 'eeprom', 'opamp', 'crystal'):
+                return None             # 'USB-PD/VBUS protection IC', 'LED driver IC'
             return kind
     return None

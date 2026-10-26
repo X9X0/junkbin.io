@@ -16,8 +16,11 @@ components their own factory line as description.
 
 Stored ratings are never overwritten: where the text or part number disagrees
 with a stored value, the report says so. Where a part's own lines disagree on
-its value and its part number can't settle it, no value is filled. Idempotent.
+a rating (its value, current, dielectric, package...) and its part number can't
+settle it, that rating isn't filled, and an importer's earlier pick is taken out.
+Idempotent.
 """
+import collections
 import csv
 import json
 import re
@@ -28,7 +31,7 @@ from django.db import transaction
 from apps.components.models import Component, ProductComponent
 from apps.components.spec_fill import plan
 from apps.components.spec_parse import VALUE_KEYS, clean_bom_text, decode_mpn, ic_package, kind_of, parse_description
-from apps.products.import_text import clean_description, clean_text
+from apps.products.import_text import bom_component_type, clean_description, clean_text
 from utils.cache import clear_page_cache
 
 PLACEHOLDER = 'Factory-approved alternate'
@@ -51,15 +54,30 @@ def machine_made(desc, all_lines):
     return (d.startswith(PLACEHOLDER) or d in all_lines or clean_bom_text(d) != re.sub(r'\s+', ' ', d.strip()))
 
 
+MAJORITY = 0.9      # share of a part's placements whose lines must agree for their rating to stand
+
+
 def own_line(lines):
-    """(text, disagree): the part's most used own line, and whether its lines name different values."""
-    values = set()
-    for text, _ in lines:
-        _, specs, _ = parse_description(text)
-        v = next((specs[k] for k in VALUE_KEYS if k in specs), None)
-        if v is not None:
-            values.add(round(v, 6))
-    return lines[0][0], len(values) > 1
+    """(text, disagree, majority): the part's most used own line; the ratings its lines give
+    different values for ('package' when they name different chip sizes) - a factory BOM can
+    list one part as 400mA and as 600mA; and, of those, the ones that nearly all of the part's
+    placements agree on, with that value (52 lines at 10A, one at 6A: 10A)."""
+    seen = {}
+    for text, count in lines:
+        _, specs, package = parse_description(text)
+        if package and re.fullmatch(r'\d{4}', package):
+            specs = {**specs, 'package': package}       # case sizes; a can's 8x11 vs 8x11.5 is the same part
+        for key, value in specs.items():
+            value = round(value, 6) if isinstance(value, float) else value
+            seen.setdefault(key, collections.Counter())[value] += count
+    disagree, majority = [], {}
+    for key, values in seen.items():
+        if len(values) > 1:
+            disagree.append(key)
+            value, count = values.most_common(1)[0]
+            if count >= MAJORITY * sum(values.values()):
+                majority[key] = value
+    return lines[0][0], sorted(disagree), majority
 
 
 class Command(BaseCommand):
@@ -123,15 +141,16 @@ class Command(BaseCommand):
             return None         # generic passives carry full specs
         if (comp.specifications or {}).get('source') == 'datasheet':
             # datasheet title-page text isn't a parts line: no ratings from it. The type is read from
-            # the whole text first, then the description becomes just the title.
+            # the whole text, while it's there (import_datasheets types new parts the same way), then
+            # the description becomes just the title.
             out = {'id': str(comp.pk), 'manufacturer': comp.manufacturer, 'part_number': comp.part_number,
                    'type': comp.component_type, 'description': comp.description, 'text': comp.description,
                    'fields': []}
-            new_type = datasheet_type(comp) if fix_types else None
+            title = clean_description(comp.description, part_number=comp.part_number)
+            new_type = datasheet_type(comp) if fix_types and title != comp.description else None
             if new_type and new_type != comp.component_type:
                 out['types'] = comp.component_type = new_type
                 out['fields'].append('component_type')
-            title = clean_description(comp.description, part_number=comp.part_number)
             if title != comp.description:
                 out['descriptions'] = comp.description = title
                 out['fields'].append('description')
@@ -140,7 +159,12 @@ class Command(BaseCommand):
                'type': comp.component_type, 'description': comp.description, 'fields': []}
         mine = lines.get(f'{comp.manufacturer.upper()}|{comp.part_number.upper()}')
         made = machine_made(comp.description, all_lines)
-        text, disputed = own_line(mine) if mine else (comp.description, False)
+        text, disagree, majority = own_line(mine) if mine else (comp.description, [], {})
+        decoded = decode_mpn(comp.manufacturer, comp.part_number)
+        if decoded:     # the part number settles what it encodes
+            disagree = [k for k in disagree if k not in decoded[1] and not (k == 'package' and decoded[2])]
+        majority = {k: v for k, v in majority.items() if k in disagree}
+        disagree = [k for k in disagree if k not in majority]
         if not mine and comp.description.startswith((PLACEHOLDER, 'Current equivalent of')):
             text = ''           # these name another part's line: nothing in them is about this one
         out['text'] = text
@@ -159,17 +183,31 @@ class Command(BaseCommand):
         import_written = comp.pk in imported or made
         p = plan(comp, text, trust_part_number=import_written)
         added = p['added']
-        if import_written and p['disputed']:
-            # an importer stored a value its own line and part number disagree on: take it out
-            removed = [k for k in p['disputed'] if k in (comp.specifications or {})]
+        rating_disagree = [k for k in disagree if k != 'package']
+        if import_written and (p['disputed'] or rating_disagree):
+            # an importer stored a value its own line and part number disagree on, or one of the
+            # part's own lines that the others contradict: take it out
+            removed = [k for k in p['disputed'] + rating_disagree if k in (comp.specifications or {})]
             if removed:
                 comp.specifications = {k: v for k, v in comp.specifications.items() if k not in removed}
                 p['specs'] = {k: v for k, v in p['specs'].items() if k not in removed}
+                p['conflict'] = [k for k in p['conflict'] if k not in removed]
                 out['removed'] = removed
                 out['fields'].append('specifications')
-        if disputed and 'part number' not in (p['derived']['source'] or ''):
-            added = [k for k in added if k not in VALUE_KEYS]          # its own lines disagree: no value
-            p['disputed'] = p['disputed'] or ['own lines']
+        if disagree:
+            added = [k for k in added if k not in disagree]          # its own lines disagree: not filled
+            p['disputed'] = sorted(set(p['disputed']) | {f'{k} (own lines)' for k in disagree})
+        for key, value in majority.items():
+            if key == 'package':
+                if not comp.package_type or import_written:
+                    p['package'] = value
+                    p['conflict'] = [k for k in p['conflict'] if k != 'package']
+            elif key in p['specs'] and p['specs'][key] != value and (import_written or key in added):
+                # the stored or parsed value came from a line nearly all the others contradict
+                p['specs'][key] = value
+                p['conflict'] = [k for k in p['conflict'] if k != key]
+                if key not in added:
+                    p['corrected'].append(key)
         if added or p['corrected']:
             keep = set(comp.specifications or {}) - {'tolerance_pct'}
             comp.specifications = {k: v for k, v in p['specs'].items() if k in added or k in keep}
@@ -180,13 +218,23 @@ class Command(BaseCommand):
         package = p['package']
         if not package and text and comp.component_type not in PASSIVE:
             package = ic_package(text) or ''
-        if package and package != comp.package_type and not comp.package_type:
+        if 'package' in disagree:
+            package = ''
+            if import_written and comp.package_type:
+                out['removed'] = out.get('removed', []) + ['package']
+                comp.package_type = ''
+                out['fields'].append('package_type')
+            p['conflict'] = [k for k in p['conflict'] if k != 'package']
+        if 'package' in majority and package != comp.package_type:
+            out['packages'] = comp.package_type = package
+            out['fields'].append('package_type')
+        elif package and package != comp.package_type and not comp.package_type:
             out['packages'] = package
             comp.package_type = package
             out['fields'].append('package_type')
         out['conflicts'], out['overridden'], out['disputed'] = p['conflict'], p['overridden'], p['disputed']
         if fix_types:
-            new_type = proposed_type(comp, p, text)
+            new_type = proposed_type(comp, p, text, bom_line=bool(mine) or made)
             if new_type and new_type != comp.component_type:
                 out['types'] = new_type
                 comp.component_type = new_type
@@ -204,7 +252,8 @@ SAMSUNG_FAMILY = [(r'^020[0-9]-', 'other'), (r'^040[1-7]-', 'diode'), (r'^050[1-
                   (r'^280[15]-', 'crystal'), (r'^29(0[1-9]|1[01])-', 'balun'), (r'^37(0[1-9]|1[0-9]|2[0-2])-', 'connector'),
                   (r'^(60\d\d|6502|6902)-', 'other')]
 SAMSUNG_IC = [(r'EEPROM|FLASH|[SD]?RAM\b|MEMORY', 'eeprom'), (r'MICROCONTROLLER|MICROPROCESSOR|MICOM', 'mcu'),
-              (r'POSI\.|NEGA\.|DC[-/]DC|VOL\. ?REG|SWITCH REG|REGULATOR|LDO', 'regulator'), (r'OP\.? ?AMP', 'opamp')]
+              (r'POSI\.|NEGA\.|DC[-/]DC|VOL\. ?REG|SWITCH REG|REGULATOR|LDO', 'regulator'), (r'OP\.? ?AMP', 'opamp'),
+              (r'SENSOR', 'sensor')]
 IC_TYPES = {'ic', 'eeprom', 'mcu', 'regulator', 'opamp'}
 
 
@@ -213,7 +262,7 @@ def samsung_type(comp, line):
         return None
     u = line.upper()
     if u.startswith('IC-'):
-        if comp.component_type in IC_TYPES:
+        if comp.component_type in IC_TYPES | {'sensor'}:
             return None
         return next((t for pattern, t in SAMSUNG_IC if re.search(pattern, u)), 'ic')
     if re.fullmatch(r'[A-Z0-9][A-Z0-9-]{4,24}', u) and re.search(r'\d', u):      # just a part number
@@ -276,6 +325,8 @@ def _datasheet_function(title):
     title_fn = re.split(r'\bAPPLICATIONS?\b', title)[0] if re.search(r'TRANSISTOR|MOSFET|DIODE|\bFET\b', title) else title
     power = re.search(r'\bPWM\b|BUCK|BOOST|VRM|\bVR\b|PHASE|STEP[ -](UP|DOWN)|DC[/-]DC|POWER[ -]SUPPLY|LINEAR POWER',
                       title_fn)
+    if re.search(r'FAN CONTROLLER|THERMAL (MONITOR|CONTROLLER)|TEMPERATURE (MONITOR|SENSOR)', title_fn):
+        return 'ic'                                       # hardware monitors: their PWM drives a fan
     if re.search(r'CONTROLLER', title_fn) and power:
         return 'regulator'                                # a switching/linear regulator's controller
     if re.search(DATASHEET_IC[0][1], title_fn):
@@ -293,22 +344,28 @@ def _datasheet_function(title):
     return discrete[1] if discrete else None
 
 
-def proposed_type(comp, p, text):
+def proposed_type(comp, p, text, bom_line=False):
     """Type the evidence supports, or None. A decoded part number is certain; a description
     counts when it starts with the part's kind ('R-CHIP;...', 'MLCC ...') or names the kind and
-    gives a value of that kind ('Metal film chip resistor, 1/4W, 10 kOhm')."""
+    gives a value of that kind ('Metal film chip resistor, 1/4W, 10 kOhm'). bom_line: `text` is
+    the part's factory BOM line, whose head names its kind ('ZIF 939P uPGA', 'HEADER 2X5P')."""
     if decode_mpn(comp.manufacturer, comp.part_number):
         return p['type']
     line = clean_bom_text(text or comp.description or '')
     family = samsung_type(comp, line)
     if family:
         return family
+    if bom_line and comp.component_type == 'ic':
+        # an earlier import gave the alternates of sockets, slots and headers the type 'ic'
+        kind = bom_component_type(line)
+        if kind and kind not in IC_TYPES | {'crystal'}:
+            return kind
     kind = p['derived']['kind']
     if re.search(r'\bSENSOR\b', line, re.I) and comp.component_type in PASSIVE | {'ic', 'other'}:
         return 'sensor'                                  # 'ASSY SENSOR PRESSURE'
     if re.search(r'\bS/W\b', line) and comp.component_type in PASSIVE | {'other'}:
         return 'switch'                                  # 'DOOR-LOCK S/W'
-    if not kind_of(line) and MECHANICAL.match(line) and comp.component_type in PASSIVE | {
+    if not kind_of(line) and not re.search(r'\bS/W\b', line) and MECHANICAL.match(line) and comp.component_type in PASSIVE | {
             'transformer', 'diode', 'connector', 'switch', 'led', 'ic', 'transistor'}:
         return 'other'
     if not kind or not p['type']:
