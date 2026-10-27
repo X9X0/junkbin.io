@@ -30,6 +30,10 @@ def test_spellings():
     assert canonical_maker('NIKE') == canonical_maker('NIKETECH') == 'Niketech'
     assert canonical_maker('Some New Maker') == 'Some New Maker'
     assert canonical_part('JVE21R2264-10S10-01G-6', '3-V1-GN') == ('JVE', '21R2264-10S10-01G-6/3-V1-GN')
+    assert canonical_part('Generic', 'T49J NUT H=4.0mm 宏泰') == ('Generic', 'T49J NUT H=4.0mm Hontech')
+    assert canonical_part('Generic', 'WAFER HD 4P S/T 2.54mm,WHITE 小4P') == \
+        ('Generic', 'WAFER HD 4P S/T 2.54mm,WHITE small 4-pin')
+    assert canonical_part('Vette', '10ADAI 宏泰') == ('Vette', '10ADAI 宏泰')     # a maker's own number is kept
 
 
 def test_rename_keeps_the_old_spelling_as_an_alias(component_factory):
@@ -59,6 +63,17 @@ def test_same_part_under_two_spellings_becomes_one(component_factory, product_fa
     assert keep.product_components.count() == 1 and keep.usage_count == 1
     assert JunkbinItem.objects.get(user=user).object_id == keep.pk
     assert '0 components renamed, 0 merged' in _run()          # idempotent
+
+
+def test_generic_line_name_is_translated(component_factory, product_factory):
+    english = component_factory(manufacturer='Generic', part_number='T12 MB RJ45 SPONGE Shang Yi')
+    chinese = component_factory(manufacturer='Generic', part_number='T12 MB RJ45 SPONGE 上藝')
+    lone = component_factory(manufacturer='Generic', part_number='HEATSINK FOR K8 VRM 國格')
+    ProductComponent.objects.create(product=product_factory(), component=chinese, reference_designator='M1')
+    assert '1 components renamed, 1 merged' in _run()
+    assert english.product_components.count() == 1
+    lone.refresh_from_db()
+    assert lone.part_number == 'HEATSINK FOR K8 VRM KG' and lone.alternative_part_numbers == ['HEATSINK FOR K8 VRM 國格']
 
 
 def test_dry_run_changes_nothing(component_factory):

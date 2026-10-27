@@ -9,7 +9,9 @@ brands with a mixed-case style keep it ('onsemi', 'JMicron', 'SigmaTel').
 
     canonical_maker('YAGEO') -> 'Yageo'
     canonical_part('JVE21R2264-10S10-01G-6', '3-V1-GN') -> ('JVE', '21R2264-10S10-01G-6/3-V1-GN')
+    canonical_part('Generic', 'T49J NUT H=4.0mm 宏泰') -> ('Generic', 'T49J NUT H=4.0mm Hontech')
 """
+from apps.products.import_text import clean_title, has_cjk
 
 # printed name (upper case) -> the site's name. Names not listed are kept as they are.
 CANONICAL = {
@@ -77,4 +79,7 @@ def canonical_part(manufacturer, part_number):
     fixed = PART_FIXES.get(((manufacturer or '').strip().upper(), (part_number or '').strip().upper()))
     if fixed:
         return fixed
-    return canonical_maker(manufacturer), part_number
+    maker = canonical_maker(manufacturer)
+    if maker == 'Generic' and has_cjk(part_number):
+        part_number = clean_title(part_number)[:200]     # a no-part-number BOM line's name, in English
+    return maker, part_number

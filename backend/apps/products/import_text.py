@@ -237,20 +237,24 @@ def _title_once(text, pn):
 
 # component type from a factory BOM line ('P ' is the plant's marker, not part of the text)
 BOM_TYPES = [
-    ('capacitor', r'^(MLCC|CAP\b|CAP\.|CHIP CAP|SMD CAP|E/C|EC CAP|C\.(MYLAR|CE|EL|TA))|CAPACITOR|ELECTROLYTIC'),
+    ('capacitor', r'^(MLCC|CAP\b|CAP\.|CHIP CAP|SMD CAP|E/C|EC CAP|C\.(MYLAR|CE|EL|TA)|POSCAP|OSCON)|CAPACITOR|ELECTROLYTIC'),
     ('thermistor', r'^THERMISTOR|^NTC\b'), ('resistor', r'^(RES\b|RES\.|R\.ARRAY|CHIP RES|RESISTOR)'),
-    ('inductor', r'^(INDUCTOR|CHOKE|COIL|COMMON CHOKE|COMMON MODE CHOKE)'), ('ferrite', r'^(FERRITE|BEAD)'),
+    ('inductor', r'^((POWER |SMD |SMT )?(INDUCTOR|CHOKE|COIL)|COMMON CHOKE|COMMON MODE CHOKE|C\.M\. ?FILTER)'), ('ferrite', r'^(FERRITE|BEAD)'),
     ('regulator', r'^(LIN\.? ?REG|SW\.? ?REG|REG\.|LDO\b|PWM\b|VREF|V\. ?REF)'),
     ('eeprom', r'^(EEPROM|FLASH)\b'), ('crystal', r'^(XTAL|CRYSTAL(?!\s+[A-Z]{2}\d)|OSC\b|OSCILLATOR)'),   # not 'CRYSTAL CS4297-JQ' (a codec)
-    ('mosfet', r'^(N-|P-|NP-)?MOSFET'), ('transistor', r'^(TRASIS|TRANSISTOR|DIGITAL TR)'),
+    ('mosfet', r'^(DUAL |\d+V )?(N-|P-|NP-)?MOSFET(?! DRIVER)'),
+    ('transistor', r'^(TRASIS|TRANSISTOR|DIGITAL TR|(NPN|PNP) (BJT|TR))'),
     ('diode', r'^(DIODE|SCHOTTKY|ZENER|RECTIFIER|BRIDGE)'), ('led', r'^LED\b'), ('fuse', r'^(POLYSWITCH|FUSE)'),
     ('opamp', r'^OP\.? ?AMP'), ('transformer', r'^(TRANSFORMER|LAN TRANS)'),
-    ('socket', r'^(ZIF|SOCKET|PLCC SOCK|CPU SOCK)'),
+    ('socket', r'^(ZIF|SOCKET|PLCC SOCK|CPU SOCK|IC SOCKET|L?LGA ?775P? SO?C?KET|MOBILE MPGA)'),
     ('connector', r'^(WAFER|HEADER|CONN|D-SUB|MINI DIN|MINI-DIN|DIMM|DDR\d? DIMM|SO-?DIMM|SLOT|SATA|USB|RJ-?\d+|'
                   r'PHONE JACK|AUDIO JACK|RCA JACK|DC JACK|JACK|FPC|FFC|BTOB|IDE\b|FDD\b|PCI|AGP|POWER CON|ATX|'
+                  r'MODULAR JACK|LAN JACK|DC POWER JACK|OPTICAL(/RCA| FIBER) JACK|RCA/MINI DIN|MINI PCI|CARD ?BUS \d+P|'
+                  r'NEW CARD|SO DIMM|SCSI \d+P|MXM \d+P|4IN1 ?C(R|ARD)|'
                   r'[A-Z0-9 ]{0,12}\bCONN?\b)'),
-    ('switch', r'^(SW\b(?!\.? ?REG)|SWITCH|TACT)'), ('speaker', r'^(BUZZER|SPEAKER)'), ('battery', r'^(BATT|BATTERY)'),
-    ('other', r'^(HEATSINK|HEAT SINK|LABEL|SCREW|SPACER|BRACKET|SHIELD|JUMPER|MINI JUMPER|CABLE|ANCHOR|CLIP|PCB\b)'),
+    ('switch', r'^(SW\b(?!\.? ?REG)|SWITCH|TACT|(DIP|SLIDE|T\.P|PUSH) SWITCH)'), ('speaker', r'^(BUZZER|SPEAKER)'), ('battery', r'^(BATT|BATTERY)'),
+    ('other', r'^(HEATSINK|HEAT SINK|LABEL|SCREW|SPACER|BRACKET|SHIELD|JUMPER|MINI JUMPER|CABLE|ANCHOR|CLIP|PCB\b|'
+              r'(\S+ ){1,2}HEAT ?SINK|(HEATPIPE|THERMAL) MODULE|BGA COOLER|RETENTION MODULE|BACK PLATE)'),
 ]
 
 
@@ -259,7 +263,7 @@ def bom_component_type(description):
     d = re.sub(r'^P\s+', '', (description or '').strip().upper())
     for kind, pattern in BOM_TYPES:
         if re.search(pattern, d):
-            if re.search(r'\bIC\b', d) and kind not in ('regulator', 'eeprom', 'opamp', 'crystal'):
+            if re.search(r'\bIC\b', d) and kind not in ('regulator', 'eeprom', 'opamp', 'crystal', 'socket'):
                 return None             # 'USB-PD/VBUS protection IC', 'LED driver IC'
             return kind
     return None

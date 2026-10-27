@@ -89,6 +89,23 @@ def test_datasheet_title(pn, raw, title):
     ('CLOCK Gen. ICS950209CF ICS 48PIN SSOP', None),                       # a chip: the line doesn't say
     ('CRYSTAL CS4297-JQ TQFP48 AC97 AUDIO CODEC', None),                    # Crystal Semiconductor's codec
     ('XTAL 14.318MHZ 49S 20PF/30PPM', 'crystal'),
+    ('P POWER CHOKE COIL 0.56UH 15A MATSUSHITA/ETQP4LR56WFC SMD', 'inductor'),
+    ('C.M. FILTERS 370 OHM (0805)', 'inductor'),
+    ('POSCAP 220UF/2.5V (7343/D) SANYO ±20% 2R5TPE220M', 'capacitor'),
+    ('MODULAR JACK 8P8C AMP/1-440376', 'connector'),
+    ('P MINI PCI-E 52P REV,8.0H,SMT ACES/88914-5204', 'connector'),
+    ('CARD BUS 68P,3mm,Rev.', 'connector'),
+    ('LLGA 775P SOCKET SMT 15U', 'socket'),
+    ('IC SOCKET 8P 2.54mm NARROW DIP', 'socket'),
+    ('MOBILE mPGA CPU SOCKET 478B', 'socket'),
+    ('LGA775 VRM HEAT SINK(ALUMINUM)', 'other'),
+    ('P HEATPIPE MODULE OF P5K-WS ACTC/HEATPIPE THERMAL MODULE*1', 'other'),
+    ('BACK PLATE FOR ZIF K8 LOTES/DCA-HSK-044-002', 'other'),
+    ('DUAL N-MOSFET CEM9926 SO-8 CET', 'mosfet'),
+    ('Dual MOSFET Driver with Bootstrapping', None),
+    ('P NPN BJT PDTC144ET SOT-23 PHILIPS', 'transistor'),
+    ('P T.P SWITCH 4P SMT DIPTRONICS/DTSM-62N-TR', 'switch'),
+    ('POWER SW. RT9701A-CBL SOT-25 RICHTEK', None),                        # a load-switch chip
 ])
 def test_bom_component_type(line, kind):
     assert bom_component_type(line) == kind
