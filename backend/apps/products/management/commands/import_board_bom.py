@@ -16,6 +16,8 @@ PATH is a bundle.json or a directory searched recursively for them. Bundle:
           "part_number", "manufacturer", "component_type", "package_type",
           "description", "specifications": {}, "reference_designators": ["U1", ...],
           "quantity", "notes",
+          "unconfirmed": "why",                       # optional: a part number read from the line that
+                                                       # isn't confirmed - the row is marked for review
           "alternates":  [{"part_number", "manufacturer", "description"}],   # factory-approved second
                                                        # sources; description = the alternate's own BOM line
           "equivalents": [{"part_number", "manufacturer", "component_type",
@@ -40,6 +42,10 @@ Generic passives come through as ordinary components (manufacturer "Generic",
 part_number a spec string such as "RES 10K 1% 1/10W 0603") whose
 "equivalents" are verified current parts.
 
+A row whose entry is "unconfirmed" is shown with the site's REVIEW mark (needs_review)
+and its notes say why; its part is an item of the norway-bom-pn review batch. A part
+a reviewer marked correct is imported without the mark.
+
 Products and BOM rows carry the bundle's source tag in import_source (never
 shown on the site). Re-running is safe: a product this command created is found by its source tag
 (so a corrected revision or description updates it in place) and its imported
@@ -63,8 +69,9 @@ from apps.components.makers import canonical_part
 from apps.components.models import Component, ProductComponent
 from apps.components.spec_fill import fill, plan
 from apps.components.spec_parse import clean_bom_text, ic_package
+from apps.products.import_review import UNCONFIRMED      # a row's note: part number not confirmed
 from apps.products.import_text import bom_component_type, clean_text, clean_title
-from apps.products.models import Firmware, Product, ProductImage, Schematic
+from apps.products.models import Firmware, ImportReview, Product, ProductImage, Schematic
 
 PASSIVE_TYPES = ('resistor', 'capacitor', 'inductor', 'ferrite', 'crystal', 'thermistor', 'fuse')
 REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length or 100_000
@@ -82,6 +89,22 @@ def alternate_description(primary):
                                   package.group(1) if package else '') if x and x != 'other')
     text = f"Factory-approved alternate to {primary['manufacturer']} {primary['part_number']}"
     return f'{text} ({hint})' if hint else text
+
+
+def retitle(obj, title, description):
+    """An imported document or firmware file this bundle added earlier: its title and
+    description as the bundle now gives them (translations improve)."""
+    changed = [f for f, v in (('title', title), ('description', description)) if getattr(obj, f) != v]
+    for f in changed:
+        setattr(obj, f, title if f == 'title' else description)
+    if changed:
+        obj.save(update_fields=changed)
+
+
+def accepted(component):
+    """A reviewer marked this part's unconfirmed reading correct (import review)."""
+    return ImportReview.objects.filter(batch='norway-bom-pn', item_type='bom-part', object_id=component.pk,
+                                       verdict=ImportReview.Verdict.CORRECT).exists()
 
 
 def full_description(bundle):
@@ -202,16 +225,22 @@ class Command(BaseCommand):
                     result['cross_refs'] += 1
             refs = c.get('reference_designators') or []
             chunks = list(refdes_chunks(refs)) or [[]]
+            notes = clean_text(c.get('notes', ''))
+            if c.get('unconfirmed'):
+                notes = f"{notes}; {UNCONFIRMED}: {clean_text(c['unconfirmed'])}".lstrip('; ')
             for chunk in chunks:
-                ProductComponent.objects.create(
+                row = ProductComponent.objects.create(
                     product=product, component=component,
                     reference_designator=', '.join(chunk),
                     quantity=len(chunk) if chunk else c.get('quantity') or 1,
-                    notes=clean_text(c.get('notes', '')), import_source=tag,
+                    notes=notes, import_source=tag,
+                    needs_review=bool(c.get('unconfirmed')) and not accepted(component),
                     submission_level=ProductComponent.SubmissionLevel.ADVANCED,
                     created_by=user,
                 )
                 result['placements'] += 1
+                if row.needs_review:
+                    result['unconfirmed'] = result.get('unconfirmed', 0) + 1
 
         product.update_component_count()
         for component in Component.objects.filter(product_components__product=product).distinct():
@@ -270,7 +299,10 @@ class Command(BaseCommand):
         """Bundle "images" (e.g. a document's first page as a cover): added once, unapproved,
         preview image only when the product has no picture yet."""
         for img in bundle.get('images', []):
-            if product.images.filter(caption=img['caption'][:200]).exists():
+            caption = clean_title(img['caption'])[:200]
+            same = product.images.filter(caption__in=[caption, img['caption'][:200]])
+            if same.exists():
+                same.exclude(caption=caption).update(caption=caption)     # added before captions were cleaned
                 continue
             result['images_added'] = result.get('images_added', 0) + 1
             if dry_run:
@@ -282,7 +314,7 @@ class Command(BaseCommand):
                 ProductImage.objects.create(
                     product=product, image=File(fh, name=f'{product.pk}-cover.jpg'),
                     image_type=img.get('image_type') or ProductImage.ImageType.OTHER,
-                    caption=img['caption'][:200], is_primary=not product.images.exists(),
+                    caption=caption, is_primary=not product.images.exists(),
                     uploaded_by=user, is_approved=False)
 
     @staticmethod
@@ -305,6 +337,9 @@ class Command(BaseCommand):
         for item in bundle.get('firmware', []):
             if item['md5'] in have:
                 result['firmware_kept'] = result.get('firmware_kept', 0) + 1
+                fw = have[item['md5']]
+                if fw.source_notes.startswith(f'[{tag}]') and not dry_run:     # ours: keep its text current
+                    retitle(fw, clean_title(item['title'])[:300], clean_text(item.get('description', '')))
                 continue
             path = folder / item['file']
             if not path.is_file():
@@ -315,7 +350,7 @@ class Command(BaseCommand):
             with path.open('rb') as fh:
                 Firmware.objects.create(
                     product=product, file=File(fh, name=path.name),
-                    title=clean_title(item['title'])[:300], description=item.get('description', ''),
+                    title=clean_title(item['title'])[:300], description=clean_text(item.get('description', '')),
                     version=item.get('version', '')[:50], chip_architecture=item.get('chip_architecture', '')[:100],
                     source_type=Firmware.SourceType.DUMPED,
                     source_notes=f"[{tag}] {item.get('source_notes', '')} md5:{item['md5']}",
@@ -342,6 +377,9 @@ class Command(BaseCommand):
         for doc in bundle.get('documents', []):
             if doc['md5'] in have:
                 result['documents_kept'] += 1
+                sch = have[doc['md5']]
+                if sch.source_notes.startswith(f'[{tag}]') and not dry_run:   # ours: keep its text current
+                    retitle(sch, clean_title(doc['title'])[:300], clean_text(doc.get('description', '')))
                 continue
             path = folder / doc['file']
             if not path.is_file():
@@ -353,7 +391,7 @@ class Command(BaseCommand):
                 Schematic.objects.create(
                     product=product, file=File(fh, name=path.name),
                     schematic_type=doc.get('schematic_type') or Schematic.SchematicType.OTHER,
-                    title=clean_title(doc['title'])[:300], description=doc.get('description', ''),
+                    title=clean_title(doc['title'])[:300], description=clean_text(doc.get('description', '')),
                     version=product.revision,
                     source_type=Schematic.SourceType.LEAKED,
                     source_notes=f"[{tag}] {doc.get('source_notes', '')} md5:{doc['md5']}",

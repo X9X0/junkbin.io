@@ -124,8 +124,9 @@ def merge(dup, keep):
         else:
             JunkbinItem.objects.filter(pk=item.pk).update(object_id=str(keep.pk))
     Report.objects.filter(content_type=ct, object_id=str(dup.pk)).update(object_id=str(keep.pk))
-    for review in ImportReview.objects.filter(item_type='component', object_id=str(dup.pk)):
-        if ImportReview.objects.filter(batch=review.batch, item_type='component', object_id=str(keep.pk)).exists():
+    for review in ImportReview.objects.filter(item_type__in=('component', 'bom-part'), object_id=str(dup.pk)):
+        if ImportReview.objects.filter(batch=review.batch, item_type=review.item_type,
+                                       object_id=str(keep.pk)).exists():
             review.delete()
         else:
             ImportReview.objects.filter(pk=review.pk).update(object_id=str(keep.pk))

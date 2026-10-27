@@ -11,7 +11,9 @@ DIR holds matches.json and the files it names:
 Components are found by manufacturer + part number (case-insensitive), so the
 same export works on any copy of the site. A match with a "create" object
 ({"component_type", "description"}) creates the component when it is missing
-(unverified, specifications.source = "datasheet"). A file whose md5 is already
+(unverified, specifications.source = "datasheet"); with "translated": true the
+description is an English one written for a datasheet in another language and is used
+as given, with its type. A file whose md5 is already
 attached to the component is skipped. Datasheets are created unapproved with
 source type "mirror".
 """
@@ -68,9 +70,10 @@ class Command(BaseCommand):
                         component_type=m['create'].get('component_type') or 'ic',
                         description=m['create'].get('description') or '',
                         specifications={'source': 'datasheet'}, created_by=user)
-                    # typed from the whole title-page text, before it is cut down to the title
-                    component.component_type = datasheet_type(component) or component.component_type
-                    component.description = clean_description(component.description, part_number=m['part_number'])
+                    if not m['create'].get('translated'):
+                        # typed from the whole title-page text, before it is cut down to the title
+                        component.component_type = datasheet_type(component) or component.component_type
+                        component.description = clean_description(component.description, part_number=m['part_number'])
                     component.save()
                 if not component:
                     counts['component_missing'] += 1

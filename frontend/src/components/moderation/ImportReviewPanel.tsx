@@ -187,6 +187,8 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
                 ? 'Check: does the label and file name fit this product (brand, model, category)? Use Flag if the product name was misread from the label.'
                 : item.item_type === 'image'
                 ? 'Check: is this photo of this product (or, when the caption says series, of its series)? Flag a part, a different model, a placeholder or a badly cut-out photo.'
+                : item.item_type === 'bom-part'
+                ? 'Check: do these factory BOM lines name this maker and part number? Correct removes the REVIEW mark from every row using it. Flag (and say why) a misread part number, a package or rating read as one, or the wrong maker.'
                 : 'Check: is this the right product/part, revision and category, and do the documents belong to it?'}
             </p>
             <textarea className="input-cyber w-full mb-3 text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)}

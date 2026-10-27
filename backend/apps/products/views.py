@@ -1713,6 +1713,10 @@ class ImportReviewViewSet(viewsets.ViewSet):
         review, _ = ImportReview.objects.update_or_create(
             batch=batch, item_type=BATCHES[batch]['item_type'], object_id=object_id,
             defaults={'verdict': verdict, 'note': (request.data.get('note') or '')[:2000], 'reviewer': request.user})
+        if BATCHES[batch]['item_type'] == 'bom-part':       # its rows' REVIEW mark follows the verdict
+            from .import_review import unconfirmed_rows
+            unconfirmed_rows().filter(component_id=object_id).update(
+                needs_review=verdict != ImportReview.Verdict.CORRECT)
         return Response({'verdict': review.verdict})
 
     @action(detail=False, methods=['get'])

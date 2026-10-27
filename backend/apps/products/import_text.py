@@ -5,11 +5,15 @@ manual filenames, datasheet title pages).
 The source material is mostly English, with a small, fixed vocabulary of
 Chinese factory shorthand and filename words; those are translated exactly
 from GLOSSARY. Advertising watermarks and download-site names are removed.
-Whatever CJK text is left after that is dropped rather than machine-translated:
+apps.products.import_glossary adds the phrases translated by hand from the sources
+(see there for how they apply). Whatever CJK text is left after that is dropped rather
+than machine-translated:
 a description must not guess. clean_description() also returns '' when too
 little English remains to be worth showing.
 """
 import re
+
+from .import_glossary import RUNS, SUBSTRINGS
 
 # exact translations of the shorthand and filename words that occur in the sources
 GLOSSARY = [
@@ -32,16 +36,19 @@ GLOSSARY = [
     ('及', ' and '), ('华硕', 'ASUS '), ('華碩', 'ASUS '), ('松下', 'Panasonic '), ('飞利浦', 'Philips '),
     ('飛利浦', 'Philips '), ('康佳', 'Konka '), ('创维', 'Skyworth '),
 ]
-GLOSSARY_LONGEST_FIRST = sorted(GLOSSARY, key=lambda pair: -len(pair[0]))
+GLOSSARY_LONGEST_FIRST = sorted(GLOSSARY + list(SUBSTRINGS.items()), key=lambda pair: -len(pair[0]))
 FULLWIDTH = str.maketrans({'；': ';', '，': ',', '：': ':', '（': '(', '）': ')', '！': '!', '　': ' ',
                            '、': ', ', '。': '. ', '“': '"', '”': '"'})
 JUNK = [
     # a Maintek BOM printout's page header that leaked into an item (company, report title, dates, parent P/N)
+    re.compile(r'(?:名碩電腦\S*\s*)?單階材料用量明細表.*?失效日期[\s-]*'),     # the whole header, to its rule
+    re.compile(r'名碩電腦\S*.{0,600}?失效日期[\s-]*'),                        # the same, its title line lost
     re.compile(r'名碩電腦.{0,240}?主件料號\s*[:：]?\s*[\w-]*'), re.compile(r'品名規格\S*'),
     re.compile(r'(名碩電腦|匯橋|匯僑)\S*'),
     re.compile(r'捷多邦[^！!]{0,30}[！!]?'),                              # PCB-shop advert watermark
     re.compile(r'查询["“]?[^"”]{0,40}["”]?供应商'),                           # "find suppliers of ..." advert
     re.compile(r'chinafix\.com\.cn\s*迅维网_?', re.I), re.compile(r'迅维网'),
+    re.compile(r'\[?(?:www\.)?heimafix\.com\s*黑马维修网\]?', re.I),            # repair-forum watermark
     re.compile(r'www\.xinxunwei\.com\s*(400-800-9990)?', re.I), re.compile(r'www\.ic37\.com_?', re.I),
     re.compile(r'_?DiskStation_[A-Za-z]{3}-\d{1,2}-\d{3,4}-\d{4}_DownloadConflict', re.I),
     re.compile(r'\s*\(\d\)\s*$'),                                         # browser duplicate "(1)"
@@ -63,9 +70,10 @@ def clean_text(text):
     for src, dst in GLOSSARY_LONGEST_FIRST:            # '此料無需marking' before its '無'
         t = t.replace(src, dst)
     t = t.translate(FULLWIDTH)
-    t = CJK.sub(' ', t)
+    t = CJK.sub(lambda m: RUNS.get(m.group(), ' '), t)     # a whole run we have English for, else dropped
     t = re.sub(r'[ \t]+', ' ', t)
     t = re.sub(r' +([,;:)])', r'\1', t)
+    t = re.sub(r' +\.(?=[A-Za-z0-9]{2,4}$)', '.', t)           # 'same fault .bin'
     t = re.sub(r'\( +', '(', t)
     return t.strip()
 
@@ -76,7 +84,7 @@ def clean_title(text):
 
 
 DATASHEET_NOISE = re.compile(
-    r'(Release Date|Revised|Revision|Version|Rev\.?)\s*:?\s*[A-Za-z]{0,9},?\s*\d{0,4}|\bV\d+(\.\d+)+[A-Z]?\b|'
+    r'\b(Release Date|Revised|Revision|Version|Rev\.?)(?![A-Za-z])\s*:?\s*[A-Za-z]{0,9},?\s*\d{0,4}|\bV\d+(\.\d+)+[A-Z]?\b|'
     r'\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?,?\s+\d{4}\b|'
     r'www\.\S+|\b[A-Z]{4,7}\d{1,4}[A-Z]?\b(?=\s*[–-])|\b[A-Z]{4}\d{2,4}[A-Z]?\b|'
     r'\b(JANUARY|FEBRUARY|MARCH|APRIL|MAY|JUNE|JULY|AUGUST|SEPTEMBER|OCTOBER|NOVEMBER|DECEMBER)\s+\d{4}\b|'
@@ -233,7 +241,7 @@ BOM_TYPES = [
     ('thermistor', r'^THERMISTOR|^NTC\b'), ('resistor', r'^(RES\b|RES\.|R\.ARRAY|CHIP RES|RESISTOR)'),
     ('inductor', r'^(INDUCTOR|CHOKE|COIL|COMMON CHOKE|COMMON MODE CHOKE)'), ('ferrite', r'^(FERRITE|BEAD)'),
     ('regulator', r'^(LIN\.? ?REG|SW\.? ?REG|REG\.|LDO\b|PWM\b|VREF|V\. ?REF)'),
-    ('eeprom', r'^(EEPROM|FLASH)\b'), ('crystal', r'^(XTAL|CRYSTAL|OSC\b|OSCILLATOR)'),
+    ('eeprom', r'^(EEPROM|FLASH)\b'), ('crystal', r'^(XTAL|CRYSTAL(?!\s+[A-Z]{2}\d)|OSC\b|OSCILLATOR)'),   # not 'CRYSTAL CS4297-JQ' (a codec)
     ('mosfet', r'^(N-|P-|NP-)?MOSFET'), ('transistor', r'^(TRASIS|TRANSISTOR|DIGITAL TR)'),
     ('diode', r'^(DIODE|SCHOTTKY|ZENER|RECTIFIER|BRIDGE)'), ('led', r'^LED\b'), ('fuse', r'^(POLYSWITCH|FUSE)'),
     ('opamp', r'^OP\.? ?AMP'), ('transformer', r'^(TRANSFORMER|LAN TRANS)'),

@@ -116,3 +116,29 @@ def test_cached_list_is_per_user(product_factory, user_factory):
     me.force_authenticate(owner)
     assert me.get('/api/products/').data['count'] == 1           # cached for the owner...
     assert APIClient().get('/api/products/').data['count'] == 0  # ...never served to anyone else
+
+
+def test_unconfirmed_bom_parts_are_reviewed_once_for_all_their_rows(product_factory, component_factory, moderator):
+    from apps.components.models import ProductComponent
+    parts = [component_factory(part_number=f'PN{i}') for i in range(2)]
+    rows = [ProductComponent.objects.create(
+        product=product_factory(import_source=f'norway-bom:Asus_{j}', is_approved=True), component=part,
+        reference_designator=f'U{j}', import_source=f'norway-bom:Asus_{j}', needs_review=True,
+        notes=f'Factory BOM line: IC {part.part_number}; {import_review.UNCONFIRMED}: the line has no '
+              f'approved-maker list to check the maker against')
+        for part in parts for j in range(2)]
+    api = _api(moderator)
+    items = api.get('/api/import-review/next/', {'batch': 'norway-bom-pn'}).data
+    assert {i['id'] for i in items} == {str(p.pk) for p in parts}
+    assert items[0]['component_count'] == 2
+    assert items[0]['description'] == ('Not confirmed because the line has no approved-maker list to check '
+                                       'the maker against.')
+    api.post('/api/import-review/verdict/', {'batch': 'norway-bom-pn', 'object_id': str(parts[0].pk),
+                                             'verdict': 'correct'}, format='json')
+    api.post('/api/import-review/verdict/', {'batch': 'norway-bom-pn', 'object_id': str(parts[1].pk),
+                                             'verdict': 'flagged', 'note': 'PN1 is the package'}, format='json')
+    for row in rows:
+        row.refresh_from_db()
+        assert row.needs_review == (row.component_id == parts[1].pk)
+    flagged = api.get('/api/import-review/flagged/', {'batch': 'norway-bom-pn'}).data
+    assert [f['note'] for f in flagged] == ['PN1 is the package']

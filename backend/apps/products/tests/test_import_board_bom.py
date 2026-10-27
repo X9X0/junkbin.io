@@ -368,3 +368,39 @@ def test_generic_equivalent_is_not_called_a_factory_alternate(tmp_path, user_fac
     eq = Component.objects.get(part_number='RC0603FR-0710KL')
     assert eq.description == 'Current equivalent of Generic RES 10K 1% 1/10W 0603'
     assert eq.specifications == {'resistance_ohm': 10000.0, 'tolerance': '1%', 'power_w': 0.1}
+
+
+def _unconfirmed_bundle():
+    return _bundle(components=[{
+        'part_number': 'M24C02-WMN6TP', 'manufacturer': 'STMicroelectronics', 'component_type': 'eeprom',
+        'package_type': '', 'description': 'EEPROM M24C02-WMN6TP SO-8 ST <G>', 'specifications': {},
+        'reference_designators': ['ZU2'], 'quantity': 1, 'notes': 'Factory BOM line: EEPROM M24C02-WMN6TP SO-8 ST',
+        'unconfirmed': "read from the line's text; the chip marking doesn't confirm it",
+        'alternates': [{'part_number': 'CAT24C02WI-GT3', 'manufacturer': 'Catalyst Semiconductor',
+                        'description': 'EEPROM CAT24C02WI-GT3 SOIC8 CATALYST 2Kb 1.8-5.5V',
+                        'component_type': 'eeprom'}],
+        'equivalents': [],
+    }])
+
+
+def test_unconfirmed_part_number_is_marked_for_review(tmp_path, user_factory):
+    user_factory(username='Admin')
+    call_command('import_board_bom', str(_write(tmp_path, _unconfirmed_bundle())), stdout=StringIO())
+    row = ProductComponent.objects.get(reference_designator='ZU2')
+    assert row.needs_review
+    assert row.notes.endswith("part number read from the factory BOM line, not confirmed: read from the line's "
+                              "text; the chip marking doesn't confirm it")
+    assert row.component.cross_references.filter(part_number='CAT24C02WI-GT3').exists()
+
+
+def test_part_marked_correct_is_reimported_without_the_mark(tmp_path, user_factory):
+    from apps.products.models import ImportReview
+    admin = user_factory(username='Admin')
+    path = str(_write(tmp_path, _unconfirmed_bundle()))
+    call_command('import_board_bom', path, stdout=StringIO())
+    row = ProductComponent.objects.get(reference_designator='ZU2')
+    ImportReview.objects.create(batch='norway-bom-pn', item_type='bom-part', object_id=row.component_id,
+                                verdict='correct', reviewer=admin)
+    call_command('import_board_bom', path, stdout=StringIO())
+    again = ProductComponent.objects.get(reference_designator='ZU2')
+    assert again.pk != row.pk and not again.needs_review and again.component_id == row.component_id

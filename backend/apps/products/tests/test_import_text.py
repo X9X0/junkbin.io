@@ -24,6 +24,21 @@ def test_clean_text(raw, expected):
     assert clean_text(expected) == expected                                 # idempotent
 
 
+@pytest.mark.parametrize('raw, expected', [
+    ('25Q64CV   不显BF 刷了VLAB故障一样.bin', '25Q64CV no display BF flashed VLAB same fault.bin'),
+    ('联想Z370 I3独立 南桥.BIN', 'Lenovo Z370 I3 discrete southbridge.BIN'),        # not 独 + 立 = vertical
+    ('25Q64FV 进水PCB烧穿BF.bin', '25Q64FV water damage PCB burnt through BF.bin'),
+    ('[www.heimafix.com黑马维修网]hp AMD G4独立显卡 BIOS.bin', 'hp AMD G4 discrete graphics BIOS.bin'),
+])
+def test_firmware_names_are_translated(raw, expected):
+    assert clean_title(raw) == expected
+
+
+def test_words_are_not_translated_out_of_a_dropped_sentence():
+    # '具有' / '主要特点' inside a Chinese datasheet sentence: the sentence is dropped whole
+    assert clean_text('ISL6752 具有ZVS 全桥式电流模式 主要特点 PWM') == 'ISL6752 ZVS PWM'
+
+
 def test_clean_title_drops_download_site_junk():
     assert clean_title('chinafix.com.cn迅维网_uP7704') == 'uP7704'
     assert clean_title('P75N02LDG (1)_DiskStation_Dec-18-1559-2023_DownloadConflict') == 'P75N02LDG'
@@ -72,6 +87,8 @@ def test_datasheet_title(pn, raw, title):
     ('POWER CON 4P S/T,ATX', 'connector'),
     ('HEATSINK 33*33*10mm SILVER', 'other'),
     ('CLOCK Gen. ICS950209CF ICS 48PIN SSOP', None),                       # a chip: the line doesn't say
+    ('CRYSTAL CS4297-JQ TQFP48 AC97 AUDIO CODEC', None),                    # Crystal Semiconductor's codec
+    ('XTAL 14.318MHZ 49S 20PF/30PPM', 'crystal'),
 ])
 def test_bom_component_type(line, kind):
     assert bom_component_type(line) == kind
@@ -96,3 +113,8 @@ def test_clean_import_text_fixes_imported_rows_only(product_factory, component_f
     assert comp.component_type == 'capacitor'
     call_command('clean_import_text', stdout=out)                           # second run changes nothing
     assert 'bom notes: 0 changed' in out.getvalue().splitlines()[-1]
+
+
+def test_revision_noise_is_only_whole_words():
+    text = 'N-channel junction FET for impedance conversion, reverse-biased use'
+    assert clean_description(text, part_number='2SK2076') == text
