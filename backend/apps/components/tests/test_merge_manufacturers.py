@@ -26,6 +26,8 @@ def test_spellings():
     assert canonical_maker('TAI TECH') == 'Tai-Tech'
     assert canonical_maker('TDK') == 'TDK' and canonical_maker('KOA') == 'KOA'      # acronyms stay
     assert canonical_maker('MAG.LAYERS') == canonical_maker('MAG LAYERS') == 'Mag Layers'
+    assert canonical_maker('ENTRY') == canonical_maker('ENTERY') == 'Entery'
+    assert canonical_maker('NIKE') == canonical_maker('NIKETECH') == 'Niketech'
     assert canonical_maker('Some New Maker') == 'Some New Maker'
     assert canonical_part('JVE21R2264-10S10-01G-6', '3-V1-GN') == ('JVE', '21R2264-10S10-01G-6/3-V1-GN')
 
