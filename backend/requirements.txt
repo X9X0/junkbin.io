@@ -59,7 +59,7 @@ pillow-avif-plugin==1.6.0
 django-imagekit==6.1.0
 
 # Self-hosted background removal (no external API) - see apps/media_tools
-rembg[cpu]==2.0.81
+rembg[cpu]==2.0.82
 pymatting==1.1.15
 
 # ========================================
