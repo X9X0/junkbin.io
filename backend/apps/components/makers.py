@@ -8,6 +8,7 @@ capitalised unless it is an acronym or a letter code ('TDK', 'KOA', 'CA', 'HR');
 brands with a mixed-case style keep it ('onsemi', 'JMicron', 'SigmaTel').
 
     canonical_maker('YAGEO') -> 'Yageo'
+    canonical_product_maker('ASUS') -> 'Asus'
     canonical_part('JVE21R2264-10S10-01G-6', '3-V1-GN') -> ('JVE', '21R2264-10S10-01G-6/3-V1-GN')
     canonical_part('Generic', 'T49J NUT H=4.0mm 宏泰') -> ('Generic', 'T49J NUT H=4.0mm Hontech')
 """
@@ -67,6 +68,15 @@ PART_FIXES = {
     ('JVE21R2264-10S10-01G-6', '3-V1-GN'): ('JVE', '21R2264-10S10-01G-6/3-V1-GN'),
     ('JVE21Y2264-10S10-01G-6', '3-V1-GN'): ('JVE', '21Y2264-10S10-01G-6/3-V1-GN'),
 }
+
+
+# product brands written in capitals by their sources: leading capital, like component makers
+PRODUCT_MAKERS = {'ASUS': 'Asus', 'GIGABYTE': 'Gigabyte', 'ITEAD': 'Itead', 'XZOUND': 'Xzound', 'UNI-T': 'Uni-T'}
+
+
+def canonical_product_maker(name):
+    name = (name or '').strip()
+    return PRODUCT_MAKERS.get(name.upper(), name)
 
 
 def canonical_maker(name):

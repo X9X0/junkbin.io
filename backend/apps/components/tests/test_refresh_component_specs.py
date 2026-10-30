@@ -143,19 +143,46 @@ def test_import_written_disputed_value_is_removed(component_factory, product_fac
 
 def test_rating_the_parts_own_lines_disagree_on_is_taken_out(tmp_path, component_factory, product_factory):
     # one factory BOM lists the inductor at 400mA, another at 600mA: the import kept one of them
-    part = component_factory(manufacturer='Chilisin', part_number='LS0603-1R0J-S', component_type='inductor',
-                             package_type='0603', description='INDUCTOR 1UH/50mA (0603) CHILISIN/LS0603-1R0J-S',
-                             specifications={'current_a': 0.6, 'inductance_uh': 1.0})
+    part = component_factory(manufacturer='Chilisin', part_number='LS0805-2R2J-S', component_type='inductor',
+                             package_type='0805', description='INDUCTOR 2.2UH/50mA (0805) CHILISIN/LS0805-2R2J-S',
+                             specifications={'current_a': 0.6, 'inductance_uh': 2.2})
     ProductComponent.objects.create(product=product_factory(), component=part, import_source='norway-bom:x')
     report = tmp_path / 'report.tsv'
-    _run('--lines', _lines(tmp_path, {'CHILISIN|LS0603-1R0J-S': [
-        ['INDUCTOR 1UH/400mA (0603) CHILISIN/LS0603-1R0J-S     <G>', 30],
-        ['P INDUCTOR 1UH/600mA (0603) CHILISIN/LS0603-1R0J-S', 6]]}), '--report', report)
+    _run('--lines', _lines(tmp_path, {'CHILISIN|LS0805-2R2J-S': [
+        ['INDUCTOR 2.2UH/400mA (0805) CHILISIN/LS0805-2R2J-S     <G>', 30],
+        ['P INDUCTOR 2.2UH/600mA (0805) CHILISIN/LS0805-2R2J-S', 6]]}), '--report', report)
     part.refresh_from_db()
-    assert part.specifications == {'inductance_uh': 1.0}
-    assert part.description == 'INDUCTOR 1UH/400mA (0603)'
+    assert part.specifications == {'inductance_uh': 2.2}
+    assert part.description == 'INDUCTOR 2.2UH/400mA (0805)'
     rows = list(csv.DictReader(report.open(), delimiter='\t'))
     assert rows[0]['removed (disputed, import-written)'] == 'current_a'
+
+
+def test_the_makers_datasheet_settles_what_the_lines_disagree_on(tmp_path, component_factory, product_factory):
+    # Chilisin's LS0603 table rates LS0603-1R0 at 600 mA; the BOM lines say 400, 600 and 50 mA
+    part = component_factory(manufacturer='Chilisin', part_number='LS0603-1R0J-S', component_type='inductor',
+                             package_type='0603', description='INDUCTOR 1UH/400mA (0603)',
+                             specifications={'inductance_uh': 1.0})
+    ProductComponent.objects.create(product=product_factory(), component=part, import_source='norway-bom:x')
+    _run('--lines', _lines(tmp_path, {'CHILISIN|LS0603-1R0J-S': [
+        ['INDUCTOR 1UH/400mA (0603) CHILISIN/LS0603-1R0J-S     <G>', 30],
+        ['P INDUCTOR 1UH/600mA (0603) CHILISIN/LS0603-1R0J-S', 6],
+        ['INDUCTOR 1UH/50mA (0603) CHILISIN/LS0603-1R0J-S', 2]]}))
+    part.refresh_from_db()
+    assert part.specifications == {'inductance_uh': 1.0, 'current_a': 0.6, 'tolerance': '5%'}
+
+
+def test_an_alternate_the_import_described_by_its_line_is_corrected_by_its_part_number(tmp_path, component_factory):
+    # placed nowhere, only listed as a second source: its description is its own line, cleaned.
+    # Taiyo Yuden's catalogue gives 'BJ' as X5R (X7R only to a customer's own specification)
+    cap = component_factory(manufacturer='Taiyo Yuden', part_number='UMK105BJ103KV-F', component_type='capacitor',
+                            package_type='0402', description='MLCC 0.01UF/50V (0402) X7R 10%',
+                            specifications={'capacitance_pf': 10000.0, 'voltage_v': 50, 'dielectric': 'X7R',
+                                            'tolerance': '10%'})
+    _run('--lines', _lines(tmp_path, {'TAIYO YUDEN|UMK105BJ103KV-F': [
+        ['MLCC 0.01UF/50V (0402) X7R 10% TAIYO/UMK105BJ103KV-F', 3]]}))
+    cap.refresh_from_db()
+    assert cap.specifications['dielectric'] == 'X5R'
 
 
 def test_rating_nearly_all_the_parts_lines_agree_on_stands(tmp_path, component_factory, product_factory):

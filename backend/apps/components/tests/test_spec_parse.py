@@ -99,6 +99,19 @@ def test_clean_bom_text_drops_markers_and_the_maker_part_echo():
     ('Panasonic', 'ERJ12YJ100', ('resistor', {'resistance_ohm': 10.0, 'tolerance': '5%'}, '1812')),
     ('Panasonic', 'ERJ12ZYJ100', ('resistor', {'resistance_ohm': 10.0, 'tolerance': '5%'}, '2010')),
     ('Panasonic', 'ERJ6GEY0R00', ('resistor', {'resistance_ohm': 0.0}, '0805')),
+    ('Taiyo Yuden', 'LMK105BJ104KV-F', ('capacitor', {'capacitance_pf': 100000.0, 'voltage_v': 10, 'tolerance': '10%',
+                                                      'dielectric': 'X5R'}, '0402')),          # BJ is X5R, B7 X7R
+    ('Murata', 'GNM3145C1H151K', ('capacitor', {'capacitance_pf': 150.0, 'voltage_v': 50, 'tolerance': '10%',
+                                                'dielectric': 'C0G'}, '1206')),               # a 4-capacitor array
+    ('Cyntec', 'RR0510S-121-FN', ('resistor', {'resistance_ohm': 120.0, 'tolerance': '1%'}, '0402')),
+    ('Cyntec', 'RR0510S-1692-FN', ('resistor', {'resistance_ohm': 16900.0, 'tolerance': '1%'}, '0402')),
+    ('Mag Layers', 'MLB-201209-0080P-N2', ('ferrite', {'impedance_ohm': 80.0, 'current_a': 2.0}, '0805')),
+    ('Samsung', 'CIH10TR10JNC', ('inductor', {'inductance_uh': 0.1, 'tolerance': '5%'}, '0603')),
+    ('Samsung', 'CIH10T8N2JNC', ('inductor', {'inductance_uh': 0.0082, 'current_a': 0.7, 'tolerance': '5%'}, '0603')),
+    ('Tai-Tech', 'LQC3225-F90NMA-C02', ('inductor', {'inductance_uh': 0.09, 'tolerance': '20%'}, '1210')),
+    ('Chilisin', 'LS0603-1R0J-S', ('inductor', {'inductance_uh': 1.0, 'current_a': 0.6, 'tolerance': '5%'}, '0603')),
+    ('Coilcraft', '0603LS-102XJBC', ('inductor', {'inductance_uh': 1.0, 'current_a': 0.4, 'tolerance': '5%'}, '0603')),
+    ('Chilisin', 'PBY160808T-221Y-N', ('ferrite', {'impedance_ohm': 220.0, 'current_a': 2.0}, '0603')),
 ])
 def test_decode_mpn(maker, pn, expected):
     assert decode_mpn(maker, pn) == expected

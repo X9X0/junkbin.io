@@ -1,6 +1,7 @@
 """
 Give every component its maker's one site name (apps.components.makers), merging
-components that turn out to be the same part under two spellings.
+components that turn out to be the same part under two spellings. Products get
+their brand's spelling too ('ASUS' -> 'Asus'); their slugs are lower case already.
 
     manage.py merge_manufacturers [--dry-run] [--report FILE]
 
@@ -18,11 +19,11 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import F
 
-from apps.components.makers import canonical_part
+from apps.components.makers import canonical_part, canonical_product_maker
 from apps.components.models import (Component, ComponentDatasheet, ComponentImage, ComponentViewStats,
                                     ProductComponent, ProductRequest)
 from apps.junkbin.models import JunkbinItem
-from apps.products.models import ComponentSuggestion, ImportReview
+from apps.products.models import ComponentSuggestion, ImportReview, Product
 from apps.recipes.models import RecipeComponent
 from apps.reports.models import Report
 from utils.cache import clear_page_cache
@@ -36,7 +37,7 @@ class Command(BaseCommand):
         parser.add_argument('--report', help='write a TSV of every rename and merge')
 
     def handle(self, *args, **options):
-        rows, counts = [], {'renamed': 0, 'merged': 0}
+        rows, counts = [], {'renamed': 0, 'merged': 0, 'products': 0}
         with transaction.atomic():
             for comp in Component.objects.order_by('created_at'):
                 maker, part = canonical_part(comp.manufacturer, comp.part_number)
@@ -53,12 +54,26 @@ class Command(BaseCommand):
                     rows.append(['renamed', comp.manufacturer, comp.part_number, maker, part, str(comp.pk), ''])
                     rename(comp, maker, part)
                     counts['renamed'] += 1
+            for product in Product.objects.order_by('created_at'):
+                maker = canonical_product_maker(product.manufacturer)
+                if maker == product.manufacturer:
+                    continue
+                if Product.objects.filter(manufacturer=maker, model_number=product.model_number,
+                                          revision=product.revision, region=product.region).exists():
+                    rows.append(['product kept: the new spelling is taken', product.manufacturer,
+                                 product.model_number, maker, product.model_number, str(product.pk), ''])
+                    continue
+                rows.append(['product renamed', product.manufacturer, product.model_number, maker,
+                             product.model_number, str(product.pk), ''])
+                product.manufacturer = maker
+                product.save(update_fields=['manufacturer'])
+                counts['products'] += 1
             # Crystal Semiconductor's codecs were filed as crystals after the maker's old name
             retyped = Component.objects.filter(manufacturer='Cirrus Logic', component_type='crystal') \
                 .update(component_type='ic')
             if options['dry_run']:
                 transaction.set_rollback(True)
-        if not options['dry_run'] and (counts['renamed'] or counts['merged'] or retyped):
+        if not options['dry_run'] and (counts['renamed'] or counts['merged'] or counts['products'] or retyped):
             clear_page_cache()
         if options['report']:
             with open(options['report'], 'w', newline='', encoding='utf-8') as fh:
@@ -69,7 +84,7 @@ class Command(BaseCommand):
         prefix = 'DRY RUN - ' if options['dry_run'] else ''
         self.stdout.write(self.style.SUCCESS(
             f"{prefix}{counts['renamed']} components renamed, {counts['merged']} merged into the same part under "
-            f"the site's spelling, {retyped} codecs retyped"))
+            f"the site's spelling, {retyped} codecs retyped, {counts['products']} product makers respelled"))
 
 
 def _remember(values, old, new):

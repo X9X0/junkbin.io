@@ -35,6 +35,7 @@ from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
+from apps.components.makers import canonical_product_maker
 from apps.products.import_review import BATCHES
 from apps.products.models import Product, ProductImage
 
@@ -48,7 +49,8 @@ def find_product(ref):
         found = list(Product.objects.filter(import_source=ref['import_source'])[:2])
         if len(found) == 1:
             return found[0]
-    qs = Product.objects.filter(manufacturer=ref.get('manufacturer', ''), model_number=ref.get('model_number', ''))
+    qs = Product.objects.filter(manufacturer=canonical_product_maker(ref.get('manufacturer', '')),
+                                model_number=ref.get('model_number', ''))
     if 'revision' in ref:
         qs = qs.filter(revision=ref['revision'] or '')
     found = list(qs[:2])

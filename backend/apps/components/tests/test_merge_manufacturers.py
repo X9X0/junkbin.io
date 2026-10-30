@@ -89,3 +89,20 @@ def test_new_component_takes_the_sites_spelling(api_client, user_factory):
                                                     'component_type': 'resistor'}, format='json')
     assert response.status_code == 201, response.content
     assert Component.objects.get(part_number='RC0603FR-0710KL').manufacturer == 'Yageo'
+
+
+def test_product_brands_take_a_leading_capital(product_factory):
+    from apps.components.makers import canonical_product_maker
+    from apps.products.models import Product
+    assert canonical_product_maker('ASUS') == 'Asus' and canonical_product_maker('UNI-T') == 'Uni-T'
+    assert canonical_product_maker('MSI') == 'MSI' and canonical_product_maker('HP') == 'HP'   # acronyms stay
+    board = product_factory(manufacturer='ASUS', model_number='P5K', revision='1.02G')
+    slug = board.slug
+    taken = product_factory(manufacturer='GIGABYTE', model_number='GA-X', revision='1.0')
+    product_factory(manufacturer='Gigabyte', model_number='GA-X', revision='1.0')
+    assert '1 product makers respelled' in _run()
+    board.refresh_from_db()
+    taken.refresh_from_db()
+    assert (board.manufacturer, board.slug) == ('Asus', slug)           # same page address
+    assert taken.manufacturer == 'GIGABYTE'                             # the new spelling is taken: left alone
+    assert Product.objects.filter(manufacturer='Asus').count() == 1

@@ -9,6 +9,7 @@ from .models import (
     Product, ProductImage, ProductComment, Schematic, Firmware,
     ComponentSuggestion, RepairReport, RepairReportVote,
 )
+from apps.components.makers import canonical_product_maker
 from utils.file_validation import validate_firmware_file, validate_image_file, validate_schematic_file
 from utils.image_processing import strip_exif
 
@@ -278,6 +279,8 @@ class ProductCreateSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, attrs):
+        if attrs.get('manufacturer'):
+            attrs['manufacturer'] = canonical_product_maker(attrs['manufacturer'])       # 'ASUS' -> 'Asus'
         # Check for duplicate product
         queryset = Product.objects.filter(
             manufacturer__iexact=attrs['manufacturer'],

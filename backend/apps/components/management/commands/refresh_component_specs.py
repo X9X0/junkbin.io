@@ -213,7 +213,9 @@ class Command(BaseCommand):
             comp.description = new
             out['fields'].append('description')
 
-        import_written = comp.pk in imported or made
+        # an alternate placed nowhere still had its ratings written by the import from its own line
+        import_written = comp.pk in imported or made or bool(mine) and comp.description in {
+            clean_bom_text(clean_text(t)) for t, _ in mine}
         p = plan(comp, text, trust_part_number=import_written)
         added = p['added']
         rating_disagree = [k for k in disagree if k != 'package']

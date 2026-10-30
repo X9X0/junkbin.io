@@ -64,8 +64,9 @@ from django.contrib.auth import get_user_model
 from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.utils.text import slugify
 
-from apps.components.makers import canonical_part
+from apps.components.makers import canonical_part, canonical_product_maker
 from apps.components.models import Component, ProductComponent
 from apps.components.spec_fill import fill, plan
 from apps.components.spec_parse import clean_bom_text, ic_package
@@ -155,6 +156,7 @@ class Command(BaseCommand):
                   'components_created': 0, 'placements': 0, 'cross_refs': 0}
         for path in files:
             bundle = json.loads(path.read_text(encoding='utf-8'))
+            bundle['product']['manufacturer'] = canonical_product_maker(bundle['product']['manufacturer'])
             if bundle.get('bundle_version') != 1:
                 raise CommandError(f'{path}: unsupported bundle_version {bundle.get("bundle_version")}')
             try:
@@ -258,8 +260,8 @@ class Command(BaseCommand):
         p = bundle['product']
         tagged = Product.objects.filter(import_source=bundle['source_tag']).first()
         same_name = Product.objects.filter(
-            manufacturer=p['manufacturer'], model_number=p['model_number'],
-            revision=p.get('revision', ''), region='global').first()
+            manufacturer__iexact=p['manufacturer'], model_number__iexact=p['model_number'],
+            revision__iexact=p.get('revision', ''), region='global').first()
         if same_name and same_name != tagged:
             return None
         return tagged or False
@@ -273,13 +275,18 @@ class Command(BaseCommand):
 
     @staticmethod
     def update_identity(product, p):
-        fields = {'revision': p.get('revision', ''), 'description': p.get('description', ''),
+        fields = {'manufacturer': p['manufacturer'], 'model_number': p['model_number'],
+                  'revision': p.get('revision', ''), 'description': p.get('description', ''),
                   'year_manufactured': p.get('year_manufactured'), 'category': p['category'],
                   'subcategory': p.get('subcategory', '')}
         changed = [k for k, v in fields.items() if getattr(product, k) != v]
+        old_name = slugify(f'{product.manufacturer}-{product.model_number}-{product.revision}')
         for k in changed:
             setattr(product, k, fields[k])
-        if changed:
+        if changed and slugify(f'{product.manufacturer}-{product.model_number}-{product.revision}') != old_name:
+            product.slug = ''           # known by another name now ('ASUS' -> 'Asus' keeps its slug)
+            product.save()
+        elif changed:
             product.save(update_fields=changed)
 
     def sync_documents_only(self, bundle, user, folder, dry_run):

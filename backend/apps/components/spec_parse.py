@@ -383,10 +383,30 @@ YAGEO_CC_VOLT = {'4': 4, '5': 6.3, '6': 10, '7': 16, '8': 25, '9': 50, '0': 100,
 WALSIN_DIEL = {'N': 'C0G', 'B': 'X7R', 'X': 'X5R', 'F': 'Y5V'}
 TAIYO_VOLT = {'A': 4, 'J': 6.3, 'L': 10, 'E': 16, 'T': 25, 'G': 35, 'U': 50, 'H': 100}
 TAIYO_SIZE = {'063': '0201', '105': '0402', '107': '0603', '212': '0805', '316': '1206', '325': '1210'}
-TAIYO_DIEL = {'CH': 'CH', 'CG': 'C0G', 'BJ': None, 'B7': 'X7R', 'C6': 'X6S', 'C7': 'X7S', 'F': 'Y5V'}
+# 'BJ' is X5R: Taiyo Yuden's current catalog and its distributors list EMK107BJ105KA-T, LMK105BJ104KV-F
+# and LMK107BJ105KA-T as X5R; X7R is 'B7'. (Pre-2008 catalogs let some BJ items meet X7R by individual
+# spec - X5R is what every one of them is guaranteed to.)
+TAIYO_DIEL = {'CH': 'CH', 'CG': 'C0G', 'BJ': 'X5R', 'B7': 'X7R', 'C6': 'X6S', 'C7': 'X7S', 'F': 'Y5V'}
 DARFON_SIZE = TDK_SIZE
 PANA_ECJ_SIZE = {'0': '0402', '1': '0603', '2': '0805', '3': '1206', '4': '1210'}
 PANA_ECJ_DIEL = {'B': None, 'C': 'C0G', 'F': 'Y5V', 'R': 'X7R'}
+# Mag Layers MLB high-current beads (P type): the letter after the type is the rated current
+MLB_SIZE = {'160808': '0603', '201209': '0805', '321611': '1206', '322513': '1210', '451616': '1806', '453215': '1812'}
+MLB_CURRENT = {'L': 1.0, 'M': 1.5, 'N': 2.0, 'P': 2.5, 'Q': 3.0, 'R': 4.0, 'U': 5.0, 'W': 6.0}
+CIH_SIZE = {'03': '0201', '05': '0402', '10': '0603', '21': '0805'}
+CYNTEC_RR_SIZE = {'0306': '0201', '0510': '0402', '0816': '0603', '1220': '0805'}
+# ratings a maker's series table gives for one part, where the number doesn't encode them (the
+# factory BOM lines for these parts disagree with each other):
+DATASHEET_RATINGS = [
+    # Chilisin LS series table: LS0603-1R0, 1.0 uH, 600 mA (BOM lines say 400, 600 and 50 mA)
+    ('CHILISIN', r'LS0603-1R0([JK])-[NS]', 'inductor', {'inductance_uh': 1.0, 'current_a': 0.6}, '0603'),
+    # Coilcraft 0603LS datasheet: 0603LS-102X, 1.0 uH, Irms 0.40 A (lines say 400 and 50 mA)
+    ('COILCRAFT', r'0603LS-102X([GJ])[A-Z]{2}', 'inductor', {'inductance_uh': 1.0, 'current_a': 0.4}, '0603'),
+    # Chilisin PBY series table: PBY160808T-221Y-N, 220 ohm at 100 MHz, 2000 mA (lines say 2 A and 600 mA)
+    ('CHILISIN', r'PBY160808T-221Y-N()', 'ferrite', {'impedance_ohm': 220.0, 'current_a': 2.0}, '0603'),
+    # Samsung CIH series table (2010): CIH10T 8N2, 700 mA (the 2001 table gave 300 mA; lines say 600 and 30 mA)
+    ('SAMSUNG', r'CIH10T8N2([JK])N[CE]', 'inductor', {'inductance_uh': 0.0082, 'current_a': 0.7}, '0603'),
+]
 PANA_ERJ_SIZE = {'1G': '0201', '2G': '0402', '2R': '0402', '2B': '0402', '3G': '0603', '3E': '0603', '3R': '0603',
                  '3B': '0603', '6G': '0805', '6E': '0805', '6R': '0805', '6B': '0805', '8G': '1206', '8E': '1206',
                  '8R': '1206', '14': '1210', '12': '1812', '1T': '2512'}
@@ -449,7 +469,32 @@ def decode_mpn(manufacturer, part_number):
         if v is not None:
             return 'resistor', {'resistance_ohm': float(v), 'tolerance': RES_TOL[m.group(3)]}, size
     # --- MLCC ---
-    if 'MURATA' in mfr and (m := re.fullmatch(r'GR[MJ](\d{2})\w(\w\w)(\w\w)(\d{3}|\d?R\d+)([A-Z])[\w+#-]*', pn)):
+    if mfr == 'CYNTEC' and (m := re.fullmatch(r'RR(0306|0510|0816|1220)[A-Z]-(\d{3,4}|\d*R\d+)-([BCDFJ])\w*', pn)):
+        # three digits are an E-24 value, four an E-96 one: RR0510S-121-FN is 120 ohm (121 would be '1210')
+        v = _res_code(m.group(2))
+        if v is not None:
+            return 'resistor', {'resistance_ohm': float(v), 'tolerance': RES_TOL[m.group(3)]}, CYNTEC_RR_SIZE[m.group(1)]
+    # --- inductors and beads ---
+    for maker, pattern, kind, spec, size in DATASHEET_RATINGS:
+        if mfr == maker and (m := re.fullmatch(pattern, pn)):
+            tol = {'J': '5%', 'K': '10%', 'G': '2%'}.get(m.group(1))
+            return kind, {**spec, **({'tolerance': tol} if tol else {})}, size
+    if 'MAG' in mfr and 'LAYER' in mfr and (m := re.fullmatch(r'MLB-(\d{6})-(\d{4})P-?([LMNPQRUW])\w*', pn)):
+        if m.group(1) in MLB_SIZE:
+            return 'ferrite', {'impedance_ohm': float(int(m.group(2))), 'current_a': MLB_CURRENT[m.group(3)]}, \
+                MLB_SIZE[m.group(1)]
+    if 'SAMSUNG' in mfr and (m := re.fullmatch(r'CIH(03|05|10|21)T(\d+N\d*|R\d+)([SJK])[NAB][CE]', pn)):
+        code = m.group(2)
+        nh = float(code.replace('N', '.').rstrip('.')) if 'N' in code else float('0.' + code[1:]) * 1000
+        tol = {'S': '±0.3nH', 'J': '5%', 'K': '10%'}[m.group(3)]
+        return 'inductor', {'inductance_uh': round(nh / 1000, 6), 'tolerance': tol}, CIH_SIZE[m.group(1)]
+    if mfr == 'TAI-TECH' and (m := re.fullmatch(r'LQC3225F?-F?(\d+N\d*|\d*R\d+|\d{3})([JKM])\w*(?:-\w+)?', pn)):
+        code = m.group(1)
+        uh = (float(code.replace('N', '.').rstrip('.')) / 1000 if 'N' in code
+              else float(code.replace('R', '.')) if 'R' in code else _code3(code))
+        return 'inductor', {'inductance_uh': round(uh, 6), 'tolerance': MLCC_TOL[m.group(2)]}, '1210'
+    # GRM / GRJ chips, GNM arrays (the digit after the size is the number of capacitors)
+    if 'MURATA' in mfr and (m := re.fullmatch(r'G(?:R[MJ]|NM)(\d{2})\w(\w\w)(\w\w)(\d{3}|\d?R\d+)([A-Z])[\w+#-]*', pn)):
         size, diel, volt = GRM_SIZE.get(m.group(1)), GRM_DIEL.get(m.group(2)), JIS_VOLT.get(m.group(3))
         pf = _cap_code_pf(m.group(4))
         if size and volt and pf is not None:
@@ -505,7 +550,7 @@ def decode_mpn(manufacturer, part_number):
 PREFIX_MAKER = [(r'ERJ|ECJ', 'Panasonic'), (r'GR[MJ]\d', 'Murata'), (r'CL\d\d[A-Z]\d', 'Samsung'),
                 (r'(RC|CC|YC|AC)\d{3}', 'YAGEO'), (r'RM\d\d[BCDFJ]TN', 'TA-I'), (r'WR\d\dX', 'Walsin'),
                 (r'C\d{4}(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)', 'TDK'), (r'(CE)?[AJLETGUH]MK\d{3}', 'TAIYO YUDEN'),
-                (r'RTT\d\d', 'RALEC'), (r'RK73', 'KOA')]
+                (r'RTT\d\d', 'RALEC'), (r'RK73', 'KOA'), (r'GNM\d', 'Murata')]
 
 
 def guess_maker(part_number):

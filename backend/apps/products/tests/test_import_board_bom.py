@@ -78,7 +78,7 @@ def test_import_creates_unapproved_product_components_and_cross_refs(tmp_path, u
     user_factory(is_superuser=True, is_staff=True)
     _run(_write(tmp_path, _bundle()))
 
-    product = Product.objects.get(manufacturer='ASUS', model_number='P4SD-VX', revision='R2.01')
+    product = Product.objects.get(manufacturer='Asus', model_number='P4SD-VX', revision='R2.01')
     assert not product.is_approved
     assert product.category == 'desktop' and product.subcategory == 'Motherboard'
     assert product.import_source == 'norway-bom:Asus_P4SD-VX_R2.01'
@@ -217,6 +217,22 @@ def test_corrected_revision_updates_the_same_product(tmp_path, user_factory):
     assert product.revision == '1.03 (server)'
     assert 'Same circuit board as' in product.description
     assert 'factory production BOM' in product.description             # provenance kept on update
+
+
+def test_a_board_renamed_by_the_export_keeps_its_product(tmp_path, user_factory):
+    # an Asus-built board found to be another brand's: the source tag finds the product, which takes the
+    # brand's name and a slug that says so
+    user_factory(is_superuser=True, is_staff=True)
+    bundle = _bundle()
+    _run(_write(tmp_path, bundle, 'first'))
+    product = Product.objects.get()
+    assert product.manufacturer == 'Asus'                                # 'ASUS' in the bundle
+    bundle['product'].update(manufacturer='Samsung', model_number='POLARIS-32', revision='MP1.2')
+    _run(_write(tmp_path, bundle, 'second'), '--skip-components')
+    product.refresh_from_db()
+    assert Product.objects.count() == 1
+    assert (product.manufacturer, product.model_number, product.revision) == ('Samsung', 'POLARIS-32', 'MP1.2')
+    assert product.slug == 'samsung-polaris-32-mp12'
 
 
 def test_attach_to_existing_adds_documents_only(tmp_path, settings, user_factory, product_factory):

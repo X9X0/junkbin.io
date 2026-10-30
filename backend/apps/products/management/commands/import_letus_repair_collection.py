@@ -33,6 +33,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.contrib.auth import get_user_model
 from django.db import transaction
 
+from apps.components.makers import canonical_product_maker
 from apps.products.models import Product, Schematic
 
 User = get_user_model()
@@ -120,7 +121,7 @@ class Command(BaseCommand):
 
     def _import_product(self, pdata, files_dir, admin, dry_run, environment, totals):
         product, was_new = Product.objects.get_or_create(
-            manufacturer=pdata["manufacturer"],
+            manufacturer=canonical_product_maker(pdata["manufacturer"]),
             model_number=pdata["model_number"],
             defaults={
                 "category": pdata["category"],
