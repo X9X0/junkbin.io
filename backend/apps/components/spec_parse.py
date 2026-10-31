@@ -375,7 +375,7 @@ CL_SIZE = {'03': '0201', '05': '0402', '10': '0603', '21': '0805', '31': '1206',
 CL_DIEL = {'C': 'C0G', 'B': 'X7R', 'A': 'X5R', 'F': 'Y5V', 'X': 'X6S', 'Y': 'X7S'}
 CL_VOLT = {'R': 4, 'Q': 6.3, 'P': 10, 'O': 16, 'A': 25, 'L': 35, 'B': 50, 'C': 100, 'D': 200, 'E': 250}
 TDK_SIZE = {'0603': '0201', '1005': '0402', '1608': '0603', '2012': '0805', '3216': '1206', '3225': '1210'}
-TDK_DIEL = {'C0G': 'C0G', 'COG': 'C0G', 'X7R': 'X7R', 'X5R': 'X5R', 'Y5V': 'Y5V', 'X6S': 'X6S', 'X7S': 'X7S', 'CH': 'CH',
+TDK_DIEL = {'C0G': 'C0G', 'COG': 'C0G', 'CG': 'C0G', 'X7R': 'X7R', 'X5R': 'X5R', 'Y5V': 'Y5V', 'X6S': 'X6S', 'X7S': 'X7S', 'CH': 'CH',
             'JB': None}
 YAGEO_CC_SIZE = ('0201', '0402', '0603', '0805', '1206', '1210', '1812')
 YAGEO_CC_DIEL = {'NPO': 'C0G', 'X7R': 'X7R', 'X5R': 'X5R', 'Y5V': 'Y5V'}
@@ -407,6 +407,51 @@ DATASHEET_RATINGS = [
     # Samsung CIH series table (2010): CIH10T 8N2, 700 mA (the 2001 table gave 300 mA; lines say 600 and 30 mA)
     ('SAMSUNG', r'CIH10T8N2([JK])N[CE]', 'inductor', {'inductance_uh': 0.0082, 'current_a': 0.7}, '0603'),
 ]
+# metric size codes (mm x 10) -> the imperial size the site uses
+METRIC_SIZE = {'0402': '01005', '0603': '0201', '1005': '0402', '1608': '0603', '2012': '0805', '3216': '1206',
+               '3225': '1210', '2520': '1008'}
+# Samsung RC thick film chips: rated power by size (Arrow's listings of RC0603F104CS and RC1005J681CS)
+SAMSUNG_RC_POWER = {'0603': 0.05, '1005': 0.0625}
+# RF inductor tolerance letters (Murata, Toko, TDK, Taiyo Yuden)
+IND_TOL = {'W': '±0.05nH', 'B': '±0.1nH', 'C': '±0.2nH', 'S': '±0.3nH', 'D': '±0.5nH', 'G': '2%', 'H': '3%', 'J': '5%',
+           'K': '10%', 'M': '20%'}
+MURATA_IND_SIZE = {'03': '0201', '15': '0402', '18': '0603', '21': '0805'}
+BLM_SIZE = {'03': '0201', '15': '0402', '18': '0603', '21': '0805', '31': '1206'}
+# Kamaya RMC: the style names the rated power (Kamaya's size table: RMC1/20 = 0201, RMC1/16S = 0402)
+KAMAYA_RMC = {'1/20': ('0201', 0.05), '1/16S': ('0402', 0.0625)}
+KYOCERA_SIZE = {'02': '0201', '05': '0402', '105': '0603', '21': '0805'}
+# rated power per element of resistor arrays, from each maker's datasheet
+ARRAY_POWER = [
+    ('UNI-OHM', r'4D0[23]WG'),          # Uni-Royal: 4D02/4D03 1/16 W per element ('WG' = 1/16 W)
+    ('WALSIN', r'W[AT]04X'),            # Walsin WA04X 1/16 W; WT04X 62.5 mW at 70 C
+    ('RALEC', r'RTA0[23]-4D'),          # Ralec IE-SP-011: RTA02-4D, RTA03-4D 1/16 W
+    ('TA-I', r'CN(?:22|34)'),           # TA-I CN22 / CN34 1/16 W at 70 C
+    ('CYNTEC', r'RS4N'),                # Cyntec RS4N 63 mW per element
+    ('SEI', r'RAVF104D'),               # Stackpole RAVF104D 0.063 W per element
+    ('YAGEO', r'YC158'),                # Yageo YC158 62.5 mW per element
+    ('PANASONIC', r'EXB-?V8V'),         # Panasonic EXB-V8V 0.063 W per element
+]
+
+
+def _nh_code(code):
+    """Inductance codes: '10N' -> 10 nH, '2N7' -> 2.7 nH, 'R27' -> 0.27 uH; in uH."""
+    if 'N' in code:
+        a, _, b = code.partition('N')
+        return round(float(f'{a or 0}.{b or 0}') / 1000, 6)
+    if code.startswith('R') or 'R' in code:
+        a, _, b = code.partition('R')
+        return float(f'{a or 0}.{b or 0}')
+    return None
+
+
+def array_power(manufacturer, part_number):
+    mfr, pn = (manufacturer or '').upper(), (part_number or '').upper()
+    for maker, pattern in ARRAY_POWER:
+        if maker in mfr and re.match(pattern, pn):
+            return 0.0625
+    return None
+
+
 PANA_ERJ_SIZE = {'1G': '0201', '2G': '0402', '2R': '0402', '2B': '0402', '3G': '0603', '3E': '0603', '3R': '0603',
                  '3B': '0603', '6G': '0805', '6E': '0805', '6R': '0805', '6B': '0805', '8G': '1206', '8E': '1206',
                  '8R': '1206', '14': '1210', '12': '1812', '1T': '2512'}
@@ -426,10 +471,13 @@ def decode_mpn(manufacturer, part_number):
             if m.group(1) == 'RC' and m.group(2) in YAGEO_RC_POWER:
                 spec['power_w'] = YAGEO_RC_POWER[m.group(2)]
             return 'resistor', spec, m.group(2)
-    if 'YAGEO' in mfr and (m := re.fullmatch(r'YC(\d)(\d)(\d)-?([FJ])R-?07(\d*[RKM]\d*)L?', pn)):
+    if 'YAGEO' in mfr and (m := re.fullmatch(r'YC(\d)(\d)(\d)T?-?([FJ])R-?07(\d*[RKM]\d*)L?', pn)):
         v = _yageo_value(m.group(5))
         if v is not None:
-            return 'res_array', {'resistance_ohm': v, 'tolerance': RES_TOL[m.group(4)]}, None
+            spec = {'resistance_ohm': v, 'tolerance': RES_TOL[m.group(4)]}
+            if array_power(mfr, pn):
+                spec['power_w'] = array_power(mfr, pn)
+            return 'res_array', spec, None
     if mfr == 'TA-I' and (m := re.fullmatch(r'RM(\d{2})([BCDFJ])TN(\d*R\d+|\d{3,4})', pn)):
         v = _res_code(m.group(3))
         size = {'02': '0201', '04': '0402', '06': '0603', '10': '0805', '12': '1206', '20': '2010', '25': '2512'}.get(m.group(1))
@@ -468,6 +516,33 @@ def decode_mpn(manufacturer, part_number):
         v = _res_code(m.group(2))
         if v is not None:
             return 'resistor', {'resistance_ohm': float(v), 'tolerance': RES_TOL[m.group(3)]}, size
+    if 'SAMSUNG' in mfr and (m := re.fullmatch(r'RC-?(0402|0603|1005|1608|2012|3216)([BCDFGJ])(\d*R\d+|\d{3,4})C[SH]', pn)):
+        v = _res_code(m.group(3))
+        if v is not None:
+            spec = {'resistance_ohm': float(v)}
+            if v:
+                spec['tolerance'] = RES_TOL[m.group(2)]
+                if m.group(1) in SAMSUNG_RC_POWER:
+                    spec['power_w'] = SAMSUNG_RC_POWER[m.group(1)]
+            return 'resistor', spec, METRIC_SIZE[m.group(1)]
+    if 'KAMAYA' in mfr and (m := re.fullmatch(r'RMC-?(1/20|1/16S)-?(\d*R\d+|\d{3,4})([BDFGJ])\w*', pn)):
+        v = _res_code(m.group(2))
+        size, watts = KAMAYA_RMC[m.group(1)]
+        if v is not None:
+            spec = {'resistance_ohm': float(v)}
+            if v:
+                spec.update(tolerance=RES_TOL[m.group(3)], power_w=watts)
+            return 'resistor', spec, size
+    # Yamaha RD35 service codes are chip resistors whose code carries the value: RD35 + exponent + two
+    # digits + 0 (RD353220 = 2.2 ohm, RD356470 = 4.7k); every Yamaha manual line for them in the mirror
+    # (51 codes) reads 1/16 W, J
+    if 'YAMAHA' in mfr and (m := re.fullmatch(r'RD35(\d)(\d\d)0', pn)):
+        v = round(int(m.group(2)) * 10.0 ** (int(m.group(1)) - 4), 6)
+        return 'resistor', ({'resistance_ohm': v, 'tolerance': '5%', 'power_w': 0.0625} if v else {'resistance_ohm': 0.0}), None
+    # Sharp VRS / VRD: EIA value and tolerance letter ('VRS-CH1JF100JY' = 10 ohm 5%), as all 269 of Sharp's
+    # manual lines for them in the mirror agree. The '1J' isn't a power code: CY parts read 1/10 W, CH 1/16 W
+    if 'SHARP' in mfr and (m := re.fullmatch(r'VR[SD]-[A-Z]{2}\d[A-Z][A-Z](\d{3})([FGJ])Y', pn)):
+        return 'resistor', {'resistance_ohm': float(_code3(m.group(1))), 'tolerance': RES_TOL[m.group(2)]}, None
     # --- MLCC ---
     if mfr == 'CYNTEC' and (m := re.fullmatch(r'RR(0306|0510|0816|1220)[A-Z]-(\d{3,4}|\d*R\d+)-([BCDFJ])\w*', pn)):
         # three digits are an E-24 value, four an E-96 one: RR0510S-121-FN is 120 ohm (121 would be '1210')
@@ -483,18 +558,45 @@ def decode_mpn(manufacturer, part_number):
         if m.group(1) in MLB_SIZE:
             return 'ferrite', {'impedance_ohm': float(int(m.group(2))), 'current_a': MLB_CURRENT[m.group(3)]}, \
                 MLB_SIZE[m.group(1)]
-    if 'SAMSUNG' in mfr and (m := re.fullmatch(r'CIH(03|05|10|21)T(\d+N\d*|R\d+)([SJK])[NAB][CE]', pn)):
+    if 'SAMSUNG' in mfr and (m := re.fullmatch(r'CIH(03|05|10|21)[TS](\d+N\d*|R\d+)([BCSJK])[NAB][CE]', pn)):
         code = m.group(2)
         nh = float(code.replace('N', '.').rstrip('.')) if 'N' in code else float('0.' + code[1:]) * 1000
-        tol = {'S': '±0.3nH', 'J': '5%', 'K': '10%'}[m.group(3)]
+        tol = IND_TOL[m.group(3)]
         return 'inductor', {'inductance_uh': round(nh / 1000, 6), 'tolerance': tol}, CIH_SIZE[m.group(1)]
     if mfr == 'TAI-TECH' and (m := re.fullmatch(r'LQC3225F?-F?(\d+N\d*|\d*R\d+|\d{3})([JKM])\w*(?:-\w+)?', pn)):
         code = m.group(1)
         uh = (float(code.replace('N', '.').rstrip('.')) / 1000 if 'N' in code
               else float(code.replace('R', '.')) if 'R' in code else _code3(code))
         return 'inductor', {'inductance_uh': round(uh, 6), 'tolerance': MLCC_TOL[m.group(2)]}, '1210'
-    # GRM / GRJ chips, GNM arrays (the digit after the size is the number of capacitors)
-    if 'MURATA' in mfr and (m := re.fullmatch(r'G(?:R[MJ]|NM)(\d{2})\w(\w\w)(\w\w)(\d{3}|\d?R\d+)([A-Z])[\w+#-]*', pn)):
+    if 'MURATA' in mfr and (m := re.fullmatch(r'LQ[PGW](03|15|18|21)[A-Z]{2}(\d+N\d*|\d*N\d+|R\d+)([WBCSDGHJKM])\w*', pn)):
+        uh = _nh_code(m.group(2))
+        if uh:
+            return 'inductor', {'inductance_uh': uh, 'tolerance': IND_TOL[m.group(3)]}, MURATA_IND_SIZE[m.group(1)]
+    if 'MURATA' in mfr and (m := re.fullmatch(r'BLM(03|15|18|21|31)[A-Z]{2}(\d{3}|\d?R\d+)[A-Z]N\w*', pn)):
+        z = _res_code(m.group(2))
+        if z:
+            return 'ferrite', {'impedance_ohm': float(z)}, BLM_SIZE[m.group(1)]
+    if 'TOKO' in mfr and (m := re.fullmatch(r'LLV?(0603|1005|1608)-F[HSTQ]?(\d+N\d*|\d*N\d+|R\d+)([WBCSDGHJKM])\w*', pn)):
+        uh = _nh_code(m.group(2))
+        if uh:
+            return 'inductor', {'inductance_uh': uh, 'tolerance': IND_TOL[m.group(3)]}, METRIC_SIZE[m.group(1)]
+    if 'TDK' in mfr and (m := re.fullmatch(r'MLG(0603|1005|1608)[SQ](\d+N\d*|\d*N\d+|R\d+)([WBCSDGHJKM])T?\w*', pn)):
+        uh = _nh_code(m.group(2))
+        if uh:
+            return 'inductor', {'inductance_uh': uh, 'tolerance': IND_TOL[m.group(3)]}, METRIC_SIZE[m.group(1)]
+    if 'TAIYO' in mfr and (m := re.fullmatch(r'HK(0603|1005|1608)-?(\d+N\d*|\d*N\d+|R\d+)([WBCSDGHJKM])-?T\w*', pn)):
+        uh = _nh_code(m.group(2))
+        if uh:
+            return 'inductor', {'inductance_uh': uh, 'tolerance': IND_TOL[m.group(3)]}, METRIC_SIZE[m.group(1)]
+    # Samsung CIG power inductors: inductance and 'M' (20%) from the number (distributors list
+    # CIG22H1R2MNE as 1.2 uH 20%, 1008); CIGT gives the inductance only
+    if 'SAMSUNG' in mfr and (m := re.fullmatch(r'CIG(10|21|22)[A-Z](\d*R\d+)M[A-Z]{2}', pn)):
+        return 'inductor', {'inductance_uh': _nh_code(m.group(2)), 'tolerance': '20%'}, \
+            {'10': '0603', '21': '0805', '22': '1008'}[m.group(1)]
+    if 'SAMSUNG' in mfr and (m := re.fullmatch(r'CIGT(2012|2016|2520)\d{2}[A-Z]{2}(\d*R\d+)[A-Z]{3}', pn)):
+        return 'inductor', {'inductance_uh': _nh_code(m.group(2))}, METRIC_SIZE.get(m.group(1))
+    # GRM / GRJ / GRP chips, GNM arrays (the digit after the size is the number of capacitors)
+    if 'MURATA' in mfr and (m := re.fullmatch(r'G(?:R[MJP]|NM)(\d{2})\w(\w\w)(\w\w)(\d{3}|\d?R\d+)([A-Z])[\w+#-]*', pn)):
         size, diel, volt = GRM_SIZE.get(m.group(1)), GRM_DIEL.get(m.group(2)), JIS_VOLT.get(m.group(3))
         pf = _cap_code_pf(m.group(4))
         if size and volt and pf is not None:
@@ -506,7 +608,7 @@ def decode_mpn(manufacturer, part_number):
         if size and volt and pf is not None:
             spec = {'capacitance_pf': pf, 'voltage_v': volt, 'tolerance': MLCC_TOL.get(m.group(4)), 'dielectric': diel}
             return 'capacitor', {k: v for k, v in spec.items() if v is not None}, size
-    if mfr == 'TDK' and (m := re.fullmatch(r'C(\d{4})(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)(\d[A-Z])(\d{3}|\d?R\d+)([A-Z])[\w+#-]*', pn)):
+    if mfr == 'TDK' and (m := re.fullmatch(r'C(\d{4})(C0G|COG|CG|X7R|X5R|Y5V|X6S|X7S|CH|JB)(\d[A-Z])(\d{3}|\d?R\d+)([A-Z])[\w+#-]*', pn)):
         size, volt = TDK_SIZE.get(m.group(1)), JIS_VOLT.get(m.group(3))
         pf = _cap_code_pf(m.group(4))
         if size and volt and pf is not None:
@@ -526,6 +628,10 @@ def decode_mpn(manufacturer, part_number):
         spec = {'capacitance_pf': pf, 'voltage_v': volt, 'tolerance': MLCC_TOL[m.group(4)],
                 'dielectric': WALSIN_DIEL[m.group(2)]}
         return 'capacitor', {k: v for k, v in spec.items() if v is not None}, m.group(1)
+    if 'KYOCERA' in mfr and (m := re.fullmatch(r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V)(\d{3}|\d?R\d+)([BCDFGJKMZ])(\d\d)A[HT]', pn)):
+        spec = {'capacitance_pf': _cap_code_pf(m.group(3)), 'tolerance': MLCC_TOL[m.group(4)],
+                'voltage_v': 6.3 if m.group(5) == '06' else int(m.group(5)), 'dielectric': DIELECTRICS[m.group(2)]}
+        return 'capacitor', {k: v for k, v in spec.items() if v is not None}, KYOCERA_SIZE[m.group(1)]
     if 'DARFON' in mfr and (m := re.fullmatch(r'C(\d{4})(NP0|X7R|X5R|Y5V)(\d{3}|\d?R\d+)([BCDFGJKMZ])\w{2,3}', pn)):
         size = DARFON_SIZE.get(m.group(1))
         if size:
@@ -542,12 +648,32 @@ def decode_mpn(manufacturer, part_number):
             spec = {'capacitance_pf': _cap_code_pf(m.group(5)), 'voltage_v': volt, 'tolerance': MLCC_TOL[m.group(6)],
                     'dielectric': PANA_ECJ_DIEL[m.group(3)]}
             return 'capacitor', {k: v for k, v in spec.items() if v is not None}, PANA_ECJ_SIZE[m.group(1)]
+    # --- aluminium electrolytic and polymer: voltage, capacitance and 'M' (20%) in the number ---
+    e = None
+    if 'NICHICON' in mfr and (m := re.fullmatch(r'U[A-Z]{2}(\d[A-Z])(\d{3})M[\w.]*', pn)):      # UHD0J152MPD6CT
+        e = (JIS_VOLT.get(m.group(1)), _code3(m.group(2)))
+    elif 'CHEMI' in mfr and (m := re.fullmatch(r'K[A-Z]{2}(\d+(?:\.\d)?)VB(\d+)M[\w.]*', pn)):    # KZG6.3VB1500MH20
+        e = (float(m.group(1)), float(m.group(2)))
+    elif 'RUBYCON' in mfr and (m := re.fullmatch(r'(\d+(?:\.\d)?)(?:MBZ|MCZ|MFZ|ZLH|ZLJ|ZLG|ZL|YXF|YXG)(\d+)M[\w.]*', pn)):
+        e = (float(m.group(1)), float(m.group(2)))                                          # 6.3MBZ1500M
+    elif 'SANYO' in mfr and (m := re.fullmatch(r'(\d+R?\d*)(?:SEPC|SEP|SVPC|SVP|SP|TPE|TPC|TPB|TQC|APA)(\d+R?\d*)M\w*', pn)):
+        e = (None, float(m.group(2).replace('R', '.')))     # 2R5TPE220M, 4SP560M: a lone '6' is 6.3 V, so no voltage
+    elif 'FUJITSU' in mfr and (m := re.fullmatch(r'FP-(\d{3}|\dR\d)RE(\d{3})M[\w-]*', pn)):   # FP-016RE101M
+        e = (float(m.group(1).replace('R', '.')), _code3(m.group(2)))
+    if e and e[1]:
+        spec = {'capacitance_pf': round(e[1] * 1e6, 3), 'voltage_v': e[0], 'tolerance': '20%'}
+        return 'capacitor', {k: v for k, v in spec.items() if v is not None}, None
+    if array_power(mfr, pn):            # arrays whose series fixes the power; the line gives the value
+        return 'res_array', {'power_w': array_power(mfr, pn)}, None
     return None
 
 
 # makers whose part-number prefix is unique to them: lets a description that is just a
 # part number ('ERJ1GEJ102C' on a Samsung service code) be decoded
-PREFIX_MAKER = [(r'ERJ|ECJ', 'Panasonic'), (r'GR[MJ]\d', 'Murata'), (r'CL\d\d[A-Z]\d', 'Samsung'),
+PREFIX_MAKER = [(r'ERJ|ECJ', 'Panasonic'), (r'GR[MJP]\d', 'Murata'), (r'CL\d\d[A-Z]\d', 'Samsung'),
+                (r'RC-?\d{4}[BCDFGJ]\w+C[SH]$', 'Samsung'), (r'CI[HG]T?\d\d', 'Samsung'), (r'LQ[PGW]\d\d|BLM\d\d', 'Murata'),
+                (r'LLV?\d{4}-F', 'TOKO'), (r'MLG\d{4}', 'TDK'), (r'HK\d{4}', 'TAIYO YUDEN'), (r'RMC-?1/', 'KAMAYA'),
+                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V)', 'KYOCERA'),
                 (r'(RC|CC|YC|AC)\d{3}', 'YAGEO'), (r'RM\d\d[BCDFJ]TN', 'TA-I'), (r'WR\d\dX', 'Walsin'),
                 (r'C\d{4}(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)', 'TDK'), (r'(CE)?[AJLETGUH]MK\d{3}', 'TAIYO YUDEN'),
                 (r'RTT\d\d', 'RALEC'), (r'RK73', 'KOA'), (r'GNM\d', 'Murata')]

@@ -1110,6 +1110,8 @@
     "edit": "Edit",
     "datasheet": "DATASHEET",
     "view_datasheet": "View Datasheet",
+    "description_says": "(description: {{value}})",
+    "description_differs_note": "Where the description says otherwise, the rating shown is the maker's: from its datasheet or what the part number encodes. The description keeps the wording of the parts list it came from.",
     "add_to_junkbin": "Add to My Junkbin",
     "upload_image": "Upload Image",
     "hide_upload": "Hide Upload",

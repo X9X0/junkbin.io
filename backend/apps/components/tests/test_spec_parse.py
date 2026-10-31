@@ -4,7 +4,7 @@ Every case is a real line or part number from the imported BOMs and parts lists.
 """
 import pytest
 
-from apps.components.spec_parse import clean_bom_text, decode_mpn, derive, ic_package, parse_description
+from apps.components.spec_parse import clean_bom_text, decode_mpn, derive, guess_maker, ic_package, parse_description
 
 
 @pytest.mark.parametrize('text, kind, specs, package', [
@@ -112,6 +112,40 @@ def test_clean_bom_text_drops_markers_and_the_maker_part_echo():
     ('Chilisin', 'LS0603-1R0J-S', ('inductor', {'inductance_uh': 1.0, 'current_a': 0.6, 'tolerance': '5%'}, '0603')),
     ('Coilcraft', '0603LS-102XJBC', ('inductor', {'inductance_uh': 1.0, 'current_a': 0.4, 'tolerance': '5%'}, '0603')),
     ('Chilisin', 'PBY160808T-221Y-N', ('ferrite', {'impedance_ohm': 220.0, 'current_a': 2.0}, '0603')),
+    # the vendor parts Samsung's manuals print beside its service codes
+    ('Samsung', 'RC1005J472CS', ('resistor', {'resistance_ohm': 4700.0, 'tolerance': '5%', 'power_w': 0.0625}, '0402')),
+    ('Samsung', 'RC0603F121CS', ('resistor', {'resistance_ohm': 120.0, 'tolerance': '1%', 'power_w': 0.05}, '0201')),
+    ('Samsung', 'RC1608J000CS', ('resistor', {'resistance_ohm': 0.0}, '0603')),
+    ('Kamaya', 'RMC1/20-180JTP', ('resistor', {'resistance_ohm': 18.0, 'tolerance': '5%', 'power_w': 0.05}, '0201')),
+    ('Murata', 'LQP03HQ2N7B02D', ('inductor', {'inductance_uh': 0.0027, 'tolerance': '±0.1nH'}, '0201')),
+    ('Murata', 'LQG15HSR27J02D', ('inductor', {'inductance_uh': 0.27, 'tolerance': '5%'}, '0402')),
+    ('Murata', 'BLM15AG121SN1D', ('ferrite', {'impedance_ohm': 120.0}, '0402')),
+    ('Murata', 'GRP1555C1H100D', ('capacitor', {'capacitance_pf': 10.0, 'voltage_v': 50, 'tolerance': '±0.5pF',
+                                                'dielectric': 'C0G'}, '0402')),
+    ('Toko', 'LLV0603-F10NJ', ('inductor', {'inductance_uh': 0.01, 'tolerance': '5%'}, '0201')),
+    ('TDK', 'MLG1005SR12JT', ('inductor', {'inductance_uh': 0.12, 'tolerance': '5%'}, '0402')),
+    ('TDK', 'C1005CG1H0R5BT', ('capacitor', {'capacitance_pf': 0.5, 'voltage_v': 50, 'tolerance': '±0.1pF',
+                                             'dielectric': 'C0G'}, '0402')),
+    ('Taiyo Yuden', 'HK0603-4N7S-T', ('inductor', {'inductance_uh': 0.0047, 'tolerance': '±0.3nH'}, '0201')),
+    ('Samsung', 'CIH03S1N2BNC', ('inductor', {'inductance_uh': 0.0012, 'tolerance': '±0.1nH'}, '0201')),
+    ('Samsung', 'CIG22H1R0MNE', ('inductor', {'inductance_uh': 1.0, 'tolerance': '20%'}, '1008')),
+    ('Samsung', 'CIGT201208EM1R0SNE', ('inductor', {'inductance_uh': 1.0}, '0805')),
+    ('Kyocera', 'CV105X5R106M10AT', ('capacitor', {'capacitance_pf': 1e7, 'tolerance': '20%', 'voltage_v': 10,
+                                                  'dielectric': 'X5R'}, '0603')),
+    ('Nichicon', 'UHD0J152MPH3CT', ('capacitor', {'capacitance_pf': 1.5e9, 'voltage_v': 6.3, 'tolerance': '20%'}, None)),
+    ('Nippon Chemi-Con', 'KZE16VB1200MJ20CC3.2E1', ('capacitor', {'capacitance_pf': 1.2e9, 'voltage_v': 16.0,
+                                                                  'tolerance': '20%'}, None)),
+    ('Rubycon', '16MBZ470MZA1CR8X11.5', ('capacitor', {'capacitance_pf': 4.7e8, 'voltage_v': 16.0, 'tolerance': '20%'}, None)),
+    ('Sanyo', '25TQC5R6M', ('capacitor', {'capacitance_pf': 5.6e6, 'tolerance': '20%'}, None)),
+    ('Sanyo', '6SEPC470M', ('capacitor', {'capacitance_pf': 4.7e8, 'tolerance': '20%'}, None)),     # a 6.3 V part
+    ('Fujitsu', 'FP-2R5RE821M-L8C', ('capacitor', {'capacitance_pf': 8.2e8, 'voltage_v': 2.5, 'tolerance': '20%'}, None)),
+    ('Yamaha', 'RD353220', ('resistor', {'resistance_ohm': 2.2, 'tolerance': '5%', 'power_w': 0.0625}, None)),
+    ('Yamaha', 'RD359100', ('resistor', {'resistance_ohm': 1e6, 'tolerance': '5%', 'power_w': 0.0625}, None)),
+    ('Sharp', 'VRS-TQ2EF124FY', ('resistor', {'resistance_ohm': 120000.0, 'tolerance': '1%'}, None)),
+    # arrays: the series fixes the power per element; the BOM line gives the value
+    ('Uni-Ohm', '4D02WGJ0102TCE', ('res_array', {'power_w': 0.0625}, None)),
+    ('Ralec', 'RTA03-4D101JTP', ('res_array', {'power_w': 0.0625}, None)),
+    ('Yageo', 'YC158TJR-0710KL', ('res_array', {'resistance_ohm': 10000.0, 'tolerance': '5%', 'power_w': 0.0625}, None)),
 ])
 def test_decode_mpn(maker, pn, expected):
     assert decode_mpn(maker, pn) == expected
@@ -157,3 +191,13 @@ def test_ic_package(text, package):
 def test_bead_frequency_belongs_to_its_impedance(line, ohms, mhz):
     _, specs, _ = parse_description(line)
     assert specs.get('impedance_ohm') == ohms and specs.get('frequency_mhz') == mhz
+
+
+@pytest.mark.parametrize('pn, maker', [
+    ('RC1005J472CS', 'Samsung'),            # Samsung's RC chips, not Yageo's RC0402FR-07...
+    ('RC0402FR-07120KL', 'YAGEO'),
+    ('LQP03HQ10NH02D', 'Murata'),
+    ('CV05X5R105K10AH', 'KYOCERA'),
+])
+def test_guess_maker(pn, maker):
+    assert guess_maker(pn) == maker

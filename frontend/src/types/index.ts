@@ -209,6 +209,8 @@ export interface Component {
   package_type?: string;
   primary_value?: string;
   ratings?: Ratings;
+  // ratings the description states differently, as the description gives them: { current: '400 mA' }
+  description_disagrees?: Record<string, string>;
   typical_function?: string;
   datasheet_url?: string;
   usage_count: number;

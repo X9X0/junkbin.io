@@ -264,6 +264,32 @@ class Component(models.Model):
             out['configuration'] = {'text': specs['configuration'] + (f' ({size})' if size else ''), 'sort': None}
         return out
 
+    # passive kinds whose description the BOM-line parser reads
+    PARSED_TYPES = ('resistor', 'capacitor', 'inductor', 'ferrite', 'crystal', 'fuse', 'thermistor')
+
+    def description_disagreements(self):
+        """Ratings the description states differently, as the description gives them:
+        {'current': '400 mA'}. A factory BOM line can say 1UH/400mA where the maker's
+        datasheet (or the part number) rates the part at 0.6 A - the stored rating is the
+        maker's; the description keeps the factory's words."""
+        if self.component_type not in self.PARSED_TYPES or not self.description:
+            return {}
+        from apps.components.spec_parse import conflicts, parse_description
+        _, said, _ = parse_description(self.description, self.component_type)
+        stored = self.specifications or {}
+        differ = set(conflicts(said, stored))
+        if not differ:
+            return {}
+        line = Component(component_type=self.component_type, specifications=said)
+        shown, out = line.ratings, {}
+        value_keys = ('resistance_ohm', 'capacitance_pf', 'inductance_uh', 'impedance_ohm', 'frequency_mhz')
+        if differ & set(value_keys) and 'value' in shown:
+            out['value'] = shown['value']['text']
+        for name, keys in self.RATING_KEYS:
+            if differ & set(keys) and name in shown:
+                out[name] = shown[name]['text']
+        return out
+
     @classmethod
     def _format_rating(cls, name, v):
         if name == 'voltage':
@@ -327,6 +353,8 @@ class Component(models.Model):
     def _format_henries_from_uh(val):
         if val >= 1_000:
             return f'{val / 1_000:g} mH'
+        if 0 < val < 0.1:                        # RF inductors read in nH: 8.2 nH, not 0.0082 uH
+            return f'{round(val * 1000, 3):g} nH'
         return f'{val:g} \u00B5H'
 
     @staticmethod

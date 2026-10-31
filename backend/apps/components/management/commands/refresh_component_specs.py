@@ -95,15 +95,17 @@ class Command(BaseCommand):
     help = 'Fill component ratings, package and type from descriptions and part numbers'
 
     def add_arguments(self, parser):
-        parser.add_argument('--lines', help='site_export_lines.json (own BOM line per part)')
+        parser.add_argument('--lines', nargs='+', default=[],
+                            help="site_export_lines.json (own BOM line per part); more files add lines, e.g. "
+                                 "Samsung's manual lines for its service codes")
         parser.add_argument('--types', action='store_true', help='also correct contradicted component types')
         parser.add_argument('--dry-run', action='store_true')
         parser.add_argument('--report', help='write a TSV of changes and conflicts')
 
     def handle(self, *args, **options):
         lines = {}
-        if options['lines']:
-            with open(options['lines'], encoding='utf-8') as fh:
+        for path in options['lines']:
+            with open(path, encoding='utf-8') as fh:
                 for key, found in json.load(fh).items():
                     # keyed as the export spelled the maker; the site may spell it otherwise
                     maker, part = canonical_part(*key.split('|', 1))

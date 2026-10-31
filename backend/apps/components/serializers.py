@@ -190,6 +190,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     created_by = CreatedBySerializer(read_only=True)
     primary_value = serializers.CharField(read_only=True)
     ratings = serializers.DictField(read_only=True)
+    description_disagrees = serializers.DictField(source='description_disagreements', read_only=True)
     cross_references = ComponentListSerializer(many=True, read_only=True)
     pricing_data = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
@@ -201,7 +202,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         fields = [
             'id', 'part_number', 'manufacturer', 'manufacturer_aliases',
             'component_type', 'component_type_display', 'package_type',
-            'description', 'typical_function', 'specifications', 'primary_value', 'ratings',
+            'description', 'typical_function', 'specifications', 'primary_value', 'ratings', 'description_disagrees',
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at', 'pricing_data',

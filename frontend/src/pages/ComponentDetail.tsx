@@ -197,22 +197,37 @@ export default function ComponentDetail() {
               )}
 
               {(() => {
-                const rows = RATING_COLUMNS
+                const differs = component.description_disagrees ?? {};
+                const rows: [string, string, string?][] = RATING_COLUMNS
                   .filter((key) => component.ratings?.[key])
-                  .map((key) => [t(`ratings.${key}`), component.ratings![key]!.text]);
+                  .map((key) => [t(`ratings.${key}`), component.ratings![key]!.text, differs[key]]);
                 if (component.package_type) rows.push([t('ratings.package'), component.package_type]);
                 const bValue = component.specifications?.b_value_k;
                 if (bValue) rows.push([t('ratings.b_value'), `${bValue} K`]);
                 if (rows.length === 0) return null;
                 return (
-                  <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 mb-4 max-w-md font-mono text-sm">
-                    {rows.map(([label, text]) => (
-                      <div key={label} className="contents">
-                        <dt className="text-gray-500">{label}</dt>
-                        <dd className="text-white">{text}</dd>
-                      </div>
-                    ))}
-                  </dl>
+                  <>
+                    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-1 mb-2 max-w-md font-mono text-sm">
+                      {rows.map(([label, text, said]) => (
+                        <div key={label} className="contents">
+                          <dt className="text-gray-500">{label}</dt>
+                          <dd className="text-white">
+                            {text}
+                            {said && (
+                              <span className="ml-2 text-xs text-cyber-yellow">
+                                {t('component_detail.description_says', { value: said })}
+                              </span>
+                            )}
+                          </dd>
+                        </div>
+                      ))}
+                    </dl>
+                    {Object.keys(differs).length > 0 && (
+                      <p className="text-xs text-gray-500 mb-4 max-w-md">
+                        {t('component_detail.description_differs_note')}
+                      </p>
+                    )}
+                  </>
                 );
               })()}
 

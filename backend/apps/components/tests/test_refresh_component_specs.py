@@ -286,3 +286,19 @@ def test_a_manuals_vendor_part_number_gives_the_values(component_factory, produc
     cap.refresh_from_db()
     assert cap.specifications['capacitance_pf'] == 22e6 and cap.specifications['voltage_v'] == 10
     assert cap.description == 'C-CERAMIC,CHIP'
+
+
+def test_a_service_code_takes_its_values_from_a_second_lines_file(tmp_path, component_factory, product_factory):
+    # Samsung's manuals print the vendor part beside the code: 2007-000160 is RC1005J683CS
+    code = component_factory(manufacturer='Samsung', part_number='2007-000160', component_type='resistor',
+                             package_type='', description='R-CHIP', specifications={})
+    ProductComponent.objects.create(product=product_factory(), component=code,
+                                    notes='Service manual parts list, page 4: R-CHIP')
+    bom = tmp_path / 'bom.json'
+    bom.write_text('{}')
+    samsung = tmp_path / 'samsung.json'
+    samsung.write_text(json.dumps({'SAMSUNG|2007-000160': [['R-CHIP;68Kohm,5%,1/16W,0402 (RC1005J683CS)', 2]]}))
+    _run('--lines', bom, samsung)
+    code.refresh_from_db()
+    assert code.specifications == {'resistance_ohm': 68000.0, 'tolerance': '5%', 'power_w': 0.0625}
+    assert code.package_type == '0402'

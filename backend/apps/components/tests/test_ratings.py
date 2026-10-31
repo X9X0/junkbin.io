@@ -70,3 +70,16 @@ def test_new_component_gets_ratings_from_its_description(user_factory):
     comp = Component.objects.get(part_number='GRM188R71H104KA93D')
     assert comp.specifications == {'capacitance_pf': 100000, 'voltage_v': 50, 'tolerance': '10%', 'dielectric': 'X7R'}
     assert comp.package_type == '0603'
+
+
+def test_ratings_the_description_states_differently(component_factory):
+    # the factory line says 400 mA; Chilisin's table rates LS0603-1R0 at 600 mA
+    ind = component_factory(component_type='inductor', description='INDUCTOR 1UH/400mA (0603)',
+                            specifications={'inductance_uh': 1.0, 'current_a': 0.6, 'tolerance': '5%'})
+    assert ind.description_disagreements() == {'current': '400 mA'}
+    assert APIClient().get(f'/api/components/{ind.pk}/').json()['description_disagrees'] == {'current': '400 mA'}
+    same = component_factory(component_type='capacitor', description='MLCC 0.1UF/16V (0402) X7R',
+                             specifications={'capacitance_pf': 100000.0, 'voltage_v': 16.0, 'dielectric': 'X7R'})
+    assert same.description_disagreements() == {}
+    rf = component_factory(component_type='inductor', specifications={'inductance_uh': 0.0082})
+    assert rf.primary_value == '8.2 nH'
