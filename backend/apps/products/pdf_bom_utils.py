@@ -170,3 +170,22 @@ def find_component_match(part_number, manufacturer=''):
         return exact_pn
 
     return qs.filter(part_number__icontains=part_number).first()
+
+
+def match_components_exactly(candidates):
+    """Attach 'matched_component' to each candidate whose part number is a catalog part number
+    (case aside), in one query. For OCR candidates: a schematic has thousands of labels, and a
+    spatially guessed one ('10K_0402_5%') shouldn't be substring-matched to some other part."""
+    from django.db.models.functions import Upper
+    from apps.components.models import Component
+
+    wanted = {c['part_number'].upper() for c in candidates if c.get('part_number')}
+    found = {}
+    for comp in Component.objects.annotate(pn_upper=Upper('part_number')).filter(pn_upper__in=wanted) \
+            .order_by('-usage_count', 'manufacturer'):
+        found.setdefault(comp.pn_upper, comp)
+    for c in candidates:
+        match = found.get((c.get('part_number') or '').upper())
+        c['matched_component'] = {'id': str(match.id), 'part_number': match.part_number,
+                                  'manufacturer': match.manufacturer} if match else None
+    return candidates
