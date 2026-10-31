@@ -1306,7 +1306,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
         a moderator's eyes before it becomes a real component.
         """
         from django.utils import timezone
-        from .pdf_bom_utils import find_component_match
+        from .pdf_bom_utils import match_components_exactly
         from .schematic_ocr_utils import build_candidates_from_schematic_file
 
         schematic = self.get_object()
@@ -1323,13 +1323,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return Response({'detail': f'Could not OCR this file: {str(e)}'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        for candidate in candidates:
-            match = find_component_match(candidate['part_number'], candidate['manufacturer'])
-            candidate['matched_component'] = {
-                'id': str(match.id),
-                'part_number': match.part_number,
-                'manufacturer': match.manufacturer,
-            } if match else None
+        match_components_exactly(candidates)        # one query for a whole schematic's labels
 
         Schematic.objects.filter(pk=schematic.pk).update(bom_extracted_at=timezone.now())
 
