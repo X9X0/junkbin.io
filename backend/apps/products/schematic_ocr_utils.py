@@ -29,7 +29,7 @@ import math
 import re
 
 from .pdf_bom_utils import REF_DES_PATTERN, classify_component_type
-from .schematic_values import FOOTPRINT_WORD
+from .schematic_values import FOOTPRINT_WORD, PREFIXED_LABEL
 
 
 def _engine_version():
@@ -142,7 +142,7 @@ def _label_words(i, words, designators):
         if j == i or REF_DES_PATTERN.fullmatch(t) or len(t) > 60:
             continue
         marker = t == '@' or re.fullmatch(r'[A-Z0-9]+@', t, re.I)
-        if FOOTPRINT_WORD.match(t):
+        if FOOTPRINT_WORD.match(t) or PREFIXED_LABEL.match(t):
             marker = True                   # 'VX_R0402_SMALL': the footprint, printed beside the part
         if not marker and (NOISE_TOKEN_PATTERN.match(t) or NOT_A_VALUE.search(t) or not re.search(r'\d', t)):
             if not re.fullmatch(r'X5R|X7R|X6S|X7S|C0G|NP0|NPO|Y5V|\d+(?:\.\d+)?%|[FGJKMZ]', t, re.I):

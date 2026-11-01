@@ -73,9 +73,9 @@ ODM_MARKS = [('compal', r'Compal Electronics|\bLA-[0-9A-Z]{4}P\b'), ('lcfc', r'\
              # Gigabyte boards: value/size/dielectric/volts/tolerance ('0.01U/4/X7R/16V/K')
              ('gigabyte', r'(?<![\w.])\d*\.?\d+[PNU]/\d{1,2}/(?:X5R|X7R|NPO|Y5V|X6S)/\d*\.?\d+V/[BCDFGJKMZX]\b')]
 ODM_SIZE = {'quanta': {'2': '0201', '4': '0402', '6': '0603', '8': '0805', '12': '1206'},
-            'clevo': {'04': '0402', '06': '0603', '08': '0805'},
+            'clevo': {'02': '0201', '04': '0402', '06': '0603', '08': '0805'},
             'inventec': {'1': '0201', '2': '0402', '3': '0603', '6': '1206'},
-            'wistron': {'2': '0402', '3': '0603', '5': '0805'},
+            'wistron': {'1': '0201', '2': '0402', '3': '0603', '5': '0805'},
             'msi': {'2': '0402', '4': '0402', '6': '0603', '8': '0805', '12': '1206', '04': '0402', '06': '0603',
                     '08': '0805'},
             'tongfang': {'02': '0201', '04': '0402', '06': '0603', '08': '0805', '12': '1206'},
@@ -99,7 +99,9 @@ TF_RES = re.compile(rf'^(THS-)?{NUM}([KMR]?)(?:-(\d+(?:/\d+)?)W)?(?:-{NUM})?-(\d
 MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(?:{NUM}V?)?/?(?:[XYN]\d?)?/?(0?[2468]|12)$', re.I)
 MSI_SIZED_RES = re.compile(rf'^{NUM}([KM]?)R?T?/?(?:{NUM}%/?)?(0?[2468]|12)$', re.I)
 # Quanta: 2.2U/6.3V_4, .1U/10V_4X, 10P/50V_4; 1K/F_4, 34_4, 330_5%_2, 10K_2
-QUANTA_CAP = re.compile(rf'^{NUM}([PNU])F?(?:/{NUM}V)?_(\d{{1,2}})[A-Z]?$', re.I)
+QUANTA_CAP = re.compile(rf'^{NUM}([PNU])F?(?:/{NUM}V[A-Z]?)?_(\d{{1,2}})[A-Z]?$', re.I)
+# Quanta jumpers: '*short_8', '*0/short_6', '*S_4' (a solder short, size code after it)
+QUANTA_SHORT = re.compile(r'^(?:0/)?(?:SHORT|S)_(\d{1,2})$', re.I)
 QUANTA_RES = re.compile(rf'^{NUM}([KMR]?)(?:/([FGJ])|_{NUM}%)?_(\d{{1,2}})$', re.I)
 # Clevo: 0.22u_10V_X5R_04, 22u_6.3V_X6S_08; 100K_04, 10K_1%_04
 CLEVO_CAP = re.compile(rf'^{NUM}([PNU])F?_{NUM}V_(X5R|X7R|X6S|X7S|C0G|NPO|NP0|Y5V)_(\d{{2}})$', re.I)
@@ -136,6 +138,9 @@ def _odm_token(t, odm):
             if m.group(3):
                 spec['voltage_v'] = float(m.group(3))
             return 'capacitor', spec, size[m.group(4)]
+        m = QUANTA_SHORT.match(t)
+        if m and m.group(1) in size:
+            return 'resistor', {'resistance_ohm': 0.0}, size[m.group(1)]
         m = QUANTA_RES.match(t)
         if m and m.group(5) in size:
             spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
@@ -254,6 +259,14 @@ def _clean(token):
     if t.upper().endswith('_DY'):                   # Inventec's mark on parts not fitted (dummy)
         flags.append('not fitted by default')
         t = t[:-3]
+    if t.upper().endswith('_NC'):                   # Quanta, Dell: '*10K_1%_2_NC' - not connected
+        flags.append('not fitted by default')
+        t = t[:-3]
+    if t.upper().endswith('/S'):                    # Quanta '*0_2/S'
+        t = t[:-2]
+    if t[:2].upper() == 'X_' and len(t) > 3:        # MSI 'x_15k/4': a build option
+        flags.append('build option (X_): may not be fitted')
+        t = t[2:]
     if t.startswith('@') and len(t) > 1:            # Tongfang's leading mark ('@10K-04'): a build option
         flags.append('build option (@): may not be fitted')
         t = t[1:]
@@ -275,6 +288,10 @@ FOOTPRINT_WORD = re.compile(r'^(?:[A-Z]{2,3}_)?([RCL])(01005|0201|0402|0603|0805
                             r'^[A-Z]{2,3}_([RCL])(01005|0201|0402|0603|0805|1206|1210|2512)$', re.I)
 
 
+# label words that look like net names ('x_15k/4', 'short_8') but are a build option or a jumper
+PREFIXED_LABEL = re.compile(r'^\*?(?:0/)?(?:SHORT|S)_\d{1,2}$|^X_\.?\d', re.I)
+
+
 def _approved_list(t):
     """The first maker part number in the list whose maker's scheme gives the value."""
     for piece in APPROVED_SPLIT.split(t):
@@ -289,6 +306,8 @@ def _approved_list(t):
 def parse_token(token, kind=None, odm=None):
     """One label word -> (kind, specs, package, (maker, part number) or None), or None."""
     t, _ = _clean(token)
+    if odm != 'wistron' and re.search(r'-?\d?GP$', t, re.I) and (WISTRON_CAP.match(t) or WISTRON_RES.match(t)):
+        odm = 'wistron'                     # Wistron's own codes ('SCD1U16V2KX-3GP') say who drew them
     r = _odm_token(t, odm) if odm in ODM_SIZE else None
     if r:
         return (*r, None)
