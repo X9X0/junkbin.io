@@ -167,3 +167,14 @@ def test_build_options_are_not_grouped_with_fitted_parts():
     fitted = _candidate('R1', 1, '10K-04', sv.parse_label(['10K-04'], 'R1', odm='tongfang'), True, 'PDF text')
     option = _candidate('R2', 1, '@10K-04', sv.parse_label(['@10K-04'], 'R2', odm='tongfang'), True, 'PDF text')
     assert len(group_identical([fitted, option])) == 2
+
+
+@pytest.mark.parametrize('words, designator, specs, package', [
+    (['37.4', '1%(0K445)'], 'R176', {'resistance_ohm': 37.4, 'tolerance': '1%'}, None),    # Asus: code in brackets
+    (['1K', '(0603)'], 'R3', {'resistance_ohm': 1000.0}, '0603'),
+    (['0402', '5%'], 'R20', {'tolerance': '5%'}, '0402'),                                 # a size, not 402 ohms
+    (['(36,38)'], 'R2', {}, None),                                                         # a page reference
+])
+def test_bracketed_codes_and_bare_sizes(words, designator, specs, package):
+    p = sv.parse_label(words, designator)
+    assert (p['specs'], p['package']) == (specs, package)

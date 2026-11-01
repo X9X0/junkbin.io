@@ -254,6 +254,9 @@ def _clean(token):
     """(token without stuffing/variant marks and Compal's '~D' tail, flags)."""
     flags = []
     t = token.strip()
+    if '(' in t:                                # Asus '1%(0K445)', '(0603)X7R(473)': a bracketed code, not the value
+        inner = re.findall(r'\((\d{4})\)', t)
+        t = re.sub(r'\([^)]*\)', '', t).strip() or (inner[0] if inner and inner[0] in IMPERIAL else '')
     if t.endswith('~D'):
         t = t[:-2]
     if t.upper().endswith('_DY'):                   # Inventec's mark on parts not fitted (dummy)
@@ -453,6 +456,8 @@ def _explicit(tokens, kind):
     first = text.split()[0] if text.split() else ''
     if kind in ('resistor', 'thermistor') and 'resistance_ohm' not in specs:
         m = re.fullmatch(r'(\d*\.?\d+)([KMR]?)(\d*)', first, re.I)        # '34', '10K', '4K7', '1M'
+        if first in IMPERIAL:
+            m = None                        # '0402 5%': the size, not 402 ohms
         if m and not (m.group(3) and (not m.group(2) or '.' in m.group(1) or len(m.group(3)) > 3)):
             v = float(m.group(1) + ('.' + m.group(3) if m.group(3) else ''))
             specs['resistance_ohm'] = round(v * {'': 1, 'R': 1, 'K': 1e3, 'M': 1e6}[m.group(2).upper()], 6)
