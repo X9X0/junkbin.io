@@ -148,3 +148,15 @@ def test_labels_against_their_boardview_footprints(odm):
             assert got == item['package'], item
         else:
             assert got in (None, item['package']), item
+
+
+@pytest.mark.parametrize('label, designator, name', [
+    ('25MHZ_18PF_7V25000034', 'Y1', 'XTAL 25MHz 18pF'),                 # Compal
+    ('27mhz20p_d', 'X1', 'XTAL 27MHz 20pF'),                           # MSI
+    ('XTAL-32D768KHZ-65-GP', 'X1', 'XTAL 32.768kHz'),                  # Wistron: D is the point
+    ('38.4MHZ/10ppm', 'Y1', 'XTAL 38.4MHz 10ppm'),                     # Quanta
+    ('32.768K-12.5-20-CM315', 'X3', 'XTAL 32.768kHz 12.5pF 20ppm'),    # Tongfang
+])
+def test_crystal_labels(label, designator, name):
+    p = sv.parse_label([label], designator)
+    assert sv.generic_name(p['kind'], p['specs'], p['package']) == name

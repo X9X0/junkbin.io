@@ -312,6 +312,33 @@ def _pn_package(t):
     return m.group(1).upper(), ic_package(pkg) or pkg
 
 
+# crystal labels: '25MHZ_18PF_7V25000034', '27mhz20p_d' (MSI), 'XTAL-32D768KHZ-65-GP' (Wistron, D the point),
+# '38.4MHZ/10ppm' (Quanta), '32.768K-12.5-20-CM315' (Tongfang: frequency-load-ppm)
+XTAL_FREQ = re.compile(r'(?<![\d.])(\d+(?:[.D]\d+)?)\s*(MHZ|KHZ)', re.I)
+XTAL_TONGFANG = re.compile(r'^(\d+(?:\.\d+)?)(M|K)-(\d+(?:\.\d+)?)-(\d+)(?:-|$)', re.I)
+
+
+def _crystal(t):
+    """(specs) for a crystal label, or None: frequency, and the load and ppm when printed."""
+    m = XTAL_TONGFANG.match(t)
+    if m:
+        f = float(m.group(1)) / (1 if m.group(2).upper() == 'M' else 1000)
+        return {'frequency_mhz': round(f, 6), 'load_pf': float(m.group(3)), 'tolerance_ppm': int(m.group(4))}
+    m = XTAL_FREQ.search(t)
+    if not m:
+        return None
+    f = float(m.group(1).upper().replace('D', '.')) / (1 if m.group(2).upper() == 'MHZ' else 1000)
+    spec = {'frequency_mhz': round(f, 6)}
+    rest = t[m.end():]
+    load = re.match(r'[\s_/-]*(\d+(?:\.\d+)?)\s*P(?:F)?(?![A-Z])', rest, re.I)
+    if load:
+        spec['load_pf'] = float(load.group(1))
+    ppm = re.search(r'(\d+)\s*PPM', t, re.I)
+    if ppm:
+        spec['tolerance_ppm'] = int(ppm.group(1))
+    return spec
+
+
 # label words that look like net names ('x_15k/4', 'short_8') but are a build option or a jumper
 PREFIXED_LABEL = re.compile(r'^\*?(?:0/)?(?:SHORT|S)_\d{1,2}$|^X_\.?\d', re.I)
 
@@ -339,6 +366,10 @@ def parse_token(token, kind=None, odm=None):
         r = _approved_list(t)
         if r:
             return (SITE_TYPE.get(r[0], r[0]), *r[1:])
+    if kind == 'crystal':
+        spec = _crystal(t)
+        if spec:
+            return 'crystal', spec, None, None
     if kind not in ('resistor', 'capacitor', 'inductor', 'ferrite', 'thermistor'):
         r = _pn_package(t)
         if r:
@@ -517,6 +548,12 @@ def generic_name(kind, specs, package):
         return ' '.join(x for x in ('IND', f"{s['inductance_uh']:g}uH", s.get('tolerance', ''), cur, pkg) if x)
     if kind == 'ferrite' and 'impedance_ohm' in s:
         return ' '.join(x for x in ('FERRITE', f"{s['impedance_ohm']:g}R@100MHz", pkg) if x)
+    if kind == 'crystal' and 'frequency_mhz' in s:
+        f = s['frequency_mhz']
+        freq = f'{f:g}MHz' if f >= 1 else f'{f * 1000:g}kHz'
+        load = f"{s['load_pf']:g}pF" if s.get('load_pf') else ''
+        ppm = f"{s['tolerance_ppm']}ppm" if s.get('tolerance_ppm') else ''
+        return ' '.join(x for x in ('XTAL', freq, load, ppm, pkg) if x)
     if kind == 'thermistor' and 'resistance_ohm' in s:
         return ' '.join(x for x in ('NTC', _fmt_ohm(s['resistance_ohm']), s.get('tolerance', ''), pkg) if x)
     return None
