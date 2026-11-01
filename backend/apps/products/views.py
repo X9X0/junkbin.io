@@ -581,9 +581,9 @@ class ProductViewSet(viewsets.ModelViewSet):
         edits the returned candidates client-side, then calls
         submit_bom_suggestions to queue them for moderator review.
         """
-        from .pdf_bom_utils import build_candidates_from_pdf, find_component_match
+        from .parts_list_utils import extract_manual_candidates
 
-        self.get_object()  # 404s early if the product doesn't exist/isn't visible
+        product = self.get_object()  # 404s early if the product doesn't exist/isn't visible
 
         file = request.FILES.get('file')
         if not file:
@@ -596,18 +596,11 @@ class ProductViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'File too large (max 20MB).'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            candidates = build_candidates_from_pdf(file)
+            # a parts list's codes are the product maker's own service numbers
+            candidates = extract_manual_candidates(file, product.manufacturer)
         except Exception as e:
             return Response({'detail': f'Could not parse PDF: {str(e)}'},
                             status=status.HTTP_400_BAD_REQUEST)
-
-        for candidate in candidates:
-            match = find_component_match(candidate['part_number'], candidate['manufacturer'])
-            candidate['matched_component'] = {
-                'id': str(match.id),
-                'part_number': match.part_number,
-                'manufacturer': match.manufacturer,
-            } if match else None
 
         return Response({
             'candidates': candidates,
@@ -1257,7 +1250,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
         ProductViewSet.submit_bom_suggestions using this schematic's product.
         """
         from django.utils import timezone
-        from .pdf_bom_utils import build_candidates_from_pdf, find_component_match
+        from .parts_list_utils import extract_manual_candidates
 
         schematic = self.get_object()
 
@@ -1275,18 +1268,10 @@ class SchematicViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            candidates = build_candidates_from_pdf(schematic.file)
+            candidates = extract_manual_candidates(schematic.file, schematic.product.manufacturer)
         except Exception as e:
             return Response({'detail': f'Could not parse PDF: {str(e)}'},
                             status=status.HTTP_400_BAD_REQUEST)
-
-        for candidate in candidates:
-            match = find_component_match(candidate['part_number'], candidate['manufacturer'])
-            candidate['matched_component'] = {
-                'id': str(match.id),
-                'part_number': match.part_number,
-                'manufacturer': match.manufacturer,
-            } if match else None
 
         Schematic.objects.filter(pk=schematic.pk).update(bom_extracted_at=timezone.now())
 
