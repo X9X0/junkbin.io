@@ -76,7 +76,8 @@ ODM_SIZE = {'quanta': {'2': '0201', '4': '0402', '6': '0603', '8': '0805', '12':
             'clevo': {'04': '0402', '06': '0603', '08': '0805'},
             'inventec': {'1': '0201', '2': '0402', '3': '0603', '6': '1206'},
             'wistron': {'2': '0402', '3': '0603', '5': '0805'},
-            'msi': {'4': '0402', '6': '0603', '8': '0805'},
+            'msi': {'2': '0402', '4': '0402', '6': '0603', '8': '0805', '12': '1206', '04': '0402', '06': '0603',
+                    '08': '0805'},
             'tongfang': {'02': '0201', '04': '0402', '06': '0603', '08': '0805', '12': '1206'},
             'gigabyte': {'4': '0402', '6': '0603', '8': '0805', '12': '1206'}}
 # Gigabyte: 0.1U/6/Y5V/25V/Z, 33P/4/NPO/50V/J, 22/4, 20K/4/1 (1%); size digit read off 2 boardviews (1,926
@@ -92,8 +93,11 @@ TF_CAP = re.compile(rf'^{NUM}([PNU])F?-{NUM}-(\d\d)([RXNY])(?:-([BCDFGJKMZ])\d?)
 TF_RES = re.compile(rf'^(THS-)?{NUM}([KMR]?)(?:-(\d+(?:/\d+)?)W)?(?:-{NUM})?-(\d\d|\d{{4}})$', re.I)
 # MSI desktop boards: 1.5K/4, 0R/8, 6.04KT/4, 0.1u10X/4, 22u6.3X8, 0.22u6.3X4 (size digit after '/' or the
 # dielectric letter; boardviews: /4 and X4 0402 in 832 of 837, /6 X6 0603, /8 X8 0805)
-MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(\d+(?:\.\d)?)?[XYN]?/?([468])$', re.I)
-MSI_SIZED_RES = re.compile(rf'^{NUM}([KM]?)R?T?/([468])$', re.I)
+# Their tolerance and voltage forms, from 68 MSI boardviews (~60,000 labels): 5.1K1%4, 1.96KR1%/4, 15K/1%/4,
+# 680R04, 2.2U16X6, C10U10X5/8, 1U/6.3V/4, 0.1U/16V/Y/4, 180P50N4; size digit 2 is 0402 too (1,150 of 1,160).
+# The dielectric letter is left unread: no MSI factory BOM has confirmed it yet.
+MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(?:{NUM}V?)?/?(?:[XYN]\d?)?/?(0?[2468]|12)$', re.I)
+MSI_SIZED_RES = re.compile(rf'^{NUM}([KM]?)R?T?/?(?:{NUM}%/?)?(0?[2468]|12)$', re.I)
 # Quanta: 2.2U/6.3V_4, .1U/10V_4X, 10P/50V_4; 1K/F_4, 34_4, 330_5%_2, 10K_2
 QUANTA_CAP = re.compile(rf'^{NUM}([PNU])F?(?:/{NUM}V)?_(\d{{1,2}})[A-Z]?$', re.I)
 QUANTA_RES = re.compile(rf'^{NUM}([KMR]?)(?:/([FGJ])|_{NUM}%)?_(\d{{1,2}})$', re.I)
@@ -170,7 +174,10 @@ def _odm_token(t, odm):
             return 'capacitor', spec, size[m.group(4)]
         m = MSI_SIZED_RES.match(t)
         if m:
-            return 'resistor', {'resistance_ohm': _ohms(m.group(1), m.group(2))}, size[m.group(3)]
+            spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
+            if m.group(3):
+                spec['tolerance'] = f'{float(m.group(3)):g}%'
+            return 'resistor', spec, size[m.group(4)]
     if odm == 'tongfang':
         m = TF_CAP.match(t)
         if m and m.group(4) in size:

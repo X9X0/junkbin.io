@@ -107,3 +107,25 @@ def test_tongfang_labels_once_the_odm_is_known():
     option = sv.parse_label(['@100K-06'], 'R11', odm='tongfang')
     assert option['package'] == '0603' and 'build option (@): may not be fitted' in option['flags']
     assert sv.parse_label(['10K-04'], 'R4')['package'] is None          # without the ODM: no size read
+
+
+@pytest.mark.parametrize('word, designator, specs, package', [
+    ('5.1K1%4', 'R1', {'resistance_ohm': 5100.0, 'tolerance': '1%'}, '0402'),
+    ('1.96KR1%/4', 'R1', {'resistance_ohm': 1960.0, 'tolerance': '1%'}, '0402'),
+    ('680R04', 'R1', {'resistance_ohm': 680.0}, '0402'),
+    ('C10U10X5/8', 'C1', {'capacitance_pf': 10e6, 'voltage_v': 10.0}, '0805'),
+    ('0.1U/16V/Y/4', 'C1', {'capacitance_pf': 1e5, 'voltage_v': 16.0}, '0402'),
+    ('C0.1U16Y2', 'C1', {'capacitance_pf': 1e5, 'voltage_v': 16.0}, '0402'),     # MSI's 2 is 0402 as well
+])
+def test_msi_tolerance_and_voltage_forms(word, designator, specs, package):
+    p = sv.parse_label([word], designator, odm='msi')
+    assert (p['specs'], p['package']) == (specs, package)
+
+
+def test_gigabyte_labels_and_approved_maker_lists():
+    p = sv.parse_label(['0.1U/6/Y5V/25V/Z'], 'C1', odm='gigabyte')
+    assert (p['specs']['voltage_v'], p['specs']['dielectric'], p['package']) == (25.0, 'Y5V', '0603')
+    assert sv.parse_label(['20K/4/1'], 'R1', odm='gigabyte')['specs'] == {'resistance_ohm': 20000.0, 'tolerance': '1%'}
+    listed = sv.parse_label(['0201WMJ0103TCE+0201WMJ0103TJE~~MCR006YRTJ103~~RC0201JR-0710KL'], 'R1')
+    assert (listed['maker'], listed['part_number'], listed['package']) == ('Yageo', 'RC0201JR-0710KL', '0201')
+    assert sv.parse_label(['10KOhm', 'VX_R0402_SMALL'], 'R0410')['package'] == '0402'
