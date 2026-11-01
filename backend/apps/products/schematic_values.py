@@ -340,7 +340,7 @@ def _crystal(t):
 
 
 # label words that look like net names ('x_15k/4', 'short_8') but are a build option or a jumper
-PREFIXED_LABEL = re.compile(r'^\*?(?:0/)?(?:SHORT|S)_\d{1,2}$|^X_\.?\d', re.I)
+PREFIXED_LABEL = re.compile(r'^\*?(?:0/)?(?:SHORT|S)_\d{1,2}$|^X_C?\.?\d', re.I)     # MSI 'x_c0.1u16y0402' too
 
 
 def _approved_list(t):
