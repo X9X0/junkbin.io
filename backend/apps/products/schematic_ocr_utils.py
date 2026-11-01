@@ -108,6 +108,33 @@ def _nearest_value(designator_index, words, used_indices, strict=False):
     return best_index
 
 
+MAX_LABEL_WORDS = 6
+
+
+def _label_words(i, words, designators):
+    """The label printed around designator i on a text-layer page: the words within pairing distance
+    that are nearer to it than to any other designator (a label is often several lines - Apple and
+    Samsung print '1UF', '10%', '6.3V', 'X5R', '0201' one above the other), nearest first. Nets, rails
+    and page references are left out; a build marker ('PX@', '@') is kept for its meaning."""
+    d = words[i]
+    near = []
+    for j, w in enumerate(words):
+        t = w['text']
+        if j == i or REF_DES_PATTERN.fullmatch(t) or len(t) > 60:
+            continue
+        marker = t == '@' or re.fullmatch(r'[A-Z0-9]+@', t, re.I)
+        if not marker and (NOISE_TOKEN_PATTERN.match(t) or NOT_A_VALUE.search(t) or not re.search(r'\d', t)):
+            if not re.fullmatch(r'X5R|X7R|X6S|X7S|C0G|NP0|NPO|Y5V|\d+(?:\.\d+)?%|[FGJKMZ]', t, re.I):
+                continue
+        dist = math.hypot(w['x'] - d['x'], w['y'] - d['y'])
+        if dist > MAX_PAIR_DISTANCE_PX:
+            continue
+        if any(k != i and math.hypot(w['x'] - words[k]['x'], w['y'] - words[k]['y']) < dist for k in designators):
+            continue                    # another part's label
+        near.append((dist, t))
+    return [t for _, t in sorted(near)[:MAX_LABEL_WORDS]]
+
+
 BBOX_PAGE = re.compile(r'<page\b.*?</page>', re.S)
 BBOX_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">(.*?)</word>')
 
@@ -145,12 +172,16 @@ MIN_TEXT_LAYER_WORDS = 10
 def extract_candidates_from_page(image, page_number, words=None, source='OCR'):
     """Designator/nearby-value candidates on one page: OCR'd from its rendered image, or
     `words` already read from the PDF's text layer."""
+    from .schematic_values import parse_label
+
     strict = words is not None
     if words is None:
         words = _ocr_image(image)
     candidates = []
     used = set()
     seen_designators = set()
+    designators = [k for k, w in enumerate(words)
+                   if REF_DES_PATTERN.fullmatch(w['text']) and DESIGNATOR_PREFIX.match(w['text'])] if strict else []
 
     for i, w in enumerate(words):
         if not REF_DES_PATTERN.fullmatch(w['text']):
@@ -161,34 +192,79 @@ def extract_candidates_from_page(image, page_number, words=None, source='OCR'):
             continue
         seen_designators.add(w['text'])
 
-        value_index = _nearest_value(i, words, used, strict)
-        if strict and value_index is None:
-            continue  # a pin or ball name: real parts on a CAD page have their value printed beside them
-        value_text = ''
-        if value_index is not None:
-            used.add(value_index)
-            value_text = words[value_index]['text']
-
-        candidates.append({
-            'page_number': page_number,
-            'confidence': 'low',
-            'reference_designator': w['text'],
-            'part_number': value_text,
-            'manufacturer': '',
-            'component_type': (classify_component_type(value_text) if value_text else '') if not strict else (
-                next((t for t in [classify_component_type(value_text)] if t and t != 'other'), '')
-                or designator_type(w['text'])),
-            'package_type': '',
-            'description': '',
-            'value_raw': value_text,
-            'quantity': 1,
-            'location_description': '',
-            'extraction_context': (
-                f"{source}: designator '{w['text']}' near text '{value_text}'"
-                if value_text else f"{source}: designator '{w['text']}', no nearby text found"
-            ),
-        })
+        if strict:
+            label = _label_words(i, words, designators)
+            if not any(re.search(r'\d', t) for t in label):
+                continue  # a pin or ball name: real parts on a CAD page have their value printed beside them
+        else:
+            value_index = _nearest_value(i, words, used, strict)
+            label = []
+            if value_index is not None:
+                used.add(value_index)
+                label = [words[value_index]['text']]
+        value_text = ' '.join(label)
+        parsed = parse_label(label, w['text']) if label else None
+        candidates.append(_candidate(w['text'], page_number, value_text, parsed, strict, source))
     return candidates
+
+
+def _candidate(designator, page_number, value_text, parsed, strict, source):
+    """One suggestion row from a designator and what its label says. A passive whose label gives its
+    value becomes a Generic part named by its ratings ('CAP 100nF 16V X7R 10% 0402'); a printed maker
+    part number is kept with its maker when the number tells it. OCR'd labels stay 'low'."""
+    from .schematic_values import generic_name
+
+    kind = (parsed or {}).get('kind') or designator_type(designator) or (
+        classify_component_type(value_text) if value_text else '')
+    name = generic_name(kind, parsed['specs'], parsed['package']) if parsed else None
+    part_number, maker = (parsed or {}).get('part_number'), (parsed or {}).get('maker')
+    if not part_number and name:
+        part_number, maker = name, 'Generic'
+    flags = (parsed or {}).get('flags') or []
+    reading = name or ''
+    description = '; '.join(x for x in (reading, f"schematic label '{value_text}'" if value_text else '', *flags) if x)
+    return {
+        'page_number': page_number,
+        'confidence': (parsed or {}).get('confidence', 'low') if strict else 'low',
+        'reference_designator': designator,
+        'part_number': part_number or value_text,
+        'manufacturer': maker or '',
+        'component_type': kind or '',
+        'package_type': (parsed or {}).get('package') or '',
+        'description': description[:500],
+        'value_raw': value_text,
+        'quantity': 1,
+        'location_description': '',
+        'extraction_context': (f"{source}: designator '{designator}' near text '{value_text}'"
+                               if value_text else f"{source}: designator '{designator}', no nearby text found"),
+    }
+
+
+def group_identical(candidates):
+    """One row per identical part: 'C41, C44, C61' x3 instead of three rows to review."""
+    groups, order = {}, []
+    for c in candidates:
+        flags = tuple(f for f in c['description'].split('; ') if f.startswith(('not fitted', 'fitted in build')))
+        key = (c['part_number'], c['manufacturer'], c['component_type'], c['package_type'], flags,
+               c['confidence']) if c['part_number'] and c['manufacturer'] else id(c)
+        if key not in groups:
+            groups[key] = {**c, 'reference_designator': [c['reference_designator']], 'pages': {c['page_number']}}
+            order.append(key)
+        else:
+            g = groups[key]
+            if c['reference_designator'] not in g['reference_designator']:
+                g['reference_designator'].append(c['reference_designator'])
+            g['pages'].add(c['page_number'])
+    out = []
+    for key in order:
+        g = groups[key]
+        refs = g.pop('reference_designator')
+        pages = sorted(g.pop('pages'))
+        g.update(reference_designator=', '.join(refs), quantity=len(refs), page_number=pages[0])
+        if len(pages) > 1:
+            g['extraction_context'] += f" (pages {', '.join(map(str, pages))})"
+        out.append(g)
+    return out
 
 
 # Rendering at 300 DPI and running Tesseract OCR per page is genuinely slow

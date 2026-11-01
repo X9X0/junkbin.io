@@ -1307,7 +1307,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
         """
         from django.utils import timezone
         from .pdf_bom_utils import match_components_exactly
-        from .schematic_ocr_utils import build_candidates_from_schematic_file
+        from .schematic_ocr_utils import build_candidates_from_schematic_file, group_identical
 
         schematic = self.get_object()
 
@@ -1323,6 +1323,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return Response({'detail': f'Could not OCR this file: {str(e)}'},
                             status=status.HTTP_400_BAD_REQUEST)
 
+        candidates = group_identical(candidates)    # 'C41, C44, C61' x3: one row per identical part
         match_components_exactly(candidates)        # one query for a whole schematic's labels
 
         Schematic.objects.filter(pk=schematic.pk).update(bom_extracted_at=timezone.now())
@@ -1331,8 +1332,8 @@ class SchematicViewSet(viewsets.ModelViewSet):
             'product': str(schematic.product_id),
             'candidates': candidates,
             'total': len(candidates),
-            'high_confidence': 0,
-            'low_confidence': len(candidates),
+            'high_confidence': sum(1 for c in candidates if c['confidence'] == 'high'),
+            'low_confidence': sum(1 for c in candidates if c['confidence'] == 'low'),
         })
 
     @action(detail=False, methods=['get'])
@@ -1538,7 +1539,13 @@ class ComponentSuggestionViewSet(viewsets.ModelViewSet):
             )
 
         credited_user = suggestion.uploaded_by or request.user
-        specs = extract_value_from_text(suggestion.value_raw, suggestion.component_type) if suggestion.value_raw else {}
+        specs = {}
+        if suggestion.value_raw:
+            # a schematic label ('0.1U_0402_16V7K', '1UF 10% 6.3V X5R 0201') says more than a bare value
+            from .schematic_values import parse_label
+            first_ref = (suggestion.reference_designator or '').split(',')[0].strip()
+            specs = parse_label(suggestion.value_raw.split(), first_ref)['specs'] if first_ref else {}
+            specs = specs or extract_value_from_text(suggestion.value_raw, suggestion.component_type)
 
         component, _created = Component.objects.get_or_create(
             manufacturer=suggestion.manufacturer.strip(),

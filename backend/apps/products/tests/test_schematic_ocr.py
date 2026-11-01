@@ -45,13 +45,18 @@ CAD_PAGE = [(100, 700, 'C142'), (100, 690, '0.01U_0402_16V7K'), (100, 650, 'R141
 def test_text_layer_pages_are_read_without_ocr(monkeypatch):
     monkeypatch.setattr(ocr, '_ocr_image', lambda image: pytest.fail('a page with a text layer was OCR\'d'))
     candidates = ocr.build_candidates_from_schematic_file(_text_pdf([CAD_PAGE]), 'pdf')
-    found = {c['reference_designator']: (c['part_number'], c['component_type']) for c in candidates}
+    found = {c['reference_designator']: (c['manufacturer'], c['part_number'], c['component_type'], c['package_type'],
+                                         c['confidence']) for c in candidates}
     assert found == {
-        'C142': ('0.01U_0402_16V7K', 'capacitor'),
-        'R141': ('0_0805_5%', 'resistor'),              # not the '@' option marker
-        'CV1': ('1U_0402_6.3V6K', 'capacitor'),         # not 'PX@'
-        'PQ301': ('AON7408L_DFN8-5', 'transistor'),     # not the '+3VALW' rail
+        # Compal labels become Generic parts named by their ratings
+        'C142': ('Generic', 'CAP 10nF 16V X7R 10% 0402', 'capacitor', '0402', 'high'),
+        'R141': ('Generic', 'RES 0R JUMPER 0805', 'resistor', '0805', 'high'),
+        'CV1': ('Generic', 'CAP 1uF 6.3V X5R 10% 0402', 'capacitor', '0402', 'high'),
+        'PQ301': ('', 'AON7408L_DFN8-5', 'transistor', '', 'low'),       # not the '+3VALW' rail
     }                                                   # no BGA ball (AK57) or test point beside a net (T2)
+    by_ref = {c['reference_designator']: c for c in candidates}
+    assert 'not fitted by default' in by_ref['R141']['description']          # the '@' beside it
+    assert 'fitted in build PX only' in by_ref['CV1']['description']
     assert candidates[0]['extraction_context'].startswith('PDF text:')
 
 
@@ -60,6 +65,8 @@ def test_only_scanned_pages_count_towards_the_ocr_limit(monkeypatch):
     many = _text_pdf([CAD_PAGE] * 3)                    # three text pages: well past the limit, all read
     monkeypatch.setattr(ocr, '_ocr_image', lambda image: pytest.fail('OCR ran'))
     assert len(ocr.build_candidates_from_schematic_file(many, 'pdf')) == 12
+    assert [c['quantity'] for c in ocr.group_identical(ocr.build_candidates_from_schematic_file(_text_pdf([CAD_PAGE] * 3),
+                                                                                               'pdf'))][:1] == [1]
 
     scans = io.BytesIO()
     Image.new('RGB', (200, 200), 'white').save(scans, 'PDF', save_all=True,
