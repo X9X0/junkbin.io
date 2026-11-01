@@ -173,6 +173,8 @@ def _is_label_word(t):
 BASELINE_TOLERANCE_PX = 4
 ALIGNED_REACH_PX = 420
 BASELINE_GAP_WEIGHT = 0.5
+# a label left-aligned under (or over) its designator: its vertical gap at this weight (None: rule off)
+COLUMN_WEIGHT = None
 
 
 def _page_labels(words, designators):
@@ -201,6 +203,10 @@ def _page_labels(words, designators):
                     and d['x1'] - BASELINE_TOLERANCE_PX <= w['x0'] <= d['x1'] + reach:
                 gap = (w['x0'] - d['x1']) * BASELINE_GAP_WEIGHT
                 cost = gap if cost is None else min(cost, gap)
+            if COLUMN_WEIGHT and 'x0' in w and abs(w['x0'] - d['x0']) <= BASELINE_TOLERANCE_PX \
+                    and abs(w['y'] - d['y']) <= MAX_PAIR_DISTANCE_PX:
+                col = abs(w['y'] - d['y']) * COLUMN_WEIGHT
+                cost = col if cost is None else min(cost, col)
             if cost is not None and (best is None or cost < best[0]):
                 best = (cost, k)
         if best:

@@ -109,3 +109,15 @@ def test_sony_prints_micro_as_m(monkeypatch):
     monkeypatch.setattr(pl, '_layout_pages', lambda raw: [sony, sony.replace('C1', 'C2'), sony.replace('C1', 'C3')])
     row = pl.build_candidates_from_parts_list(io.BytesIO(b'%PDF'), 'Sony')[0]
     assert row['description'].startswith('CERAMIC CHIP 0.1uF')
+
+
+def test_tpv_codes_and_their_related_shapes():
+    """Sharp/Philips TV chassis (TPV): codes in a few shapes of one family, a vendor mark after the code."""
+    page = '\n'.join([f'R{1006 + i}     061G0402220 JY   RST CHIPR 22 OHM +-5% 1/16W YAGEO      -     --' for i in range(6)]
+                     + [f'C{626 + i}      065G060310522KA    CAP 0603 1UF 10% 25V X7R    -     --' for i in range(4)]
+                     + [f'D{401 + i}      093G 64S526SEM     SWITCHING BAS316WS 250MA 100V SOD323       -     --'
+                        for i in range(2)])
+    rows, why = pl.parse_document([page, page])
+    assert len(rows) == 24, why
+    assert rows[0][1:] == ('061G0402220', ['R1006'], 'RST CHIPR 22 OHM +-5% 1/16W YAGEO')
+    assert ('093G64S526SEM', ['D401'], 'SWITCHING BAS316WS 250MA 100V SOD323') in [r[1:] for r in rows]

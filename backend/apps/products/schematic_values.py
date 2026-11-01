@@ -96,8 +96,8 @@ TF_RES = re.compile(rf'^(THS-)?{NUM}([KMR]?)(?:-(\d+(?:/\d+)?)W)?(?:-{NUM})?-(\d
 # Their tolerance and voltage forms, from 68 MSI boardviews (~60,000 labels): 5.1K1%4, 1.96KR1%/4, 15K/1%/4,
 # 680R04, 2.2U16X6, C10U10X5/8, 1U/6.3V/4, 0.1U/16V/Y/4, 180P50N4; size digit 2 is 0402 too (1,150 of 1,160).
 # The dielectric letter is left unread: no MSI factory BOM has confirmed it yet.
-MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(?:{NUM}V?)?/?(?:[XYN]\d?)?/?(0?[2468]|12)$', re.I)
-MSI_SIZED_RES = re.compile(rf'^{NUM}([KM]?)R?T?/?(?:{NUM}%/?)?(0?[2468]|12)$', re.I)
+MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(?:{NUM}V?)?/?(?:[XYN][5-8]?)?/?(0[468]|[2468]|12)$', re.I)
+MSI_SIZED_RES = re.compile(rf'^{NUM}([KM]?)R?T?/?(?:{NUM}%/?)?(0[468]|[2468]|12)$', re.I)
 # Quanta: 2.2U/6.3V_4, .1U/10V_4X, 10P/50V_4; 1K/F_4, 34_4, 330_5%_2, 10K_2
 QUANTA_CAP = re.compile(rf'^{NUM}([PNU])F?(?:/{NUM}V[A-Z]?)?_(\d{{1,2}})[A-Z]?$', re.I)
 # Quanta jumpers: '*short_8', '*0/short_6', '*S_4' (a solder short, size code after it)
@@ -172,13 +172,13 @@ def _odm_token(t, odm):
                                 'tolerance': f'{float(m.group(3)):g}%'}, size[m.group(4)]
     if odm == 'msi':
         m = MSI_SIZED_CAP.match(t)
-        if m:
+        if m and m.group(4) in size:
             spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
             if m.group(3):
                 spec['voltage_v'] = float(m.group(3))
             return 'capacitor', spec, size[m.group(4)]
         m = MSI_SIZED_RES.match(t)
-        if m:
+        if m and m.group(4) in size:
             spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
             if m.group(3):
                 spec['tolerance'] = f'{float(m.group(3)):g}%'
@@ -359,7 +359,10 @@ def parse_token(token, kind=None, odm=None):
     t, _ = _clean(token)
     if odm != 'wistron' and re.search(r'-?\d?GP$', t, re.I) and (WISTRON_CAP.match(t) or WISTRON_RES.match(t)):
         odm = 'wistron'                     # Wistron's own codes ('SCD1U16V2KX-3GP') say who drew them
-    r = _odm_token(t, odm) if odm in ODM_SIZE else None
+    try:
+        r = _odm_token(t, odm) if odm in ODM_SIZE else None
+    except (KeyError, ValueError):          # a code outside the ODM's table: leave the word unread
+        r = None
     if r:
         return (*r, None)
     if '~~' in t:

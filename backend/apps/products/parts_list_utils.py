@@ -84,14 +84,14 @@ def _layout_pages(raw):
 
 # TPV (Sharp / Philips TV chassis) prints its codes with a space after the group: '093G 64S526SEM'
 TPV_CODE = re.compile(r'(?<![\w-])(\d{3}G) (?=[0-9A-Z]{3,})')
-TPV_SUFFIX = re.compile(r'(?<![\w-])(\d{3}G[0-9A-Z]{4,}) ([A-Z]{1,2})(?= |$)')     # '061G0402220 JY'
+TPV_PN = re.compile(r'^\d{3}G[0-9A-Z]{4,}$')
 
 
 def parse_page(text):
     """[(code, [refs], description)] for the parts-list rows on one page."""
     rows = []
     for line in text.splitlines():
-        line = TPV_SUFFIX.sub(r'\1\2', TPV_CODE.sub(r'\1', line)) if 'G ' in line else line
+        line = TPV_CODE.sub(r'\1', line) if 'G ' in line else line
         chunks = [c.strip() for c in re.split(r'\s{3,}', line.strip()) if c.strip()]
         if len(chunks) < 2:
             continue
@@ -133,7 +133,16 @@ def parse_page(text):
                 i = j
             else:
                 i += 1
-    return rows
+    return [(code, refs, _tidy(code, desc)) for code, refs, desc in rows]
+
+
+def _tidy(code, desc):
+    """A description without the empty '-' / '--' columns, and on TPV codes without the one- or two-letter
+    vendor mark printed after the code ('061G0402220 JY  RST CHIPR 22 OHM')."""
+    desc = re.sub(r'(?:\s+-+)+\s*$', '', desc).strip()
+    if TPV_PN.match(code):
+        desc = re.sub(r'^[A-Z]{1,2}\s+(?=\S)', '', desc)
+    return desc
 
 
 def _starts_row(chunks, j):
@@ -263,15 +272,17 @@ def parse_document(pages):
         return [], f'{len(kept)} parts-list rows'
     coded = [r for r in kept if r[1]]
     shapes = collections.Counter(shape(r[1]) for r in coded)
-    # a maker's codes come in a few related shapes (Panasonic F1H1H104B047 / ERJ2GEJ103X): keep the
-    # shapes that each hold >= 10% of the rows, provided together they hold >= 70%
+    # a maker's codes come in a few related shapes (Panasonic F1H1H104B047 / ERJ2GEJ103X): the shapes that
+    # each hold >= 10% of the rows must together hold >= 70%; then rarer shapes that start like the top
+    # one join them (TPV 061G0402220 / 065G040210412KY / 065G0603475A5K)
     family = [sh for sh, c in shapes.most_common(3) if c >= 0.1 * len(coded)]
-    held = sum(shapes[sh] for sh in family)
-    if coded and held / len(coded) < MIN_SHAPE_SHARE:
+    if coded and sum(shapes[sh] for sh in family) / len(coded) < MIN_SHAPE_SHARE:
         top, count = shapes.most_common(1)[0]
         return [], f'part codes inconsistent ({count} of {len(coded)} share {top})'
-    rows = [r for r in kept if not r[1] or shape(r[1]) in family]
-    return rows, f'{len(rows)} rows, part code shapes {"/".join(family) or "none (S/U table)"}'
+    start = family[0][:2] if family else ''
+    rows = [r for r in kept if not r[1] or shape(r[1]) in family or shape(r[1])[:2] == start]
+    family = '/'.join(family)
+    return rows, f'{len(rows)} rows, part code shapes {family or "none (S/U table)"}'
 
 
 def build_candidates_from_parts_list(file_obj, brand=''):
