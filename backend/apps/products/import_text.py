@@ -91,6 +91,37 @@ DATASHEET_NOISE = re.compile(
     r'Ordering number\s*:?\s*\S+|Product Preview|DATASHEET|Data Sheet|Preliminary', re.I)
 
 
+# datasheet-made parts whose title page gives no readable title (a copyright notice, a web menu):
+# their description, written from the datasheet's own overview
+DATASHEET_DESCRIPTIONS = {
+    ('MEDIATEK', 'MT6253'): 'GSM/GPRS baseband processor with an integrated multi-band RF transceiver '
+                            '(ARM7EJ-S MCU and two DSP cores)',
+    ('MEDIATEK', 'MT6333'): 'Sub-PMIC for MT6323/MT6322 phones with three buck converters (VCORE 1.15 V/2 A, '
+                            'VMEM 1.225 V/1.5 A, VRF 1.825 V/450 mA), a flash/torch boost driver and I2C, WLCSP-30',
+    ('MEDIATEK', 'MT7687F'): 'Wi-Fi SoC with an ARM Cortex-M4F application processor, 1x1 802.11n single-band Wi-Fi '
+                             'and a power management unit',
+    ('MEDIATEK', 'MT7697'): 'Wi-Fi and Bluetooth SoC with an ARM Cortex-M4F application processor, 1x1 802.11n '
+                            'single-band Wi-Fi, Bluetooth and a power management unit',
+    ('TEXAS INSTRUMENTS', 'BQ24707A'): '1-4 cell Li+ battery SMBus charge controller with independent comparator '
+                                       'and advanced protection',
+    ('TEXAS INSTRUMENTS', 'BQ25700A'): 'SMBus multi-chemistry battery buck-boost charge controller with system '
+                                       'power monitor and processor hot monitor',
+    ('TEXAS INSTRUMENTS', 'TPS51916'): 'DDR2/DDR3/DDR3L/DDR4 memory power solution with a synchronous buck controller, '
+                                       'a 2 A LDO and a buffered reference',
+}
+DATASHEET_BOILERPLATE = re.compile(r'©|proprietary|Tools & Support|Technical Documents|Order Now|Sample & Buy', re.I)
+
+
+def datasheet_description(manufacturer, part_number, current):
+    """The written description for a part whose datasheet title page is boilerplate, while its
+    description still is (a person's edit is kept), else None."""
+    text = DATASHEET_DESCRIPTIONS.get(((manufacturer or '').upper(), (part_number or '').upper()))
+    if text and current != text and (DATASHEET_BOILERPLATE.search(current or '')
+                                     or not clean_description(current, part_number=part_number)):
+        return text
+    return None
+
+
 def clean_description(text, max_len=300, part_number=''):
     """A short English description from datasheet title-page text, or '' if no title can be read.
     Idempotent: cleaning a cleaned description changes nothing."""
@@ -131,6 +162,11 @@ TITLE_JUNK = [
     r'\b(January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b',
     r'®|™|\bTM\b|(?<=[a-zA-Z])TM\b|\(R\)', r'Integrated Circuit Systems,? Inc\.?', r'\bNIKO-SEM\b', r'Global Mixed-mode Technology Inc\.?',
     r'Product Sample & Technical Tools & Support & Folder Buy Documents Software Community', r'http://\S*',
+    # ti.com's page menu, in whatever order the columns were read ('Product Order Technical Tools & ...')
+    r'(?:\b(?:Product|Folder|Order|Now|Sample|Buy|Technical|Documents|Tools|Software|Support|Community|Reference|'
+    r'Design)\b\s*&?\s*){5,}',
+    # a copyright notice: '© 2013 MediaTek Inc. This document contains information that is proprietary ...'
+    r'©\s*\d{4}(?:\s*[-–]?\s*\d{4})?\b.*?(?:prohibited\.|bound\b.*|$)',
     r'Advance Information', r'\bNo\.\s*[A-Z0-9 ]{3,12}\b', r'Confidential', r'New Product', r'Vishay Siliconix',
     r'File Number \d+', r'\bIntegrated\b(?=.*\bCircuit\b)', r'(?<=\s)Circuit(?=\s)', r'\bSystems,? Inc\.?', r'—',
     r'PRODUCT DATA SHEET', r'Data ?Sheet', r'Preliminary', r'[A-Z]* ?USE ONLY ?/ ?DO NOT DISTRIBUTE',

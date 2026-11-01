@@ -12,7 +12,8 @@ from django.db import transaction
 from django.db.models import Q
 
 from apps.components.models import Component, ComponentDatasheet, ProductComponent
-from apps.products.import_text import bom_component_type, clean_description, clean_text, clean_title
+from apps.products.import_text import (bom_component_type, clean_description, clean_text, clean_title,
+                                      datasheet_description)
 from apps.products.models import Firmware, Product, ProductImage, Schematic
 
 
@@ -73,8 +74,10 @@ class Command(BaseCommand):
     def fix_datasheet_descriptions():
         """Components made from a datasheet: its title, without banners and the Features column."""
         batch, total = [], 0
-        for comp in Component.objects.filter(specifications__source='datasheet').only('pk', 'part_number', 'description'):
-            new = clean_description(comp.description, part_number=comp.part_number)
+        for comp in Component.objects.filter(specifications__source='datasheet').only(
+                'pk', 'manufacturer', 'part_number', 'description'):
+            new = (datasheet_description(comp.manufacturer, comp.part_number, comp.description)
+                   or clean_description(comp.description, part_number=comp.part_number))
             if new != comp.description:
                 comp.description = new
                 batch.append(comp)

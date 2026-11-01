@@ -135,3 +135,23 @@ def test_clean_import_text_fixes_imported_rows_only(product_factory, component_f
 def test_revision_noise_is_only_whole_words():
     text = 'N-channel junction FET for impedance conversion, reverse-biased use'
     assert clean_description(text, part_number='2SK2076') == text
+
+
+def test_web_menus_and_copyright_notices_are_not_titles():
+    from apps.products.import_text import clean_description
+    assert clean_description('Product Order Technical Tools & Support & Folder Now Documents Software Community '
+                             'bq25700A SMBus Multi-Chemistry Battery Buck-Boost Charge Controller', part_number='BQ25700A') \
+        == 'bq25700A SMBus Multi-Chemistry Battery Buck-Boost Charge Controller'
+    assert 'MediaTek' not in clean_description('PMIC © 2013 MediaTek Inc. This document contains information that is '
+                                               'proprietary to MediaTek Inc. Unauthorized reproduction is strictly prohibited.')
+
+
+def test_a_boilerplate_datasheet_description_is_replaced_by_the_written_one():
+    from apps.products.import_text import DATASHEET_DESCRIPTIONS, clean_description, datasheet_description
+    boiler = '© 2015 2017 MediaTek Inc. This document contains information that is proprietary to MediaTek Inc.'
+    written = datasheet_description('MediaTek', 'MT7687F', boiler)
+    assert written == DATASHEET_DESCRIPTIONS[('MEDIATEK', 'MT7687F')]
+    assert datasheet_description('MediaTek', 'MT7687F', written) is None             # applied once
+    assert datasheet_description('MediaTek', 'MT7687F', 'Wi-Fi SoC (edited)') is None  # a person's edit stays
+    for (maker, pn), text in DATASHEET_DESCRIPTIONS.items():
+        assert clean_description(text, part_number=pn) == text                         # stable under cleaning
