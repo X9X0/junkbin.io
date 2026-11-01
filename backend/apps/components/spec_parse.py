@@ -123,9 +123,10 @@ def _tolerance(u, kind=None):
         return f'±{_num(pfs[-1].group(2)):g}pF'           # 'Tol 0.1pF' style handled below
     if re.search(r'\+\s*80\s*%?\s*[/,]?\s*-\s*20|-\s*20\s*%?\s*[/,]?\s*\+\s*80|-\s*80\s*%?\s*\+\s*20\s*%', u):
         return '+80/-20%'
-    m = re.search(r'(?:±|TOL\.?\s*)\s*(\d+(?:\.\d+)?)\s*%', u) or re.search(r'(?<![\d.(])(\d+(?:\.\d+)?)\s*%(?!\))', u)
-    if m:
-        return f'{float(m.group(1)):g}%'
+    for m in (re.search(r'(?:±|TOL\.?\s*)\s*(\d+(?:\.\d+)?)\s*%', u),
+              *re.finditer(r'(?<![\d.(])(\d+(?:\.\d+)?)\s*%(?!\))', u)):
+        if m and float(m.group(1)) <= 30:          # a tolerance; '751%' is a misread label, not one
+            return f'{float(m.group(1)):g}%'
     if kind == 'capacitor':
         m = re.search(r'\bTOL\.?\s*(\d*\.?\d+)\s*PF\b', u)
         if m:
