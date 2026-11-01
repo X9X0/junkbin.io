@@ -347,7 +347,7 @@ def group_identical(candidates):
     """One row per identical part: 'C41, C44, C61' x3 instead of three rows to review."""
     groups, order = {}, []
     for c in candidates:
-        flags = tuple(f for f in c['description'].split('; ') if f.startswith(('not fitted', 'fitted in build')))
+        flags = tuple(f for f in c['description'].split('; ') if f.startswith(('not fitted', 'fitted in build', 'build option')))
         key = (c['part_number'], c['manufacturer'], c['component_type'], c['package_type'], flags,
                c['confidence']) if c['part_number'] and c['manufacturer'] else id(c)
         if key not in groups:

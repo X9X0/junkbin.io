@@ -160,3 +160,10 @@ def test_labels_against_their_boardview_footprints(odm):
 def test_crystal_labels(label, designator, name):
     p = sv.parse_label([label], designator)
     assert sv.generic_name(p['kind'], p['specs'], p['package']) == name
+
+
+def test_build_options_are_not_grouped_with_fitted_parts():
+    from apps.products.schematic_ocr_utils import _candidate
+    fitted = _candidate('R1', 1, '10K-04', sv.parse_label(['10K-04'], 'R1', odm='tongfang'), True, 'PDF text')
+    option = _candidate('R2', 1, '@10K-04', sv.parse_label(['@10K-04'], 'R2', odm='tongfang'), True, 'PDF text')
+    assert len(group_identical([fitted, option])) == 2
