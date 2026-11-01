@@ -170,19 +170,20 @@ def _is_label_word(t):
 
 # labels printed on the designator's own line to its right (Wistron, Quanta, Tongfang rows) can sit
 # further away than a nearer, unaligned designator: that alignment wins, at half its gap
-BASELINE_TOLERANCE_PX = 4
+BASELINE_TOLERANCE_PX = 8                   # a smaller label font sits a few px off the line
 ALIGNED_REACH_PX = 420
 BASELINE_GAP_WEIGHT = 0.5
 # a label left-aligned under (or over) its designator: its vertical gap at this weight (None: rule off)
-COLUMN_WEIGHT = None
+COLUMN_WEIGHT = 0.7
 
 
 def _page_labels(words, designators):
     """{designator index: label words, best first} for one text-layer page. Each label word goes to
     the designator it costs least to pair with: the plain distance (up to MAX_PAIR_DISTANCE_PX), or half
-    the gap when it sits on that designator's line to its right. Scored against the boardview labels of
-    39 schematics from 8 ODMs (letus.repair mirror): 85.5% read right (78.7% by distance alone), 3.2%
-    wrong (3.4%) - most of those are revision differences between the schematic and its boardview."""
+    the gap when it sits on that designator's line to its right, or 0.7 x the vertical gap when it is
+    left-aligned under or over it. Scored against 70,582 boardview labels of 50 schematics from 9 ODMs
+    (letus.repair mirror): 85.0% read right (77.0% by distance alone), 3.3% wrong (3.6%) - most of those
+    are revision differences between the schematic and its boardview."""
     reach = ALIGNED_REACH_PX
     grid = collections.defaultdict(list)
     for k in designators:
