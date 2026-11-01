@@ -52,7 +52,7 @@ def test_text_layer_pages_are_read_without_ocr(monkeypatch):
         'C142': ('Generic', 'CAP 10nF 16V X7R 10% 0402', 'capacitor', '0402', 'high'),
         'R141': ('Generic', 'RES 0R JUMPER 0805', 'resistor', '0805', 'high'),
         'CV1': ('Generic', 'CAP 1uF 6.3V X5R 10% 0402', 'capacitor', '0402', 'high'),
-        'PQ301': ('', 'AON7408L_DFN8-5', 'transistor', '', 'low'),       # not the '+3VALW' rail
+        'PQ301': ('', 'AON7408L', 'transistor', 'DFN-8', 'medium'),    # not the '+3VALW' rail; maker unknown
     }                                                   # no BGA ball (AK57) or test point beside a net (T2)
     by_ref = {c['reference_designator']: c for c in candidates}
     assert 'not fitted by default' in by_ref['R141']['description']          # the '@' beside it

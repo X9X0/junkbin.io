@@ -288,6 +288,30 @@ FOOTPRINT_WORD = re.compile(r'^(?:[A-Z]{2,3}_)?([RCL])(01005|0201|0402|0603|0805
                             r'^[A-Z]{2,3}_([RCL])(01005|0201|0402|0603|0805|1206|1210|2512)$', re.I)
 
 
+# Compal/LCFC chips and discretes: part number, '_', package with its pin count ('AP7175SP-13_SO-8EP-8',
+# '2N7002K_SOT23-3', 'AON7408L_DFN8-5', 'F75397M_MSOP8')
+PN_PACKAGE = re.compile(r'^([A-Z0-9][A-Z0-9.+/-]{3,})_((?:SO|SOT|TSOT|SOD|SOP|SSOP|TSSOP|MSOP|QFN|UQFN|VQFN|DFN|WDFN|UDFN|'
+                        r'TDFN|VDFN|PDFN|SON|WSON|USON|SC|TO|LGA|BGA|WLCSP|CSP|QFP|LQFP|TQFP|PLCC|SMA|SMB|SMC)'
+                        r'-?\d[\w-]*)$', re.I)
+# pin counts a package name already implies: 'SOT23-3' is the site's 'SOT-23'
+IMPLIED_PINS = {'SOT23': '3', 'SOT323': '3', 'SOT353': '5', 'SOT363': '6', 'SOT523': '3', 'SOT563': '6', 'SOT89': '3',
+                'SOT223': '4', 'SOT143': '4', 'SC70': '3', 'SOD123': '2', 'SOD323': '2', 'SOD523': '2', 'TO252': '3',
+                'TO263': '3'}
+
+
+def _pn_package(t):
+    """(part number, package in the site's style) for a part-number_package label, or None."""
+    from apps.components.spec_parse import ic_package
+    m = PN_PACKAGE.match(t)
+    if not m:
+        return None
+    pkg = m.group(2).upper()
+    base, _, pins = pkg.rpartition('-') if re.search(r'-\d+$', pkg) else (pkg, '', '')
+    if IMPLIED_PINS.get(base.replace('-', '')) == pins or (pins and re.search(rf'(?<!\d){pins}(?!\d)', base)):
+        pkg = base                          # 'SO-8EP-8': the 8 is in the name already
+    return m.group(1).upper(), ic_package(pkg) or pkg
+
+
 # label words that look like net names ('x_15k/4', 'short_8') but are a build option or a jumper
 PREFIXED_LABEL = re.compile(r'^\*?(?:0/)?(?:SHORT|S)_\d{1,2}$|^X_\.?\d', re.I)
 
@@ -315,6 +339,11 @@ def parse_token(token, kind=None, odm=None):
         r = _approved_list(t)
         if r:
             return (SITE_TYPE.get(r[0], r[0]), *r[1:])
+    if kind not in ('resistor', 'capacitor', 'inductor', 'ferrite', 'thermistor'):
+        r = _pn_package(t)
+        if r:
+            maker = guess_maker(r[0])
+            return None, {}, r[1], (maker, r[0])
     m = MSI_CAP.match(t)
     if m and (m.group(3) or m.group(4)):
         spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
@@ -444,7 +473,8 @@ def parse_label(tokens, designator, odm=None):
     has_value = any(k in out['specs'] for k in VALUE_KEYS) or bool(out['part_number'])
     fields = len(out['specs']) + bool(out['package'])
     agrees = out['kind'] == want or (want, out['kind']) in SAME_KIND or want is None
-    if has_value and not clash and agrees and (used or fields >= 3):
+    if has_value and not clash and agrees and (used or fields >= 3) and (out['maker'] or not out['part_number']
+                                                                        or want in ('resistor', 'capacitor')):
         out['confidence'] = 'high'
     elif has_value or out['package']:
         out['confidence'] = 'medium'
