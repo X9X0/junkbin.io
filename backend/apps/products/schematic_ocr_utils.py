@@ -30,6 +30,24 @@ import re
 
 from .pdf_bom_utils import REF_DES_PATTERN, classify_component_type
 
+
+def _engine_version():
+    """A fingerprint of the scanning code: cached scan results (SchematicViewSet._scan) are dropped
+    by themselves whenever any of it changes."""
+    import hashlib
+    from pathlib import Path
+    here = Path(__file__).parent
+    sources = [here / name for name in ('schematic_ocr_utils.py', 'schematic_values.py', 'parts_list_utils.py',
+                                        'pdf_bom_utils.py', 'import_text.py')]
+    sources.append(here.parent / 'components' / 'spec_parse.py')
+    digest = hashlib.sha1()
+    for path in sources:
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:12]
+
+
+SCAN_ENGINE_VERSION = _engine_version()
+
 # Tokens this generic are almost never a useful "marking" next to a part -
 # schematic net labels, pin numbers, stray symbols. Skip as candidate values.
 NOISE_TOKEN_PATTERN = re.compile(r'^[A-Za-z]{1,2}$|^[0-9]{1,2}$|^[^A-Za-z0-9]+$')

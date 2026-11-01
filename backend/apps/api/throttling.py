@@ -177,3 +177,24 @@ class ExternalSearchAnonRateThrottle(AnonRateThrottle):
     """Distributor searches by visitors who aren't signed in, per IP."""
 
     scope = 'external_search_anon'
+
+
+class ExtractionRateThrottle(UserRateThrottle):
+    """New BOM scans of a schematic or manual (signed-in users). Only a scan that isn't cached yet
+    counts: one costs seconds of CPU, a cached one costs nothing. Staff and moderators are exempt."""
+
+    scope = 'extraction'
+
+    def allow_request(self, request, view):
+        user = request.user
+        if user and user.is_authenticated and (
+            user.is_staff or getattr(user, 'is_moderator', False)
+        ):
+            return True
+        return super().allow_request(request, view)
+
+
+class ExtractionAnonRateThrottle(AnonRateThrottle):
+    """New BOM scans by visitors who aren't signed in, per IP: open to the curious, not to a flood."""
+
+    scope = 'extraction_anon'

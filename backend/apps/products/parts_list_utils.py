@@ -197,21 +197,32 @@ def build_candidates_from_parts_list(file_obj, brand=''):
     return candidates
 
 
-def extract_manual_candidates(file_obj, brand=''):
+def manual_candidates(file_obj, brand=''):
     """Rows for a manual or service document: its parts list when it has one (fast, exact), else the
-    older table/text pass (pdf_bom_utils). Each row gets 'matched_component'."""
-    from .pdf_bom_utils import build_candidates_from_pdf, find_component_match, match_components_exactly
+    older table/text pass (pdf_bom_utils). Returns (rows, exact) - exact when they came from a parts list."""
+    from .pdf_bom_utils import build_candidates_from_pdf
     from .schematic_ocr_utils import group_identical
 
     candidates = build_candidates_from_parts_list(file_obj, brand)
     if candidates:
-        candidates = group_identical(candidates)        # 'R100, R105' x2: one row per part code
+        return group_identical(candidates), True        # 'R100, R105' x2: one row per part code
+    file_obj.seek(0)
+    return build_candidates_from_pdf(file_obj), False
+
+
+def attach_matches(candidates, exact):
+    """Give each row 'matched_component': parts-list codes in one exact query, older rows one by one."""
+    from .pdf_bom_utils import find_component_match, match_components_exactly
+
+    if exact:
         match_components_exactly(candidates)
         return candidates
-    file_obj.seek(0)
-    candidates = build_candidates_from_pdf(file_obj)
     for candidate in candidates:
         match = find_component_match(candidate['part_number'], candidate['manufacturer'])
         candidate['matched_component'] = {'id': str(match.id), 'part_number': match.part_number,
                                           'manufacturer': match.manufacturer} if match else None
     return candidates
+
+
+def extract_manual_candidates(file_obj, brand=''):
+    return attach_matches(*manual_candidates(file_obj, brand))

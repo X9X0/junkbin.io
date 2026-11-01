@@ -276,6 +276,8 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'lookup': '20/hour',
     'external_search': '30/hour',
     'external_search_anon': '10/hour',
+    'extraction': '30/hour',
+    'extraction_anon': '6/hour',
     'subscribe': '10/hour',
     'bg_removal': '40/hour',
 }

@@ -6,7 +6,7 @@ import io
 import json
 
 from django.db import models, transaction
-from rest_framework import viewsets, status, permissions
+from rest_framework import exceptions, viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -44,7 +44,9 @@ from .serializers import (
 from .filters import ProductFilter
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
-from apps.api.throttling import SubmissionRateThrottle, UploadRateThrottle
+from apps.api.throttling import (
+    ExtractionAnonRateThrottle, ExtractionRateThrottle, SubmissionRateThrottle, UploadRateThrottle,
+)
 from apps.api.metrics import submission_counter
 
 
@@ -1221,9 +1223,24 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return [permissions.IsAdminUser()]
         elif self.action in ['approve', 'reject']:
             return [IsModeratorOrAdmin()]
-        elif self.action == 'crop':
-            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
+
+    def _scan(self, request, schematic, kind, compute):
+        """A BOM scan's rows, cached per file and engine version: anyone can open a schematic's scan,
+        and only a scan nobody has run yet costs CPU - so only that one is rate-limited."""
+        from django.core.cache import cache
+        from .schematic_ocr_utils import SCAN_ENGINE_VERSION
+
+        key = f'bom-scan:{SCAN_ENGINE_VERSION}:{kind}:{schematic.pk}:{schematic.file.name}'
+        cached = cache.get(key)
+        if cached is not None:
+            return cached
+        for throttle in (ExtractionRateThrottle(), ExtractionAnonRateThrottle()):
+            if not throttle.allow_request(request, self):
+                self.throttled(request, throttle.wait())
+        result = compute()
+        cache.set(key, result, 60 * 60 * 24 * 30)
+        return result
 
     @action(detail=True, methods=['get'])
     def download(self, request, pk=None):
@@ -1250,7 +1267,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
         ProductViewSet.submit_bom_suggestions using this schematic's product.
         """
         from django.utils import timezone
-        from .parts_list_utils import extract_manual_candidates
+        from .parts_list_utils import attach_matches, manual_candidates
 
         schematic = self.get_object()
 
@@ -1268,7 +1285,11 @@ class SchematicViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            candidates = extract_manual_candidates(schematic.file, schematic.product.manufacturer)
+            rows, exact = self._scan(request, schematic, 'manual',
+                                     lambda: manual_candidates(schematic.file, schematic.product.manufacturer))
+            candidates = attach_matches(rows, exact)       # matches change as the catalog grows: never cached
+        except exceptions.Throttled:
+            raise
         except Exception as e:
             return Response({'detail': f'Could not parse PDF: {str(e)}'},
                             status=status.HTTP_400_BAD_REQUEST)
@@ -1305,12 +1326,15 @@ class SchematicViewSet(viewsets.ModelViewSet):
             )
 
         try:
-            candidates = build_candidates_from_schematic_file(schematic.file, schematic.file_type)
+            # 'C41, C44, C61' x3: one row per identical part
+            candidates = self._scan(request, schematic, 'ocr', lambda: group_identical(
+                build_candidates_from_schematic_file(schematic.file, schematic.file_type)))
+        except exceptions.Throttled:
+            raise
         except Exception as e:
             return Response({'detail': f'Could not OCR this file: {str(e)}'},
                             status=status.HTTP_400_BAD_REQUEST)
 
-        candidates = group_identical(candidates)    # 'C41, C44, C61' x3: one row per identical part
         match_components_exactly(candidates)        # one query for a whole schematic's labels
 
         Schematic.objects.filter(pk=schematic.pk).update(bom_extracted_at=timezone.now())

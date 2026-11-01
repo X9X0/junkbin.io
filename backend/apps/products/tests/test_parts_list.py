@@ -50,3 +50,28 @@ def test_manuals_without_a_parts_list_fall_back(monkeypatch):
     called = []
     monkeypatch.setattr('apps.products.pdf_bom_utils.build_candidates_from_pdf', lambda f: called.append(1) or [])
     assert pl.extract_manual_candidates(io.BytesIO(b'%PDF'), 'Sony') == [] and called == [1]
+
+
+@pytest.mark.django_db
+def test_scans_are_open_cached_and_only_new_ones_limited(monkeypatch, product, user):
+    from django.core.cache import cache
+    from django.core.files.base import ContentFile
+    from rest_framework.test import APIClient
+    from apps.api import throttling
+    from apps.products.models import Schematic
+
+    cache.clear()
+    schematic = Schematic(product=product, title='Manual', schematic_type='service_manual', file_type='pdf',
+                          is_approved=True, uploaded_by=user)
+    schematic.file.save('manual.pdf', ContentFile(b'%PDF'), save=True)
+    runs = []
+    monkeypatch.setattr(pl, '_layout_pages', lambda raw: runs.append(1) or [SONY, SONY.replace('R1', 'R2')])
+    monkeypatch.setattr(throttling.ExtractionAnonRateThrottle, 'get_rate', lambda self: '1/hour')
+    url = f'/api/schematics/{schematic.pk}/extract_bom/'
+    visitor = APIClient()                                             # not signed in
+    assert visitor.get(url).status_code == 200 and visitor.get(url).status_code == 200
+    assert len(runs) == 1                                             # the second view came from the cache
+    other = Schematic(product=product, title='Other', schematic_type='service_manual', file_type='pdf',
+                      is_approved=True, uploaded_by=user)
+    other.file.save('other.pdf', ContentFile(b'%PDF'), save=True)
+    assert visitor.get(f'/api/schematics/{other.pk}/extract_bom/').status_code == 429   # a new scan: limited

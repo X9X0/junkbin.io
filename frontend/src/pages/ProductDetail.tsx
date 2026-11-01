@@ -1012,7 +1012,7 @@ export default function ProductDetail() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          {isAuthenticated && schematic.file_type === 'pdf' && BOM_EXTRACTABLE_SCHEMATIC_TYPES.includes(schematic.schematic_type) && (
+                          {schematic.file_type === 'pdf' && BOM_EXTRACTABLE_SCHEMATIC_TYPES.includes(schematic.schematic_type) && (
                             <button
                               onClick={() => { setExtractingMode('text'); setExtractingSchematic(schematic); }}
                               title={t('product_detail.extract_from_manual')}
@@ -1021,8 +1021,7 @@ export default function ProductDetail() {
                               <Sparkles className="h-4 w-4" />
                             </button>
                           )}
-                          {isAuthenticated
-                            && ['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp'].includes(schematic.file_type)
+                          {['pdf', 'png', 'jpg', 'jpeg', 'jfif', 'gif', 'webp'].includes(schematic.file_type)
                             && OCR_EXTRACTABLE_SCHEMATIC_TYPES.includes(schematic.schematic_type) && (
                             <button
                               onClick={() => { setExtractingMode('ocr'); setExtractingSchematic(schematic); }}

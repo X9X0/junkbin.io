@@ -1,6 +1,8 @@
 import { Fragment, useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { products, schematics } from '../api/endpoints';
+import { useAuth } from '../context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { Upload, FileText, Loader2, CheckCircle, AlertTriangle, X, Trash2, Clock, ChevronDown, ChevronRight } from 'lucide-react';
 import clsx from 'clsx';
@@ -24,6 +26,7 @@ const CONFIDENCES: Confidence[] = ['high', 'medium', 'low'];
 
 export default function BomPdfExtract({ productId, schematicId, schematicTitle, mode = 'text', onSuccess, onClose }: BomPdfExtractProps) {
   const { t } = useTranslation();
+  const { isAuthenticated } = useAuth();
   const [step, setStep] = useState<Step>('upload');
   const [candidates, setCandidates] = useState<BomCandidate[]>([]);
   const [dragOver, setDragOver] = useState(false);
@@ -36,6 +39,9 @@ export default function BomPdfExtract({ productId, schematicId, schematicTitle, 
   const sourceType = mode === 'ocr' ? 'schematic_ocr' : 'pdf_manual';
 
   const getErrorMessage = (error: unknown): string => {
+    if (axios.isAxiosError(error) && error.response?.status === 429) {
+      return t(isAuthenticated ? 'bom_pdf.throttled' : 'bom_pdf.throttled_anon');
+    }
     if (axios.isAxiosError(error) && typeof error.response?.data?.detail === 'string') {
       return error.response.data.detail;
     }
@@ -366,6 +372,13 @@ export default function BomPdfExtract({ productId, schematicId, schematicTitle, 
             <button onClick={reset} className="btn-cyber text-sm py-1.5">
               {schematicId ? t('bom_pdf.cancel') : t('bom_pdf.start_over')}
             </button>
+            {!isAuthenticated ? (
+              // anyone can scan and look; adding the parts to the product is what an account is for
+              <Link to="/register" className="btn-cyber btn-cyber-green flex items-center gap-2">
+                <Upload className="h-4 w-4" />
+                {t('bom_pdf.signup_to_submit', { count: included.length })}
+              </Link>
+            ) : (
             <button
               onClick={() => submitMutation.mutate()}
               disabled={included.length === 0 || submitMutation.isPending}
@@ -386,6 +399,7 @@ export default function BomPdfExtract({ productId, schematicId, schematicTitle, 
                 </>
               )}
             </button>
+            )}
           </div>
           {submitMutation.isError && (
             <div className="flex items-center gap-2 p-3 border border-cyber-pink/50 bg-cyber-pink/10 text-cyber-pink text-sm font-mono">

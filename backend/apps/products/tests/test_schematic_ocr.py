@@ -105,4 +105,4 @@ def test_crop_shows_the_page_around_a_designator(schematic_factory, authenticate
     assert response.status_code == 200 and response['Content-Type'] == 'image/png'
     assert response.content[:8] == b'\x89PNG\r\n\x1a\n'
     assert authenticated_client.get(f'/api/schematics/{schematic.pk}/crop/?page=1').status_code == 400
-    assert APIClient().get(url).status_code in (401, 403)      # signed-in reviewers only
+    assert APIClient().get(url).status_code == 200              # visitors see it too: no sign-in to look
