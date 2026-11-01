@@ -4,6 +4,7 @@ Tests for schematic_values: ODM value labels -> component fields.
 import pytest
 
 from apps.products.schematic_ocr_utils import group_identical
+from apps.products import schematic_values as sv
 from apps.products.schematic_values import generic_name, parse_label
 
 
@@ -90,3 +91,19 @@ def test_detect_odm():
     assert detect_odm('Compal Electronics, Inc. LA-C281P ... Compal Electronics, Inc.') == 'compal'
     assert detect_odm('Quanta Computer Inc. DA0Z8GMB8D0 Quanta Computer Inc.') == 'quanta'
     assert detect_odm('Compal Electronics Quanta Computer') is None          # marks disagree
+
+
+def test_tongfang_labels_once_the_odm_is_known():
+    """Tongfang (GK5CN5Z, PF4PN2F...): read off 14 boardviews; its capacitor labels identify it."""
+    assert sv.detect_odm('C1 .1U-10-04R-K C2 1U-6.3-04R-K C3 22U-6.3-06R-M') == 'tongfang'
+    p = sv.parse_label(['.1U-10-04R-K'], 'C49', odm='tongfang')
+    assert (p['specs'], p['package'], p['confidence']) == (
+        {'capacitance_pf': 100000.0, 'voltage_v': 10.0, 'dielectric': 'X5R', 'tolerance': '10%'}, '0402', 'high')
+    assert sv.parse_label(['47p-50-04N-J'], 'C1', odm='tongfang')['specs']['dielectric'] == 'C0G'
+    assert sv.parse_label(['5.1-1-04'], 'R7', odm='tongfang')['specs'] == {'resistance_ohm': 5.1, 'tolerance': '1%'}
+    sense = sv.parse_label(['5m-1W-1-1206'], 'RCH6', odm='tongfang')          # lower-case m: milliohm
+    assert (sense['specs']['resistance_ohm'], sense['specs']['power_w'], sense['package']) == (0.005, 1.0, '1206')
+    assert sv.parse_label(['10M-04'], 'R257', odm='tongfang')['specs']['resistance_ohm'] == 10e6
+    option = sv.parse_label(['@100K-06'], 'R11', odm='tongfang')
+    assert option['package'] == '0603' and 'build option (@): may not be fitted' in option['flags']
+    assert sv.parse_label(['10K-04'], 'R4')['package'] is None          # without the ODM: no size read

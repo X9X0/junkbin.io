@@ -75,3 +75,30 @@ def test_scans_are_open_cached_and_only_new_ones_limited(monkeypatch, product, u
                       is_approved=True, uploaded_by=user)
     other.file.save('other.pdf', ContentFile(b'%PDF'), save=True)
     assert visitor.get(f'/api/schematics/{other.pk}/extract_bom/').status_code == 429   # a new scan: limited
+
+
+VAIO = '\n'.join(f'C{50 + i}     A     41.7500     32.8500    6E5                2200pF   6.3V     10%    1128628{10 + i}   '
+                  f'CAP, CERAMIC 2200PF B (0603)   DNI' for i in range(10))
+ONKYO = '\n'.join(f'R{464 + i}   C-CARBON R   RN72K1J-181JE   1   43503181{i}R1' for i in range(10))
+PSP = '\n'.join(f'U    C{1064 + i}\t\t               CERAMIC CHIP    0.1uF     10%   10V' for i in range(10))
+
+
+def test_tables_with_the_code_further_along():
+    row = pl.parse_page_late(VAIO)[0]
+    assert row == ('112862810', ['C50'], '2200pF 6.3V 10% CAP, CERAMIC 2200PF B (0603) (not fitted)')
+    assert pl.parse_page_late(ONKYO)[0] == ('435031810R1', ['R464'], 'C-CARBON R RN72K1J-181JE')    # after the qty
+    assert pl.parse_page_late(PSP)[0] == ('', ['C1064'], 'CERAMIC CHIP 0.1uF 10% 10V')    # unsupplied: no code
+
+
+def test_late_tables_and_related_code_shapes_pass_the_document_checks():
+    assert len(pl.parse_document([VAIO, VAIO, VAIO])[0]) == 30
+    panasonic = '\n'.join(f'C{1015 + i}    F1H1H10{i}B047   0.1uF      50V    1' for i in range(8)) + '\n' + \
+        '\n'.join(f'R{1015 + i}    ERJ2GEJ10{i}X   10K      1/16W    1' for i in range(4))
+    rows, why = pl.parse_document([panasonic, panasonic])
+    assert len(rows) == 24, why                                         # two code shapes, one maker
+
+
+def test_unsupplied_parts_become_generic_parts(monkeypatch):
+    monkeypatch.setattr(pl, '_layout_pages', lambda raw: [PSP, PSP, PSP])
+    row = pl.build_candidates_from_parts_list(io.BytesIO(b'%PDF'), 'Sony')[0]
+    assert (row['part_number'], row['manufacturer']) == ('CAP 100nF 10V 10%', 'Generic')

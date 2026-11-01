@@ -29,6 +29,7 @@ import math
 import re
 
 from .pdf_bom_utils import REF_DES_PATTERN, classify_component_type
+from .schematic_values import FOOTPRINT_WORD
 
 
 def _engine_version():
@@ -141,6 +142,8 @@ def _label_words(i, words, designators):
         if j == i or REF_DES_PATTERN.fullmatch(t) or len(t) > 60:
             continue
         marker = t == '@' or re.fullmatch(r'[A-Z0-9]+@', t, re.I)
+        if FOOTPRINT_WORD.match(t):
+            marker = True                   # 'VX_R0402_SMALL': the footprint, printed beside the part
         if not marker and (NOISE_TOKEN_PATTERN.match(t) or NOT_A_VALUE.search(t) or not re.search(r'\d', t)):
             if not re.fullmatch(r'X5R|X7R|X6S|X7S|C0G|NP0|NPO|Y5V|\d+(?:\.\d+)?%|[FGJKMZ]', t, re.I):
                 continue
@@ -177,8 +180,9 @@ def _text_layers(raw):
         for x0, y0, x1, y1, text in BBOX_WORD.findall(page):
             text = html.unescape(text).strip()
             if text:
-                words.append({'text': text, 'conf': 100, 'x': (float(x0) + float(x1)) / 2 * scale,
-                              'y': (float(y0) + float(y1)) / 2 * scale})
+                x0, y0, x1, y1 = (float(v) * scale for v in (x0, y0, x1, y1))
+                words.append({'text': text, 'conf': 100, 'x': (x0 + x1) / 2, 'y': (y0 + y1) / 2,
+                              'x0': x0, 'y0': y0, 'x1': x1, 'y1': y1})
         pages.append(words)
     return pages
 

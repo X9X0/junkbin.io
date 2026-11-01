@@ -22,10 +22,12 @@ import subprocess
 import tempfile
 
 REFDES = (r'(?:IC|Q|D|R|C|L|T|X|F|CN|J|U|VR|SW|BD|FB|TR|ZD|LED|RL|PC|VD|TH|RT|SP|MIC|ANT|BAT|M|K|P|S|Y|E|B|W|H|'
-          r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST)\d{1,5}[A-Z]?')
+          r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP)\d{1,5}[A-Z]?')
 REFDES_RE = re.compile(rf'^{REFDES}$')
 REFLIST_RE = re.compile(rf'^{REFDES}(?:\s*,\s*{REFDES})*,?$')
-CODE_RE = re.compile(r'^(?=(?:\D*\d){4})[0-9A-Z][0-9A-Z\-./]{4,24}$')       # >= 4 digits: not pin or net names
+# >= 4 digits: not pin or net names; not a package ('SM0603', 'SOT-363')
+CODE_RE = re.compile(r'^(?!(?:SMD?)?(?:01005|0201|0402|0603|0805|1206|1210|2512)$|(?:SOT|SOD|SOP|SOIC|TSSOP|QFN|DFN)-?\d+$)'
+                     r'(?=(?:\D*\d){4})[0-9A-Z][0-9A-Z\-./]{4,24}$')
 WORDS_RE = re.compile(r'[A-Za-z]{3,}')
 VALUE_RE = re.compile(r'\d(?:\.\d+)?\s*(?:UF|NF|PF|UH|NH|K|M|OHM|Ω|V)\b', re.I)
 # a maker part number printed beside the internal code on factory BOMs ('MURATA GRM188R60J476ME15D')
@@ -80,10 +82,16 @@ def _layout_pages(raw):
     return out.split('\f')
 
 
+# TPV (Sharp / Philips TV chassis) prints its codes with a space after the group: '093G 64S526SEM'
+TPV_CODE = re.compile(r'(?<![\w-])(\d{3}G) (?=[0-9A-Z]{3,})')
+TPV_SUFFIX = re.compile(r'(?<![\w-])(\d{3}G[0-9A-Z]{4,}) ([A-Z]{1,2})(?= |$)')     # '061G0402220 JY'
+
+
 def parse_page(text):
     """[(code, [refs], description)] for the parts-list rows on one page."""
     rows = []
     for line in text.splitlines():
+        line = TPV_SUFFIX.sub(r'\1\2', TPV_CODE.sub(r'\1', line)) if 'G ' in line else line
         chunks = [c.strip() for c in re.split(r'\s{3,}', line.strip()) if c.strip()]
         if len(chunks) < 2:
             continue
@@ -136,20 +144,134 @@ def _starts_row(chunks, j):
                 and CODE_RE.match(chunks[j + 1].split()[0]) and not REFDES_RE.match(chunks[j + 1].split()[0]))
 
 
+# --- tables whose code column comes later in the row ----------------------------------------------
+# Sony VAIO location index:  C50  A  41.7500  32.8500  6E5  2200pF  6.3V  10%  112862811  CAP, CERAMIC...  DNI
+# Onkyo:                     T901  P TRANS  NPT-1516D  1  2301798  !  <MDC,MDD,MDF>
+# Sony PSP (S/U column):     U  C1064  CERAMIC CHIP  0.1uF  10%  10V     (unsupplied parts carry no code)
+CHUNK = re.compile(r'\S+(?:[ ]{1,2}\S+)*')
+ROW_START = re.compile(rf'^({REFDES})(?: or)?$')
+SUPPLY_MARK = re.compile(r'^[SU]$')
+DECIMAL = re.compile(r'^-?\d+\.\d+$')
+GRID = re.compile(r'^\d{1,2}[A-Z]\d{1,2}$')
+QTY = re.compile(r'^\(?\s*\d{1,3}\s*\)?$')
+VALUE_CELL = re.compile(r'^[\d.]+\s*(?:[PNUM]?F|[KMR]|OHMS?|Ω|K?V|W|%|[UNM]H|MHZ|KHZ)$|^\d{1,3}$|^\d+\.\d+$', re.I)
+SKIP_CELL = re.compile(r'^(?:[AB]|-+|\*+|!|⚠)$')
+
+
+def _late_rows(text):
+    """Rows that start at a position whose part code comes later: [{ref, sc, cells: [(column, text)], alt}]."""
+    rows = []
+    for line in text.splitlines():
+        cells = [(m.start(), m.group()) for m in CHUNK.finditer(line.replace('\t', '   '))]
+        k = 0
+        while k < len(cells):
+            sc = None
+            if SUPPLY_MARK.match(cells[k][1]) and k + 1 < len(cells) and ROW_START.match(cells[k + 1][1]):
+                sc, k = cells[k][1], k + 1
+            m = ROW_START.match(cells[k][1])
+            if not m or (k + 1 < len(cells) and ROW_START.match(cells[k + 1][1])):
+                k += 1
+                continue
+            j = k + 1
+            while j < len(cells):
+                if ROW_START.match(cells[j][1]) and not (j + 1 < len(cells) and ROW_START.match(cells[j + 1][1])):
+                    break
+                if SUPPLY_MARK.match(cells[j][1]) and j + 1 < len(cells) and ROW_START.match(cells[j + 1][1]):
+                    break
+                j += 1
+            rows.append({'ref': m.group(1), 'sc': sc, 'cells': cells[k + 1:j], 'alt': cells[k][1].endswith(' or')})
+            k = j
+    return rows
+
+
+def _is_code_cell(t):
+    return bool(CODE_RE.match(t) and not DECIMAL.match(t) and not GRID.match(t) and not VALUE_CELL.match(t))
+
+
+def parse_page_late(text):
+    """[(code, [ref], description)] for tables with the code further along the row; the code column is
+    the one where code-shaped cells line up best (same character column, same shapes) on this page.
+    Rows of a supplied/unsupplied (S/U) table may have no code: code ''."""
+    rows = _late_rows(text)
+    columns = collections.defaultdict(collections.Counter)
+    for r in rows:
+        for col, t in r['cells']:
+            if _is_code_cell(t):
+                columns[col // 4][shape(t)] += 1
+    def score(bucket):
+        c = columns.get(bucket)
+        if not c:
+            return 0
+        n = sum(c.values())
+        return n * sum(v for _, v in c.most_common(3)) / n if n >= 5 else 0
+    def after_qty(r, cell):                 # Onkyo: ... Q'TY  PART NO. - the code that follows a quantity
+        k = r['cells'].index(cell)
+        return k > 0 and bool(QTY.match(r['cells'][k - 1][1]))
+    out = []
+    for r in rows:
+        best = max((cell for cell in r['cells'] if _is_code_cell(cell[1])),
+                   key=lambda c: (score(c[0] // 4) * (1.5 if after_qty(r, c) else 1)), default=None)
+        code = best[1] if best and score(best[0] // 4) else ''
+        if not code and not r['sc']:
+            continue
+        cells = [t for col, t in r['cells'] if (col, t) != best]
+        numbers = sum(1 for t in cells if DECIMAL.match(t))
+        desc = []
+        for t in cells:
+            if SKIP_CELL.match(t) or GRID.match(t) or (numbers >= 2 and DECIMAL.match(t)) or (code and QTY.match(t)):
+                if t in ('!', '⚠'):
+                    desc.append('⚠')
+                continue
+            if t.upper() in ('DNI', 'NS', 'N.M'):
+                desc.append('(not fitted)' if t.upper() != 'NS' else '(not supplied)')
+                continue
+            if t.startswith('<') and t.endswith('>'):
+                desc.append(f'(models {t[1:-1]})')
+                continue
+            desc.append(t)
+        desc = ' '.join(desc)
+        if r['alt']:
+            desc = f'alternative part: {desc}'
+        if WORDS_RE.search(desc) or VALUE_RE.search(desc):
+            out.append((code, [r['ref']], desc))
+    return out
+
+
+def _page_kept(rows):
+    """A page is a parts-list page when it has enough rows and its codes keep to a few shapes, or (S/U
+    tables) enough rows of the supplied/unsupplied kind."""
+    if len(rows) < MIN_PAGE_ROWS:
+        return False
+    coded = [r for r in rows if r[0]]
+    if len(rows) - len(coded) >= MIN_PAGE_ROWS:
+        return True
+    shapes = collections.Counter(shape(r[0]) for r in coded)
+    return bool(coded) and sum(v for _, v in shapes.most_common(3)) / len(coded) >= MIN_SHAPE_SHARE
+
+
 def parse_document(pages):
     """[(page, code, refs, description)] when the document has a parts list, else ([], why)."""
     kept = []
     for n, text in enumerate(pages, start=1):
         rows = parse_page(text)
-        if len(rows) >= MIN_PAGE_ROWS:
+        if len(rows) < MIN_PAGE_ROWS:
+            late = parse_page_late(text)
+            rows = late if len(late) > len(rows) else rows
+        if _page_kept(rows):
             kept += [(n, *r) for r in rows]
     if len(kept) < MIN_ROWS:
         return [], f'{len(kept)} parts-list rows'
-    shapes = collections.Counter(shape(code) for _, code, _, _ in kept)
-    top, count = shapes.most_common(1)[0]
-    if count / len(kept) < MIN_SHAPE_SHARE:
-        return [], f'part codes inconsistent ({count} of {len(kept)} share {top})'
-    return [r for r in kept if shape(r[1]) == top], f'{count} rows, part code shape {top}'
+    coded = [r for r in kept if r[1]]
+    shapes = collections.Counter(shape(r[1]) for r in coded)
+    # a maker's codes come in a few related shapes (Panasonic F1H1H104B047 / ERJ2GEJ103X): keep the
+    # shapes that each hold >= 10% of the rows, provided together they hold >= 70%
+    family = [sh for sh, c in shapes.most_common(3) if c >= 0.1 * len(coded)]
+    held = sum(shapes[sh] for sh in family)
+    if coded and held / len(coded) < MIN_SHAPE_SHARE:
+        top, count = shapes.most_common(1)[0]
+        return [], f'part codes inconsistent ({count} of {len(coded)} share {top})'
+    rows = [r for r in kept if not r[1] or shape(r[1]) in family]
+    return rows, f'{len(rows)} rows, part code shapes {"/".join(family) or "none (S/U table)"}'
 
 
 def build_candidates_from_parts_list(file_obj, brand=''):
@@ -157,7 +279,7 @@ def build_candidates_from_parts_list(file_obj, brand=''):
     product's maker - a manual's part codes are its maker's own service numbers (Sony 1-126-960-11),
     filed under that maker as the site files them."""
     from apps.components.spec_parse import decode_mpn, guess_maker, parse_description, SITE_TYPE
-    from .schematic_values import designator_kind
+    from .schematic_values import designator_kind, generic_name
 
     file_obj.seek(0)
     rows, _why = parse_document(_layout_pages(file_obj.read()))
@@ -174,11 +296,15 @@ def build_candidates_from_parts_list(file_obj, brand=''):
             package = package or decoded[2]
         # a factory BOM prints the maker part number in the description's columns
         maker, part = brand, code
+        if not code:                            # an unsupplied part (S/U table): a Generic part by its values
+            maker, part = 'Generic', generic_name(kind, specs, package)
         for token in MAKER_PN_RE.findall(clean.upper()):
             guessed = guess_maker(token)
             if guessed and decode_mpn(guessed, token):
                 maker, part = guessed, token
                 break
+        if not part:
+            continue
         candidates.append({
             'page_number': page,
             # the row comes from a table that passed the parts-list checks: its position and code are sure
@@ -192,7 +318,7 @@ def build_candidates_from_parts_list(file_obj, brand=''):
             'value_raw': clean[:200],
             'quantity': len(refs) or 1,
             'location_description': '',
-            'extraction_context': f'Parts list, page {page}: {code}  {" ".join(refs)}  {clean[:120]}',
+            'extraction_context': f'Parts list, page {page}: {code or "(no code)"}  {" ".join(refs)}  {clean[:120]}',
         })
     return candidates
 

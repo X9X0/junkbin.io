@@ -149,6 +149,7 @@ def _current(u):
 
 
 def _voltage(u):
+    u = re.sub(r'\b[XYZ]\d[PRSTUV]\b', ' ', u)       # a dielectric code: 'Y5V' is not 5 volts
     m = re.search(r'(?<![\d.])(\d+(?:\.\d+)?)\s*KV\b', u)
     if m:
         return _num(m.group(1)) * 1000
@@ -669,14 +670,14 @@ def decode_mpn(manufacturer, part_number):
 
 
 # makers whose part-number prefix is unique to them: lets a description that is just a
-# part number ('ERJ1GEJ102C' on a Samsung service code) be decoded
+# part number ('ERJ1GEJ102C' on a Samsung service code) be decoded. Names as the site files them.
 PREFIX_MAKER = [(r'ERJ|ECJ', 'Panasonic'), (r'GR[MJP]\d', 'Murata'), (r'CL\d\d[A-Z]\d', 'Samsung'),
                 (r'RC-?\d{4}[BCDFGJ]\w+C[SH]$', 'Samsung'), (r'CI[HG]T?\d\d', 'Samsung'), (r'LQ[PGW]\d\d|BLM\d\d', 'Murata'),
-                (r'LLV?\d{4}-F', 'TOKO'), (r'MLG\d{4}', 'TDK'), (r'HK\d{4}', 'TAIYO YUDEN'), (r'RMC-?1/', 'KAMAYA'),
-                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V)', 'KYOCERA'),
-                (r'(RC|CC|YC|AC)\d{3}', 'YAGEO'), (r'RM\d\d[BCDFJ]TN', 'TA-I'), (r'WR\d\dX', 'Walsin'),
-                (r'C\d{4}(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)', 'TDK'), (r'(CE)?[AJLETGUH]MK\d{3}', 'TAIYO YUDEN'),
-                (r'RTT\d\d', 'RALEC'), (r'RK73', 'KOA'), (r'GNM\d', 'Murata')]
+                (r'LLV?\d{4}-F', 'Toko'), (r'MLG\d{4}', 'TDK'), (r'HK\d{4}', 'Taiyo Yuden'), (r'RMC-?1/', 'Kamaya'),
+                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V)', 'Kyocera AVX'),
+                (r'(RC|CC|YC|AC)\d{3}', 'Yageo'), (r'RM\d\d[BCDFJ]TN', 'TA-I'), (r'WR\d\dX', 'Walsin'),
+                (r'C\d{4}(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)', 'TDK'), (r'(CE)?[AJLETGUH]MK\d{3}', 'Taiyo Yuden'),
+                (r'RTT\d\d', 'Ralec'), (r'RK73', 'KOA'), (r'GNM\d', 'Murata')]
 
 
 def guess_maker(part_number):

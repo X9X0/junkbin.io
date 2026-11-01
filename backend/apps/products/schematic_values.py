@@ -67,12 +67,29 @@ PN_TAIL = re.compile(r'^([A-Z][A-Z0-9-]{5,})_(\d{4}|\dP)$', re.I)
 ODM_MARKS = [('compal', r'Compal Electronics|\bLA-[0-9A-Z]{4}P\b'), ('lcfc', r'\bLCFC\b|\bNM-[A-Z]\d{3}\b'),
              ('quanta', r'Quanta Computer|\bDA0[0-9A-Z]{3}MB|\bDAZ[0-9A-Z]{5}'), ('inventec', r'Inventec|\b6050A\d{7}'),
              ('wistron', r'Wistron'), ('clevo', r'\bCLEVO\b|\b6-7[17]-[0-9A-Z]{5}'),
-             ('msi', r'MICRO-STAR|\bMS-\d{4}\b')]
+             ('msi', r'MICRO-STAR|\bMS-\d{4}\b'),
+             # Tongfang title blocks carry no maker name: its capacitor labels are the mark ('.1U-10-04R-K')
+             ('tongfang', r'(?<![\w.])@?\d*\.?\d+[PNU]F?-\d*\.?\d+-\d\d[RXNY]-[BCDFGJKMZ]\b'),
+             # Gigabyte boards: value/size/dielectric/volts/tolerance ('0.01U/4/X7R/16V/K')
+             ('gigabyte', r'(?<![\w.])\d*\.?\d+[PNU]/\d{1,2}/(?:X5R|X7R|NPO|Y5V|X6S)/\d*\.?\d+V/[BCDFGJKMZX]\b')]
 ODM_SIZE = {'quanta': {'2': '0201', '4': '0402', '6': '0603', '8': '0805', '12': '1206'},
             'clevo': {'04': '0402', '06': '0603', '08': '0805'},
             'inventec': {'1': '0201', '2': '0402', '3': '0603', '6': '1206'},
             'wistron': {'2': '0402', '3': '0603', '5': '0805'},
-            'msi': {'4': '0402', '6': '0603', '8': '0805'}}
+            'msi': {'4': '0402', '6': '0603', '8': '0805'},
+            'tongfang': {'02': '0201', '04': '0402', '06': '0603', '08': '0805', '12': '1206'},
+            'gigabyte': {'4': '0402', '6': '0603', '8': '0805', '12': '1206'}}
+# Gigabyte: 0.1U/6/Y5V/25V/Z, 33P/4/NPO/50V/J, 22/4, 20K/4/1 (1%); size digit read off 2 boardviews (1,926
+# parts: /4 0402 in 1,310 of 1,311, /6 0603, /8 0805, /12 1206). A trailing 'X' is left unread.
+GIGA_CAP = re.compile(rf'^{NUM}([PNU])F?/(\d{{1,2}})(?:/(X5R|X7R|NPO|NP0|Y5V|X6S|C0G))?(?:/{NUM}V)?(?:/([BCDFGJKMZX]))?$', re.I)
+GIGA_RES = re.compile(rf'^{NUM}([KMR]?)/(\d{{1,2}})(?:/(1|X))?$', re.I)
+# Tongfang (GK5CN5Z, PF4PN2F, CT4RVC1...): value-volts-size+dielectric-tolerance, value[-power][-tol]-size.
+# Read off 14 boardviews (~20,000 labels): size 02/04/06/08/12 = 0201..1206 (or the 4-digit size); dielectric
+# N only on <= 1nF 50V 5% parts (C0G), Y only with Z tolerance (Y5V), X on 25-50V pF-nF parts (X7R), R on
+# low-voltage bulk parts (X5R). Lower-case m with a wattage on 1206 parts is milliohm; M on 0402 is megohm.
+TF_DIEL = {'R': 'X5R', 'X': 'X7R', 'N': 'C0G', 'Y': 'Y5V'}
+TF_CAP = re.compile(rf'^{NUM}([PNU])F?-{NUM}-(\d\d)([RXNY])(?:-([BCDFGJKMZ])\d?)?$', re.I)
+TF_RES = re.compile(rf'^(THS-)?{NUM}([KMR]?)(?:-(\d+(?:/\d+)?)W)?(?:-{NUM})?-(\d\d|\d{{4}})$', re.I)
 # MSI desktop boards: 1.5K/4, 0R/8, 6.04KT/4, 0.1u10X/4, 22u6.3X8, 0.22u6.3X4 (size digit after '/' or the
 # dielectric letter; boardviews: /4 and X4 0402 in 832 of 837, /6 X6 0603, /8 X8 0805)
 MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(\d+(?:\.\d)?)?[XYN]?/?([468])$', re.I)
@@ -154,6 +171,42 @@ def _odm_token(t, odm):
         m = MSI_SIZED_RES.match(t)
         if m:
             return 'resistor', {'resistance_ohm': _ohms(m.group(1), m.group(2))}, size[m.group(3)]
+    if odm == 'tongfang':
+        m = TF_CAP.match(t)
+        if m and m.group(4) in size:
+            spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6),
+                    'voltage_v': float(m.group(3)), 'dielectric': TF_DIEL[m.group(5).upper()]}
+            if m.group(6):
+                spec['tolerance'] = TOL_LETTER[m.group(6).upper()]
+            return 'capacitor', spec, size[m.group(4)]
+        m = TF_RES.match(t)
+        if m and (m.group(6) in size or m.group(6) in IMPERIAL):
+            mult = m.group(3)
+            ohms = round(float(m.group(2)) * (1e-3 if mult == 'm' else {'': 1, 'R': 1, 'K': 1e3, 'M': 1e6}[mult.upper()]), 6)
+            spec = {'resistance_ohm': ohms}
+            if m.group(4):
+                num, _, den = m.group(4).partition('/')
+                spec['power_w'] = float(num) / float(den or 1)
+            if m.group(5):
+                spec['tolerance'] = f'{float(m.group(5)):g}%'
+            return 'thermistor' if m.group(1) else 'resistor', spec, size.get(m.group(6), m.group(6))
+    if odm == 'gigabyte':
+        m = GIGA_CAP.match(t)
+        if m and m.group(3) in size:
+            spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
+            if m.group(4):
+                spec['dielectric'] = {'NPO': 'C0G', 'NP0': 'C0G'}.get(m.group(4).upper(), m.group(4).upper())
+            if m.group(5):
+                spec['voltage_v'] = float(m.group(5))
+            if m.group(6) and m.group(6).upper() != 'X':
+                spec['tolerance'] = TOL_LETTER[m.group(6).upper()]
+            return 'capacitor', spec, size[m.group(3)]
+        m = GIGA_RES.match(t)
+        if m and m.group(3) in size:
+            spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
+            if m.group(4) == '1':
+                spec['tolerance'] = '1%'
+            return 'resistor', spec, size[m.group(3)]
     if odm == 'wistron':
         m = WISTRON_CAP.match(t)
         if m and m.group(7) in size:
@@ -194,6 +247,9 @@ def _clean(token):
     if t.upper().endswith('_DY'):                   # Inventec's mark on parts not fitted (dummy)
         flags.append('not fitted by default')
         t = t[:-3]
+    if t.startswith('@') and len(t) > 1:            # Tongfang's leading mark ('@10K-04'): a build option
+        flags.append('build option (@): may not be fitted')
+        t = t[1:]
     if NOT_FITTED.search(t):
         flags.append('not fitted by default')
         t = t.strip('*@')
@@ -204,12 +260,35 @@ def _clean(token):
     return t, flags
 
 
+# a label listing the approved makers' part numbers (Acer/Wistron boards):
+# 'C0201X5R105M6R3NTX~~CL03A105MQ3CSNH~~GRM033R60J105MEA2D', '0201WMJ0103TCE+0201WMJ0103TJE~~RC0201JR-0710KL'
+APPROVED_SPLIT = re.compile(r'~~|\+')
+# a footprint name printed as a part attribute (Asus/Pegatron): VX_R0402_SMALL, NBS_C0402_H22_000S, R0402_H16
+FOOTPRINT_WORD = re.compile(r'^(?:[A-Z]{2,3}_)?([RCL])(01005|0201|0402|0603|0805|1206|1210|2512)(?:_[A-Z0-9]+)+$|'
+                            r'^[A-Z]{2,3}_([RCL])(01005|0201|0402|0603|0805|1206|1210|2512)$', re.I)
+
+
+def _approved_list(t):
+    """The first maker part number in the list whose maker's scheme gives the value."""
+    for piece in APPROVED_SPLIT.split(t):
+        piece = piece.strip().upper()
+        maker = guess_maker(piece)
+        decoded = decode_mpn(maker, piece) if maker else None
+        if decoded and any(k in decoded[1] for k in VALUE_KEYS):
+            return decoded[0], dict(decoded[1]), decoded[2], (maker, piece)
+    return None
+
+
 def parse_token(token, kind=None, odm=None):
     """One label word -> (kind, specs, package, (maker, part number) or None), or None."""
     t, _ = _clean(token)
     r = _odm_token(t, odm) if odm in ODM_SIZE else None
     if r:
         return (*r, None)
+    if '~~' in t:
+        r = _approved_list(t)
+        if r:
+            return (SITE_TYPE.get(r[0], r[0]), *r[1:])
     m = MSI_CAP.match(t)
     if m and (m.group(3) or m.group(4)):
         spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}

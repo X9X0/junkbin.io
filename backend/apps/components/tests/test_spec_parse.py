@@ -195,9 +195,9 @@ def test_bead_frequency_belongs_to_its_impedance(line, ohms, mhz):
 
 @pytest.mark.parametrize('pn, maker', [
     ('RC1005J472CS', 'Samsung'),            # Samsung's RC chips, not Yageo's RC0402FR-07...
-    ('RC0402FR-07120KL', 'YAGEO'),
+    ('RC0402FR-07120KL', 'Yageo'),              # as the site files it
     ('LQP03HQ10NH02D', 'Murata'),
-    ('CV05X5R105K10AH', 'KYOCERA'),
+    ('CV05X5R105K10AH', 'Kyocera AVX'),
 ])
 def test_guess_maker(pn, maker):
     assert guess_maker(pn) == maker
