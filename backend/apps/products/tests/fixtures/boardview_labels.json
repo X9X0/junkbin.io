@@ -1,0 +1,2508 @@
+{
+"clevo": [
+{
+"label": "*2.2u_6.3V_X5R_04",
+"designator": "C785",
+"package": "0402",
+"reads": true
+},
+{
+"label": "20K_1%_04",
+"designator": "R680",
+"package": "0402",
+"reads": true
+},
+{
+"label": "330p_50V_NPO_04",
+"designator": "C540",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1000p_50V_X7R_04",
+"designator": "C832",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*1K_1%_04",
+"designator": "R215",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1u_6.3V_X6S_04_M-C0402",
+"designator": "C209",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100K_1%_04",
+"designator": "R798",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1u_25V_X7R_06",
+"designator": "C912",
+"package": "0603",
+"reads": true
+},
+{
+"label": "*10K_04",
+"designator": "C419",
+"package": "0402",
+"reads": false
+},
+{
+"label": "*0.1u_25V_X7R_06",
+"designator": "C786",
+"package": "0603",
+"reads": true
+},
+{
+"label": "5p_50V_NPO_04",
+"designator": "C512",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*1K_04",
+"designator": "R1",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*10mil_short",
+"designator": "R841",
+"package": "0402",
+"reads": false
+},
+{
+"label": "*0.1u_50V_X5V_04",
+"designator": "C24",
+"package": "0402",
+"reads": false
+},
+{
+"label": "10K_06",
+"designator": "R378",
+"package": "0603",
+"reads": true
+},
+{
+"label": "10K_02",
+"designator": "R675",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*28mil_short-p",
+"designator": "R232",
+"package": "0603",
+"reads": false
+},
+{
+"label": "*22u_6.3V_X6S_08",
+"designator": "C88",
+"package": "0805",
+"reads": true
+},
+{
+"label": "499_1%_04",
+"designator": "R460",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*20mil_Short-p",
+"designator": "R804",
+"package": "0402",
+"reads": false
+},
+{
+"label": "0.022u_16V_X7R_04",
+"designator": "C285",
+"package": "0402",
+"reads": true
+},
+{
+"label": "10u_25V_X5R_08",
+"designator": "C925",
+"package": "0805",
+"reads": true
+},
+{
+"label": "*5.1M_04",
+"designator": "R794",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*6.2K_1%_04",
+"designator": "R282",
+"package": "0402",
+"reads": true
+},
+{
+"label": "20M_04",
+"designator": "R565",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*0.015u_16V_X7R_04",
+"designator": "C497",
+"package": "0402",
+"reads": true
+},
+{
+"label": "10_06",
+"designator": "R424",
+"package": "0603",
+"reads": true
+},
+{
+"label": "22p_25V_NPO_02",
+"designator": "C598",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*1000p_50V_X7R_04",
+"designator": "C507",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2K_1%_04",
+"designator": "C1091",
+"package": "0402",
+"reads": false
+},
+{
+"label": "*22p_50V_NPO_04",
+"designator": "C5",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*100K_1%_02",
+"designator": "R10",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*22u_6.3V_X5R_06",
+"designator": "C286",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0_06",
+"designator": "R10",
+"package": "0603",
+"reads": true
+},
+{
+"label": "100K_1%_02",
+"designator": "R939",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*0_04",
+"designator": "C1114",
+"package": "0402",
+"reads": false
+},
+{
+"label": "*100_04",
+"designator": "R406",
+"package": "0402",
+"reads": true
+},
+{
+"label": "820p_50V_X7R_04",
+"designator": "C703",
+"package": "0402",
+"reads": true
+},
+{
+"label": "6.8p_50V_NPO_04",
+"designator": "C906",
+"package": "0402",
+"reads": true
+},
+{
+"label": "10u_6.3V_X5R_04",
+"designator": "C425",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*180_1%_04",
+"designator": "R156",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*47p_25V_NPO_02",
+"designator": "C1051",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*1u_6.3V_X5R_04",
+"designator": "C787",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1u_6.3V_X5R_02",
+"designator": "C878",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*5p_50V_NPO_04",
+"designator": "C507",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*1M_04",
+"designator": "R264",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*470p_50V_X7R_04",
+"designator": "C38",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.75K_0.5%_04",
+"designator": "R206",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*365K_1%_04",
+"designator": "R674",
+"package": "0402",
+"reads": true
+},
+{
+"label": "6.04_1%_04",
+"designator": "R16",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*1u_6.3V_X5R_02",
+"designator": "C1030",
+"package": "0201",
+"reads": true
+},
+{
+"label": "22u_6.3V_X5R_06",
+"designator": "C32",
+"package": "0603",
+"reads": true
+},
+{
+"label": "1M_04",
+"designator": "R767",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1.8_1%_04",
+"designator": "R671",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1u_10V_X7R_04",
+"designator": "C924",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*0.22u_50V_Y5V_06",
+"designator": "C242",
+"package": "0603",
+"reads": true
+},
+{
+"label": "2.49K_1%_04_M-R0402",
+"designator": "R416",
+"package": "0402",
+"reads": true
+},
+{
+"label": "22u_6.3V_X6S_08",
+"designator": "C94",
+"package": "0805",
+"reads": true
+},
+{
+"label": "2.2_04",
+"designator": "R37",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*68K_1%_04",
+"designator": "R804",
+"package": "0402",
+"reads": true
+}
+],
+"compal": [
+{
+"label": "0.1U_0201_10V K X5R",
+"designator": "C258",
+"package": "0201",
+"reads": true
+},
+{
+"label": "22U_0603_6.3V6K",
+"designator": "C49",
+"package": "0603",
+"reads": true
+},
+{
+"label": "2.2U_0201_6.3V6M",
+"designator": "C92",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0.1U_0402",
+"designator": "C46",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1U 16V K X7R 0402",
+"designator": "C5",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.7U_0402_6.3VAM",
+"designator": "C2530",
+"package": "0402",
+"reads": true
+},
+{
+"label": "47_0603_1%",
+"designator": "R2",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SC1KP50V2KX-1GP",
+"designator": "C5202",
+"package": "0402",
+"reads": false
+},
+{
+"label": "100_0201_5%",
+"designator": "R324",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0.1U_0402_10V7K",
+"designator": "C2983",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100_0603_1%",
+"designator": "R32",
+"package": "0603",
+"reads": true
+},
+{
+"label": "1U 6.3V M X5R 0201",
+"designator": "C8",
+"package": "0201",
+"reads": true
+},
+{
+"label": "4.7U_0805_50VAK",
+"designator": "C314",
+"package": "0805",
+"reads": true
+},
+{
+"label": "47P_0402_50V8J~D",
+"designator": "C722",
+"package": "0402",
+"reads": true
+},
+{
+"label": "22U_0805_25V6M",
+"designator": "C290",
+"package": "0805",
+"reads": true
+},
+{
+"label": "0.1U_0402_25V6",
+"designator": "R5180",
+"package": "0402",
+"reads": false
+},
+{
+"label": "1P_0402_50V8C",
+"designator": "C184",
+"package": "0402",
+"reads": true
+},
+{
+"label": "22P_0201_25V8",
+"designator": "C2",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1000P_0402_25V8J",
+"designator": "C249",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.7U_0603_25V6K",
+"designator": "C1341",
+"package": "0603",
+"reads": true
+},
+{
+"label": "22U_0805_6.3VAM",
+"designator": "C624",
+"package": "0805",
+"reads": true
+},
+{
+"label": "5.6P_0402_50V8D",
+"designator": "C2",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100K_0201_5%",
+"designator": "R221",
+"package": "0201",
+"reads": true
+},
+{
+"label": "680P_0201_50V7K",
+"designator": "C8",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1U_0402_6.3V4Z~D",
+"designator": "C347",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1U_0402_25V6K",
+"designator": "C1339",
+"package": "0402",
+"reads": true
+},
+{
+"label": "33R2J-2-GP",
+"designator": "R5511",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0603_0OHM",
+"designator": "R2671",
+"package": "0603",
+"reads": true
+},
+{
+"label": "22U_0603_6.3V6M",
+"designator": "C53",
+"package": "0603",
+"reads": true
+},
+{
+"label": "THINK_0603_1%_TSM1B104F3591RZ",
+"designator": "R44",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0R2J-2-GP",
+"designator": "R3415",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C_1210",
+"designator": "C146",
+"package": "1210",
+"reads": true
+},
+{
+"label": "0.047U_0402_16V4Z~D",
+"designator": "C248",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1U_0201_6.3V6K",
+"designator": "C24",
+"package": "0201",
+"reads": true
+},
+{
+"label": "C_0805",
+"designator": "C5",
+"package": "0805",
+"reads": true
+},
+{
+"label": "C_1206",
+"designator": "C272",
+"package": "1206",
+"reads": true
+},
+{
+"label": "24K9R2F-L-GP",
+"designator": "R2609",
+"package": "0402",
+"reads": true
+},
+{
+"label": "22U_0603_6.3V6M~D",
+"designator": "C715",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0_0603_5%",
+"designator": "R13",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SC4D7U6D3V3KX-GP",
+"designator": "C2701",
+"package": "0603",
+"reads": true
+},
+{
+"label": "100P_0402_50V8J",
+"designator": "C8",
+"package": "0402",
+"reads": true
+},
+{
+"label": "10U_0805_10V4Z",
+"designator": "C2307",
+"package": "0805",
+"reads": true
+},
+{
+"label": "470P_0603_50V8J",
+"designator": "C12",
+"package": "0603",
+"reads": true
+},
+{
+"label": "40.2_0603_1%",
+"designator": "R2",
+"package": "0603",
+"reads": true
+},
+{
+"label": "3.3K_0402_0.5%",
+"designator": "R1477",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.7K_0402_5%~D",
+"designator": "R176",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100P_0201_25VK",
+"designator": "C78",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0.22U_0201_6.3V6M",
+"designator": "C618",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0.22U_0402_10V4Z",
+"designator": "C305",
+"package": "0402",
+"reads": true
+},
+{
+"label": "18K7R2F-GP",
+"designator": "R2603",
+"package": "0402",
+"reads": true
+},
+{
+"label": "20KR2F-L-GP",
+"designator": "R2707",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.7K_0402_5%",
+"designator": "R21",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100P_0402_50V8J",
+"designator": "R5179",
+"package": "0402",
+"reads": false
+},
+{
+"label": "0.033U_0402_16V7K~D",
+"designator": "C310",
+"package": "0402",
+"reads": true
+}
+],
+"gigabyte": [
+{
+"label": "R0402-2|8.2K/4/X",
+"designator": "R5",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0402-2|1u/4/X5R/6.3V/K",
+"designator": "C230",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|22K/4/1",
+"designator": "R416",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0603-RH|22u/6/X5R/6.3V/M",
+"designator": "C9",
+"package": "0603",
+"reads": true
+},
+{
+"label": "C0402-2|0.1u/4/X7R/16V/K/X",
+"designator": "C8",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|8.2K/4",
+"designator": "R8",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|200K/4/1",
+"designator": "R348",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2-SHORT10-MASK|0/4/SHT/M/X",
+"designator": "R2",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0402-2|0.22u/4/X5R/6.3V/K/X",
+"designator": "C231",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|330/4/1",
+"designator": "R4",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|0/4",
+"designator": "R354",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|1K/4/1",
+"designator": "R3",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0402-2|0.1u/4/X7R/16V/K",
+"designator": "C233",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|1K/4/1/X",
+"designator": "R350",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|8.2K/4/1/X",
+"designator": "R365",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|0/4/X",
+"designator": "R352",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0402-2|0.1U/4/Y/25V/X",
+"designator": "C232",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0805|10U/8/X5R/6.3V/K",
+"designator": "C229",
+"package": "0805",
+"reads": true
+},
+{
+"label": "C0402-2|2.2u/4/X5R/6.3V/M",
+"designator": "C227",
+"package": "0402",
+"reads": true
+},
+{
+"label": "R0402-2|8.2K/4/1",
+"designator": "R100",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0402-2|2.2u/4/X5R/6.3V/M/X",
+"designator": "C228",
+"package": "0402",
+"reads": true
+}
+],
+"lcfc": [
+{
+"label": "470P_0201_25V7K",
+"designator": "C199",
+"package": "0201",
+"reads": true
+},
+{
+"label": "75_0805_5%",
+"designator": "R96",
+"package": "0805",
+"reads": true
+},
+{
+"label": "0.22U_0201_6.3V6-K",
+"designator": "C422",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1000P_0201_25V7K",
+"designator": "C21",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1U_0402_6.3VA-K",
+"designator": "C85",
+"package": "0402",
+"reads": true
+},
+{
+"label": "33P_0402_50V8-J",
+"designator": "C559",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1U_0603_25V7K",
+"designator": "C202",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0.1U_0603_6.3V7-K",
+"designator": "C9137",
+"package": "0603",
+"reads": true
+},
+{
+"label": "1U_0402_10V6K",
+"designator": "C830",
+"package": "0402",
+"reads": true
+},
+{
+"label": "15K_0402_0.1%",
+"designator": "R784",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1u_0201_10V6K",
+"designator": "C110",
+"package": "0201",
+"reads": true
+},
+{
+"label": "100P_0402_50V8J",
+"designator": "C202",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.01U_0402_25V7K",
+"designator": "C205",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1U_0201_6.3V6K",
+"designator": "C852",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1K_0603_5%",
+"designator": "R179",
+"package": "0603",
+"reads": true
+},
+{
+"label": "180_0402_1%",
+"designator": "R9127",
+"package": "0402",
+"reads": true
+},
+{
+"label": "390P_0402_50V8-J",
+"designator": "C108",
+"package": "0402",
+"reads": true
+},
+{
+"label": "20_0603_5%_ESR03EZPJ200",
+"designator": "R281",
+"package": "0603",
+"reads": true
+},
+{
+"label": "2.7M_0201_5%",
+"designator": "R89",
+"package": "0201",
+"reads": true
+},
+{
+"label": "2200PF_0201_25V",
+"designator": "C165",
+"package": "0201",
+"reads": true
+},
+{
+"label": "100K_0402_5%",
+"designator": "R782",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1M_0201_5%",
+"designator": "R427",
+"package": "0201",
+"reads": true
+},
+{
+"label": "10U_0603_10V6-K",
+"designator": "C796",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0.01_0603_LE_1%",
+"designator": "R302",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0_0201_5%",
+"designator": "R10071",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0.022U_0402_25V7K",
+"designator": "C256",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1UF_25V_0603",
+"designator": "C8",
+"package": "0603",
+"reads": true
+},
+{
+"label": "1K_0201_5%",
+"designator": "R233",
+"package": "0201",
+"reads": true
+},
+{
+"label": "4.7U_0402_6.3V6M",
+"designator": "C109",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1U_0201_6.3V6-K",
+"designator": "C2543",
+"package": "0201",
+"reads": true
+},
+{
+"label": "10K_0402_5%",
+"designator": "R450",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1.24M_0402_1%",
+"designator": "R279",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.22U_0402_10V6-K",
+"designator": "C818",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.1U_0402_25V",
+"designator": "C816",
+"package": "0402",
+"reads": true
+},
+{
+"label": "33_0402_5%",
+"designator": "R677",
+"package": "0402",
+"reads": true
+},
+{
+"label": "10K_0201_5%",
+"designator": "R67",
+"package": "0201",
+"reads": true
+},
+{
+"label": "2.2K_0201_5%",
+"designator": "R340",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0.1UF_25V",
+"designator": "C196",
+"package": "0402",
+"reads": false
+},
+{
+"label": "0.01U_0201_10V7K",
+"designator": "C174",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1U_0402_6.3V6K",
+"designator": "C116",
+"package": "0402",
+"reads": true
+},
+{
+"label": "10_0603_5%",
+"designator": "R273",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0_0603_5%",
+"designator": "R10079",
+"package": "0603",
+"reads": true
+},
+{
+"label": "100_0805_5%",
+"designator": "R896",
+"package": "0805",
+"reads": true
+},
+{
+"label": "0.22U_0603_50V7K",
+"designator": "C206",
+"package": "0603",
+"reads": true
+},
+{
+"label": "2.2UF_0603_25V",
+"designator": "C200",
+"package": "0603",
+"reads": true
+},
+{
+"label": "10M_0201_5%",
+"designator": "R536",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1U_0603_25V6-K",
+"designator": "C8333",
+"package": "0603",
+"reads": true
+},
+{
+"label": "1000P_0201_25V7-K",
+"designator": "C558",
+"package": "0201",
+"reads": true
+},
+{
+"label": "22.1K_0201_1%",
+"designator": "R90",
+"package": "0201",
+"reads": true
+},
+{
+"label": "10U_0805_10V6-K",
+"designator": "C78",
+"package": "0805",
+"reads": true
+},
+{
+"label": "0.1U_0402_25",
+"designator": "C7",
+"package": "0402",
+"reads": true
+},
+{
+"label": "6P_0201_25V8-D",
+"designator": "C138",
+"package": "0201",
+"reads": true
+}
+],
+"msi": [
+{
+"label": "0.1u10x",
+"designator": "C256",
+"package": "0402",
+"reads": false
+},
+{
+"label": "10u16x8",
+"designator": "C73",
+"package": "0805",
+"reads": true
+},
+{
+"label": "x_3.9krst/4",
+"designator": "R293",
+"package": "0402",
+"reads": false
+},
+{
+"label": "10P/4_C0603MS_BOT",
+"designator": "C704",
+"package": "0603",
+"reads": true
+},
+{
+"label": "x_0.47u6.3x4",
+"designator": "C483",
+"package": "0402",
+"reads": true
+},
+{
+"label": "x_c0.1u16y0402_N_C0402MS",
+"designator": "C652",
+"package": "0402",
+"reads": true
+},
+{
+"label": "x_75/1%/4",
+"designator": "R59",
+"package": "0402",
+"reads": true
+},
+{
+"label": "X_33R0402-2",
+"designator": "R237",
+"package": "0402",
+"reads": true
+},
+{
+"label": "560r0402",
+"designator": "R900",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.02k1%",
+"designator": "R58",
+"package": "0402",
+"reads": false
+},
+{
+"label": "x_51r",
+"designator": "R88",
+"package": "0402",
+"reads": false
+},
+{
+"label": "x_49.9r1%",
+"designator": "R114",
+"package": "0603",
+"reads": false
+},
+{
+"label": "100kr1%-1",
+"designator": "R24",
+"package": "0603",
+"reads": false
+},
+{
+"label": "1u6.3y",
+"designator": "C515",
+"package": "0402",
+"reads": false
+},
+{
+"label": "100pf_0402",
+"designator": "C27",
+"package": "0402",
+"reads": true
+},
+{
+"label": "3.3n50x",
+"designator": "C728",
+"package": "0402",
+"reads": false
+},
+{
+"label": "X_18n16X/4",
+"designator": "C450",
+"package": "0402",
+"reads": true
+},
+{
+"label": "c0.15u16x-rh",
+"designator": "C74",
+"package": "0603",
+"reads": false
+},
+{
+"label": "c4.7u6.3x5",
+"designator": "C623",
+"package": "0603",
+"reads": false
+},
+{
+"label": "910kr/4",
+"designator": "R229",
+"package": "0402",
+"reads": true
+},
+{
+"label": "x_0.1u/16v/x/4",
+"designator": "C575",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1kr1%0402_F_R0402",
+"designator": "R418",
+"package": "0402",
+"reads": true
+},
+{
+"label": "x_1u16y6",
+"designator": "C861",
+"package": "0603",
+"reads": true
+},
+{
+"label": "c0.1u16y04",
+"designator": "C500",
+"package": "0402",
+"reads": true
+},
+{
+"label": "3.09k/4/1",
+"designator": "R1513",
+"package": "0402",
+"reads": false
+},
+{
+"label": "10/0603",
+"designator": "R138",
+"package": "0603",
+"reads": true
+},
+{
+"label": "X_100K/4/1",
+"designator": "R334",
+"package": "0402",
+"reads": false
+},
+{
+"label": "X_0/6",
+"designator": "R175",
+"package": "0603",
+"reads": true
+},
+{
+"label": "x_2.2r8",
+"designator": "R182",
+"package": "0805",
+"reads": true
+},
+{
+"label": "c22p50n0402-1",
+"designator": "C156",
+"package": "0402",
+"reads": true
+},
+{
+"label": "c0.22u25x-hf",
+"designator": "C1028",
+"package": "0603",
+"reads": false
+},
+{
+"label": "0.1uf_1005_BGA",
+"designator": "C956",
+"package": "0402",
+"reads": true
+},
+{
+"label": "c0.33u6.3x/4",
+"designator": "C1492",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2r/1%4",
+"designator": "R28",
+"package": "0402",
+"reads": true
+},
+{
+"label": "x_0r/1206",
+"designator": "R282",
+"package": "1206",
+"reads": true
+},
+{
+"label": "x_c0.018u16x4",
+"designator": "C94",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0r_RES1608",
+"designator": "R74",
+"package": "0603",
+"reads": true
+},
+{
+"label": "10u10y8",
+"designator": "C419",
+"package": "0805",
+"reads": true
+},
+{
+"label": "c0.1u16x_C0402",
+"designator": "C168",
+"package": "0402",
+"reads": true
+},
+{
+"label": "6.19k1%0402",
+"designator": "R386",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C1U16Y3",
+"designator": "C593",
+"package": "0603",
+"reads": false
+},
+{
+"label": "X_2.2KR0805",
+"designator": "R204",
+"package": "0805",
+"reads": true
+},
+{
+"label": "c1000p16x",
+"designator": "C662",
+"package": "0603",
+"reads": false
+},
+{
+"label": "x_1u/16v/6",
+"designator": "C836",
+"package": "0603",
+"reads": true
+},
+{
+"label": "c0.22u16x50402-hf",
+"designator": "C379",
+"package": "0402",
+"reads": false
+},
+{
+"label": "220p/4/N",
+"designator": "C63",
+"package": "0402",
+"reads": false
+},
+{
+"label": "c330p50",
+"designator": "C1019",
+"package": "0402",
+"reads": false
+},
+{
+"label": "1u/6.3v",
+"designator": "C7",
+"package": "0402",
+"reads": false
+},
+{
+"label": "3.6KST",
+"designator": "R356",
+"package": "0603",
+"reads": false
+},
+{
+"label": "44.2ohm",
+"designator": "R2",
+"package": "0603",
+"reads": false
+},
+{
+"label": "x_c3300p50x/4",
+"designator": "C1499",
+"package": "0402",
+"reads": true
+},
+{
+"label": "C0.01U50Y5",
+"designator": "C99",
+"package": "0402",
+"reads": false
+},
+{
+"label": "0.47uF",
+"designator": "C1295",
+"package": "0603",
+"reads": false
+},
+{
+"label": "100p",
+"designator": "C865",
+"package": "0603",
+"reads": false
+},
+{
+"label": "0.33u6.3x4",
+"designator": "C619",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2r1%0402",
+"designator": "R358",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2.2r1%",
+"designator": "R316",
+"package": "0603",
+"reads": false
+},
+{
+"label": "1RT/6",
+"designator": "R967",
+"package": "0603",
+"reads": true
+}
+],
+"quanta": [
+{
+"label": "tpm_n@10u/6.3v_6",
+"designator": "C47",
+"package": "0603",
+"reads": false
+},
+{
+"label": "dis@0/j_6",
+"designator": "R119",
+"package": "0603",
+"reads": true
+},
+{
+"label": "PSD@0.01u/50V_4",
+"designator": "C323",
+"package": "0402",
+"reads": true
+},
+{
+"label": "220pf/50v_4",
+"designator": "C2014",
+"package": "0402",
+"reads": true
+},
+{
+"label": "ioac@0_8",
+"designator": "R248",
+"package": "0805",
+"reads": true
+},
+{
+"label": "EV@2.2K_5%_2",
+"designator": "R368",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*8.25K/F_2",
+"designator": "R630",
+"package": "0201",
+"reads": true
+},
+{
+"label": "dis@40/f_4",
+"designator": "R17",
+"package": "0402",
+"reads": true
+},
+{
+"label": "tsi@0.1u/25v_4",
+"designator": "C210",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*0_8",
+"designator": "R256",
+"package": "0805",
+"reads": true
+},
+{
+"label": "113_1%_2",
+"designator": "R138",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*10u/6.3v_6_nc",
+"designator": "C41",
+"package": "0603",
+"reads": true
+},
+{
+"label": "hcb1608kf-330t30_6",
+"designator": "R375",
+"package": "0603",
+"reads": true
+},
+{
+"label": "u42@1m_5%_4",
+"designator": "R518",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*0_5%_4_NC",
+"designator": "R580",
+"package": "0402",
+"reads": true
+},
+{
+"label": "ODD@100K_5%_4",
+"designator": "R337",
+"package": "0402",
+"reads": true
+},
+{
+"label": "11.8k/f_6",
+"designator": "R321",
+"package": "0603",
+"reads": true
+},
+{
+"label": "BBR@0_5%_8",
+"designator": "R1TB55",
+"package": "0805",
+"reads": true
+},
+{
+"label": "*29.4k/f_4",
+"designator": "R322",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*TPM@0.1u/10V_2",
+"designator": "C272",
+"package": "0201",
+"reads": true
+},
+{
+"label": "ev@0_6",
+"designator": "R67",
+"package": "0603",
+"reads": true
+},
+{
+"label": "*gt3@10k_4",
+"designator": "R705",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*0_8_nc",
+"designator": "R381",
+"package": "0805",
+"reads": true
+},
+{
+"label": "tpm_i@0_4",
+"designator": "R526",
+"package": "0402",
+"reads": false
+},
+{
+"label": "vl@0_4",
+"designator": "R199",
+"package": "0402",
+"reads": true
+},
+{
+"label": "DBG@0_5%_4",
+"designator": "R370",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*EGA10402V05AH_0.2p",
+"designator": "C5023",
+"package": "0402",
+"reads": false
+},
+{
+"label": "*0_6_s",
+"designator": "R324",
+"package": "0603",
+"reads": false
+},
+{
+"label": "*0.01u_4",
+"designator": "C324",
+"package": "0402",
+"reads": true
+},
+{
+"label": "TPM@33_5%_2",
+"designator": "R596",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*TPM@Short_0201",
+"designator": "R592",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*ev@0.1u/16v_4",
+"designator": "C4029",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*49.9K_1%_2",
+"designator": "R171",
+"package": "0201",
+"reads": true
+},
+{
+"label": "5.1_1%_2",
+"designator": "R668",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*0_4_nc",
+"designator": "R447",
+"package": "0402",
+"reads": true
+},
+{
+"label": "40.2K/0.1%_4",
+"designator": "R8673",
+"package": "0402",
+"reads": false
+},
+{
+"label": "30.9K_1%_2",
+"designator": "R298",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*ioac@0_8",
+"designator": "R277",
+"package": "0805",
+"reads": true
+},
+{
+"label": "*2.2k/j_4",
+"designator": "R512",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*51_1%_2",
+"designator": "R37",
+"package": "0201",
+"reads": true
+},
+{
+"label": "ev@1u/6.3v_4",
+"designator": "C86",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*1K_1%_4_NC",
+"designator": "R686",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*160_1%_4",
+"designator": "R430",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*Short_0201",
+"designator": "R132",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*0.1u/10v/x5r_4@nc",
+"designator": "C425",
+"package": "0402",
+"reads": false
+},
+{
+"label": "*0.01u/10V_2_NC",
+"designator": "C10935",
+"package": "0201",
+"reads": true
+},
+{
+"label": "*uma@220p/50v_4x",
+"designator": "C824",
+"package": "0402",
+"reads": true
+},
+{
+"label": "UMA_S7_X4@100K_1%_2",
+"designator": "R869",
+"package": "0201",
+"reads": false
+},
+{
+"label": "gc6@1m_4",
+"designator": "R4012",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*sj0402_nc",
+"designator": "R389",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*typec@4.7k/f_4",
+"designator": "R528",
+"package": "0402",
+"reads": true
+},
+{
+"label": "em@2.2uf/6.3v_4",
+"designator": "C142",
+"package": "0402",
+"reads": true
+},
+{
+"label": "680p/50v/x7r_4",
+"designator": "C28",
+"package": "0402",
+"reads": false
+},
+{
+"label": "1k_4",
+"designator": "R143",
+"package": "0402",
+"reads": true
+},
+{
+"label": "EJ@1u/6.3V_4",
+"designator": "C274",
+"package": "0402",
+"reads": true
+},
+{
+"label": "kbl@10k_4",
+"designator": "R148",
+"package": "0402",
+"reads": true
+},
+{
+"label": "*1M_5%_4_NC",
+"designator": "R660",
+"package": "0402",
+"reads": true
+},
+{
+"label": "150p/50v_4n",
+"designator": "C273",
+"package": "0402",
+"reads": true
+}
+],
+"tongfang": [
+{
+"label": "270K-1-04",
+"designator": "R449",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0.33uF-6.3V-02R-M",
+"designator": "C503",
+"package": "0201",
+"reads": false
+},
+{
+"label": "@NONDDS_0-04",
+"designator": "R412",
+"package": "0402",
+"reads": false
+},
+{
+"label": "@1U-25-04X-K",
+"designator": "C799",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@22P-50-04X-K",
+"designator": "C3791",
+"package": "0402",
+"reads": true
+},
+{
+"label": ".22U-25-06R-K",
+"designator": "C1333",
+"package": "0603",
+"reads": true
+},
+{
+"label": "@.22U-10-04R-K",
+"designator": "C592",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100K-02",
+"designator": "R755",
+"package": "0201",
+"reads": true
+},
+{
+"label": "1500P-50-04X-K",
+"designator": "C3543",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@DDS_100K-02",
+"designator": "R621",
+"package": "0201",
+"reads": false
+},
+{
+"label": "@1U-16-04Y-Z",
+"designator": "C429",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@10u-6.3-04R-M",
+"designator": "C442",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@1K-06",
+"designator": "R310",
+"package": "0603",
+"reads": true
+},
+{
+"label": "4.3K-1-04",
+"designator": "R450",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@150K-04",
+"designator": "R545",
+"package": "0402",
+"reads": true
+},
+{
+"label": "200K-04",
+"designator": "R869",
+"package": "0402",
+"reads": true
+},
+{
+"label": "15pF-50-02N-J",
+"designator": "C8974",
+"package": "0201",
+"reads": true
+},
+{
+"label": "@10K-06",
+"designator": "R395",
+"package": "0603",
+"reads": true
+},
+{
+"label": "@2.2-04",
+"designator": "R320",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@0-02",
+"designator": "R11701",
+"package": "0201",
+"reads": true
+},
+{
+"label": "@45.3K-1-04",
+"designator": "R382",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@10U-6.3-06R",
+"designator": "C889",
+"package": "0603",
+"reads": true
+},
+{
+"label": "10U-25-06R",
+"designator": "C558",
+"package": "0603",
+"reads": true
+},
+{
+"label": "@4.7U-6.3-08R-K",
+"designator": "C3478",
+"package": "0805",
+"reads": true
+},
+{
+"label": "@.015U-25-04X-K",
+"designator": "C1154",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1U-25-04X-K",
+"designator": "C564",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100-04",
+"designator": "R430",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@.01U-25-04X-K",
+"designator": "C666",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@S0-04",
+"designator": "R4466",
+"package": "0402",
+"reads": false
+},
+{
+"label": "1K-1-02",
+"designator": "R440",
+"package": "0201",
+"reads": true
+},
+{
+"label": "M-R1206",
+"designator": "R345",
+"package": "1206",
+"reads": true
+},
+{
+"label": "18K-1-04",
+"designator": "R452",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@THS-100K-1-06",
+"designator": "R4032",
+"package": "0603",
+"reads": true
+},
+{
+"label": "2.2-04",
+"designator": "R274",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@2.7N-50-04X-K",
+"designator": "C3721",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2.2U-6.3-04R",
+"designator": "C347",
+"package": "0402",
+"reads": true
+},
+{
+"label": "22U-6.3-06R-M",
+"designator": "C53",
+"package": "0603",
+"reads": true
+},
+{
+"label": "@DDS_10m-1/5W-1-04",
+"designator": "R650",
+"package": "0402",
+"reads": false
+},
+{
+"label": "@10n-50-04X-K",
+"designator": "C296",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@1U-6.3-04R-K",
+"designator": "C294",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2.94K-1-04",
+"designator": "R399",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@OC-MEM_28.7K-1-04",
+"designator": "R701",
+"package": "0402",
+"reads": false
+},
+{
+"label": "@.47U-16-04Y-Z",
+"designator": "C3741",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@1U-10-04R-K",
+"designator": "C410",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@DDS_.1U-16-04R-K",
+"designator": "C441",
+"package": "0402",
+"reads": false
+},
+{
+"label": "@22U-6.3-06R-M",
+"designator": "C964",
+"package": "0603",
+"reads": true
+},
+{
+"label": "@OC-MEM_47K-1-04",
+"designator": "R1090",
+"package": "0402",
+"reads": false
+},
+{
+"label": "@DDS_1U-10-04R-K",
+"designator": "C514",
+"package": "0402",
+"reads": false
+},
+{
+"label": "1U-6.3-04R-K",
+"designator": "C524",
+"package": "0402",
+"reads": true
+},
+{
+"label": "1K-04",
+"designator": "R145",
+"package": "0402",
+"reads": true
+},
+{
+"label": "22uF-6.3-04R-M",
+"designator": "C732",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4.7U-25-08R-K",
+"designator": "C560",
+"package": "0805",
+"reads": true
+},
+{
+"label": "2M-1-04",
+"designator": "R336",
+"package": "0402",
+"reads": true
+},
+{
+"label": "@DDS_5.1-1-02",
+"designator": "R583",
+"package": "0201",
+"reads": false
+},
+{
+"label": "BD-HCB2012KF-120",
+"designator": "R898",
+"package": "0805",
+"reads": true
+}
+],
+"wistron": [
+{
+"label": "SC10U6D3V3MX-7-GP-U",
+"designator": "C7833",
+"package": "0603",
+"reads": true
+},
+{
+"label": "40K2R2F-GP",
+"designator": "R7607",
+"package": "0402",
+"reads": true
+},
+{
+"label": "5D1R2F-GP",
+"designator": "R2110",
+"package": "0402",
+"reads": false
+},
+{
+"label": "SCD47U10V2KX-GP",
+"designator": "C1710",
+"package": "0402",
+"reads": true
+},
+{
+"label": "100KR2F-L1-GP",
+"designator": "R2407",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC10U10V5KX-2DLGP",
+"designator": "C2501",
+"package": "0805",
+"reads": true
+},
+{
+"label": "10KR2B-GP",
+"designator": "R2713",
+"package": "0402",
+"reads": false
+},
+{
+"label": "20KR2F-L-GP",
+"designator": "R2707",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC1U6D3V2KX-GP",
+"designator": "C2428",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2D2R2J-GP",
+"designator": "R2462",
+"package": "0402",
+"reads": false
+},
+{
+"label": "D15R2010F-GP",
+"designator": "R395",
+"package": "2010",
+"reads": true
+},
+{
+"label": "SC100P50V2JN-3GP",
+"designator": "C2613",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC100P50V2JN-3DLGP",
+"designator": "C4308",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC470P50V3JN-2GP",
+"designator": "C2606",
+"package": "0603",
+"reads": true
+},
+{
+"label": "820R2J-GP",
+"designator": "R4051",
+"package": "0402",
+"reads": true
+},
+{
+"label": "2KR2F-3-GP",
+"designator": "R2607",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SCD1U16V1KX-GP",
+"designator": "C9206",
+"package": "0201",
+"reads": true
+},
+{
+"label": "SCD022U16V2JX-GP",
+"designator": "C1401",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0R1206-DB-GP",
+"designator": "R6303",
+"package": "1206",
+"reads": true
+},
+{
+"label": "SC2200P50V2KX-2GP",
+"designator": "C2603",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC1P25V1CN-3-GP",
+"designator": "C4037",
+"package": "0201",
+"reads": true
+},
+{
+"label": "2D2R3J-2-GP",
+"designator": "R2446",
+"package": "0603",
+"reads": false
+},
+{
+"label": "SC4D7U6D3V2MX-9-GP",
+"designator": "C7808",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0R5-2A",
+"designator": "R6907",
+"package": "0805",
+"reads": false
+},
+{
+"label": "SCD75P50V1CN-GP",
+"designator": "C5724",
+"package": "0201",
+"reads": true
+},
+{
+"label": "10KR1F-GP",
+"designator": "R71G1",
+"package": "0201",
+"reads": true
+},
+{
+"label": "SC15P50V2JN-2-GP",
+"designator": "C3011",
+"package": "0402",
+"reads": true
+},
+{
+"label": "75R3J-L-GP",
+"designator": "R313",
+"package": "0603",
+"reads": true
+},
+{
+"label": "1K8R2F-GP",
+"designator": "R3701",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4D3KR2F-GP",
+"designator": "R5734",
+"package": "0402",
+"reads": false
+},
+{
+"label": "220KR2J-L2-GP",
+"designator": "R1208",
+"package": "0402",
+"reads": true
+},
+{
+"label": "330R3J-L-GP",
+"designator": "R463",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SC1U10V3ZY-6GP",
+"designator": "C6201",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SC1U25V3KX-1-GP",
+"designator": "C2712",
+"package": "0603",
+"reads": true
+},
+{
+"label": "0R1J-GP",
+"designator": "R1875",
+"package": "0201",
+"reads": true
+},
+{
+"label": "240KR3-GP",
+"designator": "R4307",
+"package": "0603",
+"reads": false
+},
+{
+"label": "SC10U6D3V2MX-2-GP",
+"designator": "C2218",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC68P-GP",
+"designator": "C5601",
+"package": "0603",
+"reads": false
+},
+{
+"label": "SC8D2P50VCN-2-GP",
+"designator": "C4056",
+"package": "0402",
+"reads": false
+},
+{
+"label": "10R3F-GP",
+"designator": "R2907",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SCD1U50V3KX-DL-GP",
+"designator": "C5542",
+"package": "0603",
+"reads": true
+},
+{
+"label": "10MR3J-L1-GP",
+"designator": "R208",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SC1U10V2KX-1DLGP",
+"designator": "C8605",
+"package": "0402",
+"reads": true
+},
+{
+"label": "15KR2F-GP",
+"designator": "R7638",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC680P25V1KX-GP",
+"designator": "C8719",
+"package": "0201",
+"reads": true
+},
+{
+"label": "3KR2F-GP",
+"designator": "R1906",
+"package": "0402",
+"reads": true
+},
+{
+"label": "0R0402-PAD-1-GP",
+"designator": "R5419",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC3D9P25V1BN-GP",
+"designator": "C5747",
+"package": "0201",
+"reads": true
+},
+{
+"label": "0R3J-0-U-GP",
+"designator": "R2917",
+"package": "0603",
+"reads": true
+},
+{
+"label": "SC1U10V2KX-16-GP",
+"designator": "C2201",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC10U25V3MX-5-GP",
+"designator": "C2846",
+"package": "0603",
+"reads": true
+},
+{
+"label": "10KR1J-GP",
+"designator": "R7188",
+"package": "0201",
+"reads": true
+},
+{
+"label": "200KR2F-L-GP",
+"designator": "R2709",
+"package": "0402",
+"reads": true
+},
+{
+"label": "4K7R2J-2-GP",
+"designator": "R6211",
+"package": "0402",
+"reads": true
+},
+{
+"label": "SC10U10V5KX-2GP",
+"designator": "C1207",
+"package": "0805",
+"reads": true
+},
+{
+"label": "0R0805-PAD",
+"designator": "R512",
+"package": "0805",
+"reads": true
+},
+{
+"label": "39R2F-GP",
+"designator": "R2105",
+"package": "0402",
+"reads": true
+}
+]
+}

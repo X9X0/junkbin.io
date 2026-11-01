@@ -1,6 +1,9 @@
 """
 Tests for schematic_values: ODM value labels -> component fields.
 """
+import json
+from pathlib import Path
+
 import pytest
 
 from apps.products.schematic_ocr_utils import group_identical
@@ -129,3 +132,19 @@ def test_gigabyte_labels_and_approved_maker_lists():
     listed = sv.parse_label(['0201WMJ0103TCE+0201WMJ0103TJE~~MCR006YRTJ103~~RC0201JR-0710KL'], 'R1')
     assert (listed['maker'], listed['part_number'], listed['package']) == ('Yageo', 'RC0201JR-0710KL', '0201')
     assert sv.parse_label(['10KOhm', 'VX_R0402_SMALL'], 'R0410')['package'] == '0402'
+
+
+BOARDVIEW_LABELS = json.load(open(Path(__file__).parent / 'fixtures' / 'boardview_labels.json'))
+
+
+@pytest.mark.parametrize('odm', sorted(BOARDVIEW_LABELS))
+def test_labels_against_their_boardview_footprints(odm):
+    """Labels as printed on real schematics, with the footprint their boardview puts the part on
+    (letus.repair mirror, schematic and boardview of the same board). A label read today must keep its
+    package; none may be read as a different one."""
+    for item in BOARDVIEW_LABELS[odm]:
+        got = sv.parse_label([item['label']], item['designator'], odm=odm)['package']
+        if item['reads']:
+            assert got == item['package'], item
+        else:
+            assert got in (None, item['package']), item
