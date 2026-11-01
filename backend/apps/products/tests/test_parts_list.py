@@ -102,3 +102,10 @@ def test_unsupplied_parts_become_generic_parts(monkeypatch):
     monkeypatch.setattr(pl, '_layout_pages', lambda raw: [PSP, PSP, PSP])
     row = pl.build_candidates_from_parts_list(io.BytesIO(b'%PDF'), 'Sony')[0]
     assert (row['part_number'], row['manufacturer']) == ('CAP 100nF 10V 10%', 'Generic')
+
+
+def test_sony_prints_micro_as_m(monkeypatch):
+    sony = '\n'.join(f'C{100 + i}     1-12{i}-960-11     CERAMIC CHIP     0.1MF     10%     16V' for i in range(10))
+    monkeypatch.setattr(pl, '_layout_pages', lambda raw: [sony, sony.replace('C1', 'C2'), sony.replace('C1', 'C3')])
+    row = pl.build_candidates_from_parts_list(io.BytesIO(b'%PDF'), 'Sony')[0]
+    assert row['description'].startswith('CERAMIC CHIP 0.1uF')

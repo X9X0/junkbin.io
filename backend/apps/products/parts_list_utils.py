@@ -282,11 +282,16 @@ def build_candidates_from_parts_list(file_obj, brand=''):
     from .schematic_values import designator_kind, generic_name
 
     file_obj.seek(0)
-    rows, _why = parse_document(_layout_pages(file_obj.read()))
+    pages = _layout_pages(file_obj.read())
+    rows, _why = parse_document(pages)
+    # Sony prints micro as m in its parts lists - its legend: 'uF : mF', 'uH : mH'
+    micro_as_m = brand.lower() == 'sony' or any(re.search(r'u\s*F\s*:\s*m\s*F', p) for p in pages)
     candidates = []
     for page, code, refs, desc in rows:
         safety = '⚠' in desc                    # the manual's mark for a safety-critical part
         clean = re.sub(r'\s+', ' ', desc.replace('⚠', ' ')).strip()
+        if micro_as_m:
+            clean = re.sub(r'(?<=\d)M([FH])\b', r'u\1', clean)
         kind = part_type(clean, refs) or designator_kind(refs[0] if refs else '')
         k, specs, package = parse_description(clean, kind or '')
         kind = (SITE_TYPE.get(k, k) if k else None) or kind
