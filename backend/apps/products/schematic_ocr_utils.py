@@ -169,7 +169,7 @@ def _text_layers(raw):
 MIN_TEXT_LAYER_WORDS = 10
 
 
-def extract_candidates_from_page(image, page_number, words=None, source='OCR'):
+def extract_candidates_from_page(image, page_number, words=None, source='OCR', odm=None):
     """Designator/nearby-value candidates on one page: OCR'd from its rendered image, or
     `words` already read from the PDF's text layer."""
     from .schematic_values import parse_label
@@ -203,7 +203,7 @@ def extract_candidates_from_page(image, page_number, words=None, source='OCR'):
                 used.add(value_index)
                 label = [words[value_index]['text']]
         value_text = ' '.join(label)
-        parsed = parse_label(label, w['text']) if label else None
+        parsed = parse_label(label, w['text'], odm) if label else None
         candidates.append(_candidate(w['text'], page_number, value_text, parsed, strict, source))
     return candidates
 
@@ -294,6 +294,8 @@ def build_candidates_from_schematic_file(file_obj, file_type):
         # pages without one need the expensive render+OCR, and only they count
         # towards the limit - checked before any of that work starts.
         layers = _text_layers(raw)
+        from .schematic_values import detect_odm
+        odm = detect_odm(' '.join(w['text'] for words in layers for w in words))   # whose size codes apply
         scanned = [n for n, words in enumerate(layers, start=1) if len(words) < MIN_TEXT_LAYER_WORDS]
         if len(scanned) > MAX_OCR_PAGES:
             raise ValueError(
@@ -306,9 +308,9 @@ def build_candidates_from_schematic_file(file_obj, file_type):
                 # one page at a time: a whole manual rendered at 300 DPI won't fit in memory
                 image = pdf2image.convert_from_bytes(raw, dpi=300, first_page=page_number,
                                                      last_page=page_number)[0]
-                candidates.extend(extract_candidates_from_page(image, page_number))
+                candidates.extend(extract_candidates_from_page(image, page_number, odm=odm))
             else:
-                candidates.extend(extract_candidates_from_page(None, page_number, words, source='PDF text'))
+                candidates.extend(extract_candidates_from_page(None, page_number, words, source='PDF text', odm=odm))
     else:
         image = Image.open(io.BytesIO(raw))
         candidates.extend(extract_candidates_from_page(image, 1))

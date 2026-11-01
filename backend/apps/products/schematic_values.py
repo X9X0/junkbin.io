@@ -18,8 +18,15 @@ formats checked against real data are decoded:
   * Fields written with their unit ('1UF', '6.3V', '10%', 'X5R', '0402') are read as such.
   * Maker part numbers go through the component decoders (spec_parse.decode_mpn).
 
-Other ODMs' size digits ('2.2U/6.3V_4', '0.1u/2/X5R/16V/K') are not guessed: the label's
-explicit fields are still read, the size is left for a person.
+  * Quanta, Clevo, Inventec and Wistron size codes were read off their own boardviews (GenCAD
+    files list each part's footprint and its schematic value): Quanta _2/_4/_6/_8/_12 = 0201/0402/
+    0603/0805/1206, Clevo _04/_06/_08, Inventec _1/_2/_3/_6 (its _5 sits on three sizes: not read),
+    Wistron's size digit 2/3/5 = 0402/0603/0805. The same digit means different sizes to different
+    ODMs (Quanta _2 = 0201, Inventec _2 = 0402), so these are read only when detect_odm() has named
+    the document's ODM from its title blocks or board numbers.
+
+Gigabyte's and MSI's size digits ('0.1u/2/X5R/16V/K') are not guessed: the label's explicit
+fields are still read, the size is left for a person.
 """
 import re
 from fractions import Fraction
@@ -56,6 +63,114 @@ PN_TAIL = re.compile(r'^([A-Z][A-Z0-9-]{5,})_(\d{4}|\dP)$', re.I)
 
 # '*0_04' (Quanta, Clevo) and a lone '@' (Compal): not fitted by default; 'PX@', 'DIS@0.1U/10V_4X': fitted
 # only in that build
+# who drew a schematic: words its title blocks and board numbers carry
+ODM_MARKS = [('compal', r'Compal Electronics|\bLA-[0-9A-Z]{4}P\b'), ('lcfc', r'\bLCFC\b|\bNM-[A-Z]\d{3}\b'),
+             ('quanta', r'Quanta Computer|\bDA0[0-9A-Z]{3}MB|\bDAZ[0-9A-Z]{5}'), ('inventec', r'Inventec|\b6050A\d{7}'),
+             ('wistron', r'Wistron'), ('clevo', r'\bCLEVO\b|\b6-7[17]-[0-9A-Z]{5}'),
+             ('msi', r'MICRO-STAR|\bMS-\d{4}\b')]
+ODM_SIZE = {'quanta': {'2': '0201', '4': '0402', '6': '0603', '8': '0805', '12': '1206'},
+            'clevo': {'04': '0402', '06': '0603', '08': '0805'},
+            'inventec': {'1': '0201', '2': '0402', '3': '0603', '6': '1206'},
+            'wistron': {'2': '0402', '3': '0603', '5': '0805'},
+            'msi': {'4': '0402', '6': '0603', '8': '0805'}}
+# MSI desktop boards: 1.5K/4, 0R/8, 6.04KT/4, 0.1u10X/4, 22u6.3X8, 0.22u6.3X4 (size digit after '/' or the
+# dielectric letter; boardviews: /4 and X4 0402 in 832 of 837, /6 X6 0603, /8 X8 0805)
+MSI_SIZED_CAP = re.compile(rf'^C?{NUM}([PNU])/?(\d+(?:\.\d)?)?[XYN]?/?([468])$', re.I)
+MSI_SIZED_RES = re.compile(rf'^{NUM}([KM]?)R?T?/([468])$', re.I)
+# Quanta: 2.2U/6.3V_4, .1U/10V_4X, 10P/50V_4; 1K/F_4, 34_4, 330_5%_2, 10K_2
+QUANTA_CAP = re.compile(rf'^{NUM}([PNU])F?(?:/{NUM}V)?_(\d{{1,2}})[A-Z]?$', re.I)
+QUANTA_RES = re.compile(rf'^{NUM}([KMR]?)(?:/([FGJ])|_{NUM}%)?_(\d{{1,2}})$', re.I)
+# Clevo: 0.22u_10V_X5R_04, 22u_6.3V_X6S_08; 100K_04, 10K_1%_04
+CLEVO_CAP = re.compile(rf'^{NUM}([PNU])F?_{NUM}V_(X5R|X7R|X6S|X7S|C0G|NPO|NP0|Y5V)_(\d{{2}})$', re.I)
+CLEVO_RES = re.compile(rf'^{NUM}([KMR]?)(?:_{NUM}%)?_(\d{{2}})$', re.I)
+# Inventec: 1uF_6.3V_1, 330pF_50V_2, 0.1uF_16V_2_DY; 2K_5%_2, 10_1%_3
+INVENTEC_CAP = re.compile(rf'^{NUM}([PNU])F_{NUM}V_(\d)(?:_DY)?$', re.I)
+INVENTEC_RES = re.compile(rf'^{NUM}([KM]?)_{NUM}%_(\d)(?:_DY)?$', re.I)
+# Wistron: SC1U10V2KX-1GP, SCD1U25V2KX-GP (D = decimal point: 0.1U), SC4D7U6D3V3KX-GP (4.7U 6.3V);
+# 100KR2J-1-GP, 2K2R2J-2-GP (2.2K), 24K3R2F-1-GP (24.3K), 0R2J-2-GP
+WISTRON_CAP = re.compile(r'^SC(D)?(\d+)(?:D(\d+))?([PNU])(\d+)(?:D(\d+))?V(\d)([BCDFGJKMZ])[A-Z]?-', re.I)
+WISTRON_RES = re.compile(r'^(\d+)([KM]?)(\d*)R(\d)([FGJ])-', re.I)
+# MSI writes the size out, so no ODM is needed: C0.1U25Y0402, C1U10X0603, C22P; 1KR0402, 0R0402,
+# X_1KR1%0402-1, 33R, 330KR (the dielectric letters X/Y are not read: unchecked)
+MSI_CAP = re.compile(rf'^C{NUM}([PNU])(\d+(?:\.\d)?)?(?:[XYN]\d?)?(\d{{4}})?$', re.I)
+MSI_RES = re.compile(rf'^(?:X?_)?{NUM}([KM]?)R(\d+(?:\.\d+)?%)?(\d{{4}})?(?:-\d)?$', re.I)
+CAP_DIEL_WORDS = {'NPO': 'C0G', 'NP0': 'C0G'}
+
+
+def detect_odm(text):
+    """The ODM that drew a schematic, from words its pages carry, or None when the marks disagree."""
+    counts = {name: len(re.findall(rx, text, re.I)) for name, rx in ODM_MARKS}
+    best = max(counts, key=counts.get)
+    ranked = sorted(counts.values(), reverse=True)
+    return best if ranked[0] >= 2 and ranked[0] >= 3 * ranked[1] else None
+
+
+def _odm_token(t, odm):
+    """An ODM house format whose size code needs the ODM known: (kind, specs, package) or None."""
+    size = ODM_SIZE.get(odm, {})
+    if odm == 'quanta':
+        m = QUANTA_CAP.match(t)
+        if m and m.group(4) in size:
+            spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
+            if m.group(3):
+                spec['voltage_v'] = float(m.group(3))
+            return 'capacitor', spec, size[m.group(4)]
+        m = QUANTA_RES.match(t)
+        if m and m.group(5) in size:
+            spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
+            if m.group(3):
+                spec['tolerance'] = TOL_LETTER[m.group(3).upper()]
+            elif m.group(4):
+                spec['tolerance'] = f'{float(m.group(4)):g}%'
+            return 'resistor', spec, size[m.group(5)]
+    if odm == 'clevo':
+        m = CLEVO_CAP.match(t)
+        if m and m.group(5) in size:
+            return 'capacitor', {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6),
+                                 'voltage_v': float(m.group(3)),
+                                 'dielectric': CAP_DIEL_WORDS.get(m.group(4).upper(), m.group(4).upper())}, size[m.group(5)]
+        m = CLEVO_RES.match(t)
+        if m and m.group(4) in size:
+            spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
+            if m.group(3):
+                spec['tolerance'] = f'{float(m.group(3)):g}%'
+            return 'resistor', spec, size[m.group(4)]
+    if odm == 'inventec':
+        m = INVENTEC_CAP.match(t)
+        if m and m.group(4) in size:
+            return 'capacitor', {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6),
+                                 'voltage_v': float(m.group(3))}, size[m.group(4)]
+        m = INVENTEC_RES.match(t)
+        if m and m.group(4) in size:
+            return 'resistor', {'resistance_ohm': _ohms(m.group(1), m.group(2)),
+                                'tolerance': f'{float(m.group(3)):g}%'}, size[m.group(4)]
+    if odm == 'msi':
+        m = MSI_SIZED_CAP.match(t)
+        if m:
+            spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
+            if m.group(3):
+                spec['voltage_v'] = float(m.group(3))
+            return 'capacitor', spec, size[m.group(4)]
+        m = MSI_SIZED_RES.match(t)
+        if m:
+            return 'resistor', {'resistance_ohm': _ohms(m.group(1), m.group(2))}, size[m.group(3)]
+    if odm == 'wistron':
+        m = WISTRON_CAP.match(t)
+        if m and m.group(7) in size:
+            whole = '0' if m.group(1) else m.group(2)
+            frac = m.group(2) if m.group(1) else (m.group(3) or '')
+            value = float(f'{whole}.{frac}' if frac else whole)
+            volt = float(f'{m.group(5)}.{m.group(6)}' if m.group(6) else m.group(5))
+            return 'capacitor', {'capacitance_pf': round(value * UNIT_PF[m.group(4).upper()], 6), 'voltage_v': volt,
+                                 'tolerance': TOL_LETTER[m.group(8).upper()]}, size[m.group(7)]
+        m = WISTRON_RES.match(t)
+        if m and m.group(4) in size:
+            v = float(f'{m.group(1)}.{m.group(3)}' if m.group(3) else m.group(1))
+            return 'resistor', {'resistance_ohm': round(v * {'': 1, 'K': 1e3, 'M': 1e6}[m.group(2).upper()], 6),
+                                'tolerance': TOL_LETTER[m.group(5).upper()]}, size[m.group(4)]
+    return None
+
+
 NOT_FITTED = re.compile(r'^\*|^@$')
 VARIANT = re.compile(r'^([A-Z0-9]+)@', re.I)
 IC_PN = re.compile(r'^(?=.*\d)(?=.*[A-Z])[A-Z0-9][A-Z0-9-]{5,}$')
@@ -76,6 +191,9 @@ def _clean(token):
     t = token.strip()
     if t.endswith('~D'):
         t = t[:-2]
+    if t.upper().endswith('_DY'):                   # Inventec's mark on parts not fitted (dummy)
+        flags.append('not fitted by default')
+        t = t[:-3]
     if NOT_FITTED.search(t):
         flags.append('not fitted by default')
         t = t.strip('*@')
@@ -86,9 +204,24 @@ def _clean(token):
     return t, flags
 
 
-def parse_token(token, kind=None):
+def parse_token(token, kind=None, odm=None):
     """One label word -> (kind, specs, package, (maker, part number) or None), or None."""
     t, _ = _clean(token)
+    r = _odm_token(t, odm) if odm in ODM_SIZE else None
+    if r:
+        return (*r, None)
+    m = MSI_CAP.match(t)
+    if m and (m.group(3) or m.group(4)):
+        spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
+        if m.group(3):
+            spec['voltage_v'] = float(m.group(3))
+        return 'capacitor', spec, m.group(4) if m.group(4) in IMPERIAL else None, None
+    m = MSI_RES.match(t)
+    if m and kind in (None, 'resistor') and (m.group(3) or m.group(4) or m.group(2)):
+        spec = {'resistance_ohm': _ohms(m.group(1), m.group(2))}
+        if m.group(3):
+            spec['tolerance'] = m.group(3)
+        return 'resistor', spec, m.group(4) if m.group(4) in IMPERIAL else None, None
     m = COMPAL_CAP.match(t)
     if m:
         spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6),
@@ -152,7 +285,7 @@ def _explicit(tokens, kind):
     first = text.split()[0] if text.split() else ''
     if kind in ('resistor', 'thermistor') and 'resistance_ohm' not in specs:
         m = re.fullmatch(r'(\d*\.?\d+)([KMR]?)(\d*)', first, re.I)        # '34', '10K', '4K7', '1M'
-        if m and not (m.group(3) and not m.group(2)):
+        if m and not (m.group(3) and (not m.group(2) or '.' in m.group(1) or len(m.group(3)) > 3)):
             v = float(m.group(1) + ('.' + m.group(3) if m.group(3) else ''))
             specs['resistance_ohm'] = round(v * {'': 1, 'R': 1, 'K': 1e3, 'M': 1e6}[m.group(2).upper()], 6)
         letter = next((w for w in text.split()[1:] if re.fullmatch(r'[FGJ]', w, re.I)), None)
@@ -163,7 +296,7 @@ def _explicit(tokens, kind):
     return SITE_TYPE.get(k, k) if k else kind, specs, pkg, None
 
 
-def parse_label(tokens, designator):
+def parse_label(tokens, designator, odm=None):
     """Words gathered around one designator -> {'kind', 'specs', 'package', 'maker', 'part_number',
     'flags', 'confidence', 'used'}. confidence: 'high' when a known label format gives the value and the
     designator agrees on the kind, 'medium' when only some fields could be read, 'low' when none."""
@@ -171,7 +304,7 @@ def parse_label(tokens, designator):
     flags = sorted({f for t in tokens for f in _clean(t)[1]})
     found, used, other = [], [], []
     for t in tokens:
-        r = parse_token(t, want)
+        r = parse_token(t, want, odm)
         if r and (want is None or r[0] in (want, None) or (want, r[0]) in SAME_KIND):
             found.append(r)
             used.append(t)

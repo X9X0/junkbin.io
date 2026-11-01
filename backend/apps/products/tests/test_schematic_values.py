@@ -57,3 +57,36 @@ def test_identical_parts_are_one_row():
     rows = group_identical([{**row, 'reference_designator': r} for r in ('C41', 'C44', 'C61')]
                            + [{**row, 'reference_designator': 'C9', 'description': row['description'] + '; not fitted by default'}])
     assert [(r['reference_designator'], r['quantity']) for r in rows] == [('C41, C44, C61', 3), ('C9', 1)]
+
+
+@pytest.mark.parametrize('word, designator, odm, specs, package', [
+    # size codes read off each ODM's boardviews (footprint against schematic value)
+    ('2.2U/6.3V_4', 'C3', 'quanta', {'capacitance_pf': 2.2e6, 'voltage_v': 6.3}, '0402'),
+    ('330_5%_2', 'R4', 'quanta', {'resistance_ohm': 330.0, 'tolerance': '5%'}, '0201'),
+    ('1K/F_4', 'R8', 'quanta', {'resistance_ohm': 1000.0, 'tolerance': '1%'}, '0402'),
+    ('22u_6.3V_X5R_08', 'C5', 'clevo', {'capacitance_pf': 22e6, 'voltage_v': 6.3, 'dielectric': 'X5R'}, '0805'),
+    ('2K_5%_2', 'R6', 'inventec', {'resistance_ohm': 2000.0, 'tolerance': '5%'}, '0402'),   # Inventec _2 is 0402
+    ('1uF_6.3V_1', 'C7', 'inventec', {'capacitance_pf': 1e6, 'voltage_v': 6.3}, '0201'),
+    ('SCD1U25V2KX-GP', 'C8', 'wistron', {'capacitance_pf': 1e5, 'voltage_v': 25.0, 'tolerance': '10%'}, '0402'),
+    ('SC4D7U6D3V3KX-GP', 'C9', 'wistron', {'capacitance_pf': 4.7e6, 'voltage_v': 6.3, 'tolerance': '10%'}, '0603'),
+    ('24K3R2F-1-GP', 'R9', 'wistron', {'resistance_ohm': 24300.0, 'tolerance': '1%'}, '0402'),
+    ('22u6.3X8', 'C10', 'msi', {'capacitance_pf': 22e6, 'voltage_v': 6.3}, '0805'),
+    ('1.5K/4', 'R10', 'msi', {'resistance_ohm': 1500.0}, '0402'),
+    ('C0.1U25Y0402', 'C11', None, {'capacitance_pf': 1e5, 'voltage_v': 25.0}, '0402'),        # size written out
+])
+def test_odm_size_codes(word, designator, odm, specs, package):
+    r = parse_label([word], designator, odm)
+    assert (r['specs'], r['package']) == (specs, package)
+
+
+def test_a_size_code_is_read_only_for_its_odm():
+    # Quanta _2 is 0201 and Inventec _2 is 0402: without the ODM, no size
+    assert parse_label(['330_5%_2'], 'R4')['package'] is None
+    assert parse_label(['2K_5%_2_DY'], 'R6', 'inventec')['flags'] == ['not fitted by default']
+
+
+def test_detect_odm():
+    from apps.products.schematic_values import detect_odm
+    assert detect_odm('Compal Electronics, Inc. LA-C281P ... Compal Electronics, Inc.') == 'compal'
+    assert detect_odm('Quanta Computer Inc. DA0Z8GMB8D0 Quanta Computer Inc.') == 'quanta'
+    assert detect_odm('Compal Electronics Quanta Computer') is None          # marks disagree
