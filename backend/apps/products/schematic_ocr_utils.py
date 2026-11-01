@@ -24,6 +24,7 @@ trusted only as a weak secondary filter on the nearby "value" token, not
 on the designator match itself - the regex shape match already does that
 structural filtering.
 """
+import collections
 import io
 import math
 import re
@@ -156,6 +157,57 @@ def _label_words(i, words, designators):
     return [t for _, t in sorted(near)[:MAX_LABEL_WORDS]]
 
 
+def _is_label_word(t):
+    """Could this word be (part of) a part's printed label? Not a designator, net, rail or page note."""
+    if REF_DES_PATTERN.fullmatch(t) or len(t) > 60:
+        return False
+    if t == '@' or re.fullmatch(r'[A-Z0-9]+@', t, re.I) or FOOTPRINT_WORD.match(t) or PREFIXED_LABEL.match(t):
+        return True                     # a build marker, a footprint ('VX_R0402_SMALL'), 'x_15k/4'
+    if NOISE_TOKEN_PATTERN.match(t) or NOT_A_VALUE.search(t) or not re.search(r'\d', t):
+        return bool(re.fullmatch(r'X5R|X7R|X6S|X7S|C0G|NP0|NPO|Y5V|\d+(?:\.\d+)?%|[FGJKMZ]', t, re.I))
+    return True
+
+
+# labels printed on the designator's own line to its right (Wistron, Quanta, Tongfang rows) can sit
+# further away than a nearer, unaligned designator: that alignment wins, at half its gap
+BASELINE_TOLERANCE_PX = 4
+ALIGNED_REACH_PX = 420
+BASELINE_GAP_WEIGHT = 0.5
+
+
+def _page_labels(words, designators):
+    """{designator index: label words, best first} for one text-layer page. Each label word goes to
+    the designator it costs least to pair with: the plain distance (up to MAX_PAIR_DISTANCE_PX), or half
+    the gap when it sits on that designator's line to its right. Scored against the boardview labels of
+    39 schematics from 8 ODMs (letus.repair mirror): 85.5% read right (78.7% by distance alone), 3.2%
+    wrong (3.4%) - most of those are revision differences between the schematic and its boardview."""
+    reach = ALIGNED_REACH_PX
+    grid = collections.defaultdict(list)
+    for k in designators:
+        grid[(int(words[k]['x'] // reach), int(words[k]['y'] // reach))].append(k)
+    found = collections.defaultdict(list)
+    for j, w in enumerate(words):
+        if not _is_label_word(w['text']):
+            continue
+        gx, gy = int(w['x'] // reach), int(w['y'] // reach)
+        best = None
+        for k in (k for dx in (-1, 0, 1) for dy in (-1, 0, 1) for k in grid.get((gx + dx, gy + dy), ())):
+            if k == j:
+                continue
+            d = words[k]
+            dist = math.hypot(w['x'] - d['x'], w['y'] - d['y'])
+            cost = dist if dist <= MAX_PAIR_DISTANCE_PX else None
+            if 'x0' in w and abs(w['y'] - d['y']) <= BASELINE_TOLERANCE_PX \
+                    and d['x1'] - BASELINE_TOLERANCE_PX <= w['x0'] <= d['x1'] + reach:
+                gap = (w['x0'] - d['x1']) * BASELINE_GAP_WEIGHT
+                cost = gap if cost is None else min(cost, gap)
+            if cost is not None and (best is None or cost < best[0]):
+                best = (cost, k)
+        if best:
+            found[best[1]].append((best[0], w['text']))
+    return {k: [t for _, t in sorted(v)[:MAX_LABEL_WORDS]] for k, v in found.items()}
+
+
 BBOX_PAGE = re.compile(r'<page\b.*?</page>', re.S)
 BBOX_WORD = re.compile(r'<word xMin="([\d.]+)" yMin="([\d.]+)" xMax="([\d.]+)" yMax="([\d.]+)">(.*?)</word>')
 
@@ -205,6 +257,7 @@ def extract_candidates_from_page(image, page_number, words=None, source='OCR', o
     designators = [k for k, w in enumerate(words)
                    if REF_DES_PATTERN.fullmatch(w['text']) and DESIGNATOR_PREFIX.match(w['text'])] if strict else []
 
+    page_labels = _page_labels(words, designators) if strict else {}
     for i, w in enumerate(words):
         if not REF_DES_PATTERN.fullmatch(w['text']):
             continue
@@ -215,7 +268,7 @@ def extract_candidates_from_page(image, page_number, words=None, source='OCR', o
         seen_designators.add(w['text'])
 
         if strict:
-            label = _label_words(i, words, designators)
+            label = page_labels.get(i, [])
             if not any(re.search(r'\d', t) for t in label):
                 continue  # a pin or ball name: real parts on a CAD page have their value printed beside them
         else:

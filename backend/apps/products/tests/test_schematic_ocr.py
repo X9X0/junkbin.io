@@ -106,3 +106,14 @@ def test_crop_shows_the_page_around_a_designator(schematic_factory, authenticate
     assert response.content[:8] == b'\x89PNG\r\n\x1a\n'
     assert authenticated_client.get(f'/api/schematics/{schematic.pk}/crop/?page=1').status_code == 400
     assert APIClient().get(url).status_code == 200              # visitors see it too: no sign-in to look
+
+
+def test_a_label_on_the_designators_own_line_wins_over_a_nearer_part():
+    """Dense rows (Wistron, Tongfang): R2's label sits on R2's line, further right than R3 is below it."""
+    def word(text, x0, y, width=30):
+        return {'text': text, 'x': x0 + width / 2, 'y': y, 'x0': x0, 'x1': x0 + width, 'y0': y - 6, 'y1': y + 6}
+    words = [word('R2', 100, 100), word('10KR2J-3-GP', 220, 100, 80),
+             word('R3', 330, 150), word('1KR2J-1-GP', 380, 150, 70)]
+    labels = ocr._page_labels(words, [0, 2])
+    assert labels[0] == ['10KR2J-3-GP'] and labels[2] == ['1KR2J-1-GP']
+    assert ocr._label_words(0, words, [0, 2]) == []                    # by distance alone R3 took it
