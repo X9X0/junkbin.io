@@ -2,6 +2,8 @@
 Tests for parts_list_utils: service-manual parts lists read from pdftotext -layout.
 """
 import io
+import json
+from pathlib import Path
 
 import pytest
 
@@ -121,3 +123,18 @@ def test_tpv_codes_and_their_related_shapes():
     assert len(rows) == 24, why
     assert rows[0][1:] == ('061G0402220', ['R1006'], 'RST CHIPR 22 OHM +-5% 1/16W YAGEO')
     assert ('093G64S526SEM', ['D401'], 'SWITCHING BAS316WS 250MA 100V SOD323') in [r[1:] for r in rows]
+
+
+PAGES = json.load(open(Path(__file__).parent / 'fixtures' / 'parts_list_pages.json', encoding='utf-8'))
+
+
+@pytest.mark.parametrize('name', sorted(PAGES))
+def test_real_parts_list_pages(name):
+    """40 lines of a real parts-list page per layout (Sharp/TPV, Panasonic, Onkyo, Sony VAIO, Sony PSP):
+    the number of rows and the first one must not change unnoticed."""
+    page = PAGES[name]
+    rows = pl.parse_page(page['page'])
+    if len(rows) < pl.MIN_PAGE_ROWS:
+        rows = pl.parse_page_late(page['page'])
+    assert len(rows) == page['rows']
+    assert [rows[0][0], rows[0][1], rows[0][2]] == page['first']
