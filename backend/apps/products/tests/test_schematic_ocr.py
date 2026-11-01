@@ -82,3 +82,27 @@ def test_ocr_labels_match_catalog_parts_exactly(component_factory):
     component_factory(manufacturer='Yageo', part_number='RC0402JR-0710K_0402L')
     found = match_components_exactly([{'part_number': 'rt8207pgqw'}, {'part_number': '10K_0402'}, {'part_number': ''}])
     assert [c['matched_component'] and c['matched_component']['id'] for c in found] == [str(part.pk), None, None]
+
+
+def test_rows_say_where_they_were_read_and_offer_other_readings():
+    page = [(100, 700, 'CV1'), (100, 690, '1U_0402_6.3V6K'), (100, 682, '0.1U_0402_16V7K')] + \
+           [(50, 100 + 10 * i, f'NET{i}') for i in range(10)]
+    row = ocr.build_candidates_from_schematic_file(_text_pdf([page]), 'pdf')[0]
+    assert row['part_number'] == 'CAP 1uF 6.3V X5R 10% 0402'
+    assert row['locations'][0]['ref'] == 'CV1' and row['locations'][0]['page'] == 1
+    assert row['label_words'][:2] == ['1U_0402_6.3V6K', '0.1U_0402_16V7K']
+    assert [a['part_number'] for a in row['alternatives']] == ['CAP 100nF 16V X7R 10% 0402']
+
+
+@pytest.mark.django_db
+def test_crop_shows_the_page_around_a_designator(schematic_factory, authenticated_client):
+    from rest_framework.test import APIClient
+    from django.core.files.base import ContentFile
+    schematic = schematic_factory(approved=True, file_type='pdf')
+    schematic.file.save('page.pdf', ContentFile(_text_pdf([CAD_PAGE]).getvalue()), save=True)
+    url = f'/api/schematics/{schematic.pk}/crop/?page=1&x=420&y=380'
+    response = authenticated_client.get(url)
+    assert response.status_code == 200 and response['Content-Type'] == 'image/png'
+    assert response.content[:8] == b'\x89PNG\r\n\x1a\n'
+    assert authenticated_client.get(f'/api/schematics/{schematic.pk}/crop/?page=1').status_code == 400
+    assert APIClient().get(url).status_code in (401, 403)      # signed-in reviewers only

@@ -204,8 +204,29 @@ def extract_candidates_from_page(image, page_number, words=None, source='OCR', o
                 label = [words[value_index]['text']]
         value_text = ' '.join(label)
         parsed = parse_label(label, w['text'], odm) if label else None
-        candidates.append(_candidate(w['text'], page_number, value_text, parsed, strict, source))
+        row = _candidate(w['text'], page_number, value_text, parsed, strict, source)
+        row['locations'] = [{'ref': w['text'], 'page': page_number, 'x': round(w['x']), 'y': round(w['y'])}]
+        row['label_words'] = label
+        row['alternatives'] = _alternatives(label, w['text'], odm, row) if strict else []
+        candidates.append(row)
     return candidates
+
+
+def _alternatives(label, designator, odm, row):
+    """Other readings of the label for the reviewer to pick from: each word read on its own (a
+    neighbour's label caught in the gathering, a second line), different from the row's reading."""
+    from .schematic_values import generic_name, parse_label
+
+    out, seen = [], {row['part_number']}
+    for word in dict.fromkeys(label):
+        p = parse_label([word], designator, odm)
+        name = p['part_number'] or generic_name(p['kind'], p['specs'], p['package'])
+        if not name or name in seen:
+            continue
+        seen.add(name)
+        out.append({'part_number': name, 'manufacturer': p['maker'] or ('Generic' if not p['part_number'] else ''),
+                    'component_type': p['kind'] or '', 'package_type': p['package'] or '', 'source': word})
+    return out[:5]
 
 
 def _candidate(designator, page_number, value_text, parsed, strict, source):
@@ -254,6 +275,8 @@ def group_identical(candidates):
             g = groups[key]
             if c['reference_designator'] not in g['reference_designator']:
                 g['reference_designator'].append(c['reference_designator'])
+                if len(g.get('locations', [])) < 200:
+                    g['locations'] = g.get('locations', []) + c.get('locations', [])
             g['pages'].add(c['page_number'])
     out = []
     for key in order:

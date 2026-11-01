@@ -1228,6 +1228,8 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return [permissions.IsAdminUser()]
         elif self.action in ['approve', 'reject']:
             return [IsModeratorOrAdmin()]
+        elif self.action == 'crop':
+            return [permissions.IsAuthenticated()]
         return [permissions.AllowAny()]
 
     @action(detail=True, methods=['get'])
@@ -1335,6 +1337,46 @@ class SchematicViewSet(viewsets.ModelViewSet):
             'high_confidence': sum(1 for c in candidates if c['confidence'] == 'high'),
             'low_confidence': sum(1 for c in candidates if c['confidence'] == 'low'),
         })
+
+    @action(detail=True, methods=['get'])
+    def crop(self, request, pk=None):
+        """A picture of the schematic page around a point (?page=&x=&y=, in the extraction's 300 DPI
+        pixels), with the spot marked: lets a reviewer see the label a BOM row was read from."""
+        import subprocess
+        import tempfile
+        from django.http import HttpResponse
+        from PIL import Image, ImageDraw
+
+        schematic = self.get_object()
+        if schematic.file_type != 'pdf':
+            return Response({'detail': 'Only PDF schematics can be cropped.'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            page, x, y = int(request.query_params['page']), float(request.query_params['x']), float(request.query_params['y'])
+        except (KeyError, ValueError):
+            return Response({'detail': 'page, x and y are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        dpi, w, h = 150, 520, 320                     # at 150 DPI: about 3.5 x 2 inches of the page
+        cx, cy = x * dpi / 300, y * dpi / 300
+        left, top = max(0, int(cx - w / 2)), max(0, int(cy - h / 2))
+        with tempfile.TemporaryDirectory() as tmp:
+            src = f'{tmp}/in.pdf'
+            with open(src, 'wb') as fh:
+                schematic.file.open('rb')
+                fh.write(schematic.file.read())
+                schematic.file.close()
+            done = subprocess.run(['pdftoppm', '-png', '-r', str(dpi), '-f', str(page), '-l', str(page),
+                                   '-x', str(left), '-y', str(top), '-W', str(w), '-H', str(h),
+                                   '-singlefile', src, f'{tmp}/out'], capture_output=True, timeout=60)
+            if done.returncode != 0:
+                return Response({'detail': 'Could not render that page.'}, status=status.HTTP_400_BAD_REQUEST)
+            img = Image.open(f'{tmp}/out.png').convert('RGB')
+        mark = ImageDraw.Draw(img)
+        mx, my = cx - left, cy - top
+        mark.ellipse([mx - 28, my - 14, mx + 28, my + 14], outline=(255, 0, 140), width=3)
+        out = io.BytesIO()
+        img.save(out, 'PNG')
+        response = HttpResponse(out.getvalue(), content_type='image/png')
+        response['Cache-Control'] = 'private, max-age=3600'
+        return response
 
     @action(detail=False, methods=['get'])
     def recent(self, request):

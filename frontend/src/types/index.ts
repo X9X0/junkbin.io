@@ -311,6 +311,12 @@ export interface BomCandidate {
   location_description: string;
   extraction_context: string;
   matched_component: { id: string; part_number: string; manufacturer: string } | null;
+  /** where each designator of the row sits (schematic scans: page and 300 DPI pixel position) */
+  locations?: { ref: string; page: number; x: number; y: number }[];
+  /** the words printed around the designator that the row was read from */
+  label_words?: string[];
+  /** other readings of those words, for the reviewer to pick */
+  alternatives?: { part_number: string; manufacturer: string; component_type: string; package_type: string; source: string }[];
 }
 
 // Component suggestion — a candidate BOM row pending moderator review

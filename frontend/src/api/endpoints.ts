@@ -494,6 +494,10 @@ export const schematics = {
     return response.data;
   },
 
+  /** a picture of the schematic page around a BOM row's designator (cookie-authenticated image URL) */
+  cropUrl: (id: string, loc: { page: number; x: number; y: number }): string =>
+    `${api.defaults.baseURL}/schematics/${id}/crop/?page=${loc.page}&x=${loc.x}&y=${loc.y}`,
+
   extractBomOcr: async (id: string): Promise<{
     product: string;
     candidates: BomCandidate[];
