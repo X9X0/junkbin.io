@@ -58,5 +58,29 @@
    ],
    "CERAMIC CHIP 4.7uF 20% 6.3V"
   ]
+ },
+ "lg_wrapped": {
+  "source": "K520_SVC_Manual.pdf",
+  "page": "                                                                             13. REPLACEMENT PART LIST\nNo       Part No                      Description             Qty                             Location No.\n  26 EAE62726601   Capacitor,Ceramic,Chip                         1 C2361\n  27 EAE62762301   Capacitor,Ceramic,Chip                         2 C4800,C9107\n  28 EAE62767801   Capacitor,Ceramic,Chip                         1 C4133\n  29 EAE62884201   Capacitor(High Frequency),Ceramic,Chip         1 C5149\n  30 EAE62924001   Capacitor(High Frequency),Ceramic,Chip         2 C9115,C9116\n  31 EAE62969601   Capacitor,Ceramic,Chip                         1 C4169\n  32 EAE63541901   Capacitor,Ceramic,Chip                         1 C7101\n  33 EAE63841601   Capacitor,TA,Polymer                           1 C9101\n  34 EAF61450601   Varistor                                       3 C6700,C6701,VA9100\n  35 EAG63772101   Connector,RF                                   4 SW1001,SW1002,SW1003,SW1100\n  36 EAG64651301   C-Clip                                         4 ANT1000,ANT1001,ANT1003,ANT1004\n                                                                    ANT1005,ANT1006,ANT1007,ANT1008,ANT1009,ANT1010,ANT1011,\n  37 EAG64672301   C-Clip                                         9\n                                                                    ANT5100,ANT5101\n  38 EAG64850201   Socket,DIMM/SIMM                               1 S9601\n  39 EAG64870001   Connector,Terminal Block                       1 CN9701\n  40 EAH61693001   Diode,TVS                                      2 C6702,C6703\n  41 EAH62213401   Diode,TVS                                      1 D9100\n  42 EAH63092501   Diode,TVS                                      1 D9201\n  43 EAM62071001   Filter,Bead                                    2 FB4100,FB4101\n  44 EAM62150501   Filter,Bead                                    1 FB7100\n  45 EAM62291101   Filter,EMI/Power                               2 FL7101,FL9203\n  46 EAM62530001   Filter,EMI/Power                               2 FL7100,FL7102\n  47 EAM62630501   Filter,EMI/Power                               2 FL7300,FL7301\n  48 EAM62730001   Filter,Separator,Switch                        1 FL6610\n  49 EAM62770201   Filter,EMI/Power                               1 FL7500\n  50 EAM62770301   Filter,EMI/Power                               1 FL7400\n\n\n                                                                                         Copyright ⓒ 2016 LG Electronics. Inc. All right\nLGE Internal Use Only                                                                     reserved. Only training and service purposes\n                                                            153",
+  "rows": 24,
+  "first": [
+   "EAE62726601",
+   [
+    "C2361"
+   ],
+   "Capacitor,Ceramic,Chip"
+  ]
+ },
+ "lg_spaced": {
+  "source": "LG G4 H815.pdf",
+  "page": "                                                                          13. REPLACEMENT PART LIST\n\n  40   EAN63846101           IC,Proximity         1   U1001\n  41    EAE62726601     Capacitor,Ceramic,Chip    2   C1002,C1003\n  42   EAV63132201            LED,Flash           1   LD1000\n  43   ECCH0009101      Capacitor,Ceramic,Chip    1   C1001\n  44    EAE62762301     Capacitor,Ceramic,Chip    1   C1000\n  45   EAN63806501          IC,RGB Sensor         1   U1000\n  46   MCQ68424601         Damper,Camera          1   MCQ00\n  47   MCQ68605801             Damper             1   MCQ000000\n  48   MCR66127702              Decor             1   MCR00\n  49   MDS65370601              Gasket            1   MDS000000\n  50   MEZ64319901        Label,After Service     1   MEZ000900\n  51   MCQ68404601         Damper,Motor           1   MCQ049800\n  52   ACQ87884251       Cover Assembly,Bar       1   ACQ003401\n  53    EBP62581701        Camera Module          1   EBP00\n  54   EAU62024101            Motor,DC            1   EAU010000\n  55    EBP62362103        Camera Module          1   EBP01\n  56   EAG63849801           Jack,Phone           1   EAG140300\n  57    EAB63688601            Receiver           1   EAB010400\n  58   MJN69548301           Tape,Protect         1   MJN061101\n  59   ACQ88367631         Cover Assembly         1   ACQ01\n  60   MJN69587001               Tape             1   MJN01\n  61   MKC65479101          Window,IRDA           1   MKC041800\n  62   MJN69567001          Tape,Camera           1   MJN00\n  63   MDS65252601              Gasket            1   MDS00\n  64   MCR65947601              Decor             1   MCR000000\n  65   MBL66397801               Cap              1   MBL02\n  66   MBL66378101               Cap              1   MBL01\n  67   MBL66357901               Cap              1   MBL00\n  68   ACQ87865101      Cover Assembly,Front      1   ACQ032700\n  69   MCQ68424501             Damper             1   MCQ000000\n  70   MCQ68664301             Damper             1   MCQ01\n  71   MGJ64688301               Plate            1   MGJ00\n  72   MHK65065301              Sheet             1   MHK000000\n  73   MHK65105301              Sheet             1   MHK000001\n  74   MJN69527001               Tape             1   MJN02\n  75   ACQ87913201    Cover Assembly,Front(Sub)   1   ACQ032700\n  76   MCK68591901           Cover,Front          1   MCK032700\n  77   ADV75307501         Frame Assembly         1   ADV000000",
+  "rows": 5,
+  "first": [
+   "EAN63846101",
+   [
+    "U1001"
+   ],
+   "IC,Proximity"
+  ]
  }
 }

@@ -130,11 +130,16 @@ PAGES = json.load(open(Path(__file__).parent / 'fixtures' / 'parts_list_pages.js
 
 @pytest.mark.parametrize('name', sorted(PAGES))
 def test_real_parts_list_pages(name):
-    """40 lines of a real parts-list page per layout (Sharp/TPV, Panasonic, Onkyo, Sony VAIO, Sony PSP):
+    """40 lines of a real parts-list page per layout (Sharp/TPV, Panasonic, Onkyo, Sony VAIO, Sony PSP,
+    LG phones):
     the number of rows and the first one must not change unnoticed."""
     page = PAGES[name]
-    rows = pl.parse_page(page['page'])
-    if len(rows) < pl.MIN_PAGE_ROWS:
-        rows = pl.parse_page_late(page['page'])
+    rows = pl.page_rows(page['page'])
     assert len(rows) == page['rows']
     assert [rows[0][0], rows[0][1], rows[0][2]] == page['first']
+
+
+def test_indexed_rows_take_wrapped_locations_up_to_their_quantity():
+    rows = pl.page_rows(PAGES['lg_wrapped']['page'])
+    assert ('EAG64672301', ['ANT1005', 'ANT1006', 'ANT1007', 'ANT1008', 'ANT1009', 'ANT1010', 'ANT1011',
+                            'ANT5100', 'ANT5101'], 'C-Clip') in rows

@@ -246,6 +246,55 @@ def parse_page_late(text):
     return out
 
 
+# LG replacement part lists: No, part code, description, quantity, locations; a long location list
+# wraps onto lines of its own, above or below its row ('  37 EAG64672301   C-Clip   9')
+INDEXED_FIRST = re.compile(r'^\d{1,4} (\S+)$')
+INDEXED_LAST = re.compile(r'^(\d{1,4})(?: (.+))?$')
+
+
+def _indexed_row(line):
+    """(code, description, quantity, locations text) or None."""
+    chunks = [c.strip() for c in re.split(r'\s{3,}', line.strip()) if c.strip()]
+    if len(chunks) >= 4 and re.fullmatch(r'\d{1,4}', chunks[0]):
+        chunks = [f'{chunks[0]} {chunks[1]}'] + chunks[2:]          # 'No' and code a column apart
+    if len(chunks) >= 4 and re.fullmatch(r'\d{1,4}', chunks[-2]) and _refs(chunks[-1]):
+        chunks = chunks[:-2] + [f'{chunks[-2]} {chunks[-1]}']        # so are quantity and locations
+    if len(chunks) < 3:
+        return None
+    first, last = INDEXED_FIRST.match(chunks[0]), INDEXED_LAST.match(chunks[-1])
+    if not (first and last):
+        return None
+    return first.group(1), ' '.join(chunks[1:-1]), int(last.group(1)), last.group(2) or ''
+
+
+def _refs(text):
+    refs = [r for r in re.split(r'[\s,]+', text.strip()) if r]
+    return refs if refs and all(REFDES_RE.match(r) for r in refs) else None
+
+
+def parse_page_indexed(text):
+    """[(code, refs, description)] for an indexed table; a row's locations are its own plus wrapped lines,
+    until it has as many as its quantity."""
+    rows, loose = [], []                     # loose: wrapped locations not yet given to a row
+    for line in text.splitlines():
+        m = _indexed_row(line)
+        if m and CODE_RE.match(m[0]) and WORDS_RE.search(m[1]):
+            refs = _refs(m[3]) or []
+            if len(refs) < m[2] and loose:
+                refs = loose + refs
+            loose = []
+            rows.append([m[0], refs, m[1], m[2]])
+            continue
+        refs = _refs(line)
+        if not refs:
+            continue
+        if rows and len(rows[-1][1]) < rows[-1][3]:
+            rows[-1][1] += refs
+        else:
+            loose += refs
+    return [(code, refs, desc) for code, refs, desc, qty in rows if refs and len(refs) <= qty]
+
+
 def _page_kept(rows):
     """A page is a parts-list page when it has enough rows and its codes keep to a few shapes, or (S/U
     tables) enough rows of the supplied/unsupplied kind."""
@@ -258,14 +307,22 @@ def _page_kept(rows):
     return bool(coded) and sum(v for _, v in shapes.most_common(3)) / len(coded) >= MIN_SHAPE_SHARE
 
 
+def page_rows(text):
+    """One page's rows, from whichever layout reads it: code first or position first, code further along,
+    or indexed (LG)."""
+    rows = parse_page(text)
+    for other in (parse_page_late, parse_page_indexed):
+        if len(rows) < MIN_PAGE_ROWS:
+            more = other(text)
+            rows = more if len(more) > len(rows) else rows
+    return rows
+
+
 def parse_document(pages):
     """[(page, code, refs, description)] when the document has a parts list, else ([], why)."""
     kept = []
     for n, text in enumerate(pages, start=1):
-        rows = parse_page(text)
-        if len(rows) < MIN_PAGE_ROWS:
-            late = parse_page_late(text)
-            rows = late if len(late) > len(rows) else rows
+        rows = page_rows(text)
         if _page_kept(rows):
             kept += [(n, *r) for r in rows]
     if len(kept) < MIN_ROWS:
