@@ -239,12 +239,16 @@ def parse_description(text, component_type=''):
     s = {}
     package = _package(u)
     if kind in ('resistor', 'res_array'):
-        ohms = _ohms(u, raw)
+        ohms, letter = _ohms(u, raw), None
         if ohms is None and kind == 'resistor':           # skip the head word ('R-CHIP;', 'RST'), unless it is
-            head_value = re.match(r'\d+(?:\.\d+)?[KMR]?\s+\d+/\d+W\b', u)   # the value ('100k 1/16W Metal Oxide')
-            ohms = _bare_ohms(u if head_value else re.sub(r'^\S+', '', u))
+            # the value ('100k 1/16W Metal Oxide', '750K F 1/4W', '3.3k(F) 1/10W', '7.5KF 1/8W')
+            head_value = re.match(r'(\d+(?:\.\d+)?[KM]?)\s*(?:\(([FGJ])\)|([FGJ])(?![A-Z]))?\s+(?:\(\d{4}\)\s+)?\d+/\d+W\b', u)
+            ohms = _bare_ohms(head_value.group(1) if head_value else re.sub(r'^\S+', '', u))
+            letter = head_value and (head_value.group(2) or head_value.group(3))
         s['resistance_ohm'] = ohms
         s['tolerance'] = _tolerance(u, kind)
+        if letter and ohms is not None and not s['tolerance']:
+            s['tolerance'] = TOL_LETTER[letter]
         s['power_w'] = _power(u)
         if kind == 'res_array':
             m = re.search(r'\b(\d+)R(\d+)P\b', u)

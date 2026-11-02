@@ -226,3 +226,13 @@ def test_decimal_comma(text, kind, expected):
 ])
 def test_resistance_at_the_head(text, ohms):
     assert parse_description(text, 'resistor')[1]['resistance_ohm'] == ohms
+
+
+@pytest.mark.parametrize('text,ohms', [         # Sharp LC-42SA1E / LC-40LE814E power boards
+    ('750K F 1/4W 400V Resistor(High Voltage) J', 750000.0),
+    ('3.3k(F) 1/10W Resistor J', 3300.0),
+    ('7.5KF 1/8W Resistor J', 7500.0),
+])
+def test_resistance_and_tolerance_letter_at_the_head(text, ohms):
+    specs = parse_description(text, 'resistor')[1]
+    assert (specs['resistance_ohm'], specs['tolerance']) == (ohms, '1%')

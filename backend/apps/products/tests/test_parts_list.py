@@ -195,3 +195,12 @@ def test_section_heading_read_onto_the_row_above_is_dropped():
 ])
 def test_sharp_bare_capacitances_are_microfarads(desc, clean):
     assert pl.BARE_MICROFARADS.sub(pl._microfarads, desc) == clean
+
+
+@pytest.mark.parametrize('desc,clean', [
+    ('CAPACITOR GRM39F 104Z 25 (1608)SMD', 'CAPACITOR GRM39F 100000PF Z 25V (1608)SMD'),
+    ('CAPACITOR GRM39CK 180J 50 (1608)SMD', 'CAPACITOR GRM39CK 18PF J 50V (1608)SMD'),
+    ('CONDENSADOR GRM39B 105K 6.3 (1608)SMD', 'CONDENSADOR GRM39B 1000000PF K 6.3V (1608)SMD'),
+])
+def test_murata_coded_capacitances(desc, clean):
+    assert pl.MURATA_CODED.sub(pl._murata_coded, desc) == clean

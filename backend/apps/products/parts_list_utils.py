@@ -166,7 +166,7 @@ SECTION_HEADING = re.compile(r'\s+(?:(?:INTEGRATED|PACKAGED|MISCELLANEOUS|SMD)\s
                              r'FUSES|INDUCTORS|MISCELLANEOUS|MISCELLANEOUS PARTS)$')
 SHARP_PRICE = re.compile(r'\s+[JSP](?:\s+A[A-Z]){1,2}$|(?:\s+A[A-Z]){2}$')
 LETTER_SPACED = re.compile(r'(?<!\S)[A-Z] [A-Z] [A-Z]')
-SHARP_PRICE_FIRST = re.compile(r'^(?:N\s+)?A[A-Z]\s+[JSP]\s+(?=\S)')    # 'AD J Capacitor, 10 16V Ceramic'
+SHARP_PRICE_FIRST = re.compile(r'^(?:N\s+)?A[A-Z]\s+[JSP]\s+(?=\S)|^N\s+[JSP]\s+(?=[A-Z][a-z])')    # 'AD J Capacitor, 10 16V Ceramic'
 
 
 def _tidy(code, desc):
@@ -412,12 +412,20 @@ def parse_document(pages):
 
 # Sharp prints capacitances in uF without the unit, pF with a p: '0.1 25V Ceramic', '47 6.3V Electrolytic', '22p 50V',
 # '82 KXG 450V Electrolytic' (a series name before the voltage), '0,047 100V Ceramic', 'Capacitor, 10 16V Ceramic'
-BARE_MICROFARADS = re.compile(r'^((?:Capacitor,\s*)?)(\d+(?:[.,]\d+)?)((?:\s+[A-Z]{1,4}\d*[A-Z]?)?\s*\d+(?:[.,]\d+)?V\s+'
+BARE_MICROFARADS = re.compile(r'^((?:Capacitor,?\s*)?)(\d+(?:[.,]\d+)?)((?:\s+[A-Z]{1,4}\d*[A-Z]?)?\s*\d+(?:[.,]\d+)?V\s+'
                               r'(?:Ceramic|Electrolytic|Tantalum|Film|Mylar)\b)', re.I)
 
 
 def _microfarads(m):
     return f'{m.group(1)}{m.group(2).replace(",", ".")}uF{m.group(3)}'
+
+
+# Murata's old series word, then the EIA code, tolerance letter and volts: 'CAPACITOR GRM39F 104Z 25 (1608)SMD'
+MURATA_CODED = re.compile(r'\b(GRM\w*)\s+(\d\d)(\d)([BCDFGJKMZ])\s+(\d+(?:\.\d+)?)(?=\s|\(|$)')
+
+
+def _murata_coded(m):
+    return f'{m.group(1)} {int(m.group(2)) * 10 ** int(m.group(3))}PF {m.group(4)} {m.group(5)}V'
 
 
 def build_candidates_from_parts_list(file_obj, brand=''):
@@ -439,6 +447,7 @@ def build_candidates_from_parts_list(file_obj, brand=''):
         if micro_as_m:
             clean = re.sub(r'(?<=\d)M([FH])\b', r'u\1', clean)
         clean = BARE_MICROFARADS.sub(_microfarads, clean)
+        clean = MURATA_CODED.sub(_murata_coded, clean)
         kind = part_type(clean, refs) or designator_kind(refs[0] if refs else '')
         k, specs, package = parse_description(clean, kind or '')
         kind = (SITE_TYPE.get(k, k) if k else None) or kind
