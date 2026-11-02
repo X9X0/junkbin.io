@@ -1,6 +1,7 @@
 """
 Tests for parts_list_utils: service-manual parts lists read from pdftotext -layout.
 """
+import collections
 import io
 import json
 from pathlib import Path
@@ -143,3 +144,30 @@ def test_indexed_rows_take_wrapped_locations_up_to_their_quantity():
     rows = pl.page_rows(PAGES['lg_wrapped']['page'])
     assert ('EAG64672301', ['ANT1005', 'ANT1006', 'ANT1007', 'ANT1008', 'ANT1009', 'ANT1010', 'ANT1011',
                             'ANT5100', 'ANT5101'], 'C-Clip') in rows
+
+
+def test_positions_printed_with_a_space_and_three_digit_sharp_codes():
+    rows = pl.page_rows(PAGES['sharp_spaced']['page'])
+    assert ('RH-EXA741WJQZY', ['D3807'], 'ZENER DIODE 5.6V DZ2J056MOL(PANASONIC)') in rows
+    assert ('RBLN-A528WJZZY', ['FB1102'], 'FERRITA HI0805N600R-10') in rows
+    # a word and a number that are not a position stay apart: 'EN 300 744' is not a row
+    assert pl.parse_page('DVB-T (ETSI EN 300 744) demodulator & FEC decoder.') == []
+
+
+def test_sharp_mark_and_price_columns_are_not_description():
+    assert pl._tidy('VCKYCY1EF104ZY', '0.1 25V Ceramic J AA AA') == '0.1 25V Ceramic'
+    assert pl._tidy('RC-KZA073WJZZY', 'AD J Capacitor, 10 16V Ceramic') == 'Capacitor, 10 16V Ceramic'
+    assert pl._tidy('QACCBA073WJPZ', 'J AC Cord for U.K.') == 'J AC Cord for U.K.'
+    assert pl._tidy('X', 'BATTERY SIZE AA') == 'BATTERY SIZE AA'
+    assert pl._tidy('GH59-14987A', 'F I LTE R - S AW') == 'F I LTE R - S AW'
+
+
+def test_sharp_codes_count_as_one_family():
+    # the code shapes of Sharp LC-42SA1E page 124: without the WJ codes counted as one family the top three
+    # shapes hold 30 of 55 rows (< 70%) and the page was dropped
+    codes = (['VS2SA1037R/-1', 'VS2SC2412K/-1', 'VSDTA114EK/-1'] * 6 + ['RH-EXA103WJZZY'] * 9
+             + ['VHD1SS355//-1Y'] * 9 + ['VHDHSU119//-1Y'] * 8 + ['QPLGNA341WJZZY'] * 7 + ['VRS-CY1JF000JY'] * 4)
+    rows = [(c, ['D1'], 'x') for c in codes]
+    assert pl._page_kept(rows)
+    assert (sum(v for _, v in collections.Counter(pl.shape(c) for c in codes).most_common(3)) / len(codes)
+            < pl.MIN_SHAPE_SHARE)

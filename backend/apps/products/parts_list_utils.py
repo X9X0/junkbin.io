@@ -25,9 +25,10 @@ REFDES = (r'(?:IC|Q|D|R|C|L|T|X|F|CN|J|U|VR|SW|BD|FB|TR|ZD|LED|RL|PC|VD|TH|RT|SP
           r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP)\d{1,5}[A-Z]?')
 REFDES_RE = re.compile(rf'^{REFDES}$')
 REFLIST_RE = re.compile(rf'^{REFDES}(?:\s*,\s*{REFDES})*,?$')
-# >= 4 digits: not pin or net names; not a package ('SM0603', 'SOT-363')
+# >= 4 digits: not pin or net names; not a package ('SM0603', 'SOT-363'); Sharp's own codes may have
+# three ('RH-EXA741WJQZY', 'QSOCNA229WJZZ')
 CODE_RE = re.compile(r'^(?!(?:SMD?)?(?:01005|0201|0402|0603|0805|1206|1210|2512)$|(?:SOT|SOD|SOP|SOIC|TSSOP|QFN|DFN)-?\d+$)'
-                     r'(?=(?:\D*\d){4})[0-9A-Z][0-9A-Z\-./]{4,24}$')
+                     r'(?:(?=(?:\D*\d){4})[0-9A-Z][0-9A-Z\-./]{4,24}|[A-Z]{2,4}-?[A-Z]{1,4}\d{3}WJ[0-9A-Z]{1,4})$')
 WORDS_RE = re.compile(r'[A-Za-z]{3,}')
 VALUE_RE = re.compile(r'\d(?:\.\d+)?\s*(?:UF|NF|PF|UH|NH|K|M|OHM|Ω|V)\b', re.I)
 # a maker part number printed beside the internal code on factory BOMs ('MURATA GRM188R60J476ME15D')
@@ -73,6 +74,17 @@ def shape(code):
     return re.sub(r'[A-Z]+', 'A', re.sub(r'\d+', '9', code))
 
 
+# Sharp's own codes are one family in several shapes ('RH-EXA103WJZZY', 'QPLGNA341WJZZY', 'QCNCMA012WJZZ'):
+# they count together with whichever shapes lead
+SHARP_CODE = re.compile(r'^[A-Z]{2,4}-?[A-Z]{1,4}\d{3,4}WJ[0-9A-Z]{1,4}$')
+
+
+def _shapes(codes):
+    """(Counter of code shapes, number of Sharp-family codes left out of it)."""
+    sharp = sum(1 for c in codes if SHARP_CODE.match(c))
+    return collections.Counter(shape(c) for c in codes if not SHARP_CODE.match(c)), sharp
+
+
 def _layout_pages(raw):
     with tempfile.NamedTemporaryFile(suffix='.pdf') as fh:
         fh.write(raw)
@@ -85,13 +97,25 @@ def _layout_pages(raw):
 # TPV (Sharp / Philips TV chassis) prints its codes with a space after the group: '093G 64S526SEM'
 TPV_CODE = re.compile(r'(?<![\w-])(\d{3}G) (?=[0-9A-Z]{3,})')
 TPV_PN = re.compile(r'^\d{3}G[0-9A-Z]{4,}$')
+# Sharp (LC-39LE650, LC-46LE540) prints a space inside the position: 'D 3806 VHDHSU119//-1Y  DIODO HSU119TRF'
+SPACED_REF = re.compile(r'(?<!\S)([A-Z]{1,3}) (\d{3,4})(?= +([0-9A-Z][0-9A-Z\-./]{4,24})(?!\S))')
+
+
+def _join_ref(m):
+    joined = m.group(1) + m.group(2)
+    if REFDES_RE.match(joined) and CODE_RE.match(m.group(3)) and not REFDES_RE.match(m.group(3)):
+        return joined + ' '                 # same width: the columns stay where they were
+    return m.group(0)
 
 
 def parse_page(text):
     """[(code, [refs], description)] for the parts-list rows on one page."""
     rows = []
+    # positions printed with a space are joined only on a page with several of them, not one on a pinout
+    spaced = sum(1 for m in SPACED_REF.finditer(text) if _join_ref(m) != m.group(0)) >= 3
     for line in text.splitlines():
         line = TPV_CODE.sub(r'\1', line) if 'G ' in line else line
+        line = SPACED_REF.sub(_join_ref, line) if spaced else line
         chunks = [c.strip() for c in re.split(r'\s{3,}', line.strip()) if c.strip()]
         if len(chunks) < 2:
             continue
@@ -136,10 +160,19 @@ def parse_page(text):
     return [(code, refs, _tidy(code, desc)) for code, refs, desc in rows]
 
 
+SHARP_PRICE = re.compile(r'\s+[JSP](?:\s+A[A-Z]){1,2}$|(?:\s+A[A-Z]){2}$')
+LETTER_SPACED = re.compile(r'(?<!\S)[A-Z] [A-Z] [A-Z]')
+SHARP_PRICE_FIRST = re.compile(r'^(?:N\s+)?A[A-Z]\s+[JSP]\s+(?=\S)')    # 'AD J Capacitor, 10 16V Ceramic'
+
+
 def _tidy(code, desc):
     """A description without the empty '-' / '--' columns, and on TPV codes without the one- or two-letter
-    vendor mark printed after the code ('061G0402220 JY  RST CHIPR 22 OHM')."""
+    vendor mark printed after the code ('061G0402220 JY  RST CHIPR 22 OHM'), and without Sharp's mark and
+    price-rank columns ('0.1 25V Ceramic  J  AA  AA', 'RES 0603 0 OHM 5% 1/10W SMD  P  AA'): the J there
+    is a delivery mark, not a tolerance."""
     desc = re.sub(r'(?:\s+-+)+\s*$', '', desc).strip()
+    if not LETTER_SPACED.search(desc):     # 'F I LTE R - S AW' (Samsung) is a word, not a price column
+        desc = SHARP_PRICE_FIRST.sub('', SHARP_PRICE.sub('', desc))
     if TPV_PN.match(code):
         desc = re.sub(r'^[A-Z]{1,2}\s+(?=\S)', '', desc)
     return desc
@@ -303,8 +336,8 @@ def _page_kept(rows):
     coded = [r for r in rows if r[0]]
     if len(rows) - len(coded) >= MIN_PAGE_ROWS:
         return True
-    shapes = collections.Counter(shape(r[0]) for r in coded)
-    return bool(coded) and sum(v for _, v in shapes.most_common(3)) / len(coded) >= MIN_SHAPE_SHARE
+    shapes, sharp = _shapes([r[0] for r in coded])
+    return bool(coded) and (sum(v for _, v in shapes.most_common(3)) + sharp) / len(coded) >= MIN_SHAPE_SHARE
 
 
 def page_rows(text):
@@ -328,17 +361,17 @@ def parse_document(pages):
     if len(kept) < MIN_ROWS:
         return [], f'{len(kept)} parts-list rows'
     coded = [r for r in kept if r[1]]
-    shapes = collections.Counter(shape(r[1]) for r in coded)
+    shapes, sharp = _shapes([r[1] for r in coded])
     # a maker's codes come in a few related shapes (Panasonic F1H1H104B047 / ERJ2GEJ103X): the shapes that
     # each hold >= 10% of the rows must together hold >= 70%; then rarer shapes that start like the top
     # one join them (TPV 061G0402220 / 065G040210412KY / 065G0603475A5K)
     family = [sh for sh, c in shapes.most_common(3) if c >= 0.1 * len(coded)]
-    if coded and sum(shapes[sh] for sh in family) / len(coded) < MIN_SHAPE_SHARE:
-        top, count = shapes.most_common(1)[0]
+    if coded and (sum(shapes[sh] for sh in family) + sharp) / len(coded) < MIN_SHAPE_SHARE:
+        top, count = shapes.most_common(1)[0] if shapes else ('Sharp', sharp)
         return [], f'part codes inconsistent ({count} of {len(coded)} share {top})'
     start = family[0][:2] if family else ''
-    rows = [r for r in kept if not r[1] or shape(r[1]) in family or shape(r[1])[:2] == start]
-    family = '/'.join(family)
+    rows = [r for r in kept if not r[1] or shape(r[1]) in family or shape(r[1])[:2] == start or SHARP_CODE.match(r[1])]
+    family = '/'.join(family + (['Sharp'] if sharp else []))
     return rows, f'{len(rows)} rows, part code shapes {family or "none (S/U table)"}'
 
 
