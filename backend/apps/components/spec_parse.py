@@ -52,11 +52,17 @@ def clean_bom_text(text):
     return t
 
 
+# a decimal comma (Sharp's European lists: 'RES 0402 4,7KOHM', 'C CERAM 0402 10PF 50V 0,5%', '6,3V') - short
+# numbers right before a unit only, so list commas stay ('HC-49,20pF', '0402,10K', '100,50V')
+DECIMAL_COMMA = re.compile(r'(?<![\w.,\-])(\d{1,2}),(?:(\d{1,2})(?=\s*(?:[KMR]?\s*OHMS?\b|[KMR]\b|[PNUM]F\b|[PNUM]H\b|%|MHZ|KHZ))'
+                           r'|(\d)(?=\s*V\b))', re.I)
+
+
 def _norm(text):
     t = clean_bom_text(text)
     t = (t.replace('Ω', ' OHM').replace('µ', 'U').replace('μ', 'U').replace('+/-', '±').replace('+-', '±')
          .replace('，', ',').replace('；', ';'))
-    return t
+    return DECIMAL_COMMA.sub(lambda m: f'{m.group(1)}.{m.group(2) or m.group(3)}', t) if ',' in t else t
 
 
 def _num(s):
@@ -234,8 +240,9 @@ def parse_description(text, component_type=''):
     package = _package(u)
     if kind in ('resistor', 'res_array'):
         ohms = _ohms(u, raw)
-        if ohms is None and kind == 'resistor':
-            ohms = _bare_ohms(re.sub(r'^\S+', '', u))     # skip the head word ('R-CHIP;', 'RST')
+        if ohms is None and kind == 'resistor':           # skip the head word ('R-CHIP;', 'RST'), unless it is
+            head_value = re.match(r'\d+(?:\.\d+)?[KMR]?\s+\d+/\d+W\b', u)   # the value ('100k 1/16W Metal Oxide')
+            ohms = _bare_ohms(u if head_value else re.sub(r'^\S+', '', u))
         s['resistance_ohm'] = ohms
         s['tolerance'] = _tolerance(u, kind)
         s['power_w'] = _power(u)

@@ -179,3 +179,19 @@ def test_indexed_locations_cut_inside_a_position_and_code_beside_description():
     assert len(refs) == 47 and 'C2347' in refs and 'C2' not in refs
     assert rows['ECCH0007804'] == ('ECCH0007804', ['C3012', 'C4031', 'C4131', 'C4132', 'C4133', 'C4134', 'C4135',
                                                    'C4137', 'C4138', 'C4142'], 'Capacitor,Ceramic,Chip')
+
+
+def test_section_heading_read_onto_the_row_above_is_dropped():
+    assert pl._tidy('X', 'C CERAM 0402 100NF 25V 20% RESISTORS') == 'C CERAM 0402 100NF 25V 20%'
+    assert pl._tidy('X', 'Zener Diode J AA AA TRANSISTORS') == 'Zener Diode'
+
+
+@pytest.mark.parametrize('desc,clean', [
+    ('0.1 25V Ceramic', '0.1uF 25V Ceramic'),
+    ('Capacitor, 47 16V Electrolytic', 'Capacitor, 47uF 16V Electrolytic'),
+    ('82 KXG 450V Electrolytic J', '82uF KXG 450V Electrolytic J'),
+    ('0,047 100V Ceramic J', '0.047uF 100V Ceramic J'),
+    ('22p 50V Ceramic', '22p 50V Ceramic'),              # pF is marked
+])
+def test_sharp_bare_capacitances_are_microfarads(desc, clean):
+    assert pl.BARE_MICROFARADS.sub(pl._microfarads, desc) == clean

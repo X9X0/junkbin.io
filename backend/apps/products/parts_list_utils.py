@@ -160,6 +160,10 @@ def parse_page(text):
     return [(code, refs, _tidy(code, desc)) for code, refs, desc in rows]
 
 
+# a table's next section heading read onto the row above it ('C CERAM 0402 100NF 25V 20%  RESISTORS')
+SECTION_HEADING = re.compile(r'\s+(?:(?:INTEGRATED|PACKAGED|MISCELLANEOUS|SMD)\s+)?(?:RESISTORS|CAPACITORS|COILS|DIODES|'
+                             r'TRANSISTORS|CIRCUITS|CONNECTORS|FILTERS|CRYSTALS|TRANSFORMERS|SWITCHES|VARISTORS|'
+                             r'FUSES|INDUCTORS|MISCELLANEOUS|MISCELLANEOUS PARTS)$')
 SHARP_PRICE = re.compile(r'\s+[JSP](?:\s+A[A-Z]){1,2}$|(?:\s+A[A-Z]){2}$')
 LETTER_SPACED = re.compile(r'(?<!\S)[A-Z] [A-Z] [A-Z]')
 SHARP_PRICE_FIRST = re.compile(r'^(?:N\s+)?A[A-Z]\s+[JSP]\s+(?=\S)')    # 'AD J Capacitor, 10 16V Ceramic'
@@ -171,6 +175,7 @@ def _tidy(code, desc):
     price-rank columns ('0.1 25V Ceramic  J  AA  AA', 'RES 0603 0 OHM 5% 1/10W SMD  P  AA'): the J there
     is a delivery mark, not a tolerance."""
     desc = re.sub(r'(?:\s+-+)+\s*$', '', desc).strip()
+    desc = SECTION_HEADING.sub('', desc)
     if not LETTER_SPACED.search(desc):     # 'F I LTE R - S AW' (Samsung) is a word, not a price column
         desc = SHARP_PRICE_FIRST.sub('', SHARP_PRICE.sub('', desc))
     if TPV_PN.match(code):
@@ -405,6 +410,16 @@ def parse_document(pages):
     return rows, f'{len(rows)} rows, part code shapes {family or "none (S/U table)"}'
 
 
+# Sharp prints capacitances in uF without the unit, pF with a p: '0.1 25V Ceramic', '47 6.3V Electrolytic', '22p 50V',
+# '82 KXG 450V Electrolytic' (a series name before the voltage), '0,047 100V Ceramic', 'Capacitor, 10 16V Ceramic'
+BARE_MICROFARADS = re.compile(r'^((?:Capacitor,\s*)?)(\d+(?:[.,]\d+)?)((?:\s+[A-Z]{1,4}\d*[A-Z]?)?\s*\d+(?:[.,]\d+)?V\s+'
+                              r'(?:Ceramic|Electrolytic|Tantalum|Film|Mylar)\b)', re.I)
+
+
+def _microfarads(m):
+    return f'{m.group(1)}{m.group(2).replace(",", ".")}uF{m.group(3)}'
+
+
 def build_candidates_from_parts_list(file_obj, brand=''):
     """Suggestion rows from a service manual's parts list, or [] when it has none. `brand`: the
     product's maker - a manual's part codes are its maker's own service numbers (Sony 1-126-960-11),
@@ -423,6 +438,7 @@ def build_candidates_from_parts_list(file_obj, brand=''):
         clean = re.sub(r'\s+', ' ', desc.replace('⚠', ' ')).strip()
         if micro_as_m:
             clean = re.sub(r'(?<=\d)M([FH])\b', r'u\1', clean)
+        clean = BARE_MICROFARADS.sub(_microfarads, clean)
         kind = part_type(clean, refs) or designator_kind(refs[0] if refs else '')
         k, specs, package = parse_description(clean, kind or '')
         kind = (SITE_TYPE.get(k, k) if k else None) or kind

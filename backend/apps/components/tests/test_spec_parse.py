@@ -201,3 +201,28 @@ def test_bead_frequency_belongs_to_its_impedance(line, ohms, mhz):
 ])
 def test_guess_maker(pn, maker):
     assert guess_maker(pn) == maker
+
+
+@pytest.mark.parametrize('text,kind,expected', [
+    # Sharp LC-46LE540 / LC-39LE650 parts lists
+    ('RES 0402 4,7KOHM 5% 1/16W SMD', 'resistor', {'resistance_ohm': 4700.0, 'tolerance': '5%'}),
+    ('C CERAM 0402 10PF 50V 0,5%', 'capacitor', {'capacitance_pf': 10.0, 'voltage_v': 50.0, 'tolerance': '0.5%'}),
+    ('C CERAM 4,7UF 6,3V GRM188B30J475KE18D', 'capacitor', {'capacitance_pf': 4700000.0, 'voltage_v': 6.3}),
+    ('C ELEC 100UF 6,3V MVL6,3VC100MF60E1', 'capacitor', {'capacitance_pf': 100000000.0, 'voltage_v': 6.3}),
+    # list commas stay list commas
+    ('CRYSTAL-SMD;28.322MHz,30ppm,HC-49,20pF,5', 'crystal', {'frequency_mhz': 28.322, 'load_pf': 20.0}),
+    ('R-CHIP;10Kohm,5%,1/16W,TP,1005', 'resistor', {'resistance_ohm': 10000.0, 'tolerance': '5%'}),
+])
+def test_decimal_comma(text, kind, expected):
+    specs = parse_description(text, kind)[1]
+    assert {k: specs.get(k) for k in expected} == expected
+
+
+@pytest.mark.parametrize('text,ohms', [
+    ('100k 1/16W Metal Oxide', 100000.0),        # Sharp LC-26GA6E: the value leads
+    ('2.2k 1/16W Metal Oxide', 2200.0),
+    ('RST CHIP 1K 1/16W', 1000.0),               # a head word is still skipped
+    ('1394+3V 220K', 220000.0),                  # a schematic label's neighbour text is not a value
+])
+def test_resistance_at_the_head(text, ohms):
+    assert parse_description(text, 'resistor')[1]['resistance_ohm'] == ohms
