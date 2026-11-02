@@ -174,7 +174,43 @@ def test_build_options_are_not_grouped_with_fitted_parts():
     (['1K', '(0603)'], 'R3', {'resistance_ohm': 1000.0}, '0603'),
     (['0402', '5%'], 'R20', {'tolerance': '5%'}, '0402'),                                 # a size, not 402 ohms
     (['(36,38)'], 'R2', {}, None),                                                         # a page reference
+    (['(4K7)'], 'R5', {'resistance_ohm': 4700.0}, None),                       # the only value is in brackets
+    (['1%(0K445)'], 'R6', {'resistance_ohm': 445.0, 'tolerance': '1%'}, None),
+    (['(473)'], 'C7', {}, None),                                              # a three-digit code is not read
+    (['1.0', '(2010/11/24)'], 'R8', {'resistance_ohm': 1.0}, None),           # a date, not a 2010 size
+    (['4.7K', '1(G)', '3(D)'], 'R9', {'resistance_ohm': 4700.0}, None),     # pin names
+    (['0.1%', '(30)'], 'R10', {'tolerance': '0.1%'}, None),                  # a page number
 ])
 def test_bracketed_codes_and_bare_sizes(words, designator, specs, package):
     p = sv.parse_label(words, designator)
     assert (p['specs'], p['package']) == (specs, package)
+
+
+@pytest.mark.parametrize('word, designator, specs, package', [
+    ('电阻_20K_0201_1/20W_J', 'R1', {'resistance_ohm': 20000.0, 'power_w': 0.05, 'tolerance': '5%'}, '0201'),
+    ('电阻0R(0402-0.0625W-J)', 'R2', {'resistance_ohm': 0.0, 'power_w': 0.0625, 'tolerance': '5%'}, '0402'),
+    ('电阻_39欧姆_0201_1/20W_F(±1%)', 'R3', {'resistance_ohm': 39.0, 'power_w': 0.05, 'tolerance': '1%'}, '0201'),
+    ('电阻_100毫欧_0402_1/8W_F(±1%)', 'R4', {'resistance_ohm': 0.1, 'power_w': 0.125, 'tolerance': '1%'}, '0402'),
+    ('电阻_22KΩ_0201_1/20W_F', 'R5', {'resistance_ohm': 22000.0, 'power_w': 0.05, 'tolerance': '1%'}, '0201'),
+    ('电容_1uF_0201_X5R_6.3V_M', 'C1',
+     {'capacitance_pf': 1e6, 'dielectric': 'X5R', 'voltage_v': 6.3, 'tolerance': '20%'}, '0201'),
+    ('电容1nF(0402-X7R-50V-K)', 'C2', {'capacitance_pf': 1000.0, 'dielectric': 'X7R', 'voltage_v': 50,
+                                     'tolerance': '10%'}, '0402'),
+    ('电容_5.6pF_CC0201_NP0_50', 'C3', {'capacitance_pf': 5.6, 'dielectric': 'C0G', 'voltage_v': 50}, '0201'),
+    ('电容_100nF_0201_16', 'C4', {'capacitance_pf': 1e5, 'voltage_v': 16}, '0201'),
+    ('电容_2.2pF_0201_C0G_50V_C', 'C5', {'capacitance_pf': 2.2, 'dielectric': 'C0G', 'voltage_v': 50,
+                                        'tolerance': '±0.25pF'}, '0201'),
+    ('磁珠_120R/100MHz_0402', 'FB1', {'impedance_ohm': 120.0}, '0402'),
+])
+def test_chinese_house_labels(word, designator, specs, package):
+    p = sv.parse_label([word], designator)
+    assert (p['specs'], p['package'], p['confidence']) == (specs, package, 'high')
+
+
+def test_fractional_power_is_not_watts():
+    assert sv.parse_label(['10K_0402_1/16W_5%'], 'R1')['specs']['power_w'] == 0.0625
+
+
+def test_brackets_holding_fields_are_kept():
+    p = sv.parse_label(['10UF/6.3V', '(0603)X5R'], 'C1')
+    assert p['package'] == '0603' and p['specs']['dielectric'] == 'X5R'

@@ -250,13 +250,28 @@ def _ohms(num, mult):
     return round(float(num) * {'': 1, 'R': 1, 'K': 1e3, 'M': 1e6}[mult.upper()], 6)
 
 
+# a bracket _clean keeps: one holding a size or a rated field ('电阻0R(0402-0.0625W-J)', 'F(±1%)',
+# '(0201_X5R_6.3V_K)'); others are codes, pin names, page references or formulas ('(0K445)', '1(G)', '(30)')
+BRACKET_FIELDS = re.compile(r'(?<!\d)(?:' + '|'.join(IMPERIAL) + r')(?!\d)|\d(?:V|W)\b|%|X[5-8][RSTP]|C0G|COG|NP0',
+                            re.I)
+
+
+def _bracket(m):
+    inner = m.group(1)
+    if re.fullmatch(r'(19|20)\d\d[/.-]\d{1,2}[/.-]\d{1,2}', inner.strip()):
+        return ' '                              # a revision date: '(2010/11/24)'
+    if inner in IMPERIAL:
+        return f' {inner} '                     # '(0603)X5R': the size
+    return m.group(0) if BRACKET_FIELDS.search(inner) else ' '
+
+
 def _clean(token):
     """(token without stuffing/variant marks and Compal's '~D' tail, flags)."""
     flags = []
     t = token.strip()
-    if '(' in t:                                # Asus '1%(0K445)', '(0603)X7R(473)': a bracketed code, not the value
-        inner = re.findall(r'\((\d{4})\)', t)
-        t = re.sub(r'\([^)]*\)', '', t).strip() or (inner[0] if inner and inner[0] in IMPERIAL else '')
+    if '(' in t:
+        # a bracketed code is not the label's value (Asus '37.4 1%(0K445)' is 37.4 ohms, per its factory BOM)
+        t = re.sub(r'\(([^()]*)\)', _bracket, t).strip()
     if t.endswith('~D'):
         t = t[:-2]
     if t.upper().endswith('_DY'):                   # Inventec's mark on parts not fitted (dummy)
@@ -357,9 +372,86 @@ def _approved_list(t):
     return None
 
 
+# a Chinese house style (graphics cards, phone boards): the part type in words, then value, size and
+# ratings split by '_' or bracketed - '电阻_20K_0201_1/20W_J', '电容_1uF_0201_X5R_6.3V_M',
+# '电阻0R(0402-0.0625W-J)', '电阻_39欧姆_0201_1/20W_F(±1%)'. 电阻 resistor, 电容 capacitor, 电感 inductor,
+# 贴片功率电感器 SMD power inductor, 磁珠 ferrite bead; 欧姆 / Ω ohm, 毫欧 milliohm
+CN_LABEL = re.compile(r'^(贴片功率电感器|电阻|电容|电感|磁珠)_?(.+)$')
+CN_KIND = {'电阻': 'resistor', '电容': 'capacitor', '电感': 'inductor', '贴片功率电感器': 'inductor', '磁珠': 'ferrite'}
+CN_DIELECTRIC = {'X5R': 'X5R', 'X7R': 'X7R', 'X6S': 'X6S', 'X7S': 'X7S', 'C0G': 'C0G', 'COG': 'C0G', 'NP0': 'C0G',
+                 'NPO': 'C0G', 'Y5V': 'Y5V'}
+CN_VOLTS = (4, 6.3, 10, 16, 25, 35, 50, 63, 100, 200, 250)     # a bare number after the size: '电容_100nF_0201_16'
+
+
+def _cn_label(t):
+    m = CN_LABEL.match(t.replace('（', '(').replace('）', ')'))
+    if not m:
+        return None
+    kind = CN_KIND[m.group(1)]
+    rest = re.sub(r'\(?±[\d.]+%\)?', '', m.group(2))                # 'F(±1%)': the letter says it already
+    rest = re.sub(r'([KM])(?:Ω|欧姆|OHM)', r'\1', rest, flags=re.I)        # '22KΩ', '18K欧姆'
+    rest = rest.replace('毫欧', 'MOHM').replace('欧姆', 'R').replace('Ω', 'R')
+    fields = [f for f in re.split(r'[_(),\-\s]|(?<!\d)/|/(?!\d+W?(?:[_(),\-\s]|$))', rest.upper()) if f]   # '1/20W' is one field, '0402/5%' two
+    if not fields:
+        return None
+    specs, package = {}, None
+    v = fields[0].upper()
+    if kind == 'resistor':
+        r = re.fullmatch(r'(\d*\.?\d+)(MOHM|OHM|[RKM]?)(\d*)', v)
+        if not r or (r.group(3) and r.group(2) not in 'RKM'):
+            return None
+        num = float(r.group(1) + ('.' + r.group(3) if r.group(3) else ''))
+        specs['resistance_ohm'] = round(num * {'': 1, 'R': 1, 'OHM': 1, 'K': 1e3, 'M': 1e6, 'MOHM': 1e-3}[r.group(2)], 6)
+    elif kind == 'capacitor':
+        c = re.fullmatch(r'(\d*\.?\d+)([PNU])F?', v)
+        if not c:
+            return None
+        specs['capacitance_pf'] = round(float(c.group(1)) * UNIT_PF[c.group(2)], 6)
+    elif kind == 'inductor':
+        i = re.fullmatch(r'(\d*\.?\d+)([NU])H', v)
+        if not i:
+            return None
+        specs['inductance_uh'] = float(i.group(1)) * (1e-3 if i.group(2) == 'N' else 1)
+    else:
+        b = re.fullmatch(r'(\d*\.?\d+)R(?:@?/?100MHZ)?', v)
+        if not b:
+            return None
+        specs['impedance_ohm'] = float(b.group(1))
+    for f in (x.upper() for x in fields[1:]):
+        size = re.fullmatch(r'C{0,2}(\d{4,5})', f)
+        if size and size.group(1) in IMPERIAL:
+            package = package or size.group(1)
+        elif f in CN_DIELECTRIC and kind == 'capacitor':
+            specs['dielectric'] = CN_DIELECTRIC[f]
+        elif (w := re.fullmatch(r'(\d+)/(\d+)W?', f)) and kind == 'resistor':
+            specs['power_w'] = round(int(w.group(1)) / int(w.group(2)), 6)
+        elif (w := re.fullmatch(r'(\d*\.?\d+)W', f)) and kind == 'resistor':
+            specs['power_w'] = float(w.group(1))
+        elif (u := re.fullmatch(r'(\d*\.?\d+)V?', f)) and kind == 'capacitor' and 'dielectric' in specs \
+                and 'voltage_v' not in specs:
+            specs['voltage_v'] = float(u.group(1))           # after the dielectric a bare number is the voltage
+        elif (u := re.fullmatch(r'(\d*\.?\d+)V', f)) and kind == 'capacitor' or \
+                (u := re.fullmatch(r'(\d*\.?\d+)', f)) and kind == 'capacitor' and package \
+                and float(u.group(1)) in CN_VOLTS and 'voltage_v' not in specs:
+            specs['voltage_v'] = float(u.group(1))
+        elif f in TOL_LETTER and kind in ('resistor', 'capacitor') and 'tolerance' not in specs \
+                and (kind == 'capacitor' or f in 'DFGJ'):
+            specs['tolerance'] = TOL_LETTER[f] if f != 'D' or kind == 'capacitor' else '0.5%'
+        elif (p := re.fullmatch(r'(\d*\.?\d+)%', f)) and 'tolerance' not in specs:
+            specs['tolerance'] = f'{float(p.group(1)):g}%'
+        elif (p := re.fullmatch(r'±(\d*\.?\d+)PF', f)) and kind == 'capacitor':
+            specs['tolerance'] = f'±{float(p.group(1)):g}pF'
+    if specs.get('voltage_v') is not None and specs['voltage_v'] == int(specs['voltage_v']):
+        specs['voltage_v'] = int(specs['voltage_v'])
+    return kind, specs, package
+
+
 def parse_token(token, kind=None, odm=None):
     """One label word -> (kind, specs, package, (maker, part number) or None), or None."""
     t, _ = _clean(token)
+    cn = _cn_label(t)
+    if cn:
+        return (*cn, None)
     if odm != 'wistron' and re.search(r'-?\d?GP$', t, re.I) and (WISTRON_CAP.match(t) or WISTRON_RES.match(t)):
         odm = 'wistron'                     # Wistron's own codes ('SCD1U16V2KX-3GP') say who drew them
     try:
@@ -448,7 +540,8 @@ def _explicit(tokens, kind):
     words = [t for t in (_clean(w)[0] for w in tokens) if t]
     if not words:
         return None
-    parts = re.sub(r'[_/,]', ' ', ' '.join(words)).split()   # '0.1U/10V_4X', '0.22uF/16V,X7R'
+    joined = re.sub(r'(?<![\d.])(\d+)/(\d+)W', lambda m: f'{int(m.group(1)) / int(m.group(2)):g}W', ' '.join(words), flags=re.I)
+    parts = re.sub(r'[_/,]', ' ', joined).split()   # '0.1U/10V_4X', '0.22uF/16V,X7R'; '1/16W' kept as 0.0625W
     # after the value, a bare one- or two-digit word is an ODM's size code ('34_4', '*0_04'), not a value
     text = ' '.join(parts[:1] + [w for w in parts[1:] if not re.fullmatch(r'\d{1,2}', w)])
     k, specs, pkg = parse_description(text, kind or '')
@@ -469,10 +562,32 @@ def _explicit(tokens, kind):
     return SITE_TYPE.get(k, k) if k else kind, specs, pkg, None
 
 
+# a value written in brackets ('(4K7)', '1%(0K445)', '(0.1UF)'): a number with a unit or multiplier letter,
+# so page references ('(36,38)') and three-digit codes ('(473)') are not taken for one
+BRACKETED_VALUE = re.compile(r'\((\d*\.?\d+[KMRUNP]\w*)\)', re.I)
+
+
 def parse_label(tokens, designator, odm=None):
     """Words gathered around one designator -> {'kind', 'specs', 'package', 'maker', 'part_number',
     'flags', 'confidence', 'used'}. confidence: 'high' when a known label format gives the value and the
     designator agrees on the kind, 'medium' when only some fields could be read, 'low' when none."""
+    out = _parse_label(tokens, designator, odm)
+    if any(k in out['specs'] for k in VALUE_KEYS) or out['part_number']:
+        return out
+    # brackets are dropped from a word ('37.4 1%(0K445)' is 37.4 ohms, per Asus's factory BOMs), but a
+    # bracketed value is the label's only one when nothing else gives a value
+    inner = [v for t in tokens for v in BRACKETED_VALUE.findall(t)]
+    if not inner:
+        return out
+    alt = _parse_label(inner + list(tokens), designator, odm)
+    if not any(k in alt['specs'] for k in VALUE_KEYS):
+        return out
+    alt['flags'].append('value read from a bracketed code')
+    alt['confidence'] = 'medium'
+    return alt
+
+
+def _parse_label(tokens, designator, odm):
     want = designator_kind(designator)
     flags = sorted({f for t in tokens for f in _clean(t)[1]})
     found, used, other = [], [], []
