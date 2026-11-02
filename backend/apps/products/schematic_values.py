@@ -256,9 +256,12 @@ BRACKET_FIELDS = re.compile(r'(?<!\d)(?:' + '|'.join(IMPERIAL) + r')(?!\d)|\d(?:
                             re.I)
 
 
+DATE = re.compile(r'(19|20)\d\d[/.-]\d{1,2}[/.-]\d{1,2}')
+
+
 def _bracket(m):
     inner = m.group(1)
-    if re.fullmatch(r'(19|20)\d\d[/.-]\d{1,2}[/.-]\d{1,2}', inner.strip()):
+    if DATE.fullmatch(inner.strip()):
         return ' '                              # a revision date: '(2010/11/24)'
     if inner in IMPERIAL:
         return f' {inner} '                     # '(0603)X5R': the size
@@ -272,6 +275,8 @@ def _clean(token):
     if '(' in t:
         # a bracketed code is not the label's value (Asus '37.4 1%(0K445)' is 37.4 ohms, per its factory BOM)
         t = re.sub(r'\(([^()]*)\)', _bracket, t).strip()
+    if DATE.fullmatch(t):
+        t = ''                                  # a revision date ('2008/08/11') is not 2008 ohms
     if t.endswith('~D'):
         t = t[:-2]
     if t.upper().endswith('_DY'):                   # Inventec's mark on parts not fitted (dummy)

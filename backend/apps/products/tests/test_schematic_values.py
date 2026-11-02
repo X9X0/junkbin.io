@@ -178,6 +178,7 @@ def test_build_options_are_not_grouped_with_fitted_parts():
     (['1%(0K445)'], 'R6', {'resistance_ohm': 445.0, 'tolerance': '1%'}, None),
     (['(473)'], 'C7', {}, None),                                              # a three-digit code is not read
     (['1.0', '(2010/11/24)'], 'R8', {'resistance_ohm': 1.0}, None),           # a date, not a 2010 size
+    (['(12)', '2008/08/11'], 'R11', {}, None),
     (['4.7K', '1(G)', '3(D)'], 'R9', {'resistance_ohm': 4700.0}, None),     # pin names
     (['0.1%', '(30)'], 'R10', {'tolerance': '0.1%'}, None),                  # a page number
 ])
