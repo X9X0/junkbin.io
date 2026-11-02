@@ -94,5 +94,26 @@
    ],
    "DIODO HSU119TRF"
   ]
+ },
+ "lg_cut_locations": {
+  "source": "LG K8 K350DS Service Manual.pdf, page 113",
+  "page": "                                                                                           13. REPLACEMENT PART LIST\nNo        P/N                    Description   Quantity                                              Location no\n135   ECCH0007804 Capacitor,Ceramic,Chip         10     C3012,C4031,C4131,C4132,C4133,C4134,C4135,C4137,C4138,C4142\n136   ECCH0007805 Capacitor,Ceramic,Chip          1     C4141\n                                                        C2100,C2101,C2102,C2200,C2201,C2202,C2333,C2334,C2335,C2337,C2338,C2339,C2340,C2341,C2343,C2344,C2\n137   ECCH0009101 Capacitor,Ceramic,Chip         47     347,C2349,C2352,C2353,C2354,C2355,C2356,C3306,C3312,C3313,C3316,C3317,C3320,C4115,C4144,C5002,C5003\n                                                        ,C5004,C5005,C5006,C5007,C5008,C5009,C5011,C6001,C6016,C6903,C6910,C8100,C8101,C8102\n138   ECCH0009102   Capacitor,Ceramic,Chip        2     C6206,C6207\n139   ECCH0009105   Capacitor,Ceramic,Chip        4     C7101,C7102,C7105,C7106\n140   ECCH0009107   Capacitor,Ceramic,Chip        2     C1013,C1056\n141   ECCH0009216   Capacitor,Ceramic,Chip        2     C4017,C4125\n142   ECCH0009217   Capacitor,Ceramic,Chip        1     C4028\n143   ECCH0009228   Capacitor,Ceramic,Chip        2     C3011,C6011\n144   ECCH0009506   Capacitor,Ceramic,Chip        1     C4124\n                                                        C2103,C2306,C2307,C2308,C2309,C2310,C2311,C2312,C2313,C2314,C2315,C2316,C2317,C2328,C2329,C2330,C2\n145   ECCH0017301 Capacitor,Ceramic,Chip         47     331,C2348,C3307,C3315,C4104,C4105,C4106,C4107,C4108,C4109,C4110,C4111,C4112,C4145,C4147,C4149,C4150\n                                                        ,C4151,C4152,C6012,C6014,C7100,C7104,C7328,C7404,C7405,C7406,C8400,C8401,C9604,C9901\n146   ECCH0017601 Capacitor,Ceramic,Chip         14     C2304,C2305,C2318,C2319,C2326,C2327,C2342,C2357,C3309,C4122,C4123,C6008,C7309,C9603\n147   ECCH0032801 Capacitor,Ceramic,Chip          3     C2345,C2346,C3303\n148   ECZH0000813 Capacitor,Ceramic,Chip          1     C7603\n149   ECZH0000830 Capacitor,Ceramic,Chip          3     C6800,C6801,C6907\n150   ECZH0001215 Capacitor,Ceramic,Chip          2     C4700,C4701\n151   EDSY0010501 Diode,Switching                 1     D9500\n152   ELCH0001444 Inductor,Multilayer,Chip        2     L6700,L6701\n153   ELCH0003842 Inductor,Multilayer,Chip        1     L6611\n154   ELCH0005009 Inductor,Multilayer,Chip        1     L9500\n155   ENBY0040701 Connector,BtoB                  2     CN7304,CN7401\n156   ENZY0025801 Terminal Block                  1     CN9201\n157   ERHY0000166 Resistor,Chip                   2     R2210,R2211\n158   ERHY0009302 Resistor,Chip                   1     R9128\n159   ERHY0009312 Resistor,Chip                   1     R2102\n160   ERHY0009316 Resistor,Chip                   6     R1002,R1005,R1011,R1016,R6002,R6005\n161   ERHY0009501 Resistor,Chip                   3     FB6001,R1009,R9603\n162   ERHY0009503 Resistor,Chip                   6     R5006,R5007,R9133,R9202,R9207,R9208\n163   ERHY0009504 Resistor,Chip                   5     R4101,R5001,R5004,R6200,R6202\n\n         ※ SBOM(Ser vice BOM) 과 PDM 상의 구성이 차이가 있으므로 GTAM에\n164   ERHY0009505 Resistor,Chip                   2     R4001,R9601\n165   ERHY0009507 Resistor,Chip                   7     R1001,R1008,R1012,R1015,R6001,R6006,R9612\n",
+  "rows": 31,
+  "first": [
+   "ECCH0007804",
+   [
+    "C3012",
+    "C4031",
+    "C4131",
+    "C4132",
+    "C4133",
+    "C4134",
+    "C4135",
+    "C4137",
+    "C4138",
+    "C4142"
+   ],
+   "Capacitor,Ceramic,Chip"
+  ]
  }
 }

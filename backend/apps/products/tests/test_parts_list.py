@@ -171,3 +171,11 @@ def test_sharp_codes_count_as_one_family():
     assert pl._page_kept(rows)
     assert (sum(v for _, v in collections.Counter(pl.shape(c) for c in codes).most_common(3)) / len(codes)
             < pl.MIN_SHAPE_SHARE)
+
+
+def test_indexed_locations_cut_inside_a_position_and_code_beside_description():
+    rows = {r[0]: r for r in pl.page_rows(PAGES['lg_cut_locations']['page'])}
+    refs = rows['ECCH0009101'][1]          # '...,C2344,C2' / '347,C2349,...' / ',C5004,...'
+    assert len(refs) == 47 and 'C2347' in refs and 'C2' not in refs
+    assert rows['ECCH0007804'] == ('ECCH0007804', ['C3012', 'C4031', 'C4131', 'C4132', 'C4133', 'C4134', 'C4135',
+                                                   'C4137', 'C4138', 'C4142'], 'Capacitor,Ceramic,Chip')

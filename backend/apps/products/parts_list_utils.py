@@ -280,9 +280,12 @@ def parse_page_late(text):
 
 
 # LG replacement part lists: No, part code, description, quantity, locations; a long location list
-# wraps onto lines of its own, above or below its row ('  37 EAG64672301   C-Clip   9')
+# wraps onto lines of its own, above or below its row ('  37 EAG64672301   C-Clip   9'), and may break
+# inside a position ('...,C2344,C2' / '137   ECCH0009101 Capacitor,Ceramic,Chip   47   347,C2349,...')
 INDEXED_FIRST = re.compile(r'^\d{1,4} (\S+)$')
+INDEXED_FIRST_DESC = re.compile(r'^(\d{1,4} \S+) (.+)$')    # code and description one space apart (K350)
 INDEXED_LAST = re.compile(r'^(\d{1,4})(?: (.+))?$')
+LOC_TEXT = re.compile(r'^[,\s]*[A-Z0-9]+(?:[,\s]+[A-Z0-9]+)*[,\s]*$')
 
 
 def _indexed_row(line):
@@ -290,8 +293,10 @@ def _indexed_row(line):
     chunks = [c.strip() for c in re.split(r'\s{3,}', line.strip()) if c.strip()]
     if len(chunks) >= 4 and re.fullmatch(r'\d{1,4}', chunks[0]):
         chunks = [f'{chunks[0]} {chunks[1]}'] + chunks[2:]          # 'No' and code a column apart
-    if len(chunks) >= 4 and re.fullmatch(r'\d{1,4}', chunks[-2]) and _refs(chunks[-1]):
+    if len(chunks) >= 3 and re.fullmatch(r'\d{1,4}', chunks[-2]) and _locs(chunks[-1]):
         chunks = chunks[:-2] + [f'{chunks[-2]} {chunks[-1]}']        # so are quantity and locations
+    if len(chunks) == 2 and INDEXED_FIRST_DESC.match(chunks[0]):
+        chunks = list(INDEXED_FIRST_DESC.match(chunks[0]).groups()) + chunks[1:]
     if len(chunks) < 3:
         return None
     first, last = INDEXED_FIRST.match(chunks[0]), INDEXED_LAST.match(chunks[-1])
@@ -305,27 +310,52 @@ def _refs(text):
     return refs if refs and all(REFDES_RE.match(r) for r in refs) else None
 
 
+def _locs(text):
+    """Locations text, possibly cut inside a position at either end ('347,C2349,...,C2'), or None."""
+    if not LOC_TEXT.match(text):
+        return None
+    words = [w for w in re.split(r'[\s,]+', text.strip()) if w]
+    inner = [w for k, w in enumerate(words) if not (k == 0 and w.isdigit()) and not (k == len(words) - 1 and re.fullmatch(r'[A-Z]{1,4}\d*', w))]
+    return text if words and all(REFDES_RE.match(w) for w in inner) and any(REFDES_RE.match(w) for w in words) else None
+
+
+def _join_locs(a, b):
+    if not a:
+        return b
+    if b[:1].isdigit() and a[-1:].isalnum():                       # a position cut at the line end
+        return a + b
+    return f'{a},{b}'
+
+
+def _count(locs):
+    return len([w for w in re.split(r'[\s,]+', locs) if w])
+
+
 def parse_page_indexed(text):
     """[(code, refs, description)] for an indexed table; a row's locations are its own plus wrapped lines,
     until it has as many as its quantity."""
-    rows, loose = [], []                     # loose: wrapped locations not yet given to a row
+    rows, loose = [], ''                     # loose: wrapped locations not yet given to a row
     for line in text.splitlines():
         m = _indexed_row(line)
         if m and CODE_RE.match(m[0]) and WORDS_RE.search(m[1]):
-            refs = _refs(m[3]) or []
-            if len(refs) < m[2] and loose:
-                refs = loose + refs
-            loose = []
-            rows.append([m[0], refs, m[1], m[2]])
+            locs = m[3] if _locs(m[3]) else ''
+            if _count(locs) < m[2] and loose:
+                locs = _join_locs(loose, locs) if locs else loose
+            loose = ''
+            rows.append([m[0], locs, m[1], m[2]])
             continue
-        refs = _refs(line)
-        if not refs:
+        if not _locs(line):
             continue
-        if rows and len(rows[-1][1]) < rows[-1][3]:
-            rows[-1][1] += refs
+        if rows and _count(rows[-1][1]) < rows[-1][3]:
+            rows[-1][1] = _join_locs(rows[-1][1], line.strip())
         else:
-            loose += refs
-    return [(code, refs, desc) for code, refs, desc, qty in rows if refs and len(refs) <= qty]
+            loose = _join_locs(loose, line.strip())
+    out = []
+    for code, locs, desc, qty in rows:
+        refs = _refs(locs) if locs else None
+        if refs and len(refs) <= qty:
+            out.append((code, refs, desc))
+    return out
 
 
 def _page_kept(rows):
