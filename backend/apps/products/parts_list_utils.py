@@ -528,7 +528,13 @@ ARRAY_VALUE = re.compile(r'(?<![(\w.])(?!(?:01005|0201|0402|0603|0805|1206|1210|
                          r'(\d+(?:\.\d+)?[KM]?)X([2-8])\b', re.I)
 
 
+# capacitances in RKM form ('CAP CHIP 0805 4N7 50V X7R', 'CER 1206 2N2 500V', 'CAP CHIP 4U7 10V' - TPV)
+RKM_FARAD = re.compile(r'(?<![\w.])(\d+)([PNU])(\d+)(?![\w.])')
+
+
 def _small_forms(clean):
+    if re.search(r'\bCAP|\bCER\b|CAPACITOR', clean, re.I):
+        clean = RKM_FARAD.sub(r'\1.\3\2F', clean)
     if re.search(r'ARRAY|NETWORK|\bRES', clean, re.I):
         clean = ARRAY_VALUE.sub(r'\1 OHM X\2', clean)
     if ZERO_OHM_LINK.search(clean):

@@ -354,3 +354,15 @@ def test_quantity_column_is_not_description():
 def test_resistor_array_value_times_elements(desc, ohms):
     from apps.components.spec_parse import parse_description
     assert parse_description(pl.clean_description(desc), 'resistor')[1]['resistance_ohm'] == ohms
+
+
+@pytest.mark.parametrize('desc,pf', [
+    # TPV; their codes agree (065G0805472.. = 4700 pF): 95 of 95 on the mirror's lists
+    ('9JR6500000201 CAP CHIP 0402 2N2 50V X7R +/-10% 1', 2200.0),
+    ('3 9JR6500000280 CAP CHIP 4U7 10V Y5V -20%~+80% 0', 4.7e6),
+    ('CER 1206 2N2 500V X7R 10% 1', 2200.0),
+    ('CAP CHIP 0402 2P2 50V NPO', 2.2),
+])
+def test_rkm_capacitances(desc, pf):
+    from apps.components.spec_parse import parse_description
+    assert parse_description(pl.clean_description(desc), 'capacitor')[1]['capacitance_pf'] == pytest.approx(pf)
