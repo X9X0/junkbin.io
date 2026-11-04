@@ -259,6 +259,7 @@ def test_lowercase_letter_after_the_voltage_is_no_tolerance():
     ('CM05B104K10AH', {'capacitance_pf': 100000.0, 'tolerance': '10%', 'voltage_v': 10}),
     ('CM05F104Z16AH', {'capacitance_pf': 100000.0, 'tolerance': '+80/-20%', 'voltage_v': 16}),
     ('CM05CH101J50AH', {'capacitance_pf': 100.0, 'tolerance': '5%', 'voltage_v': 50, 'dielectric': 'CH'}),
+    ('CM05W5R561K50AH', {'capacitance_pf': 560.0, 'tolerance': '10%', 'voltage_v': 50}),
 ])
 def test_kyocera_jis_characteristics(pn, specs):
     assert guess_maker(pn) == 'Kyocera AVX'

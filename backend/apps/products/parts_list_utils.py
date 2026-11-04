@@ -42,12 +42,16 @@ MAKER_PN_RE = re.compile(r'\b([A-Z][A-Z0-9]{2,}[0-9][A-Z0-9\-]{3,})\b')
 TYPE_WORDS = [
     ('rf_module', r'RF-?MODULE|FRONT-?END MODULE|\bFEM\b|\bPAM\b'), ('balun', r'FILTER|SAW\b|DUPLEXER|DIPLEXER|BALUN'),
     ('mosfet', r'MOSFET|\bFET\b'), ('transistor', r'TRANSISTOR|\bTR\b|\bTRS?\b'),
-    ('diode', r'DIODE|ZENER|SCHOTTKY|RECTIFIER|\bTVS\b'), ('led', r'\bLED\b'),
+    # 'DIO SW 200mA 75V' and 'SWITCHING 1N4148W 0.15A' are switching diodes, not switches
+    ('diode', r'DIODE|ZENER|SCHOTTKY|RECTIFIER|\bTVS\b|\bDIO\b|^SWITCHING\s+(?:1N\d|BA[SVW]|1SS|MMBD)'), ('led', r'\bLED\b'),
     ('regulator', r'REGULATOR|\bLDO\b|DC-DC|PMIC'), ('crystal', r'CRYSTAL|XTAL|OSCILLATOR|RESONATOR|VIBRATOR'),
     ('capacitor', r'\bCAP|CERAMIC|ELECTROLYTIC|\bELECT\b|TANTALUM|C-CER|MLCC|\bC\.(?:CE|MYLAR|EL|TA)|MYLAR'),
     ('resistor', r'\bRES|R-CHIP|RESISTOR|THICK FILM|\bRST\b|METAL CHIP|METAL GLAZE|CARBON|\bR\.(?:CHP|CAR|MTL)|SHORT CHIP'),
     ('inductor', r'INDUCTOR|\bCOIL|CHOKE'), ('ferrite', r'FERRITE|BEAD'), ('fuse', r'\bFUSE'),
-    ('connector', r'CONNECTOR|\bCONN|HEADER|SOCKET|\bJACK'), ('switch', r'SWITCH|\bSW\b|\bSW\.'),
+    ('connector', r'CONNECTOR|\bCONN|HEADER|SOCKET|\bJACK|^PLUG\b'),     # Sharp 'Plug, 13Pin(RA)'
+    # an IC that switches ('IC-RF SWITCH', 'IC-ANALOG SWITCH', 'IC,Hall Effect Switch') is an IC; 'SW' after a
+    # comma is a spring washer ('SCREW-TAPTITE;BH,...,ZPC(WHT),SW')
+    ('ic', r'^IC\s*[-,]'), ('switch', r'SWITCH|(?<![,;])\bSW\b|\bSW\.'),
     ('transformer', r'TRANSFORMER'), ('speaker', r'SPEAKER|BUZZER|RECEIVER-?SPK'),
     ('antenna', r'ANTENNA'), ('battery', r'BATTERY'), ('ic', r'\bIC\b|MICOM|CONTROLLER|DRIVER|PROCESSOR'),
 ]

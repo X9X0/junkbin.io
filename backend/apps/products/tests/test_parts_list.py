@@ -318,3 +318,20 @@ def test_every_sharp_code_stays_with_the_family():
     # VS2SA1530AR-1Y has 4 digits: it keeps its own shape in the count, but is never dropped as an odd shape
     assert pl.SHARP_FAMILY.match('VS2SA1530AR-1Y') and not pl.SHARP_CODE.match('VS2SA1530AR-1Y')
     assert pl.SHARP_FAMILY.match('RH-EX1026CEZZY')
+
+
+def test_sharp_plugs_are_connectors():
+    assert pl.part_type('Plug, 13Pin(RA)', ['P101']) == 'connector'
+    assert pl.part_type('Shorting Plug 2', ['R0101']) == 'resistor'
+
+
+@pytest.mark.parametrize('desc,ref,kind', [
+    ('N J DIO SW 150mA 75V DO-35-2P', 'D7323', 'diode'),           # a switching diode
+    ('SWITCHING 1N4148W 0.15A 75V SOD-123', 'D1', 'diode'),
+    ('IC-RF SWITCH', 'U1206', 'ic'), ('IC,Hall Effect Switch', 'U3', 'ic'),
+    ('PUSH SW NPS-111-S681', 'S1', 'switch'), ('SWITCH, SLIDE', 'SW1', 'switch'), ('TACT SW', 'SW2', 'switch'),
+    ('SCREW-TAPTITE;BH,+,-,S,M4,L8,ZPC(WHT),SW 1 S.N.A', 'M1', ''),   # SW: a spring washer
+    ('SWITCHING REGULATOR', 'U1', 'regulator'),
+])
+def test_switch_words(desc, ref, kind):
+    assert pl.part_type(desc, [ref]) == kind

@@ -645,8 +645,9 @@ def decode_mpn(manufacturer, part_number):
         spec = {'capacitance_pf': pf, 'voltage_v': volt, 'tolerance': MLCC_TOL[m.group(4)],
                 'dielectric': WALSIN_DIEL[m.group(2)]}
         return 'capacitor', {k: v for k, v in spec.items() if v is not None}, m.group(1)
-    # older numbers give the JIS characteristic: 'CM05B104K10AH' (B ~ X7R), 'CM05F104Z16AH', 'CM05CH101J50AH'
-    if 'KYOCERA' in mfr and (m := re.fullmatch(r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V|CH|SL|B|F)(\d{3}|\d?R\d+)'
+    # older numbers give the JIS characteristic: 'CM05B104K10AH' (B ~ X7R), 'CM05F104Z16AH', 'CM05CH101J50AH',
+    # or W5R ('CM05W5R561K50AH': value, tolerance and volts are read; W5R is not mapped to an EIA class)
+    if 'KYOCERA' in mfr and (m := re.fullmatch(r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V|CH|SL|W5R|B|F)(\d{3}|\d?R\d+)'
                                                r'([BCDFGJKMZ])(\d\d)A[HT]', pn)):
         spec = {'capacitance_pf': _cap_code_pf(m.group(3)), 'tolerance': MLCC_TOL[m.group(4)],
                 'voltage_v': 6.3 if m.group(5) == '06' else int(m.group(5)), 'dielectric': DIELECTRICS.get(m.group(2))}
@@ -692,7 +693,7 @@ def decode_mpn(manufacturer, part_number):
 PREFIX_MAKER = [(r'ERJ|ECJ', 'Panasonic'), (r'GR[MJP]\d', 'Murata'), (r'CL\d\d[A-Z]\d', 'Samsung'),
                 (r'RC-?\d{4}[BCDFGJ]\w+C[SH]$', 'Samsung'), (r'CI[HG]T?\d\d', 'Samsung'), (r'LQ[PGW]\d\d|BLM\d\d', 'Murata'),
                 (r'LLV?\d{4}-F', 'Toko'), (r'MLG\d{4}', 'TDK'), (r'HK\d{4}', 'Taiyo Yuden'), (r'RMC-?1/', 'Kamaya'),
-                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V|CH|SL|B\d|F\d)', 'Kyocera AVX'),
+                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V|CH|SL|W5R|B\d|F\d)', 'Kyocera AVX'),
                 (r'(RC|CC|YC|AC)\d{3}', 'Yageo'), (r'RM\d\d[BCDFJ]TN', 'TA-I'), (r'WR\d\dX', 'Walsin'),
                 (r'C\d{4}(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)', 'TDK'), (r'(CE)?[AJLETGUH]MK\d{3}', 'Taiyo Yuden'),
                 (r'RTT\d\d', 'Ralec'), (r'RK73', 'KOA'), (r'GNM\d', 'Murata')]
