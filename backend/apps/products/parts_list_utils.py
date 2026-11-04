@@ -141,7 +141,11 @@ def parse_page(text):
         tail = chunks[-1].replace(',', ' ').split()
         if (len(chunks) >= 3 and CODE_RE.match(chunks[0]) and tail and all(REFDES_RE.match(t) for t in tail)
                 and WORDS_RE.search(chunks[1]) and not REFLIST_RE.match(chunks[1].replace(' ', ''))):
-            rows.append((chunks[0], tail, ' '.join(chunks[1:-1])))
+            middle = chunks[1:-1]
+            # a quantity column ('EBC61856101  Resistor,Chip  1  R8401' - LG): the count of the positions
+            if len(middle) >= 2 and middle[-1].isdigit() and int(middle[-1]) == len(tail):
+                middle = middle[:-1]
+            rows.append((chunks[0], tail, ' '.join(middle)))
             continue
         # code first: CODE, refdes list, description
         if (len(chunks) >= 3 and CODE_RE.match(chunks[0]) and REFLIST_RE.match(chunks[1].replace(' ', ''))
@@ -517,7 +521,16 @@ ZERO_OHM_LINK = re.compile(r'\bCONDU?CTOR,\s*CHIP\b|\bCHIPR\s+MAX0R0\d\b', re.I)
 RKM_MICROHENRY = re.compile(r'(?<![\w.])(\d+)U(\d+)(?![\w.])')
 
 
+# resistor arrays as value x elements: 'Resistor Array 68X4 01' (68 ohm x4; its Asus-family code RE044680 says
+# 68), 'RES, CHIP NETWORK 56X8 (3816)' - read before, the bare number fallback took the 01 or the 3816 size;
+# not a size x elements ('(0603X4)')
+ARRAY_VALUE = re.compile(r'(?<![(\w.])(?!(?:01005|0201|0402|0603|0805|1206|1210|2012|1608|1005|3216)X)'
+                         r'(\d+(?:\.\d+)?[KM]?)X([2-8])\b', re.I)
+
+
 def _small_forms(clean):
+    if re.search(r'ARRAY|NETWORK|\bRES', clean, re.I):
+        clean = ARRAY_VALUE.sub(r'\1 OHM X\2', clean)
     if ZERO_OHM_LINK.search(clean):
         clean += ' 0 OHM'
     if re.search(r'INDUC|COIL|CHOKE', clean, re.I):
@@ -538,11 +551,16 @@ def build_candidates_from_parts_list(file_obj, brand=''):
     """Suggestion rows from a service manual's parts list, or [] when it has none. `brand`: the
     product's maker - a manual's part codes are its maker's own service numbers (Sony 1-126-960-11),
     filed under that maker as the site files them."""
+    file_obj.seek(0)
+    return candidates_from_pages(_layout_pages(file_obj.read()), brand)
+
+
+def candidates_from_pages(pages, brand=''):
+    """build_candidates_from_parts_list for a manual already read to text, one string per page
+    (pdftotext -layout) - also what the Norway import lane runs, so both read a list the same way."""
     from apps.components.spec_parse import decode_mpn, guess_maker, parse_description, SITE_TYPE
     from .schematic_values import designator_kind, generic_name
 
-    file_obj.seek(0)
-    pages = _layout_pages(file_obj.read())
     rows, _why = parse_document(pages)
     # Sony prints micro as m in its parts lists - its legend: 'uF : mF', 'uH : mH'
     micro_as_m = brand.lower() == 'sony' or any(re.search(r'u\s*F\s*:\s*m\s*F', p) for p in pages)

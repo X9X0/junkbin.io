@@ -335,3 +335,22 @@ def test_sharp_plugs_are_connectors():
 ])
 def test_switch_words(desc, ref, kind):
     assert pl.part_type(desc, [ref]) == kind
+
+
+def test_quantity_column_is_not_description():
+    # LG: code, description, quantity, positions - the 1 was read as a 1 ohm resistor
+    page = '\n'.join(f' EBC6185{n:04d}         Resistor,Chip                            1     R84{n:02d}' for n in range(10))
+    assert pl.parse_page(page)[0] == ('EBC61850000', ['R8400'], 'Resistor,Chip')
+    two = ' EBC61856102         Capacitor,Ceramic,Chip                   2     C101,C102'
+    assert pl.parse_page(two) == [('EBC61856102', ['C101', 'C102'], 'Capacitor,Ceramic,Chip')]
+
+
+@pytest.mark.parametrize('desc,ohms', [
+    ('Resistor Array 68X4 01', 68.0),                       # Asus-family code RE044680: 68 ohm
+    ('Resistor Array 10KX4 01', 10000.0),
+    ('1/16W 5% RES, CHIP NETWORK 56X8 (3816)', 56.0),       # Sony; 3816 is the size
+    ('1/32W 5% RES, NETWORK 22 (0603X4)', 22.0),            # a size x elements stays
+])
+def test_resistor_array_value_times_elements(desc, ohms):
+    from apps.components.spec_parse import parse_description
+    assert parse_description(pl.clean_description(desc), 'resistor')[1]['resistance_ohm'] == ohms
