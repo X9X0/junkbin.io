@@ -41,6 +41,10 @@ query SearchMPN($mpn: String!) {
 """
 
 
+class NexarError(RuntimeError):
+    """Nexar answered but refused the query (quota exhausted, bad auth, ...)."""
+
+
 class NexarClient:
     TOKEN_URL = "https://identity.nexar.com/connect/token"
     GRAPHQL_URL = "https://api.nexar.com/graphql"
@@ -111,8 +115,13 @@ class NexarClient:
         resp.raise_for_status()
         data = resp.json()
 
+        # GraphQL reports failures (e.g. "exceeded your part limit") as a 200
+        # with an errors list and data: null.
+        if data.get("errors") and not data.get("data"):
+            raise NexarError("; ".join(e.get("message", "") for e in data["errors"]))
+
         results = (
-            data.get("data", {})
+            (data.get("data") or {})
             .get("supSearchMpn", {})
             .get("results", [])
         )

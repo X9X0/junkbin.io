@@ -1,20 +1,13 @@
 """
 Tests for apps.components.tasks.enrich_component.
 """
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from apps.components.tasks import enrich_component
 
 pytestmark = pytest.mark.django_db
-
-
-def _fake_client(result):
-    client = MagicMock()
-    client.is_configured = True
-    client.search_mpn.return_value = result
-    return client
 
 
 class TestEnrichComponent:
@@ -29,7 +22,7 @@ class TestEnrichComponent:
             'sellers': [],
         }
 
-        with patch('apps.components.nexar.get_client', return_value=_fake_client(result)):
+        with patch('apps.components.lookup.lookup_part', return_value=result):
             enrich_component.run(component.id)
 
         component.refresh_from_db()
@@ -48,7 +41,7 @@ class TestEnrichComponent:
             'sellers': [],
         }
 
-        with patch('apps.components.nexar.get_client', return_value=_fake_client(result)):
+        with patch('apps.components.lookup.lookup_part', return_value=result):
             enrich_component.run(component.id)
 
         component.refresh_from_db()
@@ -57,7 +50,7 @@ class TestEnrichComponent:
     def test_no_results_leaves_component_untouched(self, component_factory):
         component = component_factory(description='')
 
-        with patch('apps.components.nexar.get_client', return_value=_fake_client(None)):
+        with patch('apps.components.lookup.lookup_part', return_value=None):
             enrich_component.run(component.id)
 
         component.refresh_from_db()

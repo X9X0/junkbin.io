@@ -1,6 +1,7 @@
 """
 Component views for Junkbin.io API
 """
+import logging
 from datetime import timedelta
 
 from rest_framework import viewsets, status, permissions
@@ -36,6 +37,9 @@ from .serializers import (
 from .filters import ComponentFilter, ProductComponentFilter
 from apps.api.permissions import IsOwnerOrReadOnly, IsVerifiedEmail
 from apps.api.throttling import LookupRateThrottle
+
+
+logger = logging.getLogger(__name__)
 
 
 @extend_schema_view(
@@ -264,29 +268,29 @@ class ComponentViewSet(viewsets.ModelViewSet):
     )
     def lookup(self, request, pk=None):
         """
-        Trigger a Nexar API lookup for this component.
+        Trigger a part lookup for this component.
 
         Fetches pricing, availability, and datasheet data from Nexar
-        (aggregating DigiKey, Mouser, and 100+ distributors).
+        (aggregating DigiKey, Mouser, and 100+ distributors), falling back
+        to DigiKey and Mouser directly (see lookup.py).
         Result is cached in the component's specifications field.
         """
         from django.utils import timezone
-        from .nexar import get_client
+        from .lookup import LookupUnavailable, lookup_part
 
         component = self.get_object()
-        client = get_client()
-
-        if not client.is_configured:
-            return Response(
-                {'detail': 'Nexar API credentials not configured. Contact an admin.'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
 
         try:
-            result = client.search_mpn(component.part_number, component.manufacturer)
+            result = lookup_part(component.part_number, component.manufacturer)
+        except LookupUnavailable:
+            logger.exception('No part lookup provider answered for %s', component.part_number)
+            return Response(
+                {'detail': 'Part lookups are unavailable right now. Try again later.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
         except Exception:
             return Response(
-                {'detail': 'Nexar API request failed. Try again later.'},
+                {'detail': 'Part lookup failed. Try again later.'},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
