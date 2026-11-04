@@ -162,6 +162,56 @@ def test_sharp_mark_and_price_columns_are_not_description():
     assert pl._tidy('GH59-14987A', 'F I LTE R - S AW') == 'F I LTE R - S AW'
 
 
+
+def test_sharp_two_column_rows_with_safety_marks_lugs_and_lowercase_codes():
+    # Sharp LC-32LE600E parts list (two columns per line); each second-column row used to be read into the
+    # first row's description
+    page = '\n'.join([
+        '      FB4603    RBLN-0210TAZZY    Ferrite Bead         J   AB      AB         L1900     RCiLFA134WJZZY     Coil'
+        '                    J   AF      AF',
+        'R1909     VRS-CY1JF561JY   560 1/16W Metal Oxide    J   AA      AA      LUG1902   QLUGHA009WJZZY    Lug'
+        '                         J   AC     AC',
+        '       C712        RC-E1H226SNKY       22 KY 50V Electrolytic                     J    --      --     ! C806'
+        '      RC-M2E473RESC   0.047 RE473C 275V Film     J    --      --',
+        '! C841        RC-CSE2GA332M   3300p CS 250V Ceramic                     J    --      --         R761'
+        '      VRS-TS2AD151J   150 1/8W Resistor                           J   --      --',
+        'R1905   VRS-TV1JD750JY   75 1/16W Metal Oxide     J   AA      AA         SC1901 QSOCZA110WJZZQ Socket, 19Pin'
+        '                   J    --        --',
+    ])
+    assert pl.parse_page(page) == [
+        ('RBLN-0210TAZZY', ['FB4603'], 'Ferrite Bead'), ('RCiLFA134WJZZY', ['L1900'], 'Coil'),
+        ('VRS-CY1JF561JY', ['R1909'], '560 1/16W Metal Oxide'), ('QLUGHA009WJZZY', ['LUG1902'], 'Lug'),
+        ('RC-E1H226SNKY', ['C712'], '22 KY 50V Electrolytic'), ('RC-M2E473RESC', ['C806'], '⚠ 0.047 RE473C 275V Film'),
+        ('RC-CSE2GA332M', ['C841'], '⚠ 3300p CS 250V Ceramic'), ('VRS-TS2AD151J', ['R761'], '150 1/8W Resistor'),
+        ('VRS-TV1JD750JY', ['R1905'], '75 1/16W Metal Oxide'), ('QSOCZA110WJZZQ', ['SC1901'], 'Socket, 19Pin'),
+    ]
+    assert not pl.REFDES_RE.match('SC70')         # a package, not a socket position
+
+
+
+def test_sharp_fixed_width_codes_and_r_mark():
+    # Sharp LC-32LE600E: semiconductor and resistor codes padded to 13-14 characters, few digits
+    page = '\n'.join([
+        '      R879      VRS-TS2AD221J   220 1/8W Resistor                        J    --      --         D7501     '
+        'VHDDAN217u/-1    DAN217u 80V/100mA                             J    --      --',
+        'C7525     VCKYCY1HB682K   6800p 50V Ceramic    J    --      --         Q7601     VSUM6K1N///-1      '
+        'UM6K1N 30V/100mA                J   --      --',
+        '  C818        VCKYCY1HB103K   0.01 50V Ceramic                          J    --      --         R745      '
+        'VRS-TP2BD3R3J   3.3 1/4W Resistor                           J   --      --',
+    ])
+    assert pl.parse_page(page) == [
+        ('VRS-TS2AD221J', ['R879'], '220 1/8W Resistor'), ('VHDDAN217u/-1', ['D7501'], 'DAN217u 80V/100mA'),
+        ('VCKYCY1HB682K', ['C7525'], '6800p 50V Ceramic'), ('VSUM6K1N///-1', ['Q7601'], 'UM6K1N 30V/100mA'),
+        ('VCKYCY1HB103K', ['C818'], '0.01 50V Ceramic'), ('VRS-TP2BD3R3J', ['R745'], '3.3 1/4W Resistor'),
+    ]
+    for code in ('VHiNJM2584M-1Y', 'VHD1SS390++-1Y', 'VCFYFA1HA334J+', 'RCiLP0343TAZZY', 'RR-HRSM1R5J3W'):
+        assert pl.SHARP_CODE.match(code), code
+    for word in ('VALUE-1234567', 'RESISTOR12345', 'VCC3P3'):
+        assert not pl.SHARP_CODE.match(word), word
+    # Sharp LC-26SH12E and others mark with R: 'R745  VRS-TV1JD103JY  AA  R  Resistor, 10k 1/16W Metal Oxide'
+    assert pl._tidy('VCKYCY1HB392KY', 'AA R Capacitor, 3900p 50V Ceramic') == 'Capacitor, 3900p 50V Ceramic'
+
+
 def test_sharp_codes_count_as_one_family():
     # the code shapes of Sharp LC-42SA1E page 124: without the WJ codes counted as one family the top three
     # shapes hold 30 of 55 rows (< 70%) and the page was dropped
@@ -198,9 +248,73 @@ def test_sharp_bare_capacitances_are_microfarads(desc, clean):
 
 
 @pytest.mark.parametrize('desc,clean', [
+    # the kind first (Sharp LC-32LE600E, an Asus-family list; their codes give the same values: VCKYCY1EF104ZY,
+    # UA354680 = 680 x 10^2 pF)
+    ('Ceramic 0.1 25V R', 'Ceramic 0.1uF 25V R'),
+    ('Electrolytic Cap. 22.00 16.0V 01', 'Electrolytic Cap. 22.00uF 16.0V 01'),
+    ('Mylar Capacitor 0.0680 50V J 01', 'Mylar Capacitor 0.0680uF 50V J 01'),
+    ('Ceramic Capacitor-B (chip) 0.0100 50V K 01', 'Ceramic Capacitor-B (chip) 0.0100uF 50V K 01'),
+    ('Capacitor, 0.22 50V', 'Capacitor, 0.22uF 50V'),
+    ('Ceramic Capacitor-B (chip) 1000P 50V K 01', 'Ceramic Capacitor-B (chip) 1000P 50V K 01'),
+])
+def test_bare_microfarads_after_the_kind(desc, clean):
+    assert pl.BARE_MICROFARADS_AFTER.sub(pl._microfarads_after, desc) == clean
+
+
+@pytest.mark.parametrize('desc,clean', [
+    ('AA R Capacitor, 3900p 50V Ceramic', 'Capacitor, 3900p 50V Ceramic'),
+    ('AB N J Capacitor 4.7 10V Ceramic', 'Capacitor 4.7 10V Ceramic'),
+    ('N J Capacitor 0.22 50V', 'Capacitor 0.22 50V'),
+    ('J Capacitor, 0.22 50V', 'Capacitor, 0.22 50V'),
+    ('R Coil', 'Coil'),
+    ('J AC Cord for U.K.', 'J AC Cord for U.K.'),
+    ('F I LTE R - S AW', 'F I LTE R - S AW'),
+])
+def test_sharp_mark_columns_before_the_description(desc, clean):
+    assert pl._tidy('X', desc) == clean
+
+
+@pytest.mark.parametrize('desc,clean', [
     ('CAPACITOR GRM39F 104Z 25 (1608)SMD', 'CAPACITOR GRM39F 100000PF Z 25V (1608)SMD'),
     ('CAPACITOR GRM39CK 180J 50 (1608)SMD', 'CAPACITOR GRM39CK 18PF J 50V (1608)SMD'),
     ('CONDENSADOR GRM39B 105K 6.3 (1608)SMD', 'CONDENSADOR GRM39B 1000000PF K 6.3V (1608)SMD'),
 ])
 def test_murata_coded_capacitances(desc, clean):
     assert pl.MURATA_CODED.sub(pl._murata_coded, desc) == clean
+
+
+@pytest.mark.parametrize('desc,kind,specs', [
+    # Onkyo TX-SR507 / HT-R960 parts lists
+    ('C-CARBON R RN72K1J-331JE', 'resistor', {'resistance_ohm': 330.0, 'tolerance': '5%'}),
+    ('CARBON R R16J-2.2K', 'resistor', {'resistance_ohm': 2200.0}),
+    ('NF CARBON R R25J-0.22', 'resistor', {'resistance_ohm': 0.22}),
+    ('C-CERA C CK725B1H-103K1', 'capacitor', {'capacitance_pf': 10000.0, 'voltage_v': 50.0, 'tolerance': '10%'}),
+    ('C-CERA C CC725CH1H-060D1', 'capacitor', {'capacitance_pf': 6.0, 'voltage_v': 50.0, 'tolerance': '±0.5pF'}),
+    ('CERA C CK45F50V-223Z', 'capacitor', {'capacitance_pf': 22000.0, 'voltage_v': 50.0, 'tolerance': '+80/-20%'}),
+    ('UTSP C CE04W50V-10M(UTSP)', 'capacitor', {'capacitance_pf': 1e7, 'voltage_v': 50.0, 'tolerance': '20%'}),
+    # zero-ohm links (Sony, TPV) and TPV's RKM inductances
+    ('1A CONDUCTOR, CHIP (1005)', 'resistor', {'resistance_ohm': 0.0}),
+    ('RST CHIPR MAX0R05 1/16W FENGHUA', 'resistor', {'resistance_ohm': 0.0}),
+    ('9JR7300000056 CHIP INDUCTOR 1U8 10% FCI1608F-1R8K 1', 'inductor', {'inductance_uh': 1.8, 'tolerance': '10%'}),
+])
+def test_maker_value_forms(desc, kind, specs):
+    from apps.components.spec_parse import parse_description
+    got = parse_description(pl.clean_description(desc), kind)[1]
+    assert {k: got.get(k) for k in specs} == specs
+
+
+def test_marking_code_book_is_not_a_parts_list():
+    # 'SMD semiconductor codes 2012': the marking stands where a position would, and repeats down the page
+    marks = ['B0', 'B0', 'B0', 'B5', 'B5', 'B5', 'E11', 'L65', 'L65', 'L65']
+    lines = [f'{m}      {p}{n:04d}C-10PC     Vdet-IC 1.{n % 9}V, -Reset PPO        SOT-23    16vda'
+             for n, (m, p) in enumerate((m, p) for p in ('AP', 'LN', 'XC') for m in marks)]
+    page = '\n'.join(lines)
+    assert len(pl.page_rows(page)) == 30
+    rows, why = pl.parse_document([page])
+    assert rows == [] and 'code table' in why
+
+
+def test_every_sharp_code_stays_with_the_family():
+    # VS2SA1530AR-1Y has 4 digits: it keeps its own shape in the count, but is never dropped as an odd shape
+    assert pl.SHARP_FAMILY.match('VS2SA1530AR-1Y') and not pl.SHARP_CODE.match('VS2SA1530AR-1Y')
+    assert pl.SHARP_FAMILY.match('RH-EX1026CEZZY')

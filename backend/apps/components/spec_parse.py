@@ -264,6 +264,10 @@ def parse_description(text, component_type=''):
         s['tolerance'] = _tolerance(u, kind)
         if not s['tolerance']:
             m = re.search(r'\d\s*(?:PF|NF|UF)\s+([BCDFGJKMZ])\b', u)       # 'CAP CHIP 0402 470PF J 50V'
+            # or after the voltage: 'CAP SMD 100NF 10V K X5R', 'Ceramic Capacitor-F (chip) 0.1000 25V Z' (not B,
+            # which there is the temperature characteristic: 'C.CE.CHP 0.1uF 16V B'); a capital only - schematic
+            # labels' '0.1UF/10V m' is no tolerance (their factory BOMs say 10%)
+            m = m or re.search(r'\d\s*[kK]?V\s+([JKMZ])(?![A-Za-z0-9])', raw)
             s['tolerance'] = TOL_LETTER.get(m.group(1)) if m else None
         for tok, name in DIELECTRICS.items():
             if re.search(rf'(?<![A-Z0-9]){tok}(?![A-Z0-9])', u):
@@ -641,9 +645,11 @@ def decode_mpn(manufacturer, part_number):
         spec = {'capacitance_pf': pf, 'voltage_v': volt, 'tolerance': MLCC_TOL[m.group(4)],
                 'dielectric': WALSIN_DIEL[m.group(2)]}
         return 'capacitor', {k: v for k, v in spec.items() if v is not None}, m.group(1)
-    if 'KYOCERA' in mfr and (m := re.fullmatch(r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V)(\d{3}|\d?R\d+)([BCDFGJKMZ])(\d\d)A[HT]', pn)):
+    # older numbers give the JIS characteristic: 'CM05B104K10AH' (B ~ X7R), 'CM05F104Z16AH', 'CM05CH101J50AH'
+    if 'KYOCERA' in mfr and (m := re.fullmatch(r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V|CH|SL|B|F)(\d{3}|\d?R\d+)'
+                                               r'([BCDFGJKMZ])(\d\d)A[HT]', pn)):
         spec = {'capacitance_pf': _cap_code_pf(m.group(3)), 'tolerance': MLCC_TOL[m.group(4)],
-                'voltage_v': 6.3 if m.group(5) == '06' else int(m.group(5)), 'dielectric': DIELECTRICS[m.group(2)]}
+                'voltage_v': 6.3 if m.group(5) == '06' else int(m.group(5)), 'dielectric': DIELECTRICS.get(m.group(2))}
         return 'capacitor', {k: v for k, v in spec.items() if v is not None}, KYOCERA_SIZE[m.group(1)]
     if 'DARFON' in mfr and (m := re.fullmatch(r'C(\d{4})(NP0|X7R|X5R|Y5V)(\d{3}|\d?R\d+)([BCDFGJKMZ])\w{2,3}', pn)):
         size = DARFON_SIZE.get(m.group(1))
@@ -686,7 +692,7 @@ def decode_mpn(manufacturer, part_number):
 PREFIX_MAKER = [(r'ERJ|ECJ', 'Panasonic'), (r'GR[MJP]\d', 'Murata'), (r'CL\d\d[A-Z]\d', 'Samsung'),
                 (r'RC-?\d{4}[BCDFGJ]\w+C[SH]$', 'Samsung'), (r'CI[HG]T?\d\d', 'Samsung'), (r'LQ[PGW]\d\d|BLM\d\d', 'Murata'),
                 (r'LLV?\d{4}-F', 'Toko'), (r'MLG\d{4}', 'TDK'), (r'HK\d{4}', 'Taiyo Yuden'), (r'RMC-?1/', 'Kamaya'),
-                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V)', 'Kyocera AVX'),
+                (r'C[MV](02|05|105|21)(X5R|X7R|X6S|C0G|NP0|Y5V|CH|SL|B\d|F\d)', 'Kyocera AVX'),
                 (r'(RC|CC|YC|AC)\d{3}', 'Yageo'), (r'RM\d\d[BCDFJ]TN', 'TA-I'), (r'WR\d\dX', 'Walsin'),
                 (r'C\d{4}(C0G|COG|X7R|X5R|Y5V|X6S|X7S|CH|JB)', 'TDK'), (r'(CE)?[AJLETGUH]MK\d{3}', 'Taiyo Yuden'),
                 (r'RTT\d\d', 'Ralec'), (r'RK73', 'KOA'), (r'GNM\d', 'Murata')]

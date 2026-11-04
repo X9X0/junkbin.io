@@ -22,13 +22,17 @@ import subprocess
 import tempfile
 
 REFDES = (r'(?:IC|Q|D|R|C|L|T|X|F|CN|J|U|VR|SW|BD|FB|TR|ZD|LED|RL|PC|VD|TH|RT|SP|MIC|ANT|BAT|M|K|P|S|Y|E|B|W|H|'
-          r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP)\d{1,5}[A-Z]?')
+          r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP|LUG|SC(?=\d{3}))\d{1,5}[A-Z]?')
 REFDES_RE = re.compile(rf'^{REFDES}$')
 REFLIST_RE = re.compile(rf'^{REFDES}(?:\s*,\s*{REFDES})*,?$')
-# >= 4 digits: not pin or net names; not a package ('SM0603', 'SOT-363'); Sharp's own codes may have
-# three ('RH-EXA741WJQZY', 'QSOCNA229WJZZ')
+# Sharp's own codes: 'RH-EXA741WJQZY', 'QSOCNA229WJZZ' (three digits), 'RCiLFA134WJZZY' (a lowercase i), and
+# fixed-width (13-14) semiconductor / passive codes padded with / or + ('VSUM6K1N///-1', 'VHiNJM2584M-1Y',
+# 'VHD1SS390++-1Y', 'VCFYFA1HA334J+', 'VRS-TP2BD3R3J', 'RCiLP0343TAZZY', 'RR-HRSM1R5J3W')
+SHARP = (r'[A-Z]{2,4}-?[A-Zi]{1,4}\d{3,4}WJ[0-9A-Z]{1,4}'
+         r'|(?=.{13,14}$)(?:V[CHRS](?=(?:\D*\d){2})[0-9A-Za-z\-/+]{10,11}[0-9A-Z+]|R[A-Z][-i](?=(?:\D*\d){3})[0-9A-Z]{9,10}[0-9A-Z])')
+# >= 4 digits: not pin or net names; not a package ('SM0603', 'SOT-363')
 CODE_RE = re.compile(r'^(?!(?:SMD?)?(?:01005|0201|0402|0603|0805|1206|1210|2512)$|(?:SOT|SOD|SOP|SOIC|TSSOP|QFN|DFN)-?\d+$)'
-                     r'(?:(?=(?:\D*\d){4})[0-9A-Z][0-9A-Z\-./]{4,24}|[A-Z]{2,4}-?[A-Z]{1,4}\d{3}WJ[0-9A-Z]{1,4})$')
+                     rf'(?:(?=(?:\D*\d){{4}})[0-9A-Z][0-9A-Z\-./]{{4,24}}|{SHARP})$')
 WORDS_RE = re.compile(r'[A-Za-z]{3,}')
 VALUE_RE = re.compile(r'\d(?:\.\d+)?\s*(?:UF|NF|PF|UH|NH|K|M|OHM|Ω|V)\b', re.I)
 # a maker part number printed beside the internal code on factory BOMs ('MURATA GRM188R60J476ME15D')
@@ -68,6 +72,7 @@ def part_type(desc, refs=()):
 MIN_PAGE_ROWS = 8
 MIN_ROWS = 20
 MIN_SHAPE_SHARE = 0.7
+MAX_REPEATED_SHARE = 0.25
 
 
 def shape(code):
@@ -76,7 +81,12 @@ def shape(code):
 
 # Sharp's own codes are one family in several shapes ('RH-EXA103WJZZY', 'QPLGNA341WJZZY', 'QCNCMA012WJZZ'):
 # they count together with whichever shapes lead
-SHARP_CODE = re.compile(r'^[A-Z]{2,4}-?[A-Z]{1,4}\d{3,4}WJ[0-9A-Z]{1,4}$')
+# (a code the general rule reads already keeps its own shape: moving those out of the shape count changed
+# which shape leads, and rows of other shapes that started like it - 'RBLN-0061TAZZY' - were dropped)
+SHARP_CODE = re.compile(rf'^(?!(?=(?:\D*\d){{4}})[0-9A-Z][0-9A-Z\-./]{{4,24}}$)(?:{SHARP})$'
+                        r'|^[A-Z]{2,4}-?[A-Zi]{1,4}\d{3,4}WJ[0-9A-Z]{1,4}$')
+# ... but every Sharp code is kept with the document's family, whatever its shape ('VS2SA1530AR-1Y', 'RH-EX1026CEZZY')
+SHARP_FAMILY = re.compile(rf'^(?:{SHARP})$')
 
 
 def _shapes(codes):
@@ -99,6 +109,10 @@ TPV_CODE = re.compile(r'(?<![\w-])(\d{3}G) (?=[0-9A-Z]{3,})')
 TPV_PN = re.compile(r'^\d{3}G[0-9A-Z]{4,}$')
 # Sharp (LC-39LE650, LC-46LE540) prints a space inside the position: 'D 3806 VHDHSU119//-1Y  DIODO HSU119TRF'
 SPACED_REF = re.compile(r'(?<!\S)([A-Z]{1,3}) (\d{3,4})(?= +([0-9A-Z][0-9A-Z\-./]{4,24})(?!\S))')
+
+
+# the safety mark printed before a position ('! C806   RC-M2E473RESC   0.047 RE473C 275V Film')
+SAFETY_MARK = re.compile(r'^[!⚠]\s+(?=[A-Z])')
 
 
 def _join_ref(m):
@@ -135,14 +149,16 @@ def parse_page(text):
         # may be one space apart ('R195 HL006150 R.MTL.OXD 1.5KΩ 1/2W')
         i = 0
         while i < len(chunks):
-            words = chunks[i].split()
+            safety = SAFETY_MARK.match(chunks[i])
+            chunk = chunks[i][safety.end():] if safety else chunks[i]
+            words = chunk.split()
             if len(words) >= 2 and REFDES_RE.match(words[0]) and CODE_RE.match(words[1]) \
                     and not REFDES_RE.match(words[1]):
                 ref, code, first, j = words[0], words[1], words[2:], i + 1
-            elif REFDES_RE.match(chunks[i]) and i + 1 < len(chunks) and CODE_RE.match(chunks[i + 1].split()[0]) \
+            elif REFDES_RE.match(chunk) and i + 1 < len(chunks) and CODE_RE.match(chunks[i + 1].split()[0]) \
                     and not REFDES_RE.match(chunks[i + 1].split()[0]):
                 parts = chunks[i + 1].split()
-                ref, code, first, j = chunks[i], parts[0], parts[1:], i + 2
+                ref, code, first, j = chunk, parts[0], parts[1:], i + 2
             else:
                 i += 1
                 continue
@@ -153,20 +169,24 @@ def parse_page(text):
                 j += 1
             desc = ' '.join(desc)
             if WORDS_RE.search(desc) or VALUE_RE.search(desc):
-                rows.append((code, [ref], desc))
+                rows.append((code, [ref], '⚠ ' + desc if safety else desc))
                 i = j
             else:
                 i += 1
-    return [(code, refs, _tidy(code, desc)) for code, refs, desc in rows]
+    return [(code, refs, '⚠ ' + _tidy(code, desc[2:]) if desc.startswith('⚠ ') else _tidy(code, desc))
+            for code, refs, desc in rows]
 
 
 # a table's next section heading read onto the row above it ('C CERAM 0402 100NF 25V 20%  RESISTORS')
 SECTION_HEADING = re.compile(r'\s+(?:(?:INTEGRATED|PACKAGED|MISCELLANEOUS|SMD)\s+)?(?:RESISTORS|CAPACITORS|COILS|DIODES|'
                              r'TRANSISTORS|CIRCUITS|CONNECTORS|FILTERS|CRYSTALS|TRANSFORMERS|SWITCHES|VARISTORS|'
                              r'FUSES|INDUCTORS|MISCELLANEOUS|MISCELLANEOUS PARTS)$')
-SHARP_PRICE = re.compile(r'\s+[JSP](?:\s+A[A-Z]){1,2}$|(?:\s+A[A-Z]){2}$')
-LETTER_SPACED = re.compile(r'(?<!\S)[A-Z] [A-Z] [A-Z]')
-SHARP_PRICE_FIRST = re.compile(r'^(?:N\s+)?A[A-Z]\s+[JSP]\s+(?=\S)|^N\s+[JSP]\s+(?=[A-Z][a-z])')    # 'AD J Capacitor, 10 16V Ceramic'
+SHARP_PRICE = re.compile(r'\s+[JSPR](?:\s+A[A-Z]){1,2}$|(?:\s+A[A-Z]){2}$')
+SHARP_MARK_NO_PRICE = re.compile(r'\s+[JSPR](?:\s+-{2,}){2}\s*$')     # '22 KY 50V Electrolytic  J  --  --'
+LETTER_SPACED = re.compile(r'(?<!\S)[A-Z] [A-Z] [A-Z](?![a-z])')     # not 'N J Capacitor'
+# 'AD J Capacitor, 10 16V Ceramic', 'AB N J Capacitor 4.7 10V', 'N J Capacitor 0.22 50V', 'J Capacitor, 0.22 50V'
+SHARP_PRICE_FIRST = re.compile(r'^(?:N\s+)?A[A-Z]\s+(?:N\s+)?[JSPR]\s+(?=\S)|^N\s+[JSPR]\s+(?=[A-Z][a-z])'
+                               r'|^[JSPR]\s+(?=(?:Capacitor|Resistor|Coil|Ferrite|Balun|Lug|Zener|Diode|DIO|TR|FET|IC|JUMP)\b)')
 
 
 def _tidy(code, desc):
@@ -174,6 +194,7 @@ def _tidy(code, desc):
     vendor mark printed after the code ('061G0402220 JY  RST CHIPR 22 OHM'), and without Sharp's mark and
     price-rank columns ('0.1 25V Ceramic  J  AA  AA', 'RES 0603 0 OHM 5% 1/10W SMD  P  AA'): the J there
     is a delivery mark, not a tolerance."""
+    desc = SHARP_MARK_NO_PRICE.sub('', desc)
     desc = re.sub(r'(?:\s+-+)+\s*$', '', desc).strip()
     desc = SECTION_HEADING.sub('', desc)
     if not LETTER_SPACED.search(desc):     # 'F I LTE R - S AW' (Samsung) is a word, not a price column
@@ -184,10 +205,12 @@ def _tidy(code, desc):
 
 
 def _starts_row(chunks, j):
-    words = chunks[j].split()
+    safety = SAFETY_MARK.match(chunks[j])
+    chunk = chunks[j][safety.end():] if safety else chunks[j]
+    words = chunk.split()
     if len(words) >= 2 and REFDES_RE.match(words[0]) and CODE_RE.match(words[1]) and not REFDES_RE.match(words[1]):
         return True
-    return bool(REFDES_RE.match(chunks[j]) and j + 1 < len(chunks) and chunks[j + 1].split()
+    return bool(REFDES_RE.match(chunk) and j + 1 < len(chunks) and chunks[j + 1].split()
                 and CODE_RE.match(chunks[j + 1].split()[0]) and not REFDES_RE.match(chunks[j + 1].split()[0]))
 
 
@@ -395,6 +418,16 @@ def parse_document(pages):
             kept += [(n, *r) for r in rows]
     if len(kept) < MIN_ROWS:
         return [], f'{len(kept)} parts-list rows'
+    # a marking-code book ('SMD code  Type  Function ... Mnf': B0 AP8821C-10PC, B0 SP809...) reads like one, but
+    # its 'positions' are package markings that repeat down the page; a list's positions are each printed once
+    # (or twice, for two variants). Share of positions printed 3+ times on their page: code book 31%, lists <= 18%
+    per_page = collections.defaultdict(collections.Counter)
+    for page, _code, refs, _desc in kept:
+        per_page[page].update(refs)
+    printed = sum(sum(c.values()) for c in per_page.values())
+    repeated = sum(n for c in per_page.values() for n in c.values() if n >= 3)
+    if printed and repeated / printed >= MAX_REPEATED_SHARE:
+        return [], f'positions repeat on their pages ({repeated} of {printed}): a code table, not a parts list'
     coded = [r for r in kept if r[1]]
     shapes, sharp = _shapes([r[1] for r in coded])
     # a maker's codes come in a few related shapes (Panasonic F1H1H104B047 / ERJ2GEJ103X): the shapes that
@@ -405,7 +438,7 @@ def parse_document(pages):
         top, count = shapes.most_common(1)[0] if shapes else ('Sharp', sharp)
         return [], f'part codes inconsistent ({count} of {len(coded)} share {top})'
     start = family[0][:2] if family else ''
-    rows = [r for r in kept if not r[1] or shape(r[1]) in family or shape(r[1])[:2] == start or SHARP_CODE.match(r[1])]
+    rows = [r for r in kept if not r[1] or shape(r[1]) in family or shape(r[1])[:2] == start or SHARP_FAMILY.match(r[1])]
     family = '/'.join(family + (['Sharp'] if sharp else []))
     return rows, f'{len(rows)} rows, part code shapes {family or "none (S/U table)"}'
 
@@ -416,8 +449,19 @@ BARE_MICROFARADS = re.compile(r'^((?:Capacitor,?\s*)?)(\d+(?:[.,]\d+)?)((?:\s+[A
                               r'(?:Ceramic|Electrolytic|Tantalum|Film|Mylar)\b)', re.I)
 
 
+# ... and with the kind first: 'Ceramic 0.1 25V', 'Electrolytic Cap. 22.00 16.0V', 'Mylar Capacitor 0.0680 50V J',
+# 'Ceramic Capacitor-B (chip) 0.0100 50V K', 'Capacitor, 0.22 50V' (the same lists print pF with a p)
+BARE_MICROFARADS_AFTER = re.compile(r'^((?:Monolithic\s+)?(?:Ceramic|Electrolytic|Tantalum|Film|Mylar)(?:\s+(?:Capacitor|Cap\.)'
+                                    r'(?:-[A-Z])?)?(?:\s+\(chip\))?\s+|Capacitor,?\s+)(\d+(?:[.,]\d+)?)(?=\s+\d+(?:[.,]\d+)?\s*k?V\b)',
+                                    re.I)
+
+
 def _microfarads(m):
     return f'{m.group(1)}{m.group(2).replace(",", ".")}uF{m.group(3)}'
+
+
+def _microfarads_after(m):
+    return f'{m.group(1)}{m.group(2).replace(",", ".")}uF'
 
 
 # Murata's old series word, then the EIA code, tolerance letter and volts: 'CAPACITOR GRM39F 104Z 25 (1608)SMD'
@@ -426,6 +470,64 @@ MURATA_CODED = re.compile(r'\b(GRM\w*)\s+(\d\d)(\d)([BCDFGJKMZ])\s+(\d+(?:\.\d+)
 
 def _murata_coded(m):
     return f'{m.group(1)} {int(m.group(2)) * 10 ** int(m.group(3))}PF {m.group(4)} {m.group(5)}V'
+
+
+# Onkyo names its passives <series>-<value>: chip resistors and ceramics carry an EIA code and a tolerance letter
+# ('C-CARBON R RN72K1J-331JE' 330 ohm, 'C-CERA C CK725B1H-103K1' 10 nF 50 V, 'CERA C CK45F50V-223Z'), leaded
+# resistors and electrolytics the plain value ('CARBON R R16J-2.2K', 'UTSP C CE04W50V-10M(UTSP)' 10 uF 50 V).
+# Checked on the TX-SR507 / HT-R960 lists: the EIA reading gives an E24 value for 1,499 of 1,499 chip resistors
+# (the plain one for 430) and for 796 of 820 ceramics (the rest are 4-8 pF, C/D tolerance).
+ONKYO_CHIP_R = re.compile(r'\b(RN7\d[A-Z]\d[A-Z])-(\d{2})(\d)([FGJ])\w*')
+ONKYO_LEAD_R = re.compile(r'\b(?:R\d{2}J|RNU1(?:/\d)?WCJ|RS\d(?:/\d)?WBJ)-(\d+(?:\.\d+)?)([KM]?)(?=\s|$)')
+ONKYO_CERAMIC = re.compile(r'\bC[CK](?:\d{3}[A-Z]{1,2}(\d[A-Z])|45[A-Z]{1,2}(\d+)V)-(\d{2})(\d)([BCDFGJKMZ])\w*')
+ONKYO_ELECT = re.compile(r'\b(?:CE04W|CEWX)(\d+(?:\.\d+)?)V[- ](\d+(?:\.\d+)?)M\b')
+TOL_PERCENT = {'F': '1%', 'G': '2%', 'J': '5%', 'K': '10%', 'M': '20%', 'Z': '+80/-20%', 'C': '±0.25PF', 'D': '±0.5PF',
+               'B': '±0.1PF'}
+EIA_VOLTS = {'0J': '6.3', '1A': '10', '1C': '16', '1E': '25', '1V': '35', '1H': '50', '1J': '63', '2A': '100',
+             '2E': '250', '2H': '500'}
+
+
+def _onkyo(clean):
+    m = ONKYO_CHIP_R.search(clean)
+    if m:
+        return f'{clean} {int(m.group(2)) * 10 ** int(m.group(3))} OHM {TOL_PERCENT[m.group(4)]}'
+    m = ONKYO_LEAD_R.search(clean)
+    if m:
+        return f'{clean} {m.group(1)}{m.group(2)} OHM'
+    m = ONKYO_CERAMIC.search(clean)
+    if m:
+        volts = EIA_VOLTS.get(m.group(1)) if m.group(1) else m.group(2)
+        return (f'{clean} {int(m.group(3)) * 10 ** int(m.group(4))}PF {TOL_PERCENT[m.group(5)]}'
+                + (f' {volts}V' if volts else ''))
+    m = ONKYO_ELECT.search(clean)
+    if m:
+        return f'{clean} {m.group(2)}UF 20% {m.group(1)}V'
+    return clean
+
+
+# zero-ohm links: Sony's 'CONDUCTOR, CHIP (1005)', TPV's 'RST CHIPR MAX0R05 1/16W' (max 0.05 ohm; its code
+# 061G0402000 says 000)
+ZERO_OHM_LINK = re.compile(r'\bCONDU?CTOR,\s*CHIP\b|\bCHIPR\s+MAX0R0\d\b', re.I)
+# inductances in RKM form, u for the point: 'CHIP INDUCTOR 1U8 10% FCI1608F-1R8K' (TPV; 62 of 62 agree with the
+# maker part beside them)
+RKM_MICROHENRY = re.compile(r'(?<![\w.])(\d+)U(\d+)(?![\w.])')
+
+
+def _small_forms(clean):
+    if ZERO_OHM_LINK.search(clean):
+        clean += ' 0 OHM'
+    if re.search(r'INDUC|COIL|CHOKE', clean, re.I):
+        clean = RKM_MICROHENRY.sub(r'\1.\2uH', clean)
+    return clean
+
+
+def clean_description(desc, micro_as_m=False):
+    """A parts-list description as the site stores it: one line, the maker's value forms spelled out."""
+    clean = re.sub(r'\s+', ' ', desc.replace('⚠', ' ')).strip()
+    if micro_as_m:
+        clean = re.sub(r'(?<=\d)M([FH])\b', r'u\1', clean)
+    clean = BARE_MICROFARADS_AFTER.sub(_microfarads_after, BARE_MICROFARADS.sub(_microfarads, clean))
+    return _small_forms(_onkyo(MURATA_CODED.sub(_murata_coded, clean)))
 
 
 def build_candidates_from_parts_list(file_obj, brand=''):
@@ -443,11 +545,7 @@ def build_candidates_from_parts_list(file_obj, brand=''):
     candidates = []
     for page, code, refs, desc in rows:
         safety = '⚠' in desc                    # the manual's mark for a safety-critical part
-        clean = re.sub(r'\s+', ' ', desc.replace('⚠', ' ')).strip()
-        if micro_as_m:
-            clean = re.sub(r'(?<=\d)M([FH])\b', r'u\1', clean)
-        clean = BARE_MICROFARADS.sub(_microfarads, clean)
-        clean = MURATA_CODED.sub(_murata_coded, clean)
+        clean = clean_description(desc, micro_as_m)
         kind = part_type(clean, refs) or designator_kind(refs[0] if refs else '')
         k, specs, package = parse_description(clean, kind or '')
         kind = (SITE_TYPE.get(k, k) if k else None) or kind

@@ -236,3 +236,30 @@ def test_resistance_at_the_head(text, ohms):
 def test_resistance_and_tolerance_letter_at_the_head(text, ohms):
     specs = parse_description(text, 'resistor')[1]
     assert (specs['resistance_ohm'], specs['tolerance']) == (ohms, '1%')
+
+
+@pytest.mark.parametrize('text,tolerance', [
+    ('CAP SMD 100NF 10V K X5R (0402) RoHS G', '10%'),
+    ('CAP SMD 180PF 50V J (402) ROHS G', '5%'),
+    ('Ceramic Capacitor-F (chip) 0.1000uF 25V Z 01', '+80/-20%'),
+    ('ELECTROLYTIC CAP. 100µF/25V M', '20%'),
+    ('C.CE.CHP 0.1uF 16V B', None),                  # B: the temperature characteristic, not +-0.1pF
+])
+def test_capacitor_tolerance_letter_after_the_voltage(text, tolerance):
+    assert parse_description(text, 'capacitor')[1].get('tolerance') == tolerance
+
+
+def test_lowercase_letter_after_the_voltage_is_no_tolerance():
+    # a schematic label ('0.1UF/10V m'); the factory BOM gives 10%
+    assert parse_description('0.1UF/10V m', 'capacitor')[1].get('tolerance') is None
+
+
+@pytest.mark.parametrize('pn,specs', [
+    # older Kyocera numbers give the JIS characteristic (Toshiba parts lists)
+    ('CM05B104K10AH', {'capacitance_pf': 100000.0, 'tolerance': '10%', 'voltage_v': 10}),
+    ('CM05F104Z16AH', {'capacitance_pf': 100000.0, 'tolerance': '+80/-20%', 'voltage_v': 16}),
+    ('CM05CH101J50AH', {'capacitance_pf': 100.0, 'tolerance': '5%', 'voltage_v': 50, 'dielectric': 'CH'}),
+])
+def test_kyocera_jis_characteristics(pn, specs):
+    assert guess_maker(pn) == 'Kyocera AVX'
+    assert decode_mpn('Kyocera AVX', pn)[1] == specs
