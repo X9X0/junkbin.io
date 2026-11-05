@@ -45,21 +45,7 @@ from apps.users.permissions import IsModerator
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
 from apps.api.throttling import SubmissionRateThrottle, UploadRateThrottle
 from apps.api.metrics import submission_counter
-
-
-def _notify_content_review(user, content_label, url, approved, notes=''):
-    """Shared in-app + push notification for the approve/reject actions
-    below -- pairs with the existing notify_contribution_reviewed email task."""
-    if not user:
-        return
-    from apps.notifications.services import notify
-    from apps.notifications.models import Notification
-    if approved:
-        notify(user, Notification.Category.CONTENT_APPROVED,
-               title=f'{content_label} approved', body=notes, url=url)
-    else:
-        notify(user, Notification.Category.CONTENT_REJECTED,
-               title=f'{content_label} rejected', body=notes, url=url)
+from apps.notifications.services import notify_content_review as _notify_content_review, review_notes
 
 
 @extend_schema_view(
@@ -1134,10 +1120,10 @@ class ProductViewSet(viewsets.ModelViewSet):
             product.created_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(product.created_by.pk), 'Product', str(product),
-                f'{settings.FRONTEND_URL}/products/{product.pk}', True,
+                f'{settings.FRONTEND_URL}/products/{product.pk}', True, reviewer_id=str(request.user.pk),
             )
             _notify_content_review(product.created_by, f'Your product "{product}"',
-                                    f'/products/{product.slug}', approved=True)
+                                    f'/products/{product.slug}', approved=True, actor=request.user)
 
         return Response({'detail': 'Product approved.'})
 
@@ -1152,11 +1138,11 @@ class ProductViewSet(viewsets.ModelViewSet):
         if product.created_by:
             notify_contribution_reviewed.delay(
                 str(product.created_by.pk), 'Product', str(product),
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
             _notify_content_review(product.created_by, f'Your product "{product}"',
                                     '/my-submissions', approved=False,
-                                    notes=request.data.get('notes', ''))
+                                    notes=review_notes(request), actor=request.user)
         product.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1355,10 +1341,10 @@ class SchematicViewSet(viewsets.ModelViewSet):
             schematic.uploaded_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(schematic.uploaded_by.pk), 'Schematic', schematic.title,
-                f'{settings.FRONTEND_URL}/products/{schematic.product_id}', True,
+                f'{settings.FRONTEND_URL}/products/{schematic.product_id}', True, reviewer_id=str(request.user.pk),
             )
             _notify_content_review(schematic.uploaded_by, f'Your schematic "{schematic.title}"',
-                                    f'/products/{schematic.product.slug}', approved=True)
+                                    f'/products/{schematic.product.slug}', approved=True, actor=request.user)
 
         return Response({'detail': 'Schematic approved.'})
 
@@ -1373,11 +1359,11 @@ class SchematicViewSet(viewsets.ModelViewSet):
         if schematic.uploaded_by:
             notify_contribution_reviewed.delay(
                 str(schematic.uploaded_by.pk), 'Schematic', schematic.title,
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
             _notify_content_review(schematic.uploaded_by, f'Your schematic "{schematic.title}"',
                                     '/my-submissions', approved=False,
-                                    notes=request.data.get('notes', ''))
+                                    notes=review_notes(request), actor=request.user)
         schematic.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1470,10 +1456,10 @@ class FirmwareViewSet(viewsets.ModelViewSet):
             firmware.uploaded_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(firmware.uploaded_by.pk), 'Firmware', firmware.title,
-                f'{settings.FRONTEND_URL}/products/{firmware.product_id}', True,
+                f'{settings.FRONTEND_URL}/products/{firmware.product_id}', True, reviewer_id=str(request.user.pk),
             )
             _notify_content_review(firmware.uploaded_by, f'Your firmware "{firmware.title}"',
-                                    f'/products/{firmware.product.slug}', approved=True)
+                                    f'/products/{firmware.product.slug}', approved=True, actor=request.user)
 
         return Response({'detail': 'Firmware approved.'})
 
@@ -1488,11 +1474,11 @@ class FirmwareViewSet(viewsets.ModelViewSet):
         if firmware.uploaded_by:
             notify_contribution_reviewed.delay(
                 str(firmware.uploaded_by.pk), 'Firmware', firmware.title,
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
             _notify_content_review(firmware.uploaded_by, f'Your firmware "{firmware.title}"',
                                     '/my-submissions', approved=False,
-                                    notes=request.data.get('notes', ''))
+                                    notes=review_notes(request), actor=request.user)
         firmware.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1562,11 +1548,11 @@ class ComponentSuggestionViewSet(viewsets.ModelViewSet):
             notify_contribution_reviewed.delay(
                 str(credited_user.pk), 'Component Suggestion',
                 f'{suggestion.part_number} ({suggestion.reference_designator or "?"})',
-                f'{settings.FRONTEND_URL}/components/{component.id}/products', True,
+                f'{settings.FRONTEND_URL}/components/{component.id}/products', True, reviewer_id=str(request.user.pk),
             )
             _notify_content_review(
                 credited_user, f'Your component suggestion "{suggestion.part_number}"',
-                f'/products/{suggestion.product.slug}', approved=True)
+                f'/products/{suggestion.product.slug}', approved=True, actor=request.user)
 
         suggestion_id = str(suggestion.id)
         suggestion.delete()
@@ -1589,11 +1575,11 @@ class ComponentSuggestionViewSet(viewsets.ModelViewSet):
             notify_contribution_reviewed.delay(
                 str(suggestion.uploaded_by.pk), 'Component Suggestion',
                 f'{suggestion.part_number or "?"} ({suggestion.reference_designator or "?"})',
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
             _notify_content_review(
                 suggestion.uploaded_by, f'Your component suggestion "{suggestion.part_number or "?"}"',
-                '/my-submissions', approved=False, notes=request.data.get('notes', ''))
+                '/my-submissions', approved=False, notes=review_notes(request), actor=request.user)
         suggestion.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -1630,10 +1616,10 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
             image.uploaded_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(image.uploaded_by.pk), 'Image', image.caption or f'{image.image_type} image',
-                f'{settings.FRONTEND_URL}/products/{image.product_id}', True,
+                f'{settings.FRONTEND_URL}/products/{image.product_id}', True, reviewer_id=str(request.user.pk),
             )
             _notify_content_review(image.uploaded_by, 'Your image',
-                                    f'/products/{image.product.slug}', approved=True)
+                                    f'/products/{image.product.slug}', approved=True, actor=request.user)
 
         return Response({'detail': 'Image approved.'})
 
@@ -1648,10 +1634,10 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
         if image.uploaded_by:
             notify_contribution_reviewed.delay(
                 str(image.uploaded_by.pk), 'Image', image.caption or f'{image.image_type} image',
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
             _notify_content_review(image.uploaded_by, 'Your image',
                                     '/my-submissions', approved=False,
-                                    notes=request.data.get('notes', ''))
+                                    notes=review_notes(request), actor=request.user)
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

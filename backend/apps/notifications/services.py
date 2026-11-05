@@ -34,3 +34,25 @@ def notify_staff(users, category, title, body='', url='', actor=None):
         notify(user, category, title=title, body=body, url=url, actor=actor)
         for user in users
     ]
+
+
+REVIEW_NOTES_MAX = 2000
+
+
+def review_notes(request):
+    """A moderator's feedback sent with an approve/reject ('notes' in the body)."""
+    return str(request.data.get('notes') or '').strip()[:REVIEW_NOTES_MAX]
+
+
+def notify_content_review(user, content_label, url, approved, notes='', actor=None):
+    """In-app + push notification for a moderator's approve/reject; pairs with
+    the notify_contribution_reviewed email task. Nothing is sent when the
+    moderator (actor) reviews their own item."""
+    if not user:
+        return
+    if approved:
+        notify(user, Notification.Category.CONTENT_APPROVED,
+               title=f'{content_label} approved', body=notes, url=url, actor=actor)
+    else:
+        notify(user, Notification.Category.CONTENT_REJECTED,
+               title=f'{content_label} rejected', body=notes, url=url, actor=actor)
