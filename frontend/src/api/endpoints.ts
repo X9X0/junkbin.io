@@ -294,8 +294,8 @@ export const products = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/products/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/products/${id}/reject/`, { notes });
   },
 
   pendingCounts: async (): Promise<{ products: number; schematics: number; firmware: number; recipes: number; images: number; component_images: number; datasheets: number; component_suggestions: number; product_requests: number }> => {
@@ -436,8 +436,8 @@ export const componentImages = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/component-images/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/component-images/${id}/reject/`, { notes });
   },
 };
 
@@ -453,8 +453,8 @@ export const componentDatasheets = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/component-datasheets/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/component-datasheets/${id}/reject/`, { notes });
   },
 };
 
@@ -524,8 +524,8 @@ export const schematics = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/schematics/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/schematics/${id}/reject/`, { notes });
   },
 };
 
@@ -556,8 +556,8 @@ export const firmware = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/firmware/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/firmware/${id}/reject/`, { notes });
   },
 };
 
@@ -581,8 +581,8 @@ export const productRequests = {
     return response.data;
   },
 
-  dismiss: async (id: string): Promise<ProductRequest> => {
-    const response = await api.post(`/product-requests/${id}/dismiss/`);
+  dismiss: async (id: string, notes = ''): Promise<ProductRequest> => {
+    const response = await api.post(`/product-requests/${id}/dismiss/`, { notes });
     return response.data;
   },
 };
@@ -623,8 +623,8 @@ export const componentSuggestions = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/component-suggestions/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/component-suggestions/${id}/reject/`, { notes });
   },
 };
 
@@ -640,8 +640,8 @@ export const productImages = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/product-images/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/product-images/${id}/reject/`, { notes });
   },
 };
 
@@ -957,8 +957,8 @@ export const recipes = {
     return response.data;
   },
 
-  reject: async (id: string): Promise<void> => {
-    await api.post(`/recipes/${id}/reject/`);
+  reject: async (id: string, notes = ''): Promise<void> => {
+    await api.post(`/recipes/${id}/reject/`, { notes });
   },
 };
 

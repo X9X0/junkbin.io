@@ -271,6 +271,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         """Approve a pending recipe (staff/moderator only)."""
         from django.conf import settings
+        from apps.notifications.services import notify_content_review
         from apps.users.tasks import notify_contribution_reviewed
 
         recipe = self.get_object()
@@ -283,14 +284,17 @@ class RecipeViewSet(viewsets.ModelViewSet):
             recipe.created_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(recipe.created_by.pk), 'Recipe', recipe.name,
-                f'{settings.FRONTEND_URL}/recipes/{recipe.pk}', True,
+                f'{settings.FRONTEND_URL}/recipes/{recipe.pk}', True, reviewer_id=str(request.user.pk),
             )
+            notify_content_review(recipe.created_by, f'Your recipe "{recipe.name}"',
+                                  f'/recipes/{recipe.pk}', approved=True, actor=request.user)
 
         return Response({'detail': 'Recipe approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending recipe (staff/moderator only)."""
+        from apps.notifications.services import notify_content_review, review_notes
         from apps.users.tasks import notify_contribution_reviewed
 
         recipe = self.get_object()
@@ -299,7 +303,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
         if recipe.created_by:
             notify_contribution_reviewed.delay(
                 str(recipe.created_by.pk), 'Recipe', recipe.name,
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
+            notify_content_review(recipe.created_by, f'Your recipe "{recipe.name}"',
+                                  '/my-submissions', approved=False, notes=review_notes(request), actor=request.user)
         recipe.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)

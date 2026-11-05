@@ -645,6 +645,7 @@ class ComponentImageModerationViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         """Approve a pending component image."""
         from django.conf import settings
+        from apps.notifications.services import notify_content_review
         from apps.users.tasks import notify_contribution_reviewed
 
         image = self.get_object()
@@ -656,13 +657,16 @@ class ComponentImageModerationViewSet(viewsets.ModelViewSet):
             image.uploaded_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(image.uploaded_by.pk), 'Component Image', image.caption or f'{image.image_type or "component"} image',
-                f'{settings.FRONTEND_URL}/components/{image.component_id}/products', True,
+                f'{settings.FRONTEND_URL}/components/{image.component_id}/products', True, reviewer_id=str(request.user.pk),
             )
+            notify_content_review(image.uploaded_by, 'Your component image',
+                                  f'/components/{image.component_id}/products', approved=True, actor=request.user)
         return Response({'detail': 'Image approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending component image."""
+        from apps.notifications.services import notify_content_review, review_notes
         from apps.users.tasks import notify_contribution_reviewed
 
         image = self.get_object()
@@ -671,8 +675,10 @@ class ComponentImageModerationViewSet(viewsets.ModelViewSet):
         if image.uploaded_by:
             notify_contribution_reviewed.delay(
                 str(image.uploaded_by.pk), 'Component Image', image.caption or f'{image.image_type or "component"} image',
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
+            notify_content_review(image.uploaded_by, 'Your component image', '/my-submissions', approved=False,
+                                  notes=review_notes(request), actor=request.user)
         image.image.delete(save=False)
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -699,6 +705,7 @@ class ComponentDatasheetViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         """Approve a pending datasheet."""
         from django.conf import settings
+        from apps.notifications.services import notify_content_review
         from apps.users.tasks import notify_contribution_reviewed
 
         datasheet = self.get_object()
@@ -710,13 +717,16 @@ class ComponentDatasheetViewSet(viewsets.ModelViewSet):
             datasheet.uploaded_by.increment_contribution()
             notify_contribution_reviewed.delay(
                 str(datasheet.uploaded_by.pk), 'Datasheet', datasheet.title,
-                f'{settings.FRONTEND_URL}/components/{datasheet.component_id}/products', True,
+                f'{settings.FRONTEND_URL}/components/{datasheet.component_id}/products', True, reviewer_id=str(request.user.pk),
             )
+            notify_content_review(datasheet.uploaded_by, f'Your datasheet "{datasheet.title}"',
+                                  f'/components/{datasheet.component_id}/products', approved=True, actor=request.user)
         return Response({'detail': 'Datasheet approved.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending datasheet."""
+        from apps.notifications.services import notify_content_review, review_notes
         from apps.users.tasks import notify_contribution_reviewed
 
         datasheet = self.get_object()
@@ -725,8 +735,10 @@ class ComponentDatasheetViewSet(viewsets.ModelViewSet):
         if datasheet.uploaded_by:
             notify_contribution_reviewed.delay(
                 str(datasheet.uploaded_by.pk), 'Datasheet', datasheet.title,
-                '', False, request.data.get('notes', ''),
+                '', False, review_notes(request), reviewer_id=str(request.user.pk),
             )
+            notify_content_review(datasheet.uploaded_by, f'Your datasheet "{datasheet.title}"', '/my-submissions', approved=False,
+                                  notes=review_notes(request), actor=request.user)
         datasheet.file.delete(save=False)
         datasheet.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -888,7 +900,10 @@ class ProductRequestViewSet(viewsets.GenericViewSet):
 
     @action(detail=True, methods=['post'])
     def dismiss(self, request, pk=None):
+        from apps.notifications.services import notify_content_review, review_notes
         r = self.get_object()
         r.status, r.handled_by, r.handled_at = r.Status.DISMISSED, request.user, timezone.now()
         r.save(update_fields=['status', 'handled_by', 'handled_at'])
+        notify_content_review(r.requested_by, f'Your request for {r.manufacturer} {r.model_number}',
+                              '', approved=False, notes=review_notes(request), actor=request.user)
         return Response(self.as_dict(r))

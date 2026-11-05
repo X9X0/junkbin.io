@@ -41,9 +41,12 @@ export default function ProductRequestsPanel() {
 
 function RequestRow({ request, onDone }: { request: ProductRequest; onDone: () => void }) {
   const [category, setCategory] = useState('other');
+  const [dismissing, setDismissing] = useState(false);
+  const [reason, setReason] = useState('');
   const fulfil = useMutation({ mutationFn: () => productRequests.fulfil(request.id, category), onSuccess: onDone });
-  const dismiss = useMutation({ mutationFn: () => productRequests.dismiss(request.id), onSuccess: onDone });
+  const dismiss = useMutation({ mutationFn: () => productRequests.dismiss(request.id, reason.trim()), onSuccess: onDone });
   const busy = fulfil.isPending || dismiss.isPending;
+  const requester = request.requested_by?.username;
 
   return (
     <div className="py-3 flex flex-wrap items-center gap-3 text-sm">
@@ -64,12 +67,25 @@ function RequestRow({ request, onDone }: { request: ProductRequest; onDone: () =
       <select className="input-cyber text-xs py-1 w-44" value={category} onChange={(e) => setCategory(e.target.value)}>
         {PRODUCT_CATEGORIES.filter((c) => c.value).map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
       </select>
-      <button onClick={() => fulfil.mutate()} disabled={busy} className="btn-cyber-green text-xs py-1 inline-flex items-center gap-1">
+      <button onClick={() => fulfil.mutate()} disabled={busy} className="btn-cyber btn-cyber-green text-xs py-1 inline-flex items-center gap-1">
         <Check className="h-3 w-3" /> Create product
       </button>
-      <button onClick={() => dismiss.mutate()} disabled={busy} className="btn-cyber-pink text-xs py-1 inline-flex items-center gap-1">
-        <X className="h-3 w-3" /> Dismiss
+      <button onClick={() => (requester ? setDismissing(!dismissing) : dismiss.mutate())} disabled={busy}
+        className="btn-cyber btn-cyber-pink text-xs py-1 inline-flex items-center gap-1">
+        <X className="h-3 w-3" /> Dismiss{requester ? '…' : ''}
       </button>
+      {dismissing && (
+        <div className="basis-full flex flex-wrap items-center gap-2 pl-0 sm:pl-4 border-l-2 border-cyber-pink/40">
+          <input value={reason} onChange={(e) => setReason(e.target.value)} maxLength={2000} autoFocus
+            onKeyDown={(e) => { if (e.key === 'Enter') dismiss.mutate(); if (e.key === 'Escape') setDismissing(false); }}
+            className="input-cyber text-xs py-1 flex-1 min-w-[16rem]"
+            placeholder={`Why, for ${requester} (sent as a notification): e.g. already listed as …`} />
+          <button onClick={() => setDismissing(false)} disabled={busy} className="btn-cyber text-xs py-1">Cancel</button>
+          <button onClick={() => dismiss.mutate()} disabled={busy} className="btn-cyber btn-cyber-pink text-xs py-1">
+            {reason.trim() ? 'Dismiss and tell them' : 'Dismiss without a reason'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

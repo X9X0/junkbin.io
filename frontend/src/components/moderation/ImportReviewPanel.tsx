@@ -1,8 +1,12 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ExternalLink, Flag, Loader2, ShieldCheck } from 'lucide-react';
 import { importReview, type ImportBatch, type ImportReviewItem } from '../../api/endpoints';
+import { FileOverlay } from './ReviewViewer';
+
+/** A plain click previews over the page; ctrl/cmd/shift/middle click still opens a tab. */
+const plainClick = (e: React.MouseEvent) => !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) && e.button === 0;
 
 /**
  * Review random samples of each bulk-import batch, then approve the batch.
@@ -63,19 +67,19 @@ function BatchRow({ batch, onReview, onFlagged, flaggedOpen, onApproved }: {
         </div>
         <button onClick={onReview} className="btn-cyber text-sm" disabled={batch.reviewed >= batch.total}>Review</button>
         {batch.flagged > 0 && (
-          <button onClick={onFlagged} className="btn-cyber-pink text-sm inline-flex items-center gap-1">
+          <button onClick={onFlagged} className="btn-cyber btn-cyber-pink text-sm inline-flex items-center gap-1">
             <Flag className="h-3 w-3" /> Flagged ({batch.flagged})
           </button>
         )}
         {batch.unapproved > 0 && (
           confirming ? (
             <button onClick={() => approve.mutate()} disabled={approve.isPending}
-              className="btn-cyber-green text-sm inline-flex items-center gap-1">
+              className="btn-cyber btn-cyber-green text-sm inline-flex items-center gap-1">
               <ShieldCheck className="h-4 w-4" /> Confirm: publish {batch.unapproved}
             </button>
           ) : (
             <button onClick={() => setConfirming(true)} disabled={!batch.can_approve}
-              className="btn-cyber-green text-sm inline-flex items-center gap-1 disabled:opacity-40"
+              className="btn-cyber btn-cyber-green text-sm inline-flex items-center gap-1 disabled:opacity-40"
               title={batch.can_approve ? '' : 'Needs more correct reviews and no open flags'}>
               <ShieldCheck className="h-4 w-4" /> Approve batch
             </button>
@@ -119,6 +123,8 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
   const [index, setIndex] = useState(0);
   const [note, setNote] = useState('');
   const [done, setDone] = useState(0);
+  const [preview, setPreview] = useState<{ url: string; type: string; title: string } | null>(null);
+  const closePreview = useCallback(() => setPreview(null), []);
   const { data: queue, isFetching } = useQuery({
     queryKey: ['importNext', batch.batch],
     queryFn: () => importReview.next(batch.batch, 10),
@@ -162,6 +168,7 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
             <div className="space-y-1 mb-3">
               {item.documents.map((d) => (
                 <a key={d.url} href={d.url} target="_blank" rel="noopener noreferrer"
+                  onClick={(e) => { if (plainClick(e)) { e.preventDefault(); setPreview({ url: d.url, type: '', title: `${d.type}: ${d.title}` }); } }}
                   className="flex items-start gap-2 text-sm text-cyber-cyan hover:underline">
                   <ExternalLink className="h-3.5 w-3.5 mt-0.5 flex-shrink-0" />
                   <span>{d.type}: {d.title}{d.description && <span className="block text-gray-500 text-xs">{d.description}</span>}</span>
@@ -195,19 +202,21 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
               placeholder="If flagging: what's wrong? (wrong model, wrong revision, not a schematic, …)" />
             <div className="flex gap-2">
               <button onClick={() => verdict.mutate('correct')} disabled={verdict.isPending}
-                className="btn-cyber-green inline-flex items-center gap-1"><Check className="h-4 w-4" /> Correct</button>
+                className="btn-cyber btn-cyber-green inline-flex items-center gap-1"><Check className="h-4 w-4" /> Correct</button>
               <button onClick={() => verdict.mutate('flagged')} disabled={verdict.isPending || !note.trim()}
-                className="btn-cyber-pink inline-flex items-center gap-1 disabled:opacity-40"
+                className="btn-cyber btn-cyber-pink inline-flex items-center gap-1 disabled:opacity-40"
                 title={note.trim() ? '' : 'Say what is wrong first'}><Flag className="h-4 w-4" /> Flag</button>
             </div>
           </div>
           {item.image && (
-            <a href={item.image} target="_blank" rel="noopener noreferrer">
-              <img src={item.image} alt="" className="w-full border border-cyber-light/30" />
+            <a href={item.image} target="_blank" rel="noopener noreferrer"
+              onClick={(e) => { if (plainClick(e)) { e.preventDefault(); setPreview({ url: item.image!, type: 'image', title: item.title }); } }}>
+              <img src={item.image} alt="" className="w-full border border-cyber-light/30 cursor-zoom-in" />
             </a>
           )}
         </div>
       )}
+      {preview && <FileOverlay {...preview} onClose={closePreview} />}
     </div>
   );
 }
