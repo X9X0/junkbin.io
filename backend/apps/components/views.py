@@ -18,6 +18,7 @@ from drf_spectacular.utils import extend_schema, extend_schema_view
 
 from utils.cache import staff_key_prefix
 from apps.api.metrics import component_view_counter
+from apps.products.filters import PhotoFirstOrderingFilter
 
 from .models import Component, ComponentImage, ComponentDatasheet, ComponentViewStats, ProductComponent, ComponentVote
 from .serializers import (
@@ -53,7 +54,7 @@ class ComponentViewSet(viewsets.ModelViewSet):
     """
 
     queryset = Component.objects.select_related('created_by').prefetch_related('images')
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, SearchFilter, PhotoFirstOrderingFilter]
     filterset_class = ComponentFilter
     search_fields = ['part_number', 'manufacturer', 'description', 'typical_function']
     ordering_fields = ['created_at', 'manufacturer', 'part_number', 'usage_count']
