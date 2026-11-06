@@ -13,7 +13,7 @@ import { parseApiError } from '../utils/formErrors';
 import clsx from 'clsx';
 import ReviewViewer from '../components/moderation/ReviewViewer';
 import {
-  type PendingItem, decide, itemDate, itemKey, itemThumbnail, itemTitle, itemUser, typeBadgeColors, typeIcons,
+  type PendingItem, type PendingType, decide, itemDate, itemKey, itemThumbnail, itemTitle, itemUser, typeBadgeColors, typeIcons,
 } from '../components/moderation/pendingItems';
 
 type PendingComponentImage = Extract<PendingItem, { type: 'component_image' }>['data'];
@@ -455,17 +455,29 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
 
 type ContentFilter = 'all' | 'products' | 'schematics' | 'firmware' | 'component_suggestions' | 'recipes' | 'images' | 'component_images' | 'datasheets';
 
+// a loaded list of 100 is fetched again once fewer than this are left undecided
+const REFILL_AT = 20;
+const pendingListKeys: Record<PendingType, string> = {
+  product: 'pendingProducts', schematic: 'pendingSchematics', firmware: 'pendingFirmware',
+  component_suggestion: 'pendingComponentSuggestions', recipe: 'pendingRecipes', image: 'pendingImages',
+  component_image: 'pendingComponentImages', datasheet: 'pendingDatasheets',
+};
+const countKeyOf = {
+  product: 'products', schematic: 'schematics', firmware: 'firmware', component_suggestion: 'component_suggestions',
+  recipe: 'recipes', image: 'images', component_image: 'component_images', datasheet: 'datasheets',
+} as const satisfies Record<PendingType, string>;
+
 function PendingContentTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
   const [actionError, setActionError] = useState<string | null>(null);
   const [viewer, setViewer] = useState<{ key: string; rejecting: boolean } | null>(null);
-  // decided items leave the list at once, before the refetch brings the new one
-  const [decided, setDecided] = useState<Set<string>>(() => new Set());
+  // decided items leave the list at once; key -> its type and when it was decided
+  const [decided, setDecided] = useState<Map<string, { type: PendingType; at: number }>>(() => new Map());
   const closeViewer = useCallback(() => setViewer(null), []);
 
-  const { data: counts } = useQuery({
+  const { data: counts, dataUpdatedAt: countsAt } = useQuery({
     queryKey: ['pendingCounts'],
     queryFn: products.pendingCounts,
   });
@@ -518,30 +530,6 @@ function PendingContentTab() {
     enabled: contentFilter === 'all' || contentFilter === 'datasheets',
   });
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingProducts'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingSchematics'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingFirmware'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingComponentSuggestions'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingRecipes'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingImages'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingComponentImages'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingDatasheets'] });
-  };
-
-  const markDecided = (key: string) => {
-    setActionError(null);
-    setDecided((prev) => new Set(prev).add(key));
-    invalidateAll();
-  };
-
-  const quickApprove = useMutation({
-    mutationFn: (item: PendingItem) => decide(item, true),
-    onSuccess: (_data, item) => markDecided(itemKey(item)),
-    onError: (err) => setActionError(parseApiError(err, 'Action failed. Please try again.')),
-  });
-
   // Merge items into a unified list
   const items: PendingItem[] = [];
   if (contentFilter === 'all' || contentFilter === 'products') {
@@ -570,13 +558,37 @@ function PendingContentTab() {
   }
 
   const visible = items.filter((i) => !decided.has(itemKey(i)));
+
+  // A decision refetches nothing until that type's loaded list runs low: refetching
+  // every list after each approve used up the moderator's request limit.
+  const markDecided = (key: string) => {
+    setActionError(null);
+    const type = items.find((i) => itemKey(i) === key)?.type;
+    if (!type) return;
+    setDecided((prev) => new Map(prev).set(key, { type, at: Date.now() }));
+    const left = visible.filter((i) => i.type === type && itemKey(i) !== key).length;
+    if (left < REFILL_AT) {
+      queryClient.invalidateQueries({ queryKey: [pendingListKeys[type]] });
+      queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
+    }
+  };
+
+  const quickApprove = useMutation({
+    mutationFn: (item: PendingItem) => decide(item, true),
+    onSuccess: (_data, item) => markDecided(itemKey(item)),
+    onError: (err) => setActionError(parseApiError(err, 'Action failed. Please try again.')),
+  });
   // Sort by date descending
   visible.sort((a, b) => new Date(itemDate(b)).getTime() - new Date(itemDate(a)).getTime());
 
   // pending totals (the lists hold the first 100 of each type)
   const countKeys = ['products', 'schematics', 'firmware', 'component_suggestions', 'recipes', 'images', 'component_images', 'datasheets'] as const;
+  // the counts are refreshed now and then; take off what was decided since
+  const decidedSinceCounts = [...decided.values()]
+    .filter((d) => d.at > countsAt && (contentFilter === 'all' || contentFilter === countKeyOf[d.type])).length;
   const pendingTotal = counts
     ? countKeys.filter((k) => contentFilter === 'all' || contentFilter === k).reduce((sum, k) => sum + (counts[k] || 0), 0)
+      - decidedSinceCounts
     : visible.length;
 
   const isLoading = loadingProducts || loadingSchematics || loadingFirmware || loadingComponentSuggestions || loadingRecipes || loadingImages || loadingComponentImages || loadingDatasheets;
