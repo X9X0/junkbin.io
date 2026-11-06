@@ -111,12 +111,39 @@ else
         exit 1
     fi
 
-    # Check if media directory has files
-    FILE_COUNT=$(docker exec junkbin_backend find /app/media -type f 2>/dev/null | wc -l)
-    if [ "$FILE_COUNT" -gt 0 ]; then
-        docker exec junkbin_backend bash -c 'nice -n 15 tar -czf /tmp/media_backup.tar.gz -C /app media'
-        docker cp junkbin_backend:/tmp/media_backup.tar.gz "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz"
-        docker exec junkbin_backend rm /tmp/media_backup.tar.gz
+    # Size check first. Media is archived whole on every run (02:00 and 14:00)
+    # and pulled off-host each time, and the archive briefly needs room twice
+    # (media.tar.gz, then the final archive around it). Since the Norway import
+    # (2026-11-06) media is ~55 GB: archiving it would fill the disk and take the
+    # site down, so above MEDIA_BACKUP_MAX_GB, or without room for two copies
+    # plus MEDIA_BACKUP_RESERVE_GB, media is left out and the run says so.
+    # MEDIA_BACKUP=always / never overrides the size check.
+    MEDIA_KB=$(docker exec junkbin_backend du -sk /app/media 2>/dev/null | cut -f1)
+    MEDIA_KB=${MEDIA_KB:-0}
+    FREE_KB=$(df -Pk "$BACKUP_DIR" | awk 'NR==2 {print $4}')
+    MAX_KB=$(( ${MEDIA_BACKUP_MAX_GB:-10} * 1000000 ))
+    NEED_KB=$(( 2 * MEDIA_KB + ${MEDIA_BACKUP_RESERVE_GB:-20} * 1000000 ))
+    MEDIA_GB="$(( MEDIA_KB / 1000000 )) GB"
+    MEDIA_NOTE=""
+    case "${MEDIA_BACKUP:-auto}" in
+        never)  MEDIA_NOTE="MEDIA_BACKUP=never" ;;
+        always) ;;
+        *)  if [ "$MEDIA_KB" -gt "$MAX_KB" ]; then
+                MEDIA_NOTE="media is ${MEDIA_GB}, over MEDIA_BACKUP_MAX_GB=${MEDIA_BACKUP_MAX_GB:-10}"
+            elif [ "$FREE_KB" -lt "$NEED_KB" ]; then
+                MEDIA_NOTE="media is ${MEDIA_GB}, only $(( FREE_KB / 1000000 )) GB free (needs $(( NEED_KB / 1000000 )) GB)"
+            fi ;;
+    esac
+
+    if [ -n "$MEDIA_NOTE" ]; then
+        log_warn "Media NOT backed up: ${MEDIA_NOTE}"
+    elif [ "$MEDIA_KB" -gt 0 ]; then
+        # streamed straight out of the container: no second copy in its /tmp
+        set -o pipefail
+        docker exec junkbin_backend nice -n 15 tar -czf - -C /app media \
+            > "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz"
+        set +o pipefail
+        FILE_COUNT=$(docker exec junkbin_backend find /app/media -type f 2>/dev/null | wc -l)
         MEDIA_SIZE=$(du -h "$BACKUP_DIR/$BACKUP_NAME/media.tar.gz" | cut -f1)
         log_success "Media backup complete ($MEDIA_SIZE) — $FILE_COUNT files"
     else
@@ -143,7 +170,8 @@ Mode: $([ "$DEV_MODE" = true ] && echo "local dev" || echo "docker")
 
 Contents:
 - database.sql: PostgreSQL database dump
-- media.tar.gz: Uploaded images, schematics, and files (if present)
+- media.tar.gz: Uploaded images, schematics, and files (if present)${MEDIA_NOTE:+
+  NOT IN THIS BACKUP: ${MEDIA_NOTE}}
 - .env.backup: Environment configuration (SENSITIVE)
 
 Database: $DB_NAME

@@ -256,6 +256,12 @@ Backups are saved to `./backups/` as `junkbin_backup_YYYYMMDD_HHMMSS.tar.gz`. Ea
 
 Backups older than 30 days are automatically pruned.
 
+**Media is left out when it is too big** (since the Norway import on 2026-11-06 it is
+~55 GB): above `MEDIA_BACKUP_MAX_GB` (default 10), or when the disk lacks room for
+two copies plus `MEDIA_BACKUP_RESERVE_GB` (default 20). The log and `manifest.txt`
+say so (`NOT IN THIS BACKUP: ...`). Archiving it whole twice a day would fill the
+disk and stop the site. `MEDIA_BACKUP=always` or `never` overrides the check.
+
 ### Automated backups
 
 A root cron entry runs `deployment/backup.sh` at 02:00 and 14:00, writing to
