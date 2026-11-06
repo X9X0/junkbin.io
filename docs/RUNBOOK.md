@@ -409,6 +409,37 @@ sudo /opt/certbot/bin/certbot renew
 docker compose -f docker-compose.yml exec -T nginx nginx -s reload
 ```
 
+### Shorter certificate lifetimes
+
+Let's Encrypt is cutting certificate lifetimes: **90 days** today, **64 days from
+2027-02-10** (10-day authorization reuse), **45 days from 2028-02-16** (7-hour
+authorization reuse); 45-day (`tlsserver`) and 6-day (`shortlived`) profiles are
+opt-in already. Nothing here needs a date-specific change, provided:
+
+- **certbot in `/opt/certbot` is 4.1 or newer.** From 4.0 it renews when a third of
+  the lifetime is left (instead of a fixed 30 days) and from 4.1 it follows ACME
+  Renewal Information (ARI), so Let's Encrypt can ask for an early renewal - e.g.
+  before revoking certificates in bulk. Check and upgrade with:
+
+  ```bash
+  sudo /opt/certbot/bin/certbot --version
+  sudo ./deployment/certbot-upgrade.sh      # upgrades only if older; staging dry run; rolls back on failure
+  ```
+
+- **renewal runs at least daily** - the cron below runs twice a day, ample for 45-day
+  certs. DNS-01 via Hostinger has to succeed on every renewal from 2028 (7-hour
+  authorization reuse), so keep the API token in `/etc/letsencrypt/hostinger.ini` valid.
+- **the expiry monitor's thresholds follow each cert's lifetime**: warning when less
+  than a third of it (minus 2 days) is left, i.e. renewal is late; critical under a
+  sixth (at most 7 days). See what it would report without sending anything:
+
+  ```bash
+  CERT_MONITOR_DRY_RUN=1 ./deployment/cert-monitor.sh
+  ```
+
+Let's Encrypt stopped sending expiry emails (2025) and running OCSP (nginx here
+doesn't staple), so the monitor is the only expiry warning.
+
 ### Auto-renewal
 
 A root cron entry runs at 03:00 and 15:00 daily:

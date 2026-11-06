@@ -567,7 +567,7 @@ setup_ssl() {
         esac
         python3 -m venv /opt/certbot
         /opt/certbot/bin/pip install --quiet --upgrade pip
-        /opt/certbot/bin/pip install --quiet certbot certbot-dns-hostinger
+        /opt/certbot/bin/pip install --quiet 'certbot>=4.1' certbot-dns-hostinger
         ln -sf /opt/certbot/bin/certbot /usr/local/bin/certbot
         log_info "certbot + certbot-dns-hostinger installed in /opt/certbot"
     elif ! /opt/certbot/bin/pip show certbot-dns-hostinger &> /dev/null; then
@@ -638,6 +638,14 @@ setup_cert_renewal() {
     else
         CERTBOT_BIN="$(command -v certbot || echo /usr/bin/certbot)"
         log_warn "/opt/certbot venv missing - using ${CERTBOT_BIN}, which may lack the dns-hostinger plugin"
+    fi
+
+    # Let's Encrypt is shortening cert lifetimes (64 days from 2027-02, 45 from
+    # 2028-02): certbot must be >= 4.1 to renew at a third of the lifetime and
+    # to follow ARI. The script upgrades only after a passing staging dry run.
+    if [ "$CERTBOT_BIN" = /opt/certbot/bin/certbot ]; then
+        "${DEPLOY_DIR}/deployment/certbot-upgrade.sh" \
+            || log_warn "certbot upgrade did not pass its dry run - kept the previous version; see above"
     fi
 
     DOCKER_BIN="$(command -v docker || echo /usr/bin/docker)"
