@@ -1,16 +1,22 @@
-import { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useCallback, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, HardDrive, Sparkles, Check, X, ExternalLink } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, HardDrive, Sparkles, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { reports, reviews, products, schematics, firmware, componentSuggestions, recipes, productImages, componentImages, componentDatasheets } from '../api/endpoints';
-import type { Report, UserReview, Product, ProductImage, Schematic, Firmware, ComponentSuggestion, Recipe, ComponentDatasheet, ComponentImage } from '../types';
+import type { Report, UserReview } from '../types';
 import Pagination from '../components/Pagination';
 import ResolveReportModal from '../components/moderation/ResolveReportModal';
 import UserReviewPanel from '../components/moderation/UserReviewPanel';
 import { parseApiError } from '../utils/formErrors';
 import clsx from 'clsx';
+import ReviewViewer from '../components/moderation/ReviewViewer';
+import {
+  type PendingItem, type PendingType, decide, itemDate, itemKey, itemThumbnail, itemTitle, itemUser, typeBadgeColors, typeIcons,
+} from '../components/moderation/pendingItems';
+
+type PendingComponentImage = Extract<PendingItem, { type: 'component_image' }>['data'];
 
 const reportStatusColors: Record<string, string> = {
   pending: 'border-cyber-yellow/50 text-cyber-yellow',
@@ -449,85 +455,29 @@ function ReviewsTab({ status, page, updateFilter, goToPage, onReview }: ReviewsT
 
 type ContentFilter = 'all' | 'products' | 'schematics' | 'firmware' | 'component_suggestions' | 'recipes' | 'images' | 'component_images' | 'datasheets';
 
-type PendingItem =
-  | { type: 'product'; data: Product }
-  | { type: 'schematic'; data: Schematic }
-  | { type: 'firmware'; data: Firmware }
-  | { type: 'component_suggestion'; data: ComponentSuggestion }
-  | { type: 'recipe'; data: Recipe }
-  | { type: 'image'; data: ProductImage }
-  | { type: 'component_image'; data: ComponentImage & { component: string; uploaded_at: string } }
-  | { type: 'datasheet'; data: ComponentDatasheet };
-
-const typeBadgeColors: Record<string, string> = {
-  product: 'border-cyber-cyan/50 text-cyber-cyan',
-  schematic: 'border-cyber-yellow/50 text-cyber-yellow',
-  firmware: 'border-purple-400/50 text-purple-400',
-  component_suggestion: 'border-cyber-cyan/50 text-cyber-cyan',
-  recipe: 'border-cyber-green/50 text-cyber-green',
-  image: 'border-cyber-pink/50 text-cyber-pink',
-  component_image: 'border-orange-400/50 text-orange-400',
-  datasheet: 'border-purple-400/50 text-purple-400',
+// a loaded list of 100 is fetched again once fewer than this are left undecided
+const REFILL_AT = 20;
+const pendingListKeys: Record<PendingType, string> = {
+  product: 'pendingProducts', schematic: 'pendingSchematics', firmware: 'pendingFirmware',
+  component_suggestion: 'pendingComponentSuggestions', recipe: 'pendingRecipes', image: 'pendingImages',
+  component_image: 'pendingComponentImages', datasheet: 'pendingDatasheets',
 };
-
-const typeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-  product: Package,
-  schematic: FileText,
-  firmware: HardDrive,
-  component_suggestion: Sparkles,
-  recipe: Wrench,
-  image: ImageIcon,
-  component_image: ImageIcon,
-  datasheet: BookOpen,
-};
+const countKeyOf = {
+  product: 'products', schematic: 'schematics', firmware: 'firmware', component_suggestion: 'component_suggestions',
+  recipe: 'recipes', image: 'images', component_image: 'component_images', datasheet: 'datasheets',
+} as const satisfies Record<PendingType, string>;
 
 function PendingContentTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [contentFilter, setContentFilter] = useState<ContentFilter>('all');
   const [actionError, setActionError] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<{ key: string; rejecting: boolean } | null>(null);
+  // decided items leave the list at once; key -> its type and when it was decided
+  const [decided, setDecided] = useState<Map<string, { type: PendingType; at: number }>>(() => new Map());
+  const closeViewer = useCallback(() => setViewer(null), []);
 
-  const openPreview = (url: string, fileType: string) => {
-    const isPdf = fileType === 'pdf' || url.toLowerCase().endsWith('.pdf');
-    if (isPdf) {
-      // Open window immediately (avoids popup blockers), then navigate to blob URL.
-      // Blob URLs always display inline in Chrome regardless of server headers or cache.
-      const win = window.open('about:blank', '_blank');
-      if (!win) return;
-      fetch(url)
-        .then((r) => r.blob())
-        .then((blob) => {
-          const blobUrl = URL.createObjectURL(blob);
-          win.location.href = blobUrl;
-          setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
-        })
-        .catch(() => { win.location.href = url; });
-    } else {
-      window.open(url, '_blank');
-    }
-  };
-
-  const getPreviewFile = (item: PendingItem): { url: string; type: string } | null => {
-    if (item.type === 'schematic') {
-      const s = item.data as Schematic;
-      return s.file_url ? { url: s.file_url, type: s.file_type || '' } : null;
-    }
-    if (item.type === 'datasheet') {
-      const d = item.data as ComponentDatasheet;
-      return d.file_url ? { url: d.file_url, type: d.file_type || '' } : null;
-    }
-    if (item.type === 'image') {
-      const img = item.data as ProductImage;
-      return img.image ? { url: img.image, type: 'image' } : null;
-    }
-    if (item.type === 'component_image') {
-      const img = item.data as ComponentImage;
-      return img.image ? { url: img.image, type: 'image' } : null;
-    }
-    return null;
-  };
-
-  const { data: counts } = useQuery({
+  const { data: counts, dataUpdatedAt: countsAt } = useQuery({
     queryKey: ['pendingCounts'],
     queryFn: products.pendingCounts,
   });
@@ -580,105 +530,6 @@ function PendingContentTab() {
     enabled: contentFilter === 'all' || contentFilter === 'datasheets',
   });
 
-  const invalidateAll = () => {
-    queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingProducts'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingSchematics'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingFirmware'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingComponentSuggestions'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingRecipes'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingImages'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingComponentImages'] });
-    queryClient.invalidateQueries({ queryKey: ['pendingDatasheets'] });
-  };
-
-  const onActionError = (err: any) => setActionError(parseApiError(err, 'Action failed. Please try again.'));
-  const onActionSuccess = () => {
-    setActionError(null);
-    invalidateAll();
-  };
-
-  const approveProduct = useMutation({
-    mutationFn: (id: string) => products.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectProduct = useMutation({
-    mutationFn: (id: string) => products.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveSchematic = useMutation({
-    mutationFn: (id: string) => schematics.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectSchematic = useMutation({
-    mutationFn: (id: string) => schematics.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveFirmware = useMutation({
-    mutationFn: (id: string) => firmware.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectFirmware = useMutation({
-    mutationFn: (id: string) => firmware.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveComponentSuggestion = useMutation({
-    mutationFn: (id: string) => componentSuggestions.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectComponentSuggestion = useMutation({
-    mutationFn: (id: string) => componentSuggestions.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveRecipe = useMutation({
-    mutationFn: (id: string) => recipes.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectRecipe = useMutation({
-    mutationFn: (id: string) => recipes.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveImage = useMutation({
-    mutationFn: (id: string) => productImages.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectImage = useMutation({
-    mutationFn: (id: string) => productImages.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveComponentImage = useMutation({
-    mutationFn: (id: string) => componentImages.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectComponentImage = useMutation({
-    mutationFn: (id: string) => componentImages.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const approveDatasheet = useMutation({
-    mutationFn: (id: string) => componentDatasheets.approve(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-  const rejectDatasheet = useMutation({
-    mutationFn: (id: string) => componentDatasheets.reject(id),
-    onSuccess: onActionSuccess,
-    onError: onActionError,
-  });
-
   // Merge items into a unified list
   const items: PendingItem[] = [];
   if (contentFilter === 'all' || contentFilter === 'products') {
@@ -700,102 +551,47 @@ function PendingContentTab() {
     (pendingImages?.results || []).forEach((i) => items.push({ type: 'image', data: i }));
   }
   if (contentFilter === 'all' || contentFilter === 'component_images') {
-    (pendingComponentImages?.results || []).forEach((i) => items.push({ type: 'component_image', data: i }));
+    (pendingComponentImages?.results || []).forEach((i) => items.push({ type: 'component_image', data: i as PendingComponentImage }));
   }
   if (contentFilter === 'all' || contentFilter === 'datasheets') {
     (pendingDatasheets?.results || []).forEach((d) => items.push({ type: 'datasheet', data: d }));
   }
 
-  // Sort by date descending
-  items.sort((a, b) => {
-    const dateA = 'created_at' in a.data ? a.data.created_at : ((a.data as Schematic | ProductImage).uploaded_at || '');
-    const dateB = 'created_at' in b.data ? b.data.created_at : ((b.data as Schematic | ProductImage).uploaded_at || '');
-    return new Date(dateB).getTime() - new Date(dateA).getTime();
+  const visible = items.filter((i) => !decided.has(itemKey(i)));
+
+  // A decision refetches nothing until that type's loaded list runs low: refetching
+  // every list after each approve used up the moderator's request limit.
+  const markDecided = (key: string) => {
+    setActionError(null);
+    const type = items.find((i) => itemKey(i) === key)?.type;
+    if (!type) return;
+    setDecided((prev) => new Map(prev).set(key, { type, at: Date.now() }));
+    const left = visible.filter((i) => i.type === type && itemKey(i) !== key).length;
+    if (left < REFILL_AT) {
+      queryClient.invalidateQueries({ queryKey: [pendingListKeys[type]] });
+      queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
+    }
+  };
+
+  const quickApprove = useMutation({
+    mutationFn: (item: PendingItem) => decide(item, true),
+    onSuccess: (_data, item) => markDecided(itemKey(item)),
+    onError: (err) => setActionError(parseApiError(err, 'Action failed. Please try again.')),
   });
+  // Sort by date descending
+  visible.sort((a, b) => new Date(itemDate(b)).getTime() - new Date(itemDate(a)).getTime());
+
+  // pending totals (the lists hold the first 100 of each type)
+  const countKeys = ['products', 'schematics', 'firmware', 'component_suggestions', 'recipes', 'images', 'component_images', 'datasheets'] as const;
+  // the counts are refreshed now and then; take off what was decided since
+  const decidedSinceCounts = [...decided.values()]
+    .filter((d) => d.at > countsAt && (contentFilter === 'all' || contentFilter === countKeyOf[d.type])).length;
+  const pendingTotal = counts
+    ? countKeys.filter((k) => contentFilter === 'all' || contentFilter === k).reduce((sum, k) => sum + (counts[k] || 0), 0)
+      - decidedSinceCounts
+    : visible.length;
 
   const isLoading = loadingProducts || loadingSchematics || loadingFirmware || loadingComponentSuggestions || loadingRecipes || loadingImages || loadingComponentImages || loadingDatasheets;
-
-  const getItemTitle = (item: PendingItem): string => {
-    if (item.type === 'product') return `${item.data.manufacturer} ${item.data.model_number}`;
-    if (item.type === 'schematic') return (item.data as Schematic).title;
-    if (item.type === 'firmware') return (item.data as Firmware).title;
-    if (item.type === 'component_suggestion') {
-      const cs = item.data as ComponentSuggestion;
-      return cs.reference_designator ? `${cs.part_number} (${cs.reference_designator})` : cs.part_number || 'Unnamed part';
-    }
-    if (item.type === 'image') {
-      const img = item.data as ProductImage;
-      return img.caption || `${img.image_type} image`;
-    }
-    if (item.type === 'component_image') {
-      const img = item.data as ComponentImage;
-      return img.caption || `${img.image_type || 'component'} image`;
-    }
-    if (item.type === 'datasheet') return (item.data as ComponentDatasheet).title;
-    return (item.data as Recipe).name;
-  };
-
-  const getItemUser = (item: PendingItem): string => {
-    if (item.type === 'schematic') return (item.data as Schematic).uploaded_by?.username || 'Unknown';
-    if (item.type === 'firmware') return (item.data as Firmware).uploaded_by?.username || 'Unknown';
-    if (item.type === 'component_suggestion') return (item.data as ComponentSuggestion).uploaded_by?.username || 'Unknown';
-    if (item.type === 'image') return (item.data as ProductImage).uploaded_by?.username || 'Unknown';
-    if (item.type === 'component_image') return (item.data as ComponentImage).uploaded_by?.username || 'Unknown';
-    if (item.type === 'datasheet') return (item.data as ComponentDatasheet).uploaded_by?.username || 'Unknown';
-    return (item.data as Product | Recipe).created_by?.username || 'Unknown';
-  };
-
-  const getItemDate = (item: PendingItem): string => {
-    if (item.type === 'schematic') return (item.data as Schematic).uploaded_at;
-    if (item.type === 'firmware') return (item.data as Firmware).uploaded_at;
-    if (item.type === 'component_suggestion') return (item.data as ComponentSuggestion).uploaded_at;
-    if (item.type === 'image') return (item.data as ProductImage).uploaded_at || '';
-    if (item.type === 'component_image') return (item.data as any).uploaded_at || '';
-    if (item.type === 'datasheet') return (item.data as ComponentDatasheet).uploaded_at;
-    return (item.data as Product | Recipe).created_at;
-  };
-
-  const getItemLink = (item: PendingItem): string => {
-    if (item.type === 'product') return `/products/${item.data.id}`;
-    if (item.type === 'recipe') return `/recipes/${item.data.id}`;
-    if (item.type === 'image') return `/products/${(item.data as ProductImage).product}`;
-    if (item.type === 'firmware') return `/products/${(item.data as Firmware).product}`;
-    if (item.type === 'component_suggestion') return `/products/${(item.data as ComponentSuggestion).product}`;
-    if (item.type === 'component_image') return `/components/${(item.data as any).component}/products`;
-    if (item.type === 'datasheet') return `/components/${(item.data as ComponentDatasheet).component}/products`;
-    return `/products/${(item.data as Schematic).product}`;
-  };
-
-  const handleApprove = (item: PendingItem) => {
-    if (item.type === 'product') approveProduct.mutate(item.data.id);
-    else if (item.type === 'schematic') approveSchematic.mutate(item.data.id);
-    else if (item.type === 'firmware') approveFirmware.mutate(item.data.id);
-    else if (item.type === 'component_suggestion') approveComponentSuggestion.mutate(item.data.id);
-    else if (item.type === 'image') approveImage.mutate(item.data.id);
-    else if (item.type === 'component_image') approveComponentImage.mutate(item.data.id!);
-    else if (item.type === 'datasheet') approveDatasheet.mutate(item.data.id);
-    else approveRecipe.mutate(item.data.id);
-  };
-
-  const handleReject = (item: PendingItem) => {
-    if (item.type === 'product') rejectProduct.mutate(item.data.id);
-    else if (item.type === 'schematic') rejectSchematic.mutate(item.data.id);
-    else if (item.type === 'firmware') rejectFirmware.mutate(item.data.id);
-    else if (item.type === 'component_suggestion') rejectComponentSuggestion.mutate(item.data.id);
-    else if (item.type === 'image') rejectImage.mutate(item.data.id);
-    else if (item.type === 'component_image') rejectComponentImage.mutate(item.data.id!);
-    else if (item.type === 'datasheet') rejectDatasheet.mutate(item.data.id);
-    else rejectRecipe.mutate(item.data.id);
-  };
-
-  const isMutating = approveProduct.isPending || rejectProduct.isPending
-    || approveSchematic.isPending || rejectSchematic.isPending
-    || approveFirmware.isPending || rejectFirmware.isPending
-    || approveComponentSuggestion.isPending || rejectComponentSuggestion.isPending
-    || approveRecipe.isPending || rejectRecipe.isPending
-    || approveImage.isPending || rejectImage.isPending
-    || approveComponentImage.isPending || rejectComponentImage.isPending
-    || approveDatasheet.isPending || rejectDatasheet.isPending;
 
   return (
     <>
@@ -842,9 +638,19 @@ function PendingContentTab() {
       {/* Results */}
       {isLoading ? (
         <div className="text-center py-12 text-gray-500">Loading pending content...</div>
-      ) : items.length > 0 ? (
+      ) : visible.length > 0 ? (
         <>
-          <div className="text-sm text-gray-500 font-mono mb-4">{items.length} pending items</div>
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-gray-500 font-mono">
+              {pendingTotal > visible.length ? `${visible.length} of ${pendingTotal} pending items shown` : `${visible.length} pending items`}
+            </div>
+            <button
+              onClick={() => setViewer({ key: itemKey(visible[0]), rejecting: false })}
+              className="btn-cyber text-sm inline-flex items-center gap-1"
+            >
+              <Eye className="h-4 w-4" /> REVIEW ONE BY ONE
+            </button>
+          </div>
 
           <div className="overflow-x-auto card-cyber">
             <table className="w-full">
@@ -858,10 +664,12 @@ function PendingContentTab() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((item) => {
+                {visible.map((item) => {
                   const TypeIcon = typeIcons[item.type];
+                  const key = itemKey(item);
+                  const thumb = itemThumbnail(item);
                   return (
-                    <tr key={`${item.type}-${item.data.id}`} className="border-b border-cyber-light/10 hover:bg-cyber-light/5 transition-colors">
+                    <tr key={key} className="border-b border-cyber-light/10 hover:bg-cyber-light/5 transition-colors">
                       <td className="px-4 py-3">
                         <span className={clsx(
                           'px-2 py-0.5 text-xs font-mono border inline-flex items-center gap-1',
@@ -872,45 +680,38 @@ function PendingContentTab() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
-                        <Link to={getItemLink(item)} className="text-white hover:text-cyber-cyan transition-colors">
-                          {getItemTitle(item)}
-                        </Link>
+                        <button
+                          onClick={() => setViewer({ key, rejecting: false })}
+                          className="flex items-center gap-3 text-left text-white hover:text-cyber-cyan transition-colors"
+                        >
+                          {thumb && (
+                            <img src={thumb} alt="" loading="lazy" className="h-10 w-10 flex-shrink-0 object-contain bg-black/40 border border-cyber-light/20" />
+                          )}
+                          <span>{itemTitle(item)}</span>
+                        </button>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">{getItemUser(item)}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden lg:table-cell">{formatDate(getItemDate(item))}</td>
+                      <td className="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">{itemUser(item) || 'imported'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 font-mono hidden lg:table-cell">{formatDate(itemDate(item))}</td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center gap-2 justify-end">
-                          <Link
-                            to={getItemLink(item)}
+                        <div className="flex items-center gap-3 justify-end">
+                          <button
+                            onClick={() => setViewer({ key, rejecting: false })}
                             className="text-cyber-cyan hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
                           >
                             <Eye className="h-4 w-4" />
                             {t('moderation.btn_view')}
-                          </Link>
-                          {(() => {
-                            const pf = getPreviewFile(item);
-                            return pf ? (
-                              <button
-                                onClick={() => openPreview(pf.url, pf.type)}
-                                className="text-cyber-yellow hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
-                              >
-                                <ExternalLink className="h-4 w-4" />
-                                PREVIEW
-                              </button>
-                            ) : null;
-                          })()}
+                          </button>
                           <button
-                            onClick={() => handleApprove(item)}
-                            disabled={isMutating}
+                            onClick={() => quickApprove.mutate(item)}
+                            disabled={quickApprove.isPending}
                             className="text-cyber-green hover:text-white text-sm font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
                           >
                             <Check className="h-4 w-4" />
                             APPROVE
                           </button>
                           <button
-                            onClick={() => handleReject(item)}
-                            disabled={isMutating}
-                            className="text-cyber-pink hover:text-white text-sm font-mono flex items-center gap-1 transition-colors disabled:opacity-50"
+                            onClick={() => setViewer({ key, rejecting: true })}
+                            className="text-cyber-pink hover:text-white text-sm font-mono flex items-center gap-1 transition-colors"
                           >
                             <X className="h-4 w-4" />
                             REJECT
@@ -930,6 +731,19 @@ function PendingContentTab() {
           <h3 className="font-display text-xl text-white mb-2">{t('moderation.no_reports')}</h3>
           <p className="text-gray-500">No pending content to review.</p>
         </div>
+      )}
+
+      {viewer && (
+        <ReviewViewer
+          key={viewer.rejecting ? `reject-${viewer.key}` : 'view'}
+          items={visible}
+          activeKey={viewer.key}
+          total={Math.max(pendingTotal, visible.length)}
+          startRejecting={viewer.rejecting}
+          onNavigate={(key) => setViewer({ key, rejecting: false })}
+          onClose={closeViewer}
+          onDecided={markDecided}
+        />
       )}
     </>
   );

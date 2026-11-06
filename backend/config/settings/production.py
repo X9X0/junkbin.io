@@ -265,6 +265,7 @@ LOGGING = {
 REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'anon': '300/hour',
     'user': '1000/hour',
+    'moderator': '6000/hour',
     'auth': '5/minute',
     'token_refresh': '30/minute',
     'submission': '10/hour',
