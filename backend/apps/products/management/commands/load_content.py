@@ -1,7 +1,7 @@
 """
 Load an export_content directory into this site, beside what it already has.
 
-    manage.py load_content DIR [--dry-run] [--allow-missing-files]
+    manage.py load_content DIR [--dry-run] [--allow-missing-files] [--restore-dates]
 
 Copy the media files first (files.tsv): the load stops if any is missing,
 unless --allow-missing-files. Everything happens in one transaction; --dry-run
@@ -14,16 +14,22 @@ existing one. Users are matched by id, then username; an unknown user leaves
 the field empty. Datasheet and review-verdict rows get new ids here. Afterwards
 component usage counts, the product counts of products that gained rows, and
 the search index of the new rows are rebuilt.
+
+Rows keep their dates from the other site (bulk_create would stamp them with the
+load time). --restore-dates does only that, for a site loaded before it did: a
+row's creation date only moves earlier, and its last-updated date is put back
+only while the row is unchanged since it was added.
 """
 import json
 import os
 from collections import Counter
 
+from django.apps import apps
 from django.contrib.postgres.search import SearchVector
 from django.core import serializers
 from django.core.files.storage import default_storage
 from django.core.management.base import BaseCommand, CommandError
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Count, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 
@@ -58,6 +64,8 @@ class Command(BaseCommand):
         parser.add_argument('dir')
         parser.add_argument('--dry-run', action='store_true')
         parser.add_argument('--allow-missing-files', action='store_true')
+        parser.add_argument('--restore-dates', action='store_true',
+                            help='only put the exported dates back on rows an earlier load added')
 
     def records(self, label):
         with open(os.path.join(self.dir, f'{label}.jsonl'), encoding='utf-8') as fh:
@@ -88,8 +96,10 @@ class Command(BaseCommand):
         self.notes = []
         try:
             with transaction.atomic():
-                self.load()
-                self.rebuild()
+                if not opts['restore_dates']:
+                    self.load()
+                    self.rebuild()
+                self.restore_dates()
                 self.report()
                 if opts['dry_run']:
                     raise DryRun
@@ -282,6 +292,54 @@ class Command(BaseCommand):
         for batch in chunks([k for k, v in self.cmap.items() if k == v]):
             Component.objects.filter(pk__in=batch, search_vector__isnull=True).update(
                 search_vector=Component.search_vector_expression())
+
+    # --- dates ----------------------------------------------------------------------
+    DATE_KEYS = {'components.ComponentDatasheet': ('file',), 'products.ImportReview': ('batch', 'item_type', 'object_id')}
+
+    def restore_dates(self):
+        """Put the exported auto_now / auto_now_add dates back. Rows are found by id, or for the
+        models whose rows get new ids here, by file / review key; merged rows are not touched."""
+        for label in MODELS:
+            model = apps.get_model(label)
+            created = [f for f in model._meta.concrete_fields if getattr(f, 'auto_now_add', False)]
+            updated = [f for f in model._meta.concrete_fields if getattr(f, 'auto_now', False)]
+            if not created and not updated:
+                continue
+            keys = [model._meta.get_field(k) for k in self.DATE_KEYS[label]] if label in self.DATE_KEYS \
+                else [model._meta.pk]
+            cols = keys + created + updated
+            sets, where = [], []
+            # the export cuts dates to milliseconds: a row both sites had is that much "later"
+            for f in created:
+                sets.append(f'{f.column} = v.{f.column}')
+                where.append(f"t.{f.column} > v.{f.column} + interval '1 second'")
+            for f in updated:
+                if created:     # unchanged since added: bulk_create stamped both in the same instant
+                    sets.append(f"{f.column} = CASE WHEN t.{f.column} - t.{created[0].column} < interval '1 second' "
+                                f'THEN v.{f.column} ELSE t.{f.column} END')
+                else:
+                    sets.append(f'{f.column} = v.{f.column}')
+                    where.append(f"t.{f.column} > v.{f.column} + interval '1 second'")
+            n = 0
+            for batch in chunks(self.records(label)):
+                rows = []
+                for rec in batch:
+                    vals = [rec['pk'] if k.primary_key else rec['fields'].get(k.name) for k in keys]
+                    vals += [rec['fields'].get(f.name) for f in created + updated]
+                    if None not in vals:
+                        rows.append(vals)
+                if not rows:
+                    continue
+                casts = ', '.join(f'%s::{f.db_type(connection)}' for f in cols)
+                sql = (f'UPDATE {model._meta.db_table} t SET {", ".join(sets)} '
+                       f'FROM (VALUES {", ".join([f"({casts})"] * len(rows))}) '
+                       f'AS v({", ".join(f.column for f in cols)}) '
+                       f'WHERE {" AND ".join(f"t.{k.column} = v.{k.column}" for k in keys)} '
+                       f'AND ({" OR ".join(where)})')
+                with connection.cursor() as cur:
+                    cur.execute(sql, [x for r in rows for x in r])
+                    n += cur.rowcount
+            self.n[f'{label} dates restored'] += n
 
     def report(self):
         for k in sorted(self.n):
