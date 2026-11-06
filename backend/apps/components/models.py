@@ -146,17 +146,19 @@ class Component(models.Model):
     def __str__(self):
         return f'{self.manufacturer} {self.part_number}'
 
+    @staticmethod
+    def search_vector_expression():
+        return (
+            SearchVector('part_number', weight='A') +
+            SearchVector('manufacturer', weight='A') +
+            SearchVector('typical_function', weight='B') +
+            SearchVector('description', weight='C')
+        )
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         # Update search vector after save (uses SQL so needs pk)
-        Component.objects.filter(pk=self.pk).update(
-            search_vector=(
-                SearchVector('part_number', weight='A') +
-                SearchVector('manufacturer', weight='A') +
-                SearchVector('typical_function', weight='B') +
-                SearchVector('description', weight='C')
-            )
-        )
+        Component.objects.filter(pk=self.pk).update(search_vector=self.search_vector_expression())
 
     @property
     def primary_value(self):
