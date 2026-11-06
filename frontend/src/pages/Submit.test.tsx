@@ -208,6 +208,24 @@ describe('Submit Page', () => {
       });
     });
 
+    it('tells the submitter a product without a photo is added, just not at the top of Newest First', async () => {
+      const user = userEvent.setup();
+      render(<Submit />);
+      await user.type(screen.getByPlaceholderText(/Samsung, Cisco/i), 'ACME Corp');
+      await user.type(screen.getByPlaceholderText(/RT-AX88U/i), 'Widget-9000');
+      await user.selectOptions(screen.getAllByRole('combobox')[0], 'router');
+      await user.click(screen.getByRole('button', { name: /NEXT/i }));
+      await user.click(screen.getByRole('button', { name: /NEXT/i }));
+      await user.click(screen.getByRole('button', { name: /SUBMIT PRODUCT/i }));
+
+      expect(await screen.findByText(/shows near the top of Newest First/i)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: /^SKIP$/i }));
+
+      expect(await screen.findByText('Added without a photo')).toBeInTheDocument();
+      expect(screen.getByText(/is in the catalogue and can be found by search/i)).toBeInTheDocument();
+      expect(screen.getByText(/listed after the products that have photos/i)).toBeInTheDocument();
+    });
+
     it('shows error on submission failure', async () => {
       server.use(
         http.post('http://localhost/api/products/', () => {

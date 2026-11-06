@@ -44,6 +44,22 @@ def review_notes(request):
     return str(request.data.get('notes') or '').strip()[:REVIEW_NOTES_MAX]
 
 
+def undo_approval(obj, contributor, content_label, url, request):
+    """Put an approved item back in the moderation queue and take back what approving it gave:
+    the contribution credit and the in-app 'approved' notice from this moderator. An approval
+    email that has already gone out stays sent."""
+    obj.is_approved = False
+    obj.save(update_fields=['is_approved'])
+    if contributor:
+        contributor.decrement_contribution()
+        notice = (Notification.objects.filter(recipient=contributor, actor=request.user, url=url,
+                                              category=Notification.Category.CONTENT_APPROVED,
+                                              title=f'{content_label} approved')
+                  .order_by('-created_at').first())
+        if notice:
+            notice.delete()
+
+
 def notify_content_review(user, content_label, url, approved, notes='', actor=None):
     """In-app + push notification for a moderator's approve/reject; pairs with
     the notify_contribution_reviewed email task. Nothing is sent when the

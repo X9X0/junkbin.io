@@ -194,6 +194,13 @@ class User(AbstractUser):
         from apps.users.badges import check_and_award_badges
         check_and_award_badges(self)
 
+    def decrement_contribution(self):
+        """Take back increment_contribution() when a moderator undoes an approval (badges stay)."""
+        self.refresh_from_db(fields=['contribution_count', 'reputation_score'])
+        self.contribution_count = max(0, self.contribution_count - 1)
+        self.reputation_score = max(0, self.reputation_score - 10)
+        self.save(update_fields=['contribution_count', 'reputation_score'])
+
     def increment_report_count(self):
         """Increment report count when content is reported."""
         from django.conf import settings

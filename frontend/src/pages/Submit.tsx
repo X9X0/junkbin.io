@@ -56,6 +56,8 @@ export default function Submit() {
   const [duplicate, setDuplicate] = useState<DuplicateOf | null>(null);
   const [submittedItem, setSubmittedItem] = useState<SubmittedItem | null>(null);
   const [uploadsDone, setUploadsDone] = useState(false);
+  // a photo puts the new item near the top of Newest First; without one it is listed after those with photos
+  const [photoAdded, setPhotoAdded] = useState(false);
   const [uploadTab, setUploadTab] = useState<'photos' | 'docs'>('photos');
   // Component datasheet upload state
   const [dsFile, setDsFile] = useState<File | null>(null);
@@ -205,6 +207,7 @@ export default function Submit() {
     setError(null);
     setDuplicate(null);
     setUploadsDone(false);
+    setPhotoAdded(false);
     setUploadTab('photos');
     setDsFile(null);
     setDsTitle('');
@@ -283,11 +286,18 @@ export default function Submit() {
             </div>
 
             {/* Photos tab */}
+            {uploadTab === 'photos' && !photoAdded && (
+              <p className="flex items-start gap-2 text-sm text-cyber-yellow/90 border border-cyber-yellow/30 bg-cyber-yellow/5 px-3 py-2 mb-4">
+                <Camera className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                {submitType === 'product' ? t('submit.photo_hint_product') : t('submit.photo_hint_component')}
+              </p>
+            )}
             {uploadTab === 'photos' && submitType === 'product' && (
-              <ImageUpload productId={submittedItem.id} />
+              <ImageUpload productId={submittedItem.id} onSuccess={() => setPhotoAdded(true)} />
             )}
             {uploadTab === 'photos' && submitType === 'component' && (
               <ImageUpload
+                onSuccess={() => setPhotoAdded(true)}
                 uploadFn={(formData) => componentsApi.uploadImage(submittedItem.id, formData)}
                 invalidateKey={['component', submittedItem.id]}
                 imageTypes={COMPONENT_IMAGE_TYPES}
@@ -433,6 +443,19 @@ export default function Submit() {
             onSubmitAnother={handleSubmitAnother}
             isApproved={submittedItem.isApproved}
           />
+          {!photoAdded && (
+            <div className="card-cyber border-cyber-yellow/40 p-4 mt-4 flex items-start gap-3">
+              <Camera className="h-5 w-5 text-cyber-yellow flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-display text-white mb-1">{t('submit.no_photo_title')}</div>
+                <p className="text-sm text-gray-400">
+                  {submitType === 'product'
+                    ? t('submit.no_photo_product', { label: submittedItem.label })
+                    : t('submit.no_photo_component', { label: submittedItem.label })}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );

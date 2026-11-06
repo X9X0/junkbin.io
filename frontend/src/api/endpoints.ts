@@ -286,6 +286,12 @@ export const products = {
     return response.data;
   },
 
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/products/${id}/unapprove/`);
+    return response.data;
+  },
+
   reject: async (id: string, notes = ''): Promise<void> => {
     await api.post(`/products/${id}/reject/`, { notes });
   },
@@ -417,6 +423,12 @@ export const componentImages = {
     return response.data;
   },
 
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/component-images/${id}/unapprove/`);
+    return response.data;
+  },
+
   reject: async (id: string, notes = ''): Promise<void> => {
     await api.post(`/component-images/${id}/reject/`, { notes });
   },
@@ -431,6 +443,12 @@ export const componentDatasheets = {
 
   approve: async (id: string): Promise<{ detail: string }> => {
     const response = await api.post(`/component-datasheets/${id}/approve/`);
+    return response.data;
+  },
+
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/component-datasheets/${id}/unapprove/`);
     return response.data;
   },
 
@@ -501,6 +519,12 @@ export const schematics = {
     return response.data;
   },
 
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/schematics/${id}/unapprove/`);
+    return response.data;
+  },
+
   reject: async (id: string, notes = ''): Promise<void> => {
     await api.post(`/schematics/${id}/reject/`, { notes });
   },
@@ -530,6 +554,12 @@ export const firmware = {
 
   approve: async (id: string): Promise<{ detail: string }> => {
     const response = await api.post(`/firmware/${id}/approve/`);
+    return response.data;
+  },
+
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/firmware/${id}/unapprove/`);
     return response.data;
   },
 
@@ -564,6 +594,12 @@ export const productImages = {
 
   approve: async (id: string): Promise<{ detail: string }> => {
     const response = await api.post(`/product-images/${id}/approve/`);
+    return response.data;
+  },
+
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/product-images/${id}/unapprove/`);
     return response.data;
   },
 
@@ -881,6 +917,12 @@ export const recipes = {
 
   approve: async (id: string): Promise<{ detail: string }> => {
     const response = await api.post(`/recipes/${id}/approve/`);
+    return response.data;
+  },
+
+  // undo an approval: the item goes back to the moderation queue
+  unapprove: async (id: string): Promise<{ detail: string }> => {
+    const response = await api.post(`/recipes/${id}/unapprove/`);
     return response.data;
   },
 

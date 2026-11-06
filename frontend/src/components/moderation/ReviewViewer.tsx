@@ -1,15 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight, Download, ExternalLink, Loader2, MessageSquare, X } from 'lucide-react';
+import { Check, ChevronLeft, ChevronRight, Download, ExternalLink, History, Loader2, MessageSquare, Undo2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { products, components } from '../../api/endpoints';
 import { parseApiError } from '../../utils/formErrors';
 import { useAuth } from '../../context/AuthContext';
 import {
-  type PendingItem, decide, itemDate, itemFile, itemKey, itemLink, itemTitle, itemUser,
+  type Decision, type PendingItem, canUndoApproval, decide, itemDate, itemFile, itemKey, itemLink, itemTitle, itemUser,
   rejectReasons, typeBadgeColors, typeIcons,
 } from './pendingItems';
+import DecisionHistory from './DecisionHistory';
 
 const CONTINUE_KEY = 'moderation.continueNext';
 
@@ -38,7 +39,12 @@ interface ReviewViewerProps {
   onNavigate: (key: string) => void;
   onClose: () => void;
   /** The item was approved or rejected (its key), so the list can drop it at once. */
-  onDecided: (key: string) => void;
+  onDecided: (key: string, approved: boolean) => void;
+  /** This session's decisions, newest first: an approval can be undone from here. */
+  history?: Decision[];
+  onUndo?: (decision: Decision) => void;
+  undoingKey?: string | null;
+  undoError?: string | null;
 }
 
 /**
@@ -46,12 +52,20 @@ interface ReviewViewerProps {
  * in an overlay, approve/reject at the bottom, feedback to the submitter on reject, and
  * (optionally) straight on to the next item.
  */
-export default function ReviewViewer({ items, activeKey, total, startRejecting = false, onNavigate, onClose, onDecided }: ReviewViewerProps) {
+export default function ReviewViewer({
+  items, activeKey, total, startRejecting = false, onNavigate, onClose, onDecided,
+  history = [], onUndo, undoingKey = null, undoError = null,
+}: ReviewViewerProps) {
   const { user } = useAuth();
   const index = items.findIndex((i) => itemKey(i) === activeKey);
   const item = index >= 0 ? items[index] : null;
   const [continueNext, setContinueNext] = useState(readContinue);
   const [rejecting, setRejecting] = useState(startRejecting);
+  const [showHistory, setShowHistory] = useState(false);
+  const lastUndoable = history.find((d) => d.approved && canUndoApproval(d.item.type));
+  const undoLast = () => {
+    if (lastUndoable && onUndo && !undoingKey) onUndo(lastUndoable);
+  };
   // feedback and errors belong to one item: a draft for another item reads as empty
   const [draft, setDraft] = useState({ key: activeKey, notes: '', error: null as string | null });
   const notes = draft.key === activeKey ? draft.notes : '';
@@ -96,9 +110,9 @@ export default function ReviewViewer({ items, activeKey, total, startRejecting =
   const decision = useMutation({
     mutationFn: ({ target, approve, feedback }: { target: PendingItem; approve: boolean; feedback: string; nextKey: string | null }) =>
       decide(target, approve, feedback),
-    onSuccess: (_data, { target, nextKey }) => {
+    onSuccess: (_data, { target, approve, nextKey }) => {
       setRejecting(false);
-      onDecided(itemKey(target));
+      onDecided(itemKey(target), approve);
       if (continueNext && nextKey) onNavigate(nextKey);
       else onClose();
     },
@@ -116,7 +130,8 @@ export default function ReviewViewer({ items, activeKey, total, startRejecting =
       const typing = e.target instanceof HTMLElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (rejecting) setRejecting(false);
+        if (showHistory) setShowHistory(false);
+        else if (rejecting) setRejecting(false);
         else onClose();
         return;
       }
@@ -129,6 +144,8 @@ export default function ReviewViewer({ items, activeKey, total, startRejecting =
       else if (e.key === 'ArrowRight') go(1);
       else if (e.key === 'a' && !rejecting) submit(true);
       else if (e.key === 'r' && !rejecting) { e.preventDefault(); setRejecting(true); }
+      else if (e.key === 'u' && !rejecting) undoLast();
+      else if (e.key === 'h') setShowHistory((v) => !v);
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -178,10 +195,23 @@ export default function ReviewViewer({ items, activeKey, total, startRejecting =
               <ChevronRight className="h-5 w-5" />
             </button>
           </div>
+          {onUndo && (
+            <button onClick={() => setShowHistory((v) => !v)} aria-expanded={showHistory} title="Decisions so far (H)"
+              className={clsx('p-1 inline-flex items-center gap-1 font-mono text-xs hover:text-white', showHistory ? 'text-cyber-yellow' : 'text-gray-400')}>
+              <History className="h-5 w-5" /> <span className="tabular-nums">{history.length}</span>
+            </button>
+          )}
           <button onClick={onClose} className="p-1 text-gray-400 hover:text-white" aria-label="Close">
             <X className="h-5 w-5" />
           </button>
         </div>
+
+        {showHistory && onUndo && (
+          <div className="absolute right-2 top-14 z-10 w-[min(26rem,calc(100%-1rem))] max-h-[60%] overflow-y-auto bg-cyber-dark border border-cyber-light/30 shadow-2xl px-3 py-1">
+            <div className="text-xs font-mono text-gray-500 pt-2">DECISIONS THIS SESSION · undo puts an approval back in the queue</div>
+            <DecisionHistory history={history} onUndo={onUndo} undoingKey={undoingKey} />
+          </div>
+        )}
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4">
@@ -191,7 +221,21 @@ export default function ReviewViewer({ items, activeKey, total, startRejecting =
 
         {/* Decision */}
         <div className="border-t border-cyber-light/30 px-4 py-3 bg-black/20">
-          {error && <div className="text-cyber-pink text-sm font-mono mb-2">{error}</div>}
+          {(error || undoError) && <div className="text-cyber-pink text-sm font-mono mb-2">{error || undoError}</div>}
+          {!rejecting && history[0] && (
+            <div className="flex items-center gap-2 text-xs font-mono text-gray-500 mb-2 min-w-0">
+              <span className="flex-shrink-0">LAST:</span>
+              {history[0].approved ? <span className="text-cyber-green flex-shrink-0">APPROVED</span> : <span className="text-cyber-pink flex-shrink-0">REJECTED</span>}
+              <span className="truncate text-gray-400">{itemTitle(history[0].item)}</span>
+              {lastUndoable && onUndo && (
+                <button onClick={undoLast} disabled={!!undoingKey} title={`Undo the approval of ${itemTitle(lastUndoable.item)}`}
+                  className="flex-shrink-0 inline-flex items-center gap-1 text-cyber-yellow hover:text-white disabled:opacity-50">
+                  {undoingKey ? <Loader2 className="h-3 w-3 animate-spin" /> : <Undo2 className="h-3 w-3" />}
+                  {lastUndoable === history[0] ? 'UNDO (U)' : 'UNDO LAST APPROVAL (U)'}
+                </button>
+              )}
+            </div>
+          )}
           {rejecting ? (
             <div>
               {submitter && !ownItem ? (
@@ -237,7 +281,7 @@ export default function ReviewViewer({ items, activeKey, total, startRejecting =
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <ContinueToggle checked={continueNext} onChange={toggleContinue} />
-              <span className="hidden md:inline text-xs text-gray-600 font-mono">A approve · R reject · ←/→ browse · Esc close</span>
+              <span className="hidden md:inline text-xs text-gray-600 font-mono">A approve · R reject · U undo · ←/→ browse · Esc close</span>
               <div className="flex-1" />
               <button onClick={() => setRejecting(true)} disabled={decision.isPending}
                 className="btn-cyber btn-cyber-pink text-sm inline-flex items-center gap-1 disabled:opacity-50">
