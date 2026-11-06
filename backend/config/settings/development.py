@@ -72,6 +72,7 @@ REST_FRAMEWORK['DEFAULT_THROTTLE_RATES'] = {
     'anon': '1000/hour',
     'user': '1000/hour',
     'auth': '1000/hour',
+    'token_refresh': '1000/hour',
     'submission': '1000/hour',
     'upload': '1000/hour',
     'report': '1000/hour',
