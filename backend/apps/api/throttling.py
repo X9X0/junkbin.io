@@ -4,6 +4,21 @@ Throttling classes for Junkbin.io API
 from rest_framework.throttling import UserRateThrottle, AnonRateThrottle
 
 
+class UserOrModeratorRateThrottle(UserRateThrottle):
+    """
+    The general per-user limit. Moderators get the higher 'moderator' rate in a
+    bucket of their own: working through the review queue is many quick requests.
+    """
+
+    def allow_request(self, request, view):
+        user = request.user
+        if user and user.is_authenticated and (user.is_staff or getattr(user, 'is_moderator', False)):
+            self.scope = 'moderator'
+            self.rate = self.get_rate()
+            self.num_requests, self.duration = self.parse_rate(self.rate)
+        return super().allow_request(request, view)
+
+
 class BurstRateThrottle(UserRateThrottle):
     """
     Throttle for burst requests (e.g., rapid searches).
