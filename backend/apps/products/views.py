@@ -124,7 +124,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
-        elif self.action in ['approve', 'reject', 'pending_counts']:
+        elif self.action in ['approve', 'unapprove', 'reject', 'pending_counts']:
             return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
@@ -1128,6 +1128,16 @@ class ProductViewSet(viewsets.ModelViewSet):
         return Response({'detail': 'Product approved.'})
 
     @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the product goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        product = self.get_object()
+        if not product.is_approved:
+            return Response({'detail': 'Product is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(product, product.created_by, f'Your product "{product}"', f'/products/{product.slug}', request)
+        return Response({'detail': 'Product moved back to the queue.'})
+
+    @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending product (staff/moderator only)."""
         from apps.users.tasks import notify_contribution_reviewed
@@ -1205,7 +1215,7 @@ class SchematicViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
-        elif self.action in ['approve', 'reject']:
+        elif self.action in ['approve', 'unapprove', 'reject']:
             return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
@@ -1349,6 +1359,16 @@ class SchematicViewSet(viewsets.ModelViewSet):
         return Response({'detail': 'Schematic approved.'})
 
     @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the schematic goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        schematic = self.get_object()
+        if not schematic.is_approved:
+            return Response({'detail': 'Schematic is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(schematic, schematic.uploaded_by, f'Your schematic "{schematic.title}"', f'/products/{schematic.product.slug}', request)
+        return Response({'detail': 'Schematic moved back to the queue.'})
+
+    @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending schematic (staff/moderator only)."""
         from apps.users.tasks import notify_contribution_reviewed
@@ -1409,7 +1429,7 @@ class FirmwareViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsVerifiedEmail()]
         elif self.action in ['update', 'partial_update', 'destroy']:
             return [permissions.IsAdminUser()]
-        elif self.action in ['approve', 'reject']:
+        elif self.action in ['approve', 'unapprove', 'reject']:
             return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
@@ -1462,6 +1482,16 @@ class FirmwareViewSet(viewsets.ModelViewSet):
                                     f'/products/{firmware.product.slug}', approved=True, actor=request.user)
 
         return Response({'detail': 'Firmware approved.'})
+
+    @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the firmware goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        firmware = self.get_object()
+        if not firmware.is_approved:
+            return Response({'detail': 'Firmware is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(firmware, firmware.uploaded_by, f'Your firmware "{firmware.title}"', f'/products/{firmware.product.slug}', request)
+        return Response({'detail': 'Firmware moved back to the queue.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
@@ -1622,6 +1652,16 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
                                     f'/products/{image.product.slug}', approved=True, actor=request.user)
 
         return Response({'detail': 'Image approved.'})
+
+    @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the image goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        image = self.get_object()
+        if not image.is_approved:
+            return Response({'detail': 'Image is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(image, image.uploaded_by, 'Your image', f'/products/{image.product.slug}', request)
+        return Response({'detail': 'Image moved back to the queue.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):

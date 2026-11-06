@@ -72,7 +72,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated(), IsOwnerOrReadOnly()]
         elif self.action in ['buildable', 'match']:
             return [permissions.IsAuthenticated()]
-        elif self.action in ['approve', 'reject']:
+        elif self.action in ['approve', 'unapprove', 'reject']:
             return [IsModeratorOrAdmin()]
         return [permissions.AllowAny()]
 
@@ -290,6 +290,16 @@ class RecipeViewSet(viewsets.ModelViewSet):
                                   f'/recipes/{recipe.pk}', approved=True, actor=request.user)
 
         return Response({'detail': 'Recipe approved.'})
+
+    @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the recipe goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        recipe = self.get_object()
+        if not recipe.is_approved:
+            return Response({'detail': 'Recipe is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(recipe, recipe.created_by, f'Your recipe "{recipe.name}"', f'/recipes/{recipe.pk}', request)
+        return Response({'detail': 'Recipe moved back to the queue.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):

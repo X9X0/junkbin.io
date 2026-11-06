@@ -37,7 +37,11 @@ export const typeIcons: Record<PendingType, React.ComponentType<{ className?: st
   datasheet: BookOpen,
 };
 
-const moderationApi: Record<PendingType, { approve: (id: string) => Promise<unknown>; reject: (id: string, notes?: string) => Promise<void> }> = {
+const moderationApi: Record<PendingType, {
+  approve: (id: string) => Promise<unknown>;
+  reject: (id: string, notes?: string) => Promise<void>;
+  unapprove?: (id: string) => Promise<unknown>;
+}> = {
   product: products,
   schematic: schematics,
   firmware,
@@ -54,6 +58,16 @@ export function decide(item: PendingItem, approve: boolean, notes = '') {
   const api = moderationApi[item.type];
   return approve ? api.approve(item.data.id!) : api.reject(item.data.id!, notes);
 }
+
+/** An approved part suggestion has become a BOM entry, and a rejected item is deleted: neither comes back. */
+export const canUndoApproval = (type: PendingType) => !!moderationApi[type].unapprove;
+
+export function undoApproval(item: PendingItem) {
+  return moderationApi[item.type].unapprove!(item.data.id!);
+}
+
+/** A decision made in this review session, newest first in the history. */
+export interface Decision { item: PendingItem; approved: boolean; at: number }
 
 export function itemTitle(item: PendingItem): string {
   switch (item.type) {
@@ -111,6 +125,8 @@ export function itemThumbnail(item: PendingItem): string | null {
 }
 
 const PHOTO_REASONS = [
+  ['Wrong category', 'The product is filed under the wrong category (for example an all-in-one PC listed as a laptop), so this photo does not match its listing.'],
+  ['Poor BG removal', 'The background removal damaged the product: parts of it are missing or ragged. The photo on a plain background, or with its original background, would be accepted.'],
   ['Different product', 'The photo shows a different product or model.'],
   ['Blurry or small', 'The photo is too blurry or too small to be useful. A sharper, well-lit photo of at least 800 px would be accepted.'],
   ['Watermark or text', 'The photo carries a watermark, logo or overlaid text. Please upload an unmarked photo you took or are allowed to share.'],

@@ -601,6 +601,16 @@ class ComponentImageModerationViewSet(viewsets.ModelViewSet):
         return Response({'detail': 'Image approved.'})
 
     @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the image goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        image = self.get_object()
+        if not image.is_approved:
+            return Response({'detail': 'Image is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(image, image.uploaded_by, 'Your component image', f'/components/{image.component_id}/products', request)
+        return Response({'detail': 'Image moved back to the queue.'})
+
+    @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         """Reject and delete a pending component image."""
         from apps.notifications.services import notify_content_review, review_notes
@@ -659,6 +669,16 @@ class ComponentDatasheetViewSet(viewsets.ModelViewSet):
             notify_content_review(datasheet.uploaded_by, f'Your datasheet "{datasheet.title}"',
                                   f'/components/{datasheet.component_id}/products', approved=True, actor=request.user)
         return Response({'detail': 'Datasheet approved.'})
+
+    @action(detail=True, methods=['post'])
+    def unapprove(self, request, pk=None):
+        """Undo an approval: the datasheet goes back to the moderation queue (staff/moderator only)."""
+        from apps.notifications.services import undo_approval
+        datasheet = self.get_object()
+        if not datasheet.is_approved:
+            return Response({'detail': 'Datasheet is not approved.'}, status=status.HTTP_400_BAD_REQUEST)
+        undo_approval(datasheet, datasheet.uploaded_by, f'Your datasheet "{datasheet.title}"', f'/components/{datasheet.component_id}/products', request)
+        return Response({'detail': 'Datasheet moved back to the queue.'})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
