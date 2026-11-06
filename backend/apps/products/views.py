@@ -41,7 +41,7 @@ from .serializers import (
     RepairReportCreateSerializer,
     RepairReportVoteSerializer,
 )
-from .filters import ProductFilter
+from .filters import PhotoFirstOrderingFilter, ProductFilter, has_photo
 from apps.users.permissions import IsModerator
 from apps.api.permissions import IsOwnerOrReadOnly, IsModeratorOrAdmin, IsVerifiedEmail
 from apps.api.throttling import (
@@ -82,7 +82,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             'repair_reports', filter=models.Q(repair_reports__is_approved=True), distinct=True
         ),
     )
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filter_backends = [DjangoFilterBackend, SearchFilter, PhotoFirstOrderingFilter]
     filterset_class = ProductFilter
     search_fields = ['manufacturer', 'model_number', 'description', 'fcc_id']
     ordering_fields = ['created_at', 'manufacturer', 'component_count', 'view_count']
@@ -738,8 +738,8 @@ class ProductViewSet(viewsets.ModelViewSet):
     @method_decorator(cache_page(60 * 10))
     @action(detail=False, methods=['get'])
     def recent(self, request):
-        """Get recently added products."""
-        products = self.get_queryset().filter(is_approved=True)[:20]
+        """Recently added products that have a photo."""
+        products = self.get_queryset().filter(is_approved=True).filter(has_photo(Product))[:20]
         serializer = ProductListSerializer(
             products,
             many=True,

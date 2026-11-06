@@ -2,10 +2,32 @@
 Product filters for Junkbin.io API
 """
 import django_filters
-from django.db.models import Q
+from django.db.models import Exists, OuterRef, Q
+from rest_framework.filters import OrderingFilter
 from django.contrib.postgres.search import SearchQuery, SearchRank
 
 from .models import Product
+
+
+def has_photo(model):
+    """Exists() for 'has an approved photo of its own' on a Product or Component queryset."""
+    related = model._meta.get_field('images')
+    return Exists(related.related_model.objects.filter(**{related.remote_field.name: OuterRef('pk')}, is_approved=True))
+
+
+class PhotoFirstOrderingFilter(OrderingFilter):
+    """
+    'Newest first' lists what has a photo before what has none, each newest first, so the
+    first pages of the catalogue aren't rows of empty placeholders. Nothing is hidden: an
+    item without a photo is still in the list, the count and its category, and moves up
+    once a photo of it is approved.
+    """
+
+    def filter_queryset(self, request, queryset, view):
+        ordering = self.get_ordering(request, queryset, view)
+        if ordering and ordering[0] == '-created_at':
+            return queryset.annotate(has_photo=has_photo(queryset.model)).order_by('-has_photo', *ordering)
+        return super().filter_queryset(request, queryset, view)
 
 
 class ProductFilter(django_filters.FilterSet):
