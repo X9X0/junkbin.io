@@ -29,7 +29,8 @@ if [ ! -x "${VENV}/bin/certbot" ]; then
     exit 1
 fi
 
-version() { "${VENV}/bin/certbot" --version 2>&1 | awk '{print $2}'; }
+# only the "certbot X.Y.Z" line: plugins (dns-hostinger) log timestamped lines on every run
+version() { "${VENV}/bin/certbot" --version 2>&1 | sed -n 's/^certbot \([0-9][0-9.]*\).*/\1/p' | tail -1; }
 at_least() { [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]; }
 
 current=$(version)
