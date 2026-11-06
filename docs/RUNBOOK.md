@@ -310,6 +310,23 @@ tail -10 Docs/Prod_Backups/transfer.log
 
 If you see `SKIP` entries, that means the archive already existed locally — not an error. If you see failures or the log stops updating, the pull job on the backup machine has stopped and needs investigation.
 
+### Off-host media mirror
+
+The archives above carry no media once it is over 10 GB (see "Taking a backup").
+The same machine keeps an rsync mirror of prod's media volume instead,
+`deployment/media-mirror.sh`, from its cron at 02:30 and 14:30:
+
+```
+Docs/Prod_Backups/media/
+├── current/            prod's media as of the last run (thumbnails left out)
+├── deleted/<run>/      files that run saw deleted or replaced on prod, kept 180 days
+└── mirror.log          one SUCCESS / FAILED line per run
+```
+
+Each run copies only new and changed files. It needs `rsync` on prod
+(`dnf install -y rsync`). Check it like the archives: `tail -5
+Docs/Prod_Backups/media/mirror.log`. The restore command is in the script's header.
+
 ### Restoring from backup
 
 The restore script is interactive — it shows a menu so you can choose what to restore.
