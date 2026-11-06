@@ -222,6 +222,7 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour',
         'auth': '5/minute',
+        'token_refresh': '30/minute',
         'submission': '50/hour',
         'upload': '60/hour',
         'report': '10/hour',

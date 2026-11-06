@@ -36,6 +36,10 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// One refresh at a time: a page fires several requests at once, and with
+// ROTATE_REFRESH_TOKENS each extra refresh would fail and use up the login rate limit.
+let refreshing: Promise<unknown> | null = null;
+
 // Response interceptor for token refresh
 api.interceptors.response.use(
   (response) => response,
@@ -57,11 +61,10 @@ api.interceptors.response.use(
 
       try {
         // Token refresh uses HttpOnly cookies automatically
-        await axios.post(
-          `${API_URL}/auth/token/refresh/`,
-          {},
-          { withCredentials: true }
-        );
+        refreshing ??= axios
+          .post(`${API_URL}/auth/token/refresh/`, {}, { withCredentials: true })
+          .finally(() => { refreshing = null; });
+        await refreshing;
 
         // Retry original request - new token is in cookie
         return api(originalRequest);

@@ -115,7 +115,8 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 class CookieTokenRefreshView(TokenRefreshView):
     """Token refresh view that reads from and sets HttpOnly cookies."""
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = 'auth'
+    # Its own bucket: a burst of refreshes must not lock the user out of logging in.
+    throttle_scope = 'token_refresh'
 
     def post(self, request, *args, **kwargs):
         # Try to get refresh token from cookie if not in body

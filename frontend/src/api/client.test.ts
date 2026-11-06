@@ -129,6 +129,29 @@ describe('API Client', () => {
       expect(refreshCalled).toBe(false);
     });
 
+    it('shares one refresh between requests that fail together', async () => {
+      let refreshCount = 0;
+      const seen = new Set<string>();
+
+      server.use(
+        http.get(`${API_URL}/protected/:n/`, ({ params }) => {
+          const n = String(params.n);
+          if (seen.has(n)) return HttpResponse.json({ n });
+          seen.add(n);
+          return HttpResponse.json({ detail: 'Unauthorized' }, { status: 401 });
+        }),
+        http.post(`${API_URL}/auth/token/refresh/`, () => {
+          refreshCount++;
+          return HttpResponse.json({});
+        })
+      );
+
+      const responses = await Promise.all(['1', '2', '3'].map(n => api.get(`/protected/${n}/`)));
+
+      expect(responses.map(r => r.data.n)).toEqual(['1', '2', '3']);
+      expect(refreshCount).toBe(1);
+    });
+
     it('does not retry the same request twice', async () => {
       let requestCount = 0;
 
