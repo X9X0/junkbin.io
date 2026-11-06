@@ -227,6 +227,10 @@ class Product(models.Model):
         max_length=120, blank=True, db_index=True,
         help_text=_('Bulk-import batch tag (e.g. norway-bom:Asus_P4SD-VX_R2.01); never shown on the site')
     )
+    category_locked = models.BooleanField(
+        default=False,
+        help_text=_('A moderator set the category; bulk imports leave category and subcategory alone')
+    )
     bom_bonus_tier = models.PositiveSmallIntegerField(
         default=0,
         help_text=_('Highest BOM-size bonus tier already paid to the creator (0, 10, 25 or 50 components)')

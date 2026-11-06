@@ -279,6 +279,8 @@ class Command(BaseCommand):
                   'revision': p.get('revision', ''), 'description': p.get('description', ''),
                   'year_manufactured': p.get('year_manufactured'), 'category': p['category'],
                   'subcategory': p.get('subcategory', '')}
+        if product.category_locked:                 # a moderator re-filed it
+            del fields['category'], fields['subcategory']
         changed = [k for k, v in fields.items() if getattr(product, k) != v]
         old_name = slugify(f'{product.manufacturer}-{product.model_number}-{product.revision}')
         for k in changed:

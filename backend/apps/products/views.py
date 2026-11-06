@@ -184,8 +184,13 @@ class ProductViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         # Save the update (permission already checked by IsOwnerOrReadOnly)
         instance = serializer.save()
+        moderator = self.request.user.is_staff or self.request.user.is_moderator
+        if moderator and {'category', 'subcategory'} & set(serializer.validated_data) and not instance.category_locked:
+            # a moderator's re-filing (e.g. an all-in-one listed as a laptop) survives re-imports
+            instance.category_locked = True
+            instance.save(update_fields=['category_locked'])
         # Reset approval if non-staff/moderator edits an approved product
-        if not self.request.user.is_staff and not self.request.user.is_moderator:
+        if not moderator:
             if instance.is_approved:
                 instance.is_approved = False
                 instance.save(update_fields=['is_approved'])

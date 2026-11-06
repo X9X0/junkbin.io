@@ -50,8 +50,34 @@ describe('ReviewViewer', () => {
     const user = userEvent.setup();
     render(<ReviewViewer items={items} activeKey="image-img-1" onNavigate={vi.fn()} onClose={vi.fn()} onDecided={vi.fn()} />);
     await user.click(screen.getByRole('button', { name: /reject…/i }));
-    expect(screen.getByRole('button', { name: 'Wrong category' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /wrong category/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Poor BG removal' })).toBeInTheDocument();
+  });
+
+  it('fixes the product category instead of rejecting a photo for "Wrong category"', async () => {
+    let patched: unknown = null;
+    let rejected = false;
+    server.use(
+      http.patch(`${API_URL}/products/:id/`, async ({ request }) => {
+        patched = await request.json();
+        return HttpResponse.json({ ...mockProduct, category: 'desktop', category_display: 'Desktop Computer', subcategory: 'All-in-One' });
+      }),
+      http.post(`${API_URL}/product-images/img-1/reject/`, () => { rejected = true; return new HttpResponse(null, { status: 204 }); }),
+    );
+    const user = userEvent.setup();
+    render(<ReviewViewer items={items} activeKey="image-img-1" onNavigate={vi.fn()} onClose={vi.fn()} onDecided={vi.fn()} />);
+    await screen.findByRole('button', { name: /change/i });
+
+    await user.click(screen.getByRole('button', { name: /reject…/i }));
+    await user.click(screen.getByRole('button', { name: /wrong category: fix it/i }));
+    await user.selectOptions(screen.getByRole('combobox', { name: /^category/i }), 'desktop');
+    await user.type(screen.getByPlaceholderText(/all-in-one/i), 'All-in-One');
+    await user.click(screen.getByRole('button', { name: /save category/i }));
+
+    await waitFor(() => expect(patched).toEqual({ category: 'desktop', subcategory: 'All-in-One' }));
+    expect(await screen.findByText(/Desktop Computer · All-in-One/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^approve$/i })).toBeInTheDocument();   // back to approve, nothing rejected
+    expect(rejected).toBe(false);
   });
 
   it('undoes the last approval with the button and with U', async () => {

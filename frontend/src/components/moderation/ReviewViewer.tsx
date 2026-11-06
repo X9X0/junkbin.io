@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { Check, ChevronLeft, ChevronRight, Download, ExternalLink, History, Loader2, MessageSquare, Undo2, X } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Check, ChevronLeft, ChevronRight, Download, ExternalLink, History, Loader2, MessageSquare, Pencil, Undo2, X } from 'lucide-react';
 import clsx from 'clsx';
 import { products, components } from '../../api/endpoints';
+import type { Product } from '../../types';
+import { PRODUCT_CATEGORIES } from '../../utils/constants';
 import { parseApiError } from '../../utils/formErrors';
 import { useAuth } from '../../context/AuthContext';
 import {
@@ -62,6 +64,10 @@ export default function ReviewViewer({
   const [continueNext, setContinueNext] = useState(readContinue);
   const [rejecting, setRejecting] = useState(startRejecting);
   const [showHistory, setShowHistory] = useState(false);
+  // the category picker belongs to one item, like the feedback draft
+  const [fixKey, setFixKey] = useState<string | null>(null);
+  const fixingCategory = fixKey === activeKey;
+  const setFixingCategory = (open: boolean) => setFixKey(open ? activeKey : null);
   const lastUndoable = history.find((d) => d.approved && canUndoApproval(d.item.type));
   const undoLast = () => {
     if (lastUndoable && onUndo && !undoingKey) onUndo(lastUndoable);
@@ -131,6 +137,7 @@ export default function ReviewViewer({
       if (e.key === 'Escape') {
         e.preventDefault();
         if (showHistory) setShowHistory(false);
+        else if (fixingCategory) setFixingCategory(false);
         else if (rejecting) setRejecting(false);
         else onClose();
         return;
@@ -146,6 +153,7 @@ export default function ReviewViewer({
       else if (e.key === 'r' && !rejecting) { e.preventDefault(); setRejecting(true); }
       else if (e.key === 'u' && !rejecting) undoLast();
       else if (e.key === 'h') setShowHistory((v) => !v);
+      else if (e.key === 'c' && !rejecting && contextProductId(item)) { e.preventDefault(); setFixingCategory(true); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -158,6 +166,8 @@ export default function ReviewViewer({
   // imports are credited to the account that ran them: no feedback to yourself
   const ownItem = !!submitter && submitter === user?.username;
   const reasons = rejectReasons[item.type];
+  // 'Wrong category' on a product's photo or file fixes the listing instead of rejecting a good file
+  const fixesCategory = (label: string) => label === 'Wrong category' && !!contextProductId(item);
   const addReason = (text: string) => {
     setNotes((current) => (current.includes(text) ? current : current.trim() ? `${current.trim()} ${text}` : text));
     notesRef.current?.focus();
@@ -215,7 +225,7 @@ export default function ReviewViewer({
 
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4">
-          <ItemContext item={item} />
+          <ItemContext item={item} fixing={fixingCategory} onFixing={setFixingCategory} />
           <ItemBody item={item} />
         </div>
 
@@ -248,7 +258,13 @@ export default function ReviewViewer({
                     Sent by email and as a notification. Say what's wrong and what would make it acceptable.
                   </p>
                   <div className="flex flex-wrap gap-1.5 mb-2">
-                    {reasons.map(([label, text]) => (
+                    {reasons.map(([label, text]) => fixesCategory(label) ? (
+                      <button key={label} type="button" title="Fix the product's category instead: the file stays and can be approved"
+                        onClick={() => { setRejecting(false); setFixingCategory(true); }}
+                        className="px-2 py-1 text-xs font-mono border border-cyber-yellow/50 text-cyber-yellow hover:text-white hover:border-cyber-yellow inline-flex items-center gap-1">
+                        <Pencil className="h-3 w-3" /> Wrong category: fix it
+                      </button>
+                    ) : (
                       <button key={label} type="button" onClick={() => addReason(text)}
                         className={clsx('px-2 py-1 text-xs font-mono border transition-colors',
                           notes.includes(text)
@@ -281,7 +297,7 @@ export default function ReviewViewer({
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <ContinueToggle checked={continueNext} onChange={toggleContinue} />
-              <span className="hidden md:inline text-xs text-gray-600 font-mono">A approve · R reject · U undo · ←/→ browse · Esc close</span>
+              <span className="hidden md:inline text-xs text-gray-600 font-mono">A approve · R reject · U undo · C category · ←/→ browse · Esc close</span>
               <div className="flex-1" />
               <button onClick={() => setRejecting(true)} disabled={decision.isPending}
                 className="btn-cyber btn-cyber-pink text-sm inline-flex items-center gap-1 disabled:opacity-50">
@@ -308,10 +324,16 @@ function ContinueToggle({ checked, onChange }: { checked: boolean; onChange: (v:
   );
 }
 
+/** The product a photo, schematic or firmware file belongs to. */
+function contextProductId(item: PendingItem | null): string | null {
+  if (!item || item.type === 'product' || item.type === 'recipe' || item.type === 'component_image'
+    || item.type === 'datasheet' || item.type === 'component_suggestion') return null;
+  return item.data.product || null;
+}
+
 /** What the item belongs to: the product or component, so a photo or file can be judged against it. */
-function ItemContext({ item }: { item: PendingItem }) {
-  const productId = item.type === 'product' || item.type === 'recipe' || item.type === 'component_image' || item.type === 'datasheet'
-    ? null : item.data.product || null;
+function ItemContext({ item, fixing, onFixing }: { item: PendingItem; fixing: boolean; onFixing: (open: boolean) => void }) {
+  const productId = contextProductId(item);
   const componentId = item.type === 'component_image' || item.type === 'datasheet' ? item.data.component : null;
   const { data: product } = useQuery({
     queryKey: ['moderationContext', 'product', productId],
@@ -328,16 +350,25 @@ function ItemContext({ item }: { item: PendingItem }) {
   if (product) {
     const photo = product.primary_image?.thumbnail || product.primary_image?.image;
     return (
+      <>
+      {fixing && <CategoryFixer key={product.id} product={product} onClose={() => onFixing(false)} />}
       <div className="flex items-center gap-3 mb-3 text-sm">
         {photo && item.type !== 'image' && <img src={photo} alt="" className="h-10 w-10 object-contain bg-black/40 border border-cyber-light/20" />}
         <div className="min-w-0">
           <span className="text-gray-500 font-mono text-xs">FOR </span>
           <span className="text-cyber-cyan">{product.manufacturer} {product.model_number}</span>
           {product.revision && <span className="text-gray-400"> · Rev {product.revision}</span>}
-          <span className="text-gray-500"> · {product.category_display || product.category}</span>
+          <span className="text-gray-500"> · {[product.category_display || product.category, product.subcategory].filter(Boolean).join(' · ')}</span>
           {!product.is_approved && <span className="text-cyber-yellow text-xs font-mono"> · PENDING PRODUCT</span>}
+          {!fixing && (
+            <button onClick={() => onFixing(true)} title="Change the product's category (C)"
+              className="ml-2 inline-flex items-center gap-1 text-xs font-mono text-gray-500 hover:text-cyber-yellow">
+              <Pencil className="h-3 w-3" /> CHANGE
+            </button>
+          )}
         </div>
       </div>
+      </>
     );
   }
   if (component) {
@@ -350,6 +381,55 @@ function ItemContext({ item }: { item: PendingItem }) {
     );
   }
   return null;
+}
+
+const SUBCATEGORY_SUGGESTIONS = ['All-in-One', 'Motherboard', 'Mainboard', 'Graphics card', 'Expansion card'];
+
+/** Re-file the product a pending photo or file belongs to, so the file can be approved instead of rejected. */
+function CategoryFixer({ product, onClose }: { product: Product; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const [category, setCategory] = useState(product.category);
+  const [subcategory, setSubcategory] = useState(product.subcategory || '');
+  const options = PRODUCT_CATEGORIES.filter((c) => c.value);
+  if (!options.some((c) => c.value === product.category)) {
+    options.unshift({ value: product.category, label: product.category_display || product.category });
+  }
+  const save = useMutation({
+    mutationFn: () => products.update(product.id, { category, subcategory: subcategory.trim() }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData(['moderationContext', 'product', product.id], { ...product, ...updated });
+      onClose();
+    },
+  });
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); save.mutate(); }}
+      className="mb-3 p-3 border border-cyber-yellow/40 bg-cyber-yellow/5 flex flex-wrap items-end gap-3">
+      <p className="w-full text-xs font-mono text-cyber-yellow">
+        FIX THE CATEGORY OF {product.manufacturer} {product.model_number}: the file stays in the queue; approve it once the listing is right.
+      </p>
+      <label className="text-xs font-mono text-gray-500">
+        CATEGORY
+        <select autoFocus value={category} onChange={(e) => setCategory(e.target.value)} className="input-cyber text-sm block mt-1">
+          {options.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+        </select>
+      </label>
+      <label className="text-xs font-mono text-gray-500">
+        SUBCATEGORY
+        <input list="moderation-subcategories" value={subcategory} onChange={(e) => setSubcategory(e.target.value)}
+          maxLength={100} placeholder="optional, e.g. All-in-One" className="input-cyber text-sm block mt-1" />
+        <datalist id="moderation-subcategories">
+          {SUBCATEGORY_SUGGESTIONS.map((s) => <option key={s} value={s} />)}
+        </datalist>
+      </label>
+      <div className="flex-1" />
+      <button type="button" onClick={onClose} className="btn-cyber text-sm">Cancel</button>
+      <button type="submit" disabled={save.isPending || (category === product.category && subcategory.trim() === (product.subcategory || ''))}
+        className="btn-cyber btn-cyber-green text-sm inline-flex items-center gap-1 disabled:opacity-50">
+        {save.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />} Save category
+      </button>
+      {save.isError && <p className="w-full text-sm font-mono text-cyber-pink">{parseApiError(save.error, 'Could not change the category.')}</p>}
+    </form>
+  );
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
