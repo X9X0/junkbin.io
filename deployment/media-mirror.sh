@@ -34,6 +34,10 @@ LOG="$DEST/mirror.log"
 mkdir -p "$DEST/current" "$DEST/deleted"
 log() { echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG"; }
 
+# dev-refresh-from-prod.sh reads current/ under the same lock
+exec 9>"$DEST/.lock"
+flock -w 3600 9 || { log "FAILED: another run still holds $DEST/.lock after an hour"; exit 1; }
+
 if [ -n "$SOURCE" ]; then
     SRC="${SOURCE%/}/"
     RSH=()
@@ -59,7 +63,7 @@ out=$(rsync -rlt --delete --backup --backup-dir="$DEST/deleted/$RUN" --exclude=/
           "${RSH[@]}" "$SRC" "$DEST/current/" 2>&1) || rc=$?
 rmdir "$DEST/deleted/$RUN" 2>/dev/null || true
 
-stat_of() { local v; v=$(echo "$out" | sed -n "s/^$1: \([0-9,]*\).*/\1/p" | tr -d , | head -1); echo "${v:-0}"; }
+stat_of() { local v; v=$(echo "$out" | sed -n "s/^$1: \([0-9,]*\).*/\1/p" | tr -d , | sed -n 1p); echo "${v:-0}"; }
 summary="$(echo "$out" | sed -n 's/^Number of files:.*reg: \([0-9,]*\).*/\1/p' | tr -d ,) files, $(stat_of 'Number of regular files transferred') copied \
 ($(( $(stat_of 'Total transferred file size') / 1000000 )) MB), $(stat_of 'Number of deleted files') moved to deleted/"
 
