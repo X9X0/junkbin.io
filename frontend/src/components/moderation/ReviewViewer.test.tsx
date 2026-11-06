@@ -41,9 +41,31 @@ describe('ReviewViewer', () => {
     await user.click(screen.getByRole('button', { name: 'Different product' }));
     await user.click(screen.getByRole('button', { name: /reject and send feedback/i }));
 
-    await waitFor(() => expect(onDecided).toHaveBeenCalledWith('image-img-1'));
+    await waitFor(() => expect(onDecided).toHaveBeenCalledWith('image-img-1', false));
     expect(body).toEqual({ notes: 'The photo shows a different product or model.' });
     expect(onNavigate).toHaveBeenCalledWith('image-img-2');
+  });
+
+  it('offers the new photo reasons', async () => {
+    const user = userEvent.setup();
+    render(<ReviewViewer items={items} activeKey="image-img-1" onNavigate={vi.fn()} onClose={vi.fn()} onDecided={vi.fn()} />);
+    await user.click(screen.getByRole('button', { name: /reject…/i }));
+    expect(screen.getByRole('button', { name: 'Wrong category' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Poor BG removal' })).toBeInTheDocument();
+  });
+
+  it('undoes the last approval with the button and with U', async () => {
+    const onUndo = vi.fn();
+    const user = userEvent.setup();
+    const history = [{ item: photo('img-9', 'Side'), approved: true, at: Date.now() }];
+    render(<ReviewViewer items={items} activeKey="image-img-1" onNavigate={vi.fn()} onClose={vi.fn()} onDecided={vi.fn()}
+      history={history} onUndo={onUndo} />);
+
+    expect(screen.getByText('Side')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /undo \(u\)/i }));
+    expect(onUndo).toHaveBeenCalledWith(history[0]);
+    await user.keyboard('u');
+    expect(onUndo).toHaveBeenCalledTimes(2);
   });
 
   it('closes after a decision when "continue" is unticked', async () => {

@@ -38,7 +38,28 @@ describe('Moderation pending content', () => {
         return HttpResponse.json({ detail: 'Image approved.' });
       }),
     );
+    sessionStorage.clear();
   });
+
+  it('puts an approval made by mistake back in the queue', async () => {
+    let undone: unknown = null;
+    server.use(http.post(`${API_URL}/product-images/:id/unapprove/`, ({ params }) => {
+      undone = params.id;
+      return HttpResponse.json({ detail: 'Image moved back to the queue.' });
+    }));
+    const user = userEvent.setup();
+    render(<Moderation />);
+    await screen.findByText('Photo 25');
+
+    await user.click(screen.getAllByRole('button', { name: /^approve$/i })[0]);
+    await waitFor(() => expect(screen.queryByText('Photo 25')).not.toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /recent decisions \(1\)/i }));
+    await user.click(screen.getByRole('button', { name: /^undo$/i }));
+
+    await waitFor(() => expect(undone).toBe('img-25'));
+    expect(await screen.findByText('Photo 25')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /recent decisions/i })).not.toBeInTheDocument();
+  }, 15000);
 
   it('approving refetches nothing until a list runs low', async () => {
     const user = userEvent.setup();

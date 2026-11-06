@@ -126,6 +126,25 @@ def tier_bonus(tier):
 
 
 @transaction.atomic
+def take_back_bom_bonus(product):
+    """Undo award_bom_bonus() for a product that goes back to the moderation queue; approving it
+    again pays the bonus again. Returns reputation taken back."""
+    from apps.products.models import Product
+    product = Product.objects.select_for_update().get(pk=product.pk)
+    rows = _ledger().objects.filter(kind=_ledger().Kind.BOM_BONUS, object_ref__startswith=f'product:{product.pk}:')
+    owed = sum(r.points for r in rows)
+    creator = product.created_by
+    rows.delete()
+    if product.bom_bonus_tier:
+        product.bom_bonus_tier = 0
+        product.save(update_fields=['bom_bonus_tier'])
+    if creator and owed:
+        creator.reputation_score = max(0, creator.reputation_score - owed)
+        creator.save(update_fields=['reputation_score'])
+    return owed
+
+
+@transaction.atomic
 def award_bom_bonus(product):
     """Pay the creator for BOM tiers this approved product has newly reached. Returns reputation added."""
     from apps.products.models import Product

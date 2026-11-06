@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, HardDrive, Sparkles, Check, X } from 'lucide-react';
+import { Shield, AlertTriangle, Clock, CheckCircle, Eye, Users, Package, FileText, Wrench, ImageIcon, BookOpen, HardDrive, Sparkles, Check, X, History, ChevronDown } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { reports, reviews, products, schematics, firmware, componentSuggestions, recipes, productImages, componentImages, componentDatasheets } from '../api/endpoints';
 import type { Report, UserReview } from '../types';
@@ -14,8 +14,9 @@ import clsx from 'clsx';
 import ProductRequestsPanel from '../components/ProductRequestsPanel';
 import ImportReviewPanel from '../components/moderation/ImportReviewPanel';
 import ReviewViewer from '../components/moderation/ReviewViewer';
+import DecisionHistory from '../components/moderation/DecisionHistory';
 import {
-  type PendingItem, type PendingType, decide, itemDate, itemKey, itemThumbnail, itemTitle, itemUser, typeBadgeColors, typeIcons,
+  type Decision, type PendingItem, type PendingType, decide, undoApproval, itemDate, itemKey, itemThumbnail, itemTitle, itemUser, typeBadgeColors, typeIcons,
 } from '../components/moderation/pendingItems';
 
 type PendingComponentImage = Extract<PendingItem, { type: 'component_image' }>['data'];
@@ -483,6 +484,19 @@ const countKeyOf = {
   recipe: 'recipes', image: 'images', component_image: 'component_images', datasheet: 'datasheets',
 } as const satisfies Record<PendingType, string>;
 
+// this tab's decisions, kept for the browser tab's session so an approval can be undone later
+const HISTORY_KEY = 'moderation.history';
+const HISTORY_MAX = 100;
+
+function readHistory(): Decision[] {
+  try {
+    const raw = sessionStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
 function PendingContentTab() {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
@@ -491,7 +505,19 @@ function PendingContentTab() {
   const [viewer, setViewer] = useState<{ key: string; rejecting: boolean } | null>(null);
   // decided items leave the list at once; key -> its type and when it was decided
   const [decided, setDecided] = useState<Map<string, { type: PendingType; at: number }>>(() => new Map());
+  const [history, setHistory] = useState<Decision[]>(readHistory);
+  const [showHistory, setShowHistory] = useState(false);
+  // approvals undone in this session: back in the list before (or without) a refetch
+  const [restored, setRestored] = useState<PendingItem[]>([]);
   const closeViewer = useCallback(() => setViewer(null), []);
+
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    } catch {
+      // the history just doesn't survive a reload
+    }
+  }, [history]);
 
   const { data: counts, dataUpdatedAt: countsAt } = useQuery({
     queryKey: ['pendingCounts'],
@@ -573,15 +599,22 @@ function PendingContentTab() {
     (pendingDatasheets?.results || []).forEach((d) => items.push({ type: 'datasheet', data: d }));
   }
 
+  const loadedKeys = new Set(items.map(itemKey));
+  restored
+    .filter((i) => !loadedKeys.has(itemKey(i)) && (contentFilter === 'all' || contentFilter === countKeyOf[i.type]))
+    .forEach((i) => items.push(i));
+
   const visible = items.filter((i) => !decided.has(itemKey(i)));
 
   // A decision refetches nothing until that type's loaded list runs low: refetching
   // every list after each approve used up the moderator's request limit.
-  const markDecided = (key: string) => {
+  const markDecided = (key: string, approved: boolean) => {
     setActionError(null);
-    const type = items.find((i) => itemKey(i) === key)?.type;
-    if (!type) return;
+    const item = items.find((i) => itemKey(i) === key);
+    if (!item) return;
+    const type = item.type;
     setDecided((prev) => new Map(prev).set(key, { type, at: Date.now() }));
+    setHistory((prev) => [{ item, approved, at: Date.now() }, ...prev.filter((d) => itemKey(d.item) !== key)].slice(0, HISTORY_MAX));
     const left = visible.filter((i) => i.type === type && itemKey(i) !== key).length;
     if (left < REFILL_AT) {
       queryClient.invalidateQueries({ queryKey: [pendingListKeys[type]] });
@@ -591,9 +624,29 @@ function PendingContentTab() {
 
   const quickApprove = useMutation({
     mutationFn: (item: PendingItem) => decide(item, true),
-    onSuccess: (_data, item) => markDecided(itemKey(item)),
+    onSuccess: (_data, item) => markDecided(itemKey(item), true),
     onError: (err) => setActionError(parseApiError(err, 'Action failed. Please try again.')),
   });
+
+  // an approval made in haste goes back to the queue, and opens in the viewer if it is open
+  const undo = useMutation({
+    mutationFn: (d: Decision) => undoApproval(d.item),
+    onSuccess: (_data, d) => {
+      const key = itemKey(d.item);
+      setActionError(null);
+      setHistory((prev) => prev.filter((x) => itemKey(x.item) !== key));
+      setDecided((prev) => {
+        const next = new Map(prev);
+        next.delete(key);
+        return next;
+      });
+      setRestored((prev) => [...prev.filter((i) => itemKey(i) !== key), { ...d.item, data: { ...d.item.data, is_approved: false } } as PendingItem]);
+      queryClient.invalidateQueries({ queryKey: ['pendingCounts'] });
+      setViewer((v) => (v ? { key, rejecting: false } : v));
+    },
+    onError: (err) => setActionError(parseApiError(err, 'Could not undo the approval.')),
+  });
+  const undoingKey = undo.isPending && undo.variables ? itemKey(undo.variables.item) : null;
   // Sort by date descending
   visible.sort((a, b) => new Date(itemDate(b)).getTime() - new Date(itemDate(a)).getTime());
 
@@ -652,6 +705,22 @@ function PendingContentTab() {
       )}
 
       {(contentFilter === 'all' || contentFilter === 'product_requests') && <ProductRequestsPanel />}
+
+      {history.length > 0 && (
+        <div className="card-cyber mb-4">
+          <button onClick={() => setShowHistory((v) => !v)} aria-expanded={showHistory}
+            className="w-full flex items-center gap-2 px-4 py-2 text-sm font-mono text-gray-400 hover:text-white">
+            <History className="h-4 w-4" /> RECENT DECISIONS ({history.length})
+            <span className="text-xs text-gray-600 normal-case">approved by mistake? undo it here</span>
+            <ChevronDown className={clsx('h-4 w-4 ml-auto transition-transform', showHistory && 'rotate-180')} />
+          </button>
+          {showHistory && (
+            <div className="px-4 pb-2 max-h-80 overflow-y-auto">
+              <DecisionHistory history={history} onUndo={(d) => undo.mutate(d)} undoingKey={undoingKey} />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Results */}
       {isLoading ? (
@@ -761,6 +830,10 @@ function PendingContentTab() {
           onNavigate={(key) => setViewer({ key, rejecting: false })}
           onClose={closeViewer}
           onDecided={markDecided}
+          history={history}
+          onUndo={(d) => undo.mutate(d)}
+          undoingKey={undoingKey}
+          undoError={undo.isError ? actionError : null}
         />
       )}
     </>
