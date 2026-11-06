@@ -327,6 +327,23 @@ Each run copies only new and changed files. It needs `rsync` on prod
 (`dnf install -y rsync`). Check it like the archives: `tail -5
 Docs/Prod_Backups/media/mirror.log`. The restore command is in the script's header.
 
+### Dev refreshed from prod nightly
+
+At 03:00 dev runs `deployment/dev-refresh-from-prod.sh`: dev's database becomes
+the newest pulled prod backup and its media the mirror above, so dev -> prod
+rehearsals run on prod's data. Passwords and emails are scrubbed (dev's own
+staff keep their dev logins), tokens and sessions deleted, webhooks switched
+off; dev's newer migrations are applied on top. It skips (and changes nothing)
+when either source is over 26 hours old or a run failed.
+
+- Keep dev as it is for a while (an import in progress): `touch ~/.dev-refresh-hold`, remove when done
+- Go back to the night before: `deployment/dev-refresh-from-prod.sh --undo`
+- Dry run (restore + scrub into a scratch database, dev untouched): `--check`
+- Log: `Docs/Prod_Backups/dev-refresh.log`
+
+Anything that exists only in dev's database or media is replaced each night:
+work meant for prod reaches it through code and commands, never dev's data.
+
 ### Restoring from backup
 
 The restore script is interactive — it shows a menu so you can choose what to restore.
