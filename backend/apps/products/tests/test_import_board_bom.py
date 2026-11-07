@@ -169,6 +169,24 @@ def test_documents_are_attached_once_unapproved(tmp_path, settings, user_factory
     assert Schematic.objects.count() == 1
 
 
+def test_document_source_type_and_url_come_from_the_bundle(tmp_path, settings, user_factory):
+    from django.core.management import CommandError
+    from apps.products.models import Schematic
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    folder = _with_doc(tmp_path)
+    bundle = json.loads((folder / 'bundle.json').read_text())
+    bundle['documents'][0].update(source_type='nonsense')
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    with pytest.raises(CommandError, match='unknown source_type'):
+        _run(folder)
+    bundle['documents'][0].update(source_type='official', source_url='https://example.org/a500.pdf')
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    _run(folder)
+    doc = Schematic.objects.get()
+    assert (doc.source_type, doc.source_url) == ('official', 'https://example.org/a500.pdf')
+
+
 def test_document_dropped_from_bundle_is_removed(tmp_path, settings, user_factory):
     from apps.products.models import Schematic
     settings.MEDIA_ROOT = str(tmp_path / 'media')
