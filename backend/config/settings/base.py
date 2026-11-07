@@ -481,8 +481,10 @@ COMPONENT_TYPES = [
     ('diode', 'Diode'),
     ('regulator', 'Voltage Regulator'),
     ('opamp', 'Op-Amp'),
+    ('vacuum_tube', 'Vacuum Tube'),
     # Passive components
     ('resistor', 'Resistor'),
+    ('potentiometer', 'Potentiometer'),
     ('capacitor', 'Capacitor'),
     ('inductor', 'Inductor'),
     ('transformer', 'Transformer'),

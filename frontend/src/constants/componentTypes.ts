@@ -14,8 +14,10 @@ export const COMPONENT_TYPES: ComponentTypeOption[] = [
   { value: 'diode', label: 'Diode' },
   { value: 'regulator', label: 'Voltage Regulator' },
   { value: 'opamp', label: 'Op-Amp' },
+  { value: 'vacuum_tube', label: 'Vacuum Tube' },
   // Passive
   { value: 'resistor', label: 'Resistor' },
+  { value: 'potentiometer', label: 'Potentiometer' },
   { value: 'capacitor', label: 'Capacitor' },
   { value: 'inductor', label: 'Inductor' },
   { value: 'transformer', label: 'Transformer' },

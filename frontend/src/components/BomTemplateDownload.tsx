@@ -32,8 +32,8 @@ const BOM_TEMPLATE_INSTRUCTIONS = `# Junkbin.io BOM Template Instructions
 
 ## Supported Component Types
 
-Active: ic, mcu, transistor, mosfet, diode, regulator, opamp
-Passive: resistor, capacitor, inductor, transformer, crystal, fuse, ferrite
+Active: ic, mcu, transistor, mosfet, diode, regulator, opamp, vacuum_tube
+Passive: resistor, potentiometer, capacitor, inductor, transformer, crystal, fuse, ferrite
 Electromechanical: relay, switch, connector, socket
 RF/Wireless: antenna, rf_module, balun
 Power: battery, power_jack, usb_port
