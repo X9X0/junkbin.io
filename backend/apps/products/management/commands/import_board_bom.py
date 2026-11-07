@@ -388,7 +388,7 @@ class Command(BaseCommand):
             if doc['md5'] in have:
                 result['documents_kept'] += 1
                 sch = have[doc['md5']]
-                if sch.source_notes.startswith(f'[{tag}]') and not dry_run:   # ours: keep its text current
+                if sch and not dry_run and sch.source_notes.startswith(f'[{tag}]'):   # ours: keep its text current
                     retitle(sch, clean_title(doc['title'])[:300], clean_text(doc.get('description', '')))
                 continue
             path = folder / doc['file']
@@ -398,9 +398,10 @@ class Command(BaseCommand):
                 raise CommandError(f"{path}: unknown source_type {doc['source_type']!r}")
             result['documents_added'] += 1
             if dry_run:
+                have[doc['md5']] = None
                 continue            # nothing written to storage on a dry run
             with path.open('rb') as fh:
-                Schematic.objects.create(
+                have[doc['md5']] = Schematic.objects.create(      # a file listed twice is added once
                     product=product, file=File(fh, name=path.name),
                     schematic_type=doc.get('schematic_type') or Schematic.SchematicType.OTHER,
                     title=clean_title(doc['title'])[:300], description=clean_text(doc.get('description', '')),

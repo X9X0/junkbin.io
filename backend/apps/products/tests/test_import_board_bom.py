@@ -187,6 +187,19 @@ def test_document_source_type_and_url_come_from_the_bundle(tmp_path, settings, u
     assert (doc.source_type, doc.source_url) == ('official', 'https://example.org/a500.pdf')
 
 
+def test_a_file_listed_twice_is_added_once(tmp_path, settings, user_factory):
+    from apps.products.models import Schematic
+    settings.MEDIA_ROOT = str(tmp_path / 'media')
+    user_factory(is_superuser=True, is_staff=True)
+    folder = _with_doc(tmp_path)
+    bundle = json.loads((folder / 'bundle.json').read_text())
+    bundle['documents'].append(dict(bundle['documents'][0], title='Same file, second listing'))
+    (folder / 'bundle.json').write_text(json.dumps(bundle))
+    assert 'documents added 1' in _run(folder, '--dry-run')
+    _run(folder)
+    assert Schematic.objects.count() == 1
+
+
 def test_document_dropped_from_bundle_is_removed(tmp_path, settings, user_factory):
     from apps.products.models import Schematic
     settings.MEDIA_ROOT = str(tmp_path / 'media')
