@@ -549,6 +549,8 @@ PRODUCT_CATEGORIES = [
     ('audio', 'Audio Equipment'),
     ('speaker', 'Speaker/Soundbar'),
     ('headphones', 'Headphones/Earbuds'),
+    ('instrument_amp', 'Instrument Amplifier'),
+    ('effects_pedal', 'Effects Pedal'),
     ('camera', 'Camera'),
     ('camcorder', 'Camcorder'),
     ('dvr', 'DVR/NVR'),
