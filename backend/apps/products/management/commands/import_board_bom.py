@@ -30,8 +30,9 @@ Optional "firmware": [{"file", "md5", "title", "description", "version",
 product's Firmware (unapproved, source type "dumped").
 
 Optional "documents": [{"file": "docs/x.zip" (relative to the bundle), "md5",
-"schematic_type", "title", "description", "source_notes"}] become Schematic
-records on the product (unapproved, source type leaked). A file whose md5 is
+"schematic_type", "title", "description", "source_notes", "source_type", "source_url"}]
+become Schematic records on the product (unapproved; source type leaked unless the
+document gives one, e.g. "official" for a maker's own drawings). A file whose md5 is
 already on the product is not uploaded again; documents this import added
 earlier that are no longer in the bundle are removed.
 
@@ -387,22 +388,26 @@ class Command(BaseCommand):
             if doc['md5'] in have:
                 result['documents_kept'] += 1
                 sch = have[doc['md5']]
-                if sch.source_notes.startswith(f'[{tag}]') and not dry_run:   # ours: keep its text current
+                if sch and not dry_run and sch.source_notes.startswith(f'[{tag}]'):   # ours: keep its text current
                     retitle(sch, clean_title(doc['title'])[:300], clean_text(doc.get('description', '')))
                 continue
             path = folder / doc['file']
             if not path.is_file():
                 raise CommandError(f'{path}: document missing')
+            if doc.get('source_type') and doc['source_type'] not in Schematic.SourceType.values:
+                raise CommandError(f"{path}: unknown source_type {doc['source_type']!r}")
             result['documents_added'] += 1
             if dry_run:
+                have[doc['md5']] = None
                 continue            # nothing written to storage on a dry run
             with path.open('rb') as fh:
-                Schematic.objects.create(
+                have[doc['md5']] = Schematic.objects.create(      # a file listed twice is added once
                     product=product, file=File(fh, name=path.name),
                     schematic_type=doc.get('schematic_type') or Schematic.SchematicType.OTHER,
                     title=clean_title(doc['title'])[:300], description=clean_text(doc.get('description', '')),
                     version=product.revision,
-                    source_type=Schematic.SourceType.LEAKED,
+                    source_type=doc.get('source_type') or Schematic.SourceType.LEAKED,
+                    source_url=doc.get('source_url', ''),
                     source_notes=f"[{tag}] {doc.get('source_notes', '')} md5:{doc['md5']}",
                     uploaded_by=user, is_approved=False,
                 )

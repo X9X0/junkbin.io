@@ -12,6 +12,8 @@ export const PRODUCT_CATEGORIES = [
   { value: 'access_point', label: 'Access Point' },
   { value: 'audio', label: 'Audio Equipment' },
   { value: 'speaker', label: 'Speaker/Soundbar' },
+  { value: 'instrument_amp', label: 'Instrument Amplifier' },
+  { value: 'effects_pedal', label: 'Effects Pedal' },
   { value: 'gaming', label: 'Gaming Console' },
   { value: 'handheld', label: 'Handheld Gaming' },
   { value: 'remote', label: 'Remote Control' },

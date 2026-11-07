@@ -22,6 +22,8 @@ const CATEGORIES = [
   { value: 'remote', label: 'Remote Control' },
   { value: 'iot', label: 'IoT Device' },
   { value: 'audio', label: 'Audio Equipment' },
+  { value: 'instrument_amp', label: 'Instrument Amplifier' },
+  { value: 'effects_pedal', label: 'Effects Pedal' },
   { value: 'other', label: 'Other' },
 ];
 
