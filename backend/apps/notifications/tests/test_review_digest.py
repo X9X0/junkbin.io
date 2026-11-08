@@ -61,3 +61,16 @@ def test_email_preferences_still_respected(moderator, user, product_factory):
     user.save()
     _client(moderator).post(f'/api/products/{product_factory(is_approved=False, created_by=user).id}/approve/')
     assert not ReviewEmail.objects.exists()
+
+
+def test_critical_emails_are_never_batched(user_factory):
+    """Only approval/rejection mail waits for the batch: sign-up verification and password reset
+    go out at once, however many review emails are queued."""
+    from utils.email import send_password_reset_email, send_verification_email
+    waiting = user_factory()
+    for _ in range(50):
+        ReviewEmail.objects.create(user=waiting, content_type='Product', content_str='X', approved=True)
+    newcomer = user_factory()
+    send_verification_email(newcomer)
+    send_password_reset_email(newcomer, 'token', 'uid')
+    assert [m.to for m in mail.outbox] == [[newcomer.email], [newcomer.email]]

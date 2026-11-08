@@ -62,3 +62,22 @@ def test_newest_first_lists_parts_with_photos_first():
     Component.objects.create(manufacturer='TI', part_number='NEW-BARE', component_type='ic')
     resp = APIClient().get('/api/components/?ordering=-created_at')
     assert _names(resp) == ['OLD-PHOTO', 'NEW-BARE']
+
+
+def test_category_mix_takes_turns_between_categories(product_factory, product_image_factory):
+    cache.clear()
+    for i in range(3):                                   # three newer laptops with photos
+        p = product_factory(model_number=f'LAPTOP-{i}', category='laptop', is_approved=True)
+        product_image_factory(product=p, is_approved=True)
+    for name, cat, days in (('AMP', 'instrument_amp', 5), ('PEDAL', 'effects_pedal', 6)):
+        p = product_factory(model_number=name, category=cat, is_approved=True)
+        product_image_factory(product=p, is_approved=True)
+        _aged(p, days)
+    product_factory(model_number='BARE-TV', category='tv', is_approved=True)    # no photo: last
+    resp = APIClient().get("/api/products/?ordering=mix")
+    assert resp.status_code == 200, resp.data
+    names = _names(resp)
+    assert set(names[:3]) == {'LAPTOP-2', 'AMP', 'PEDAL'}     # one of each category first
+    assert names[3:5] == ['LAPTOP-1', 'LAPTOP-0']
+    assert names[-1] == 'BARE-TV'
+    assert len(names) == 6                                    # nothing hidden

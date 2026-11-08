@@ -161,6 +161,11 @@ export const products = {
     return response.data;
   },
 
+  categories: async (): Promise<Array<{ value: string; label: string; count: number }>> => {
+    const response = await api.get('/products/categories/');
+    return response.data;
+  },
+
   components: async (id: string): Promise<any[]> => {
     const response = await api.get(`/products/${id}/components/`);
     return response.data;
