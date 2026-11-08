@@ -115,10 +115,14 @@ class Command(BaseCommand):
         ours = product.images.filter(source_notes__startswith=f'[{batch}]')
         if ours.filter(is_approved=True).exists():
             return 'unchanged'                         # an approved one from an earlier run
-        if ours.filter(source_notes__startswith=tag).exists():
+        same = ours.filter(source_notes__startswith=tag).first()
+        if same:                                       # same photo; fill in what older imports lacked
             if not product.image_alternates.filter(batch=batch).exists():
-                self.store_alternates(root, batch, product, item)     # imported before alternates existed
-            return 'unchanged'                         # same photo
+                self.store_alternates(root, batch, product, item)
+            original = root / item['original'] if item.get('original') else None
+            if original and original.is_file() and not same.bg_removal_previews.exists():
+                keep_original(same, original.name, original.read_bytes(), user)
+            return 'unchanged'
         if md5 in rejected_md5s(product):
             return 'rejected before'
         result = 'added'

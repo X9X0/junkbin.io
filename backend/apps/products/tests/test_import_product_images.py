@@ -166,3 +166,12 @@ def test_a_rejected_picture_is_never_imported_again(tmp_path, setup, moderator):
     _reject(moderator, ProductImage.objects.get(), 'Not the whole product')
     assert 'rejected before 1' in _run(folder)
     assert not ProductImage.objects.exists()
+
+
+def test_rerun_fills_in_original_and_alternates_for_older_imports(tmp_path, setup):
+    _run(_manifest(tmp_path, setup))                     # an import from before originals/alternates
+    img = ProductImage.objects.get()
+    assert not img.bg_removal_previews.exists() and not setup.image_alternates.exists()
+    assert 'unchanged 1' in _run(_with_extras(tmp_path / 'again', setup))
+    assert img.bg_removal_previews.filter(applied_at__isnull=False).exists()
+    assert setup.image_alternates.count() == 2
