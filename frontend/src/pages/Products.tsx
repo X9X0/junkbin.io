@@ -10,23 +10,6 @@ import { ProductGridSkeleton } from '../components/Skeleton';
 import LazyImage from '../components/LazyImage';
 import ProductName from '../components/ProductName';
 
-// Category labels are short UI strings; "All Categories" is translated below.
-// The rest are kept as-is since they are category display names.
-const CATEGORIES = [
-  { value: '', label: null }, // translated via t('products.all_categories')
-  { value: 'router', label: 'Router' },
-  { value: 'phone', label: 'Smartphone' },
-  { value: 'laptop', label: 'Laptop' },
-  { value: 'tv', label: 'Television' },
-  { value: 'gaming', label: 'Gaming Console' },
-  { value: 'remote', label: 'Remote Control' },
-  { value: 'iot', label: 'IoT Device' },
-  { value: 'audio', label: 'Audio Equipment' },
-  { value: 'instrument_amp', label: 'Instrument Amplifier' },
-  { value: 'effects_pedal', label: 'Effects Pedal' },
-  { value: 'other', label: 'Other' },
-];
-
 export default function Products() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -34,12 +17,20 @@ export default function Products() {
 
   const search = searchParams.get('search') || '';
   const category = searchParams.get('category') || '';
-  const ordering = searchParams.get('ordering') || '-created_at';
+  // default: newest first, taking turns between categories (see the 'mix' ordering in the API)
+  const ordering = searchParams.get('ordering') || 'mix';
   const page = parseInt(searchParams.get('page') || '1', 10);
 
   const { data, isLoading } = useQuery({
     queryKey: ['products', { search, category, ordering, page }],
     queryFn: () => products.list({ search, category, ordering, page }),
+  });
+
+  // every category that has products, busiest first, with the API's display names
+  const { data: categories } = useQuery({
+    queryKey: ['product-categories'],
+    queryFn: products.categories,
+    staleTime: 60 * 60 * 1000,
   });
 
   const pageSize = 20; // Default page size from backend
@@ -105,9 +96,10 @@ export default function Products() {
                 onChange={(e) => updateFilter('category', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
-                {CATEGORIES.map((cat) => (
+                <option value="">{t('products.all_categories')}</option>
+                {(categories || []).map((cat) => (
                   <option key={cat.value} value={cat.value}>
-                    {cat.label === null ? t('products.all_categories') : cat.label}
+                    {cat.label} ({cat.count.toLocaleString()})
                   </option>
                 ))}
               </select>
@@ -121,6 +113,7 @@ export default function Products() {
                 onChange={(e) => updateFilter('ordering', e.target.value)}
                 className="input-cyber appearance-none pr-10 w-full lg:w-48"
               >
+                <option value="mix">{t('products.mixed_categories')}</option>
                 <option value="-created_at">{t('products.newest_first')}</option>
                 <option value="created_at">{t('products.oldest_first')}</option>
                 <option value="manufacturer">{t('products.manufacturer_az')}</option>

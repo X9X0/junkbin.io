@@ -58,6 +58,17 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {
+            // thumbnails are named by a hash of their source and settings, so a cached copy
+            // never goes stale: phones (the PWA) don't fetch the same grid of images again
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith('/media/cache/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'media-thumbnails',
+              expiration: { maxEntries: 600, maxAgeSeconds: 60 * 60 * 24 * 30, purgeOnQuotaError: true },
+              cacheableResponse: { statuses: [200] },
+            },
+          },
+          {
             urlPattern: /^https?:\/\/fonts\.googleapis\.com\/.*/i,
             handler: 'CacheFirst',
             options: {

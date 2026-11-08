@@ -1753,6 +1753,9 @@ class ProductImageViewSet(viewsets.ReadOnlyModelViewSet):
             _notify_content_review(image.uploaded_by, 'Your image',
                                     '/my-submissions', approved=False,
                                     notes=review_notes(request), actor=request.user)
+        # feedback for the photo search; a wrong search picture is replaced by the next runner-up
+        from .image_search import reject_search_photo
+        reject_search_photo(image, str(request.data.get('reason') or ''), review_notes(request), request.user)
         image.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 

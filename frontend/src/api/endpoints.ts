@@ -161,6 +161,11 @@ export const products = {
     return response.data;
   },
 
+  categories: async (): Promise<Array<{ value: string; label: string; count: number }>> => {
+    const response = await api.get('/products/categories/');
+    return response.data;
+  },
+
   components: async (id: string): Promise<any[]> => {
     const response = await api.get(`/products/${id}/components/`);
     return response.data;
@@ -676,8 +681,10 @@ export const productImages = {
     return response.data;
   },
 
-  reject: async (id: string, notes = ''): Promise<void> => {
-    await api.post(`/product-images/${id}/reject/`, { notes });
+  /** reason: the preset picked (moderation/pendingItems.ts) - teaches the photo search, and for a
+   * wrong picture found by image search queues the next one it found */
+  reject: async (id: string, notes = '', reason = ''): Promise<void> => {
+    await api.post(`/product-images/${id}/reject/`, { notes, reason });
   },
 };
 

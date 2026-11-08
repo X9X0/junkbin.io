@@ -24,10 +24,41 @@ class PhotoFirstOrderingFilter(OrderingFilter):
     """
 
     def filter_queryset(self, request, queryset, view):
+        if request.query_params.get(self.ordering_param) == MIX and queryset.model is Product:
+            return category_mix(queryset)
         ordering = self.get_ordering(request, queryset, view)
         if ordering and ordering[0] == '-created_at':
             return queryset.annotate(has_photo=has_photo(queryset.model)).order_by('-has_photo', *ordering)
         return super().filter_queryset(request, queryset, view)
+
+
+MIX = 'mix'
+
+
+def category_mix(queryset):
+    """?ordering=mix - newest first, but taking turns between categories: the newest product with a
+    photo from each category, then the second newest of each, and so on; products without a photo
+    follow in the same pattern. One busy category (thousands of imported laptop boards) can't fill
+    the first pages, so the catalogue shows the range of what's here."""
+    from django.db.models import F, Window
+    from django.db.models.functions import RowNumber
+    return (queryset.annotate(has_photo=has_photo(Product))
+            .annotate(turn=Window(RowNumber(), partition_by=[F('has_photo'), F('category')],
+                                  order_by=F('created_at').desc()))
+            .order_by('-has_photo', 'turn', '-created_at'))
+
+
+class MixOrderingFilter(django_filters.OrderingFilter):
+    """Accepts ?ordering=mix (the category mix, done by PhotoFirstOrderingFilter) besides the fields."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.extra['choices'] = [*self.extra['choices'], (MIX, 'Category mix')]
+
+    def filter(self, qs, value):
+        if value and MIX in value:
+            return qs
+        return super().filter(qs, value)
 
 
 class ProductFilter(django_filters.FilterSet):
@@ -77,8 +108,8 @@ class ProductFilter(django_filters.FilterSet):
         lookup_expr='lte'
     )
 
-    # Ordering
-    ordering = django_filters.OrderingFilter(
+    # Ordering ('mix' is applied by PhotoFirstOrderingFilter)
+    ordering = MixOrderingFilter(
         fields=(
             ('created_at', 'created_at'),
             ('manufacturer', 'manufacturer'),

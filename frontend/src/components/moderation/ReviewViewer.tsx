@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronLeft, ChevronRight, Download, ExternalLink, History, Loader2, MessageSquare, Pencil, Undo2, X } from 'lucide-react';
@@ -7,10 +7,11 @@ import { products, components } from '../../api/endpoints';
 import type { Product } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../utils/constants';
 import { parseApiError } from '../../utils/formErrors';
+import RetroactiveBgRemoval from '../RetroactiveBgRemoval';
 import { useAuth } from '../../context/AuthContext';
 import {
   type Decision, type PendingItem, canUndoApproval, decide, itemDate, itemFile, itemKey, itemLink, itemTitle, itemUser,
-  rejectReasons, typeBadgeColors, typeIcons,
+  pickedReason, rejectReasons, typeBadgeColors, typeIcons,
 } from './pendingItems';
 import DecisionHistory from './DecisionHistory';
 
@@ -115,7 +116,7 @@ export default function ReviewViewer({
 
   const decision = useMutation({
     mutationFn: ({ target, approve, feedback }: { target: PendingItem; approve: boolean; feedback: string; nextKey: string | null }) =>
-      decide(target, approve, feedback),
+      decide(target, approve, feedback, approve ? '' : pickedReason(target, feedback)),
     onSuccess: (_data, { target, approve, nextKey }) => {
       setRejecting(false);
       onDecided(itemKey(target), approve);
@@ -248,15 +249,24 @@ export default function ReviewViewer({
           )}
           {rejecting ? (
             <div>
-              {submitter && !ownItem ? (
+              {(submitter && !ownItem) || item.type === 'image' ? (
                 <>
-                  <div className="flex items-center gap-2 text-sm text-white mb-1">
-                    <MessageSquare className="h-4 w-4 text-cyber-pink" />
-                    Feedback to <span className="text-cyber-pink">{submitter}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Sent by email and as a notification. Say what's wrong and what would make it acceptable.
-                  </p>
+                  {submitter && !ownItem ? (
+                    <>
+                      <div className="flex items-center gap-2 text-sm text-white mb-1">
+                        <MessageSquare className="h-4 w-4 text-cyber-pink" />
+                        Feedback to <span className="text-cyber-pink">{submitter}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Sent by email and as a notification. Say what's wrong and what would make it acceptable.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-2">
+                      Why? The reason teaches the photo search. A wrong picture it found is replaced by the next one it
+                      found, if any; for a poor cut-out, try <span className="text-gray-300">Undo background removal</span> above instead.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {reasons.map(([label, text]) => fixesCategory(label) ? (
                       <button key={label} type="button" title="Fix the product's category instead: the file stays and can be approved"
@@ -450,6 +460,7 @@ function ItemBody({ item }: { item: PendingItem }) {
       return (
         <div>
           <ImagePreview src={item.data.image} />
+          <ImageTools item={item} />
           <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
             <Field label="CAPTION">{item.data.caption}</Field>
             <Field label="TYPE">{item.data.image_type}</Field>
@@ -558,6 +569,18 @@ function ItemBody({ item }: { item: PendingItem }) {
   }
 }
 
+/** Undo the background removal (the photo as uploaded or downloaded comes back) or run it again
+ * with other settings, without leaving the review. */
+function ImageTools({ item }: { item: PendingItem }) {
+  const queryClient = useQueryClient();
+  return (
+    <div className="mt-2">
+      <RetroactiveBgRemoval image={item.data as never} kind={item.type === 'image' ? 'product' : 'component'}
+        onApplied={() => queryClient.invalidateQueries({ queryKey: [item.type === 'image' ? 'pendingImages' : 'pendingComponentImages'] })} />
+    </div>
+  );
+}
+
 function ImagePreview({ src }: { src: string }) {
   return (
     <div className="flex items-center justify-center bg-[repeating-conic-gradient(#1f2937_0%_25%,#111827_0%_50%)] bg-[length:20px_20px] border border-cyber-light/20">
@@ -566,7 +589,17 @@ function ImagePreview({ src }: { src: string }) {
   );
 }
 
-/** A document inline: PDFs through a blob URL (shown in place whatever the server's headers say), images as images. */
+const PdfPages = lazy(() => import('../PdfPages'));
+
+/** Whether the browser can show a PDF in an <iframe>. Phones can't (Android Chrome shows nothing,
+ * iOS shows only the first page), and neither can the installed PWA there: those get pdf.js. */
+function hasPdfViewer() {
+  if (typeof navigator !== 'undefined' && (navigator as Navigator & { pdfViewerEnabled?: boolean }).pdfViewerEnabled === false) return false;
+  return !(typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches);
+}
+
+/** A document inline: PDFs through a blob URL (shown in place whatever the server's headers say), images as images;
+ * where the browser has no PDF viewer (phones), the pages drawn with pdf.js. */
 function FilePreview({ url, type }: { url: string; type: string }) {
   const isPdf = type.toLowerCase() === 'pdf' || url.toLowerCase().split('?')[0].endsWith('.pdf');
   const isImage = /^(png|jpe?g|gif|webp|image)$/i.test(type) || /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
@@ -592,6 +625,9 @@ function FilePreview({ url, type }: { url: string; type: string }) {
   }, [url, isPdf]);
 
   if (isImage) return <ImagePreview src={url} />;
+  if (isPdf && !hasPdfViewer()) {
+    return <Suspense fallback={<Loader2 className="h-4 w-4 animate-spin" />}><PdfPages url={url} /></Suspense>;
+  }
   if (isPdf) {
     if (failed) return <iframe src={url} title="Document" className="w-full h-[65vh] bg-white border border-cyber-light/20" />;
     if (!blobUrl) return <div className="h-[65vh] flex items-center justify-center text-gray-500 text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading document…</div>;

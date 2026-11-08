@@ -209,6 +209,7 @@
     "cat_iot": "IoT Device",
     "cat_audio": "Audio Equipment",
     "cat_other": "Other",
+    "mixed_categories": "Newest, Mixed Categories",
     "newest_first": "Newest First",
     "oldest_first": "Oldest First",
     "manufacturer_az": "Manufacturer A-Z",

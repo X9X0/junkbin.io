@@ -103,3 +103,75 @@ def test_review_batch_lists_and_approves_the_photos(tmp_path, setup, user_factor
     resp = api.post('/api/import-review/approve/', {'batch': 'image-search'}, format='json')
     assert resp.status_code == 200 and resp.data['images'] == 1
     assert ProductImage.objects.get().is_approved
+
+
+# ---- after moderation: originals, alternates, rejection feedback (apps.products.image_search) ----
+
+def _with_extras(tmp_path, product, md5='a1', alternates=('b2', 'c3')):
+    folder = _manifest(tmp_path, product, md5=md5)
+    (folder / 'originals').mkdir()
+    (folder / 'originals' / 'x.jpg').write_bytes(_png('white'))
+    alts = []
+    for i, alt_md5 in enumerate(alternates):
+        (folder / 'images' / f'alt{i}.png').write_bytes(_png('blue'))
+        alts.append({'file': f'images/alt{i}.png', 'md5': alt_md5, 'original': 'originals/x.jpg',
+                     'source_url': f'https://other{i}.example/p', 'site': f'other{i}.example', 'title': 'Alt'})
+    manifest = json.loads((folder / 'manifest.json').read_text())
+    manifest['images'][0].update(original='originals/x.jpg', alternates=alts)
+    (folder / 'manifest.json').write_text(json.dumps(manifest))
+    return folder
+
+
+def _reject(moderator, image, reason):
+    api = APIClient()
+    api.force_authenticate(moderator)
+    return api.post(f'/api/product-images/{image.id}/reject/', {'reason': reason, 'notes': reason}, format='json')
+
+
+def test_original_is_kept_as_an_undoable_background_removal(tmp_path, setup):
+    from apps.media_tools.models import BackgroundRemovalPreview
+    _run(_with_extras(tmp_path, setup))
+    img = ProductImage.objects.get()
+    preview = BackgroundRemovalPreview.objects.get(product_image=img)
+    assert preview.applied_at and preview.original and preview.result
+    assert setup.image_alternates.count() == 2
+
+
+def test_wrong_picture_rejection_queues_the_next_alternate(tmp_path, setup, moderator):
+    from apps.products.models import ImageRejection
+    _run(_with_extras(tmp_path, setup))
+    first = ProductImage.objects.get()
+    assert _reject(moderator, first, 'Different product').status_code == 204
+    rejection = ImageRejection.objects.get()
+    assert (rejection.md5, rejection.site, rejection.reason, rejection.alternate_promoted) == \
+        ('a1', 'shop.example', 'Different product', True)
+    second = ProductImage.objects.get()
+    assert not second.is_approved and second.source_notes.startswith('[image-search] md5=b2')
+    assert second.source_url == 'https://other0.example/p'
+    assert setup.image_alternates.count() == 1
+    assert second.bg_removal_previews.filter(applied_at__isnull=False).exists()   # its original came along
+
+
+def test_poor_cut_out_is_recorded_but_no_alternate_replaces_it(tmp_path, setup, moderator):
+    _run(_with_extras(tmp_path, setup))
+    _reject(moderator, ProductImage.objects.get(), 'Poor BG removal')
+    assert not ProductImage.objects.exists()
+    assert setup.image_alternates.count() == 2
+    assert setup.image_rejections.get().reason == 'Poor BG removal'
+
+
+def test_a_rejected_picture_is_never_imported_again(tmp_path, setup, moderator):
+    folder = _with_extras(tmp_path, setup, alternates=())
+    _run(folder)
+    _reject(moderator, ProductImage.objects.get(), 'Not the whole product')
+    assert 'rejected before 1' in _run(folder)
+    assert not ProductImage.objects.exists()
+
+
+def test_rerun_fills_in_original_and_alternates_for_older_imports(tmp_path, setup):
+    _run(_manifest(tmp_path, setup))                     # an import from before originals/alternates
+    img = ProductImage.objects.get()
+    assert not img.bg_removal_previews.exists() and not setup.image_alternates.exists()
+    assert 'unchanged 1' in _run(_with_extras(tmp_path / 'again', setup))
+    assert img.bg_removal_previews.filter(applied_at__isnull=False).exists()
+    assert setup.image_alternates.count() == 2

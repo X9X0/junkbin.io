@@ -493,6 +493,69 @@ def schematic_file_path(instance, filename):
     return f'schematics/{instance.product.id}/{new_filename}'
 
 
+def alternate_image_path(instance, filename):
+    """Runner-up search photos, kept out of sight next to the product's images."""
+    ext = filename.split('.')[-1]
+    return f'products/{instance.product_id}/alternates/{uuid.uuid4().hex}.{ext}'
+
+
+class ProductImageAlternate(models.Model):
+    """
+    A runner-up photo an image search found for a product, held back unseen. When a moderator
+    rejects the search's photo as the wrong picture (different product, a part, blurry...), the
+    best remaining alternate becomes the product's new pending photo automatically
+    (promote_alternate), so a rejection doesn't simply leave the product without a photo.
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='image_alternates')
+    image = models.ImageField(upload_to=alternate_image_path, help_text=_('Background-removed photo'))
+    original = models.ImageField(upload_to=alternate_image_path, null=True, blank=True,
+                                 help_text=_('The photo as downloaded, before background removal'))
+    batch = models.CharField(max_length=50)
+    md5 = models.CharField(max_length=32)
+    rank = models.PositiveSmallIntegerField(default=1, help_text=_('1 = next in line'))
+    source_url = models.URLField(max_length=1000, blank=True)
+    image_url = models.CharField(max_length=1000, blank=True)
+    site = models.CharField(max_length=200, blank=True)
+    title = models.CharField(max_length=300, blank=True)
+    match = models.CharField(max_length=20, blank=True, help_text=_("'family': a photo of the series"))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['product', 'rank']
+
+    def __str__(self):
+        return f'alternate {self.rank} for {self.product}'
+
+
+class ImageRejection(models.Model):
+    """
+    Why a moderator rejected a product photo, kept after the photo itself is deleted. The photo
+    search learns from it (a rejected picture is never imported again; sites whose pictures keep
+    being rejected are skipped; 'Poor BG removal' cases are the test set for the cut-out), and the
+    nightly dev copy of prod brings these rows to where the search runs.
+    """
+    product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name='image_rejections')
+    batch = models.CharField(max_length=50, blank=True, help_text=_('Import batch, if imported'))
+    md5 = models.CharField(max_length=32, blank=True)
+    site = models.CharField(max_length=200, blank=True)
+    source_url = models.URLField(max_length=1000, blank=True)
+    image_url = models.CharField(max_length=1000, blank=True)
+    reason = models.CharField(max_length=50, blank=True, help_text=_('The preset the moderator picked'))
+    notes = models.TextField(blank=True)
+    background_removed = models.BooleanField(default=False)
+    alternate_promoted = models.BooleanField(default=False)
+    rejected_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
+                                    blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.reason or "rejected"}: {self.site or self.source_url}'
+
+
 class Schematic(models.Model):
     """
     Schematics and service documentation for products.

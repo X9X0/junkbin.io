@@ -9,7 +9,7 @@ from django.utils.html import format_html
 
 from .models import (
     Product, ProductImage, ProductComment, Schematic, Firmware,
-    ComponentSuggestion, RepairReport,
+    ComponentSuggestion, RepairReport, ImageRejection, ProductImageAlternate,
 )
 
 
@@ -426,3 +426,24 @@ class RepairReportAdmin(admin.ModelAdmin):
         updated = queryset.update(is_approved=False)
         self.message_user(request, f'{updated} repair report(s) rejected.')
     reject_reports.short_description = 'Reject selected repair reports'
+
+
+@admin.register(ImageRejection)
+class ImageRejectionAdmin(admin.ModelAdmin):
+    """Why photos were rejected - what the photo search learns from."""
+
+    list_display = ('created_at', 'reason', 'site', 'product', 'background_removed', 'alternate_promoted', 'rejected_by')
+    list_filter = ('reason', 'batch', 'background_removed', 'alternate_promoted')
+    search_fields = ('site', 'source_url', 'notes', 'product__model_number')
+    raw_id_fields = ('product', 'rejected_by')
+    readonly_fields = [f.name for f in ImageRejection._meta.fields]
+
+
+@admin.register(ProductImageAlternate)
+class ProductImageAlternateAdmin(admin.ModelAdmin):
+    """Runner-up search photos held back until the shown one is rejected as the wrong picture."""
+
+    list_display = ('product', 'rank', 'site', 'batch', 'created_at')
+    list_filter = ('batch',)
+    search_fields = ('product__model_number', 'site')
+    raw_id_fields = ('product',)
