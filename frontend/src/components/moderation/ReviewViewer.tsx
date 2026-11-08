@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Check, ChevronLeft, ChevronRight, Download, ExternalLink, History, Loader2, MessageSquare, Pencil, Undo2, X } from 'lucide-react';
@@ -566,7 +566,17 @@ function ImagePreview({ src }: { src: string }) {
   );
 }
 
-/** A document inline: PDFs through a blob URL (shown in place whatever the server's headers say), images as images. */
+const PdfPages = lazy(() => import('../PdfPages'));
+
+/** Whether the browser can show a PDF in an <iframe>. Phones can't (Android Chrome shows nothing,
+ * iOS shows only the first page), and neither can the installed PWA there: those get pdf.js. */
+function hasPdfViewer() {
+  if (typeof navigator !== 'undefined' && (navigator as Navigator & { pdfViewerEnabled?: boolean }).pdfViewerEnabled === false) return false;
+  return !(typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches);
+}
+
+/** A document inline: PDFs through a blob URL (shown in place whatever the server's headers say), images as images;
+ * where the browser has no PDF viewer (phones), the pages drawn with pdf.js. */
 function FilePreview({ url, type }: { url: string; type: string }) {
   const isPdf = type.toLowerCase() === 'pdf' || url.toLowerCase().split('?')[0].endsWith('.pdf');
   const isImage = /^(png|jpe?g|gif|webp|image)$/i.test(type) || /\.(png|jpe?g|gif|webp)(\?|$)/i.test(url);
@@ -592,6 +602,9 @@ function FilePreview({ url, type }: { url: string; type: string }) {
   }, [url, isPdf]);
 
   if (isImage) return <ImagePreview src={url} />;
+  if (isPdf && !hasPdfViewer()) {
+    return <Suspense fallback={<Loader2 className="h-4 w-4 animate-spin" />}><PdfPages url={url} /></Suspense>;
+  }
   if (isPdf) {
     if (failed) return <iframe src={url} title="Document" className="w-full h-[65vh] bg-white border border-cyber-light/20" />;
     if (!blobUrl) return <div className="h-[65vh] flex items-center justify-center text-gray-500 text-sm"><Loader2 className="h-4 w-4 animate-spin mr-2" />Loading document…</div>;
