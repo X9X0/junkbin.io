@@ -7,10 +7,11 @@ import { products, components } from '../../api/endpoints';
 import type { Product } from '../../types';
 import { PRODUCT_CATEGORIES } from '../../utils/constants';
 import { parseApiError } from '../../utils/formErrors';
+import RetroactiveBgRemoval from '../RetroactiveBgRemoval';
 import { useAuth } from '../../context/AuthContext';
 import {
   type Decision, type PendingItem, canUndoApproval, decide, itemDate, itemFile, itemKey, itemLink, itemTitle, itemUser,
-  rejectReasons, typeBadgeColors, typeIcons,
+  pickedReason, rejectReasons, typeBadgeColors, typeIcons,
 } from './pendingItems';
 import DecisionHistory from './DecisionHistory';
 
@@ -115,7 +116,7 @@ export default function ReviewViewer({
 
   const decision = useMutation({
     mutationFn: ({ target, approve, feedback }: { target: PendingItem; approve: boolean; feedback: string; nextKey: string | null }) =>
-      decide(target, approve, feedback),
+      decide(target, approve, feedback, approve ? '' : pickedReason(target, feedback)),
     onSuccess: (_data, { target, approve, nextKey }) => {
       setRejecting(false);
       onDecided(itemKey(target), approve);
@@ -248,15 +249,24 @@ export default function ReviewViewer({
           )}
           {rejecting ? (
             <div>
-              {submitter && !ownItem ? (
+              {(submitter && !ownItem) || item.type === 'image' ? (
                 <>
-                  <div className="flex items-center gap-2 text-sm text-white mb-1">
-                    <MessageSquare className="h-4 w-4 text-cyber-pink" />
-                    Feedback to <span className="text-cyber-pink">{submitter}</span>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-2">
-                    Sent by email and as a notification. Say what's wrong and what would make it acceptable.
-                  </p>
+                  {submitter && !ownItem ? (
+                    <>
+                      <div className="flex items-center gap-2 text-sm text-white mb-1">
+                        <MessageSquare className="h-4 w-4 text-cyber-pink" />
+                        Feedback to <span className="text-cyber-pink">{submitter}</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mb-2">
+                        Sent by email and as a notification. Say what's wrong and what would make it acceptable.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-500 mb-2">
+                      Why? The reason teaches the photo search. A wrong picture it found is replaced by the next one it
+                      found, if any; for a poor cut-out, try <span className="text-gray-300">Undo background removal</span> above instead.
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {reasons.map(([label, text]) => fixesCategory(label) ? (
                       <button key={label} type="button" title="Fix the product's category instead: the file stays and can be approved"
@@ -450,6 +460,7 @@ function ItemBody({ item }: { item: PendingItem }) {
       return (
         <div>
           <ImagePreview src={item.data.image} />
+          <ImageTools item={item} />
           <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
             <Field label="CAPTION">{item.data.caption}</Field>
             <Field label="TYPE">{item.data.image_type}</Field>
@@ -556,6 +567,18 @@ function ItemBody({ item }: { item: PendingItem }) {
       );
     }
   }
+}
+
+/** Undo the background removal (the photo as uploaded or downloaded comes back) or run it again
+ * with other settings, without leaving the review. */
+function ImageTools({ item }: { item: PendingItem }) {
+  const queryClient = useQueryClient();
+  return (
+    <div className="mt-2">
+      <RetroactiveBgRemoval image={item.data as never} kind={item.type === 'image' ? 'product' : 'component'}
+        onApplied={() => queryClient.invalidateQueries({ queryKey: [item.type === 'image' ? 'pendingImages' : 'pendingComponentImages'] })} />
+    </div>
+  );
 }
 
 function ImagePreview({ src }: { src: string }) {

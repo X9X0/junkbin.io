@@ -39,7 +39,7 @@ export const typeIcons: Record<PendingType, React.ComponentType<{ className?: st
 
 const moderationApi: Record<PendingType, {
   approve: (id: string) => Promise<unknown>;
-  reject: (id: string, notes?: string) => Promise<void>;
+  reject: (id: string, notes?: string, reason?: string) => Promise<void>;
   unapprove?: (id: string) => Promise<unknown>;
 }> = {
   product: products,
@@ -54,9 +54,14 @@ const moderationApi: Record<PendingType, {
 
 export const itemKey = (item: PendingItem) => `${item.type}-${item.data.id}`;
 
-export function decide(item: PendingItem, approve: boolean, notes = '') {
+export function decide(item: PendingItem, approve: boolean, notes = '', reason = '') {
   const api = moderationApi[item.type];
-  return approve ? api.approve(item.data.id!) : api.reject(item.data.id!, notes);
+  return approve ? api.approve(item.data.id!) : api.reject(item.data.id!, notes, reason);
+}
+
+/** The preset a rejection's text came from ('Different product'...), if any. */
+export function pickedReason(item: PendingItem, notes: string): string {
+  return rejectReasons[item.type].find(([, text]) => notes.includes(text))?.[0] ?? '';
 }
 
 /** An approved part suggestion has become a BOM entry, and a rejected item is deleted: neither comes back. */

@@ -34,6 +34,8 @@ SIDEBAR_GROUPS = {
         ('reports', 'report'),
         ('reports', 'userreview'),
         ('components', 'productrequest'),
+        ('products', 'imagerejection'),
+        ('products', 'productimagealternate'),
     ],
     'Users': [
         ('users', 'user'),

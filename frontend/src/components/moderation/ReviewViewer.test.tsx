@@ -42,7 +42,7 @@ describe('ReviewViewer', () => {
     await user.click(screen.getByRole('button', { name: /reject and send feedback/i }));
 
     await waitFor(() => expect(onDecided).toHaveBeenCalledWith('image-img-1', false));
-    expect(body).toEqual({ notes: 'The photo shows a different product or model.' });
+    expect(body).toEqual({ notes: 'The photo shows a different product or model.', reason: 'Different product' });
     expect(onNavigate).toHaveBeenCalledWith('image-img-2');
   });
 
