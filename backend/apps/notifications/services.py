@@ -46,8 +46,9 @@ def review_notes(request):
 
 def undo_approval(obj, contributor, content_label, url, request):
     """Put an approved item back in the moderation queue and take back what approving it gave:
-    the contribution credit and the in-app 'approved' notice from this moderator. An approval
-    email that has already gone out stays sent."""
+    the contribution credit, the in-app 'approved' notice from this moderator and the approval
+    email if it is still waiting in the batch. An approval email that has already gone out
+    stays sent."""
     obj.is_approved = False
     obj.save(update_fields=['is_approved'])
     if contributor:
@@ -58,6 +59,18 @@ def undo_approval(obj, contributor, content_label, url, request):
                   .order_by('-created_at').first())
         if notice:
             notice.delete()
+        # an approval email still waiting in the batch is withdrawn too (approval mails link
+        # products by id, the in-app notice by slug: accept either)
+        from django.conf import settings
+        from .models import ReviewEmail
+        urls = {url, f'{settings.FRONTEND_URL}{url}'}
+        product_id = getattr(obj, 'product_id', None) or (obj.pk if obj._meta.model_name == 'product' else None)
+        if product_id and url.startswith('/products/'):
+            urls.add(f'{settings.FRONTEND_URL}/products/{product_id}')
+        queued = (ReviewEmail.objects.filter(user=contributor, approved=True, sent_at__isnull=True,
+                                             content_url__in=urls).order_by('-created_at').first())
+        if queued:
+            queued.delete()
 
 
 def notify_content_review(user, content_label, url, approved, notes='', actor=None):

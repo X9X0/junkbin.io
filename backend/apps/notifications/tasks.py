@@ -71,3 +71,46 @@ def _send_one(subscription, payload):
             subscription.delete()
         else:
             logger.warning('Web push failed for subscription %s: %s', subscription.id, e)
+
+
+# A mail provider caps how many messages an account sends per minute/hour; one email per user
+# per run keeps moderation from using up the allowance that sign-up verification mail needs.
+REVIEW_DIGEST_MAX_EMAILS = 40       # users mailed per run; the rest go out on the next run
+REVIEW_EMAIL_KEEP_DAYS = 30
+
+
+@shared_task
+def send_review_email_digests():
+    """Email each user one summary of their approved/rejected contributions queued since the
+    last run (beat: every 5 minutes)."""
+    import datetime
+
+    from django.db import transaction
+    from django.utils import timezone
+
+    from utils.email import send_review_digest_email
+
+    from .models import ReviewEmail
+
+    user_ids = list(ReviewEmail.objects.filter(sent_at__isnull=True)
+                    .order_by('user_id').values_list('user_id', flat=True).distinct()[:REVIEW_DIGEST_MAX_EMAILS])
+    sent = 0
+    for user_id in user_ids:
+        with transaction.atomic():
+            items = list(ReviewEmail.objects.select_for_update(skip_locked=True)
+                         .select_related('user').filter(user_id=user_id, sent_at__isnull=True))
+            if not items:
+                continue
+            user = items[0].user
+            if user.email:
+                try:
+                    send_review_digest_email(user, [i for i in items if i.approved],
+                                             [i for i in items if not i.approved])
+                except Exception:
+                    logger.exception('review digest to user %s failed; retrying next run', user_id)
+                    continue
+                sent += 1
+            ReviewEmail.objects.filter(pk__in=[i.pk for i in items]).update(sent_at=timezone.now())
+    ReviewEmail.objects.filter(
+        sent_at__lt=timezone.now() - datetime.timedelta(days=REVIEW_EMAIL_KEEP_DAYS)).delete()
+    return sent

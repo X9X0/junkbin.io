@@ -102,6 +102,25 @@ def send_contribution_rejected_email(user, content_type, content_str, notes=''):
     )
 
 
+def send_review_digest_email(user, approved, rejected):
+    """One email listing a user's contributions a moderator approved/rejected since the last
+    batch (items: apps.notifications.models.ReviewEmail)."""
+    if approved and not rejected:
+        subject = ('Your Junkbin.io submission has been approved!' if len(approved) == 1 else
+                   f'{len(approved)} of your Junkbin.io submissions have been approved!')
+    elif rejected and not approved:
+        subject = ('Your Junkbin.io submission needs attention' if len(rejected) == 1 else
+                   f'{len(rejected)} of your Junkbin.io submissions need attention')
+    else:
+        subject = f'Your Junkbin.io submissions were reviewed: {len(approved)} approved, {len(rejected)} need attention'
+    return send_templated_email(
+        subject=subject,
+        template_name='review_digest',
+        context={'user': user, 'approved': approved, 'rejected': rejected},
+        recipient_list=[user.email],
+    )
+
+
 def send_report_resolved_email(report):
     """Send email when a user's report is resolved."""
     if not report.reporter or not report.reporter.email:

@@ -6,7 +6,7 @@ from unittest import mock
 
 from rest_framework.test import APIClient
 
-from apps.notifications.models import Notification
+from apps.notifications.models import Notification, ReviewEmail
 
 EMAIL_TASK = 'apps.users.tasks.notify_contribution_reviewed.delay'
 
@@ -68,8 +68,7 @@ def test_anonymous_product_request_dismiss_notifies_nobody(moderator):
 def test_reviewing_your_own_item_notifies_nobody(moderator, product_factory):
     """Imports are credited to the account that ran them; reviewing them must not mail that account."""
     product = product_factory(is_approved=False, created_by=moderator)
-    with mock.patch('utils.email.send_contribution_rejected_email') as email:
-        resp = _client(moderator).post(f'/api/products/{product.id}/reject/', {'notes': 'Wrong photo.'}, format='json')
+    resp = _client(moderator).post(f'/api/products/{product.id}/reject/', {'notes': 'Wrong photo.'}, format='json')
     assert resp.status_code == 204
-    email.assert_not_called()
+    assert not ReviewEmail.objects.exists()
     assert not Notification.objects.exists()

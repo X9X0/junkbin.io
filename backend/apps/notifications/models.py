@@ -97,3 +97,26 @@ class PushSubscription(models.Model):
 
     def __str__(self):
         return f'{self.user} @ {self.endpoint[:60]}'
+
+
+class ReviewEmail(models.Model):
+    """One moderation outcome (approved/rejected contribution) waiting to be emailed.
+    Outcomes are batched: every few minutes each user gets one email listing all of theirs
+    (apps.notifications.tasks.send_review_email_digests), so a moderator clearing the queue
+    doesn't send hundreds of mails and trip the mail provider's sending limits - which would
+    also hold up sign-up verification emails."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='+')
+    content_type = models.CharField(max_length=50)
+    content_str = models.CharField(max_length=300)
+    content_url = models.CharField(max_length=500, blank=True)
+    approved = models.BooleanField()
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField(null=True, blank=True, db_index=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'{"approved" if self.approved else "rejected"} {self.content_type} {self.content_str} -> {self.user_id}'

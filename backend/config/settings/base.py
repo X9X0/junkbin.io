@@ -388,6 +388,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'apps.api.tasks.cleanup_old_activity',
         'schedule': crontab(hour=3, minute=30),
     },
+    'send-review-email-digests': {
+        'task': 'apps.notifications.tasks.send_review_email_digests',
+        'schedule': 300.0,  # every 5 minutes: one approved/rejected summary per user
+    },
     'cleanup-bg-removal-previews': {
         'task': 'apps.media_tools.tasks.cleanup_bg_removal_previews',
         'schedule': 3600.0,  # hourly

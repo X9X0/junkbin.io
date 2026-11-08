@@ -1,0 +1,23 @@
+Junkbin.io - NO USER SERVICEABLE PARTS INSIDE
+
+Hello {{ user.username }},
+
+A moderator reviewed your contributions to Junkbin.io.
+{% if approved %}
+Approved - now live:
+{% for i in approved %}
+- {{ i.content_type }}: {{ i.content_str }}{% if i.content_url %}
+  {{ i.content_url }}{% endif %}{% if i.notes %}
+  Note: {{ i.notes }}{% endif %}{% endfor %}
+{% endif %}{% if rejected %}
+Not approved:
+{% for i in rejected %}
+- {{ i.content_type }}: {{ i.content_str }}{% if i.notes %}
+  Reason: {{ i.notes }}{% endif %}{% endfor %}
+
+Please review our community guidelines and feel free to resubmit with corrections.
+{% endif %}
+Thank you for contributing to the Junkbin.io community!
+
+---
+Junkbin.io

@@ -1,0 +1,45 @@
+{% load i18n %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0e27; color: #e0e0e0; margin: 0; padding: 20px;">
+    <div style="width: 100%; max-width: 600px; margin: 0 auto; background-color: #1a1e37; padding: 30px; border-radius: 8px; border: 1px solid #00f0ff; box-sizing: border-box;">
+        <div style="color: #00f0ff; font-size: 28px; font-weight: bold; margin-bottom: 5px;">Junkbin.io</div>
+        <div style="color: #666b7a; font-size: 12px; margin-bottom: 30px;">NO USER SERVICEABLE PARTS INSIDE</div>
+
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% blocktrans with username=user.username %}Hello {{ username }},{% endblocktrans %}</p>
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "A moderator reviewed your contributions to Junkbin.io." %}</p>
+
+        {% if approved %}
+        <h2 style="color: #05ffa1; font-size: 18px;">{% trans "Approved - now live" %}</h2>
+        {% for i in approved %}
+        <div style="background-color: #15251f; border-left: 4px solid #05ffa1; padding: 12px 15px; margin: 10px 0;">
+            <span style="color: #666b7a; font-size: 12px; text-transform: uppercase;">{{ i.content_type }}</span><br>
+            {% if i.content_url %}<a href="{{ i.content_url }}" style="color: #05ffa1; font-weight: bold;">{{ i.content_str }}</a>{% else %}<strong style="color: #05ffa1;">{{ i.content_str }}</strong>{% endif %}
+            {% if i.notes %}<br><span style="color: #c0c0c0; margin-top: 6px; display: inline-block;">{{ i.notes }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% if rejected %}
+        <h2 style="color: #ff2a6d; font-size: 18px;">{% trans "Not approved" %}</h2>
+        {% for i in rejected %}
+        <div style="background-color: #2a1520; border-left: 4px solid #ff2a6d; padding: 12px 15px; margin: 10px 0;">
+            <span style="color: #666b7a; font-size: 12px; text-transform: uppercase;">{{ i.content_type }}</span><br>
+            <strong style="color: #ff6b7a;">{{ i.content_str }}</strong>
+            {% if i.notes %}<br><span style="color: #c0c0c0; margin-top: 6px; display: inline-block;">{{ i.notes }}</span>{% endif %}
+        </div>
+        {% endfor %}
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "Please review our community guidelines and feel free to resubmit with corrections." %}</p>
+        {% endif %}
+
+        <p style="color: #e0e0e0; font-size: 15px; line-height: 1.5;">{% trans "Thank you for contributing to the Junkbin.io community!" %}</p>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #333; color: #666b7a; font-size: 12px;">
+            <p style="color: #666b7a; font-size: 12px;">&copy; {{ year }} Junkbin.io</p>
+        </div>
+    </div>
+</body>
+</html>
