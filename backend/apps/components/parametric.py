@@ -65,6 +65,50 @@ def mode(component):
     return 'exact'
 
 
+# a word that is a package or a rating, not a part number: PDIP-8, TO-92, SOP-8, 2.54MM, 16V, 1/4W
+NOT_A_PART = re.compile(r'^(?:PLCC|SOT|SOD|SOP|SSOP|TSSOP|TSOP|MSOP|QFN|DFN|QFP|LQFP|TQFP|BGA|DPAK|D2PAK|TO|SOIC|SO|DIP|PDIP|'
+                        r'SIP|SMA|SMB|SMC|SMD|DO)-?\d*[A-Z]?$|^[\d./]+(?:MM|V|W|A|MA|MHZ|KHZ|OHM|K|M|UF|NF|PF|UH|%|P|PIN)$', re.I)
+# a word of letters, digits, '.' or '-' ('/' splits MAKER/PART); part-number shaped when five or
+# more long with a letter and two digits
+WORD = re.compile(r'(?<![A-Z0-9])[A-Z0-9][A-Z0-9.-]{4,39}(?![A-Z0-9])', re.I)
+MAX_EXACT_TRIES = 3
+
+
+def part_shaped(word):
+    return (re.search(r'[A-Z]', word, re.I) is not None and len(re.findall(r'\d', word)) >= 2
+            and not NOT_A_PART.match(word))
+
+
+def exact_queries(component):
+    """[(part number, maker or None), ...] for the distributors' exact-match lookup, best first.
+
+    A maker's part is asked for as it is. A Generic part is asked for without a maker filter
+    ('Generic' never matches a distributor's maker name, so a filtered lookup of 'Generic
+    2N3904' could never answer). When its name is a whole BOM line ('FLASH MXIC
+    MX25L8005PC-15G 8M SPI PDIP-8'), the part-number-shaped words in it are tried instead,
+    longest first (MX25L8005PC-15G); packages and ratings (PDIP-8, 16V) are not words to try,
+    and a maker abbreviation before the word (MXIC) is kept for display, not as a filter."""
+    from .makers import canonical_maker
+    name = (component.part_number or '').strip()
+    if component.manufacturer != 'Generic':
+        return [(name, component.manufacturer)]
+    words = [w for w in WORD.findall(name) if part_shaped(w)]
+    if ' ' not in name or not words:
+        return [(name, None)]
+    queries = []
+    for word in sorted(dict.fromkeys(words), key=len, reverse=True)[:MAX_EXACT_TRIES]:
+        before = re.search(r'([A-Z][A-Z.&-]{1,24})\s*/\s*' + re.escape(word) + r'(?![A-Z0-9])|([A-Z][A-Z.&-]{1,24})\s+' + re.escape(word) + r'(?![A-Z0-9])',
+                           name, re.I)
+        maker = None
+        if before:
+            printed = before.group(1) or before.group(2)
+            canonical = canonical_maker(printed)
+            if canonical != printed or before.group(1):      # a known abbreviation, or MAKER/PART
+                maker = canonical
+        queries.append((word, maker))
+    return queries
+
+
 def _ohms(v):
     if v >= 1e6:
         return f'{v / 1e6:g}M'
@@ -235,3 +279,64 @@ def judge(hit, component):
     if str(hit.get('status', '')).lower().startswith('obsolete'):
         score -= 2
     return {'score': score, 'notes': notes, 'value': value_state}
+
+
+FAMILY_MIN_STEM = 6
+FAMILY_MAX_CALLS = 5
+
+
+def family_search(part_number):
+    """(candidates, stem, from_cache) for a part no distributor lists any more: the parts
+    whose numbers start with the longest stem of it that DigiKey still knows ('MX25L8005PC-15G'
+    -> 'MX25L80' -> the MX25L8006E family). A repair needs the current family far more
+    often than an exact match of a 20-year-old number. The stems are tried longest first,
+    at most FAMILY_MAX_CALLS of them; a hit is kept only when its number starts with the
+    stem, and ranked Active and in stock first. Raises SearchUnavailable like search()."""
+    base = re.split(r'[-/ ]', (part_number or '').strip().upper(), 1)[0]
+    # the number itself, then without its trailing letter group (a package or grade code:
+    # MX25L8005PC -> MX25L8005), then one character shorter at a time
+    core = re.sub(r'[A-Z]+$', '', base)
+    stems = list(dict.fromkeys([base, core] + [core[:n] for n in range(len(core) - 1, FAMILY_MIN_STEM - 1, -1)]))
+    stems = [s for s in stems if len(s) >= FAMILY_MIN_STEM]
+    if not stems:
+        return [], '', False
+    cached = ExternalPartSearch.objects.filter(query__in=[f'FAMILY {s}' for s in stems],
+                                              fetched_at__gt=timezone.now() - timedelta(days=CACHE_DAYS)).order_by('-query').first()
+    if cached:
+        ExternalPartSearch.objects.filter(pk=cached.pk).update(search_count=cached.search_count + 1)
+        return cached.results, cached.query[7:], True
+
+    digikey = get_digikey()
+    if not digikey.is_configured or cache.get('digikey_remaining', 1000) <= DIGIKEY_RESERVE:
+        raise SearchUnavailable('DigiKey search budget for today is used up')
+    try:
+        for stem in stems[:FAMILY_MAX_CALLS]:
+            hits = [h for h in digikey_keyword(digikey, stem, limit=KEYWORD_LIMIT)
+                    if str(h.get('mpn', '')).upper().startswith(stem)]
+            if hits:
+                break
+        else:
+            return [], stems[0], False
+    except Exception as exc:
+        logger.warning('DigiKey family search failed for %s: %s', part_number, exc)
+        raise SearchUnavailable(f'DigiKey did not answer ({exc})')
+    finally:
+        if digikey.remaining is not None:
+            cache.set('digikey_remaining', digikey.remaining, 6 * 3600)
+    kept = {}
+    for hit in hits:
+        status = str(hit.get('status') or '')
+        fit = {'score': (2 if status.lower() == 'active' else -2 if status.lower().startswith('obsolete') else 0)
+               + (1 if (hit.get('stock') or 0) > 0 else 0),
+               'notes': [status] if status and status.lower() != 'active' else [], 'value': 'family'}
+        row = {**{k: v for k, v in hit.items() if k != 'source'}, 'sources': [hit.get('source', 'digikey')], 'fit': fit}
+        # packaging variants share a description: one line each, but an Active part and its
+        # not-for-new-designs sibling are both worth seeing
+        key = (row.get('manufacturer', ''), re.sub(r'\s+', ' ', (row.get('description') or '').strip().lower()), status.lower())
+        if key not in kept or (row.get('stock') or 0) > (kept[key].get('stock') or 0):
+            kept[key] = row
+    results = sorted(kept.values(), key=lambda h: (-h['fit']['score'], -(h.get('stock') or 0)))[:MAX_RESULTS]
+    ExternalPartSearch.objects.update_or_create(
+        query=f'FAMILY {stem}', defaults={'results': results, 'sources': ['digikey', 'family'],
+                                          'fetched_at': timezone.now(), 'search_count': 1})
+    return results, stem, False

@@ -45,7 +45,7 @@ export default function PricingPanel({ componentId, pricingData, datasheetUrl }:
       queryClient.invalidateQueries({ queryKey: ['component', componentId] });
       setError(null);
     },
-    onError: (err: any) => {
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
       const msg = err?.response?.data?.detail || 'Lookup failed. Try again later.';
       setError(msg);
     },
@@ -117,6 +117,13 @@ export default function PricingPanel({ componentId, pricingData, datasheetUrl }:
 
       {pricingData && (
         <>
+          {pricingData.looked_up && (
+            <p className="text-gray-500 text-xs font-mono mb-3">
+              Looked up as {pricingData.looked_up.part_number}
+              {pricingData.looked_up.manufacturer ? ` (${pricingData.looked_up.manufacturer})` : ''}, read from this part's name
+            </p>
+          )}
+
           {/* Datasheet link */}
           {(pricingData.datasheet_url || datasheetUrl) && (
             <a

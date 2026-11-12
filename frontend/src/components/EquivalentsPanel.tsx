@@ -152,9 +152,9 @@ export default function EquivalentsPanel({ componentId, componentType, mode, equ
                       <div className="text-white font-mono">{c.mpn}</div>
                       <div className="text-gray-400 text-xs">{c.manufacturer}</div>
                       <div className="text-gray-500 text-xs">{c.description}</div>
-                      {(c.fit.notes.length > 0 || c.fit.value !== 'match') && (
+                      {(c.fit.notes.length > 0 || c.fit.value === 'unknown') && (
                         <div className="text-cyber-yellow/80 text-xs font-mono mt-0.5">
-                          {[...c.fit.notes, ...(c.fit.value !== 'match' ? [t('equivalents.value_unknown')] : [])].join(' · ')}
+                          {[...c.fit.notes, ...(c.fit.value === 'unknown' ? [t('equivalents.value_unknown')] : [])].join(' · ')}
                         </div>
                       )}
                     </td>
@@ -199,7 +199,11 @@ export default function EquivalentsPanel({ componentId, componentType, mode, equ
       )}
 
       {equivalents && (
-        <p className="text-gray-600 text-xs mt-3">{t('equivalents.query_note', { query: equivalents.query })}</p>
+        <p className="text-gray-600 text-xs mt-3">
+          {equivalents.family_of
+            ? t('equivalents.family_note', { part: equivalents.family_of, stem: equivalents.query })
+            : t('equivalents.query_note', { query: equivalents.query })}
+        </p>
       )}
     </div>
   );

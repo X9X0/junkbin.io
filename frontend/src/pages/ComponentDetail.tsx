@@ -348,7 +348,7 @@ export default function ComponentDetail() {
 
         {/* Pricing & Availability */}
         <div className="mb-8">
-          {component.lookup_mode && component.lookup_mode !== 'exact' ? (
+          {(component.lookup_mode && component.lookup_mode !== 'exact') || component.equivalent_parts?.family_of ? (
             <EquivalentsPanel
               componentId={id!}
               componentType={component.component_type}

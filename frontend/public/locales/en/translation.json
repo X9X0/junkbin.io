@@ -1391,6 +1391,7 @@
     "datasheet": "Datasheet",
     "add": "Add to junkbin",
     "view": "View",
-    "value_unknown": "value not confirmed"
+    "value_unknown": "value not confirmed",
+    "family_note": "No distributor lists {{part}} any more. These are the current parts whose numbers start with {{stem}}: check the datasheet (package, voltage, pinout) before substituting."
   }
 }
