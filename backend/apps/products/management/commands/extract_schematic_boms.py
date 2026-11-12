@@ -150,11 +150,28 @@ def build_bundle(product, floor=GRADE['medium']):
 
 
 def usable(row):
-    """A row the list can carry: a Generic passive with a value, or a chip with a part-number-shaped label."""
+    """A row the list can carry: a Generic passive with a plausible value, or a chip with a
+    part-number-shaped label."""
     if row['manufacturer'] == 'Generic':
-        return bool(row.get('specifications'))
+        return bool(row.get('specifications')) and plausible(row['specifications'])
     pn = (row['part_number'] or '').strip()
     return bool(row['manufacturer'] or (CHIP_DESIGNATOR.match(row['reference_designator']) and PART_SHAPED.match(pn)))
+
+
+VALUE_KEYS = ('resistance_ohm', 'capacitance_pf', 'inductance_uh')
+
+
+def plausible(specs):
+    """False when a passive's value has more than three significant digits: no E-series value
+    does (E192 stops at three), so '1005' (a metric size code), '25201' (a designator number)
+    or '10024' (a net name) read as ohms is a misread, not a part."""
+    for key in VALUE_KEYS:
+        v = specs.get(key)
+        if isinstance(v, (int, float)) and v > 0:
+            digits = f'{v:.10g}'.replace('.', '').replace('e', 'X').split('X')[0].strip('0')
+            if len(digits) > 3:
+                return False
+    return True
 
 
 def catalogue_makers(part_numbers):

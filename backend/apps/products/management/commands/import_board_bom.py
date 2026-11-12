@@ -68,6 +68,8 @@ from django.contrib.auth import get_user_model
 from django.core.files import File
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
+from django.db.models import Count, OuterRef, Subquery
+from django.db.models.functions import Coalesce
 from django.utils.text import slugify
 
 from apps.components.makers import canonical_part, canonical_product_maker
@@ -106,10 +108,23 @@ def retitle(obj, title, description):
         obj.save(update_fields=changed)
 
 
-def accepted(component):
-    """A reviewer marked this part's unconfirmed reading correct (import review)."""
-    return ImportReview.objects.filter(batch='norway-bom-pn', item_type='bom-part', object_id=component.pk,
-                                       verdict=ImportReview.Verdict.CORRECT).exists()
+def accepted_parts(component_ids):
+    """The ids among component_ids whose unconfirmed reading a reviewer marked correct (import review)."""
+    if not component_ids:
+        return set()
+    return set(ImportReview.objects.filter(batch='norway-bom-pn', item_type='bom-part', object_id__in=component_ids,
+                                           verdict=ImportReview.Verdict.CORRECT).values_list('object_id', flat=True))
+
+
+def refresh_usage_counts(component_ids):
+    """usage_count (rows on products) recounted for these components in one statement, touching
+    only the rows whose count changed: the column is indexed, so each row written costs a
+    GIN-index update as well."""
+    if not component_ids:
+        return
+    live = Coalesce(Subquery(ProductComponent.objects.filter(component=OuterRef('pk')).order_by()
+                             .values('component').annotate(n=Count('pk')).values('n')), 0)
+    Component.objects.filter(pk__in=component_ids).exclude(usage_count=live).update(usage_count=live)
 
 
 def full_description(bundle):
@@ -198,14 +213,14 @@ class Command(BaseCommand):
                 # another import's product: this bundle's parts list goes on it under this tag
                 # (re-running replaces the rows this tag owns); identity and documents stay theirs
                 product = existing
-                product.product_components.filter(import_source=tag).delete()
+                replaced = self.replace_rows(product, tag)
                 result['products_attached'] = 1
             else:
                 result['products_skipped'] = 1
                 return result
         elif product:
             self.update_identity(product, {**p, 'description': full_description(bundle)})
-            product.product_components.filter(import_source=tag).delete()
+            replaced = self.replace_rows(product, tag)
             result['products_updated'] = 1
         else:
             product = Product.objects.create(
@@ -217,7 +232,9 @@ class Command(BaseCommand):
                 created_by=user, is_approved=False,
             )
             result['products_created'] = 1
+            replaced = set()
 
+        rows = []
         for c in bundle['components']:
             component, created = self.get_component(c, user)
             result['components_created'] += created
@@ -242,26 +259,43 @@ class Command(BaseCommand):
             if c.get('unconfirmed'):
                 notes = f"{notes}; {UNCONFIRMED}: {clean_text(c['unconfirmed'])}".lstrip('; ')
             for chunk in chunks:
-                row = ProductComponent.objects.create(
+                rows.append(ProductComponent(
                     product=product, component=component,
                     reference_designator=', '.join(chunk),
                     quantity=len(chunk) if chunk else c.get('quantity') or 1,
                     notes=notes, import_source=tag,
-                    needs_review=bool(c.get('unconfirmed')) and not accepted(component),
+                    needs_review=bool(c.get('unconfirmed')),
                     submission_level=ProductComponent.SubmissionLevel.ADVANCED,
                     created_by=user,
-                )
-                result['placements'] += 1
-                if row.needs_review:
-                    result['unconfirmed'] = result.get('unconfirmed', 0) + 1
+                ))
+
+        # an unconfirmed reading a reviewer already marked correct needs no second look
+        accepted = accepted_parts({r.component_id for r in rows if r.needs_review})
+        for row in rows:
+            if row.needs_review and row.component_id in accepted:
+                row.needs_review = False
+        # one INSERT per batch: ProductComponent.save() would recount the product and the
+        # component on every row (a slow update of an indexed column); counted once below
+        ProductComponent.objects.bulk_create(rows, batch_size=500)
+        result['placements'] = len(rows)
+        if any(r.needs_review for r in rows):
+            result['unconfirmed'] = sum(1 for r in rows if r.needs_review)
 
         product.update_component_count()
-        for component in Component.objects.filter(product_components__product=product).distinct():
-            component.update_usage_count()
+        refresh_usage_counts(replaced | {r.component_id for r in rows})
         self.import_documents(bundle, product, user, folder, dry_run, result)
         self.import_images(bundle, product, user, folder, dry_run, result)
         self.import_firmware(bundle, product, user, folder, dry_run, result)
         return result
+
+    @staticmethod
+    def replace_rows(product, tag):
+        """Drop the rows this tag put on the product before (a re-run replaces them); the ids of
+        the components they named, so their usage counts can be recounted too."""
+        old = product.product_components.filter(import_source=tag)
+        ids = set(old.values_list('component_id', flat=True))
+        old.delete()
+        return ids
 
     @staticmethod
     def find_product(bundle):

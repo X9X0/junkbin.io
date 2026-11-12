@@ -126,6 +126,11 @@ WISTRON_RES = re.compile(r'^(\d+)([KM]?)(\d*)R(\d)([FGJ])-', re.I)
 # X_1KR1%0402-1, 33R, 330KR (the dielectric letters X/Y are not read: unchecked)
 MSI_CAP = re.compile(rf'^C{NUM}([PNU])(\d+(?:\.\d)?)?(?:[XYN]\d?)?(\d{{4}})?$', re.I)
 MSI_RES = re.compile(rf'^(?:X?_)?{NUM}([KM]?)R(\d+(?:\.\d+)?%)?(\d{{4}})?(?:-\d)?$', re.I)
+# MSI server boards glue the size to the value and add a suffix or a resistor-network prefix:
+# 47R0402-LF, 470R0402-RH, 33R0402-, 8P4R-47R0402 (8 pins, 4 resistors), X_10K0402, 4R70402 (4.7 ohm).
+# Read on its own, the R would be taken for the decimal point ('47.0402 ohm'); the trailing
+# imperial size says where the value ends.
+MSI_RES_GLUED = re.compile(r'^(?:X?_)?(?:\d+P\d+R-)?(\d+)(?:([KM])R?|R)(\d{1,2})?(' + '|'.join(IMPERIAL) + r')(?:-[A-Z0-9]*)?$', re.I)
 CAP_DIEL_WORDS = {'NPO': 'C0G', 'NP0': 'C0G'}
 
 
@@ -510,6 +515,10 @@ def parse_token(token, kind=None, odm=None):
         if m.group(3):
             spec['tolerance'] = m.group(3)
         return 'resistor', spec, m.group(4) if m.group(4) in IMPERIAL else None, None
+    m = MSI_RES_GLUED.match(t)
+    if m and kind in (None, 'resistor'):
+        number = f'{m.group(1)}.{m.group(3)}' if m.group(3) else m.group(1)
+        return 'resistor', {'resistance_ohm': _ohms(number, m.group(2) or '')}, m.group(4), None
     m = COMPAL_CAP.match(t)
     if m:
         spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6),

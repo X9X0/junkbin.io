@@ -241,3 +241,20 @@ def test_gigabyte_voltage_first_labels():
     assert sv.parse_label(['220P/50V/N/6'], 'C3', odm='gigabyte')['package'] == '0603'
     p = sv.parse_label(['10UH/8'], 'L1', odm='gigabyte')
     assert p['specs'] == {'inductance_uh': 10.0} and p['package'] == '0805' and p['confidence'] == 'high'
+
+
+@pytest.mark.parametrize('word, ohms, package', [
+    ('8P4R-47R0402', 47.0, '0402'),             # resistor network: 8 pins, 4 resistors of 47 ohm
+    ('47R0402-LF', 47.0, '0402'),
+    ('470R0402-RH', 470.0, '0402'),
+    ('33R0402-', 33.0, '0402'),
+    ('X_10K0402', 10000.0, '0402'),
+    ('4P2R-33R0402', 33.0, '0402'),
+    ('4R70402', 4.7, '0402'),
+    ('10K50603', 10500.0, '0603'),
+    ('1R2512', 1.0, '2512'),
+])
+def test_msi_value_glued_to_size_is_not_a_decimal(word, ohms, package):
+    """'47R0402' on an MSI server board is 47 ohm in 0402, not 47.0402 ohm (R read as the point)."""
+    p = sv.parse_label([word], 'R12', odm='msi')
+    assert p['specs']['resistance_ohm'] == ohms and p['package'] == package, (word, p)

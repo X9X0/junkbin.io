@@ -119,3 +119,17 @@ def test_catalogue_listed_chips_are_confirmed_with_their_maker(board, component_
     assert by_pn['ISL6605B']['manufacturer'] == 'Renesas' and not by_pn['ISL6605B']['unconfirmed']
     assert by_pn['2N7002']['manufacturer'] == 'onsemi' and not by_pn['2N7002']['unconfirmed']   # a named maker beats Generic
     assert bundle['stats']['unconfirmed'] == 0
+
+
+def test_values_with_more_than_three_significant_digits_are_misreads():
+    """'1005' (a metric size code), '25201' (a designator number) and '47R0402' read as 47.0402 ohm
+    are not parts; E-series values never need more than three significant digits."""
+    from apps.products.management.commands.extract_schematic_boms import plausible, usable
+    assert plausible({'resistance_ohm': 4700.0}) and plausible({'resistance_ohm': 4.7}) and plausible({'resistance_ohm': 1e6})
+    assert plausible({'capacitance_pf': 2.2e7}) and plausible({'capacitance_pf': 0.5}) and plausible({'resistance_ohm': 0.0})
+    assert plausible({'resistance_ohm': 49900.0, 'tolerance': '1%'})                     # E96 49.9K
+    for bad in ({'resistance_ohm': 1005.0}, {'resistance_ohm': 25201.0}, {'resistance_ohm': 47.0402},
+                {'capacitance_pf': 10024.0}, {'inductance_uh': 1.0025}):
+        assert not plausible(bad), bad
+    assert usable(_row('R1', 'RES 4.7K 0402', specs={'resistance_ohm': 4700.0}, kind='resistor'))
+    assert not usable(_row('R2', 'RES 1.005K 0402', specs={'resistance_ohm': 1005.0}, kind='resistor'))

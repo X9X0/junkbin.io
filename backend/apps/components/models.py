@@ -5,6 +5,7 @@ Models for electronic components and their relationships to products.
 """
 import uuid
 from django.db import models
+from django.db.models.functions import Upper
 from django.conf import settings
 from django.contrib.postgres.indexes import GinIndex
 from django.contrib.postgres.search import SearchVector, SearchVectorField
@@ -133,6 +134,8 @@ class Component(models.Model):
         indexes = [
             models.Index(fields=['part_number']),
             models.Index(fields=['manufacturer', 'part_number']),
+            # iexact lookups (importers, external add): UPPER(manufacturer), UPPER(part_number)
+            models.Index(Upper('manufacturer'), Upper('part_number'), name='component_upper_maker_pn_idx'),
             models.Index(fields=['component_type', '-usage_count']),
             GinIndex(fields=['search_vector']),
         ]
