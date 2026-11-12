@@ -340,9 +340,37 @@ class ComponentViewSet(viewsets.ModelViewSet):
         Result is cached in the component's specifications field.
         """
         from django.utils import timezone
+        from . import parametric
+        from .external_search import SearchUnavailable
         from .lookup import LookupUnavailable, lookup_part
 
         component = self.get_object()
+        how = parametric.mode(component)
+        if how == 'not_stocked':
+            return Response(
+                {'detail': f'{parametric.NEVER_STOCKED[component.component_type]} are not stocked by DigiKey '
+                           'or Mouser, so there is nothing to look up.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        if how == 'equivalents':
+            # a generic line ("CAP 10nF 200V"): parts that fit its ratings, not one exact part
+            try:
+                candidates, cached = parametric.search(component)
+            except SearchUnavailable as exc:
+                return Response({'detail': f'Distributor search is unavailable right now ({exc}).'},
+                                status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            except Exception:
+                logger.exception('Equivalent-part search failed for %s', component.part_number)
+                return Response({'detail': 'Part lookup failed. Try again later.'},
+                                status=status.HTTP_502_BAD_GATEWAY)
+            specs = component.specifications or {}
+            specs['equivalent_parts'] = {
+                'query': parametric.query_for(component), 'candidates': candidates,
+                'cached': cached, 'last_updated': timezone.now().isoformat(),
+            }
+            component.specifications = specs
+            component.save(update_fields=['specifications'])
+            return Response(specs['equivalent_parts'])
 
         try:
             result = lookup_part(component.part_number, component.manufacturer)

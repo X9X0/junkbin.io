@@ -193,6 +193,8 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     description_disagrees = serializers.DictField(source='description_disagreements', read_only=True)
     cross_references = ComponentListSerializer(many=True, read_only=True)
     pricing_data = serializers.SerializerMethodField()
+    equivalent_parts = serializers.SerializerMethodField()
+    lookup_mode = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     datasheets = serializers.SerializerMethodField()
@@ -205,7 +207,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
             'description', 'typical_function', 'specifications', 'primary_value', 'ratings', 'description_disagrees',
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
-            'created_by', 'created_at', 'updated_at', 'pricing_data',
+            'created_by', 'created_at', 'updated_at', 'pricing_data', 'equivalent_parts', 'lookup_mode',
             'primary_image', 'images', 'datasheets',
         ]
         read_only_fields = [
@@ -217,6 +219,15 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
         """Return cached Nexar data from specifications if available."""
         specs = obj.specifications or {}
         return specs.get('nexar_data')
+
+    def get_equivalent_parts(self, obj):
+        """Cached distributor parts that fit a generic line (parametric.search)."""
+        return (obj.specifications or {}).get('equivalent_parts')
+
+    def get_lookup_mode(self, obj):
+        """'exact', 'equivalents' or 'not_stocked': what the Lookup button will do."""
+        from .parametric import mode
+        return mode(obj)
 
     def get_images(self, obj):
         request = self.context.get('request')
