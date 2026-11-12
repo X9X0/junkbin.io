@@ -79,8 +79,8 @@ def search(query):
     return results, False
 
 
-def digikey_keyword(client, q):
-    resp = client._call('post', client.KEYWORD_URL, json={'Keywords': q, 'Limit': MAX_RESULTS})
+def digikey_keyword(client, q, limit=MAX_RESULTS):
+    resp = client._call('post', client.KEYWORD_URL, json={'Keywords': q, 'Limit': limit})
     if resp.status_code == 404:
         return []
     data = resp.json()

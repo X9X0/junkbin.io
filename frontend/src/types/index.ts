@@ -216,6 +216,8 @@ export interface Component {
   usage_count: number;
   is_verified: boolean;
   pricing_data?: NexarData | null;
+  equivalent_parts?: EquivalentParts | null;
+  lookup_mode?: 'exact' | 'equivalents' | 'not_stocked';
   created_by?: CreatedBy;
   primary_image?: ComponentImage | null;
   manufacturer_aliases?: string[];
@@ -632,6 +634,19 @@ export interface NexarData {
   datasheet_url: string | null;
   specs: NexarSpec[];
   sellers: Seller[];
+  last_updated: string;
+}
+
+// Distributor parts that fit a generic BOM line ("CAP 10nF 200V"), from the Lookup button
+export interface EquivalentFit {
+  score: number;
+  notes: string[];
+  value: 'match' | 'unknown';
+}
+export interface EquivalentParts {
+  query: string;
+  candidates: (ExternalPart & { fit: EquivalentFit })[];
+  cached: boolean;
   last_updated: string;
 }
 

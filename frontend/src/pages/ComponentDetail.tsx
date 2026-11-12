@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 import AddToJunkbinModal from '../components/AddToJunkbinModal';
 import EditComponentModal from '../components/EditComponentModal';
 import PricingPanel from '../components/PricingPanel';
+import EquivalentsPanel from '../components/EquivalentsPanel';
 import ImageUpload, { COMPONENT_IMAGE_TYPES } from '../components/ImageUpload';
 import DatasheetUpload from '../components/DatasheetUpload';
 import Lightbox from '../components/Lightbox';
@@ -347,11 +348,20 @@ export default function ComponentDetail() {
 
         {/* Pricing & Availability */}
         <div className="mb-8">
-          <PricingPanel
-            componentId={id!}
-            pricingData={component.pricing_data}
-            datasheetUrl={component.datasheet_url}
-          />
+          {component.lookup_mode && component.lookup_mode !== 'exact' ? (
+            <EquivalentsPanel
+              componentId={id!}
+              componentType={component.component_type}
+              mode={component.lookup_mode}
+              equivalents={component.equivalent_parts}
+            />
+          ) : (
+            <PricingPanel
+              componentId={id!}
+              pricingData={component.pricing_data}
+              datasheetUrl={component.datasheet_url}
+            />
+          )}
         </div>
 
         {/* Datasheets */}

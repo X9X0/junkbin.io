@@ -1369,6 +1369,28 @@
     "tolerance_placeholder": "Tolerance, e.g. 5%",
     "tolerance_hint": "Exact tolerance: 1%, 5%, 0.25pF, +80/-20%",
     "any_dielectric": "Any dielectric"
+  },
+
+  "equivalents": {
+    "title": "EQUIVALENT PARTS",
+    "find": "Find equivalents",
+    "refresh": "Refresh",
+    "updated": "Updated {{when}}",
+    "searching": "ASKING DIGIKEY…",
+    "empty_title": "No equivalents looked up yet.",
+    "empty_desc": "This is a generic line from a parts list, not a maker's part number. \"Find equivalents\" asks DigiKey for parts with the same value and ratings at least as high.",
+    "empty_login": "Log in to look up equivalent parts.",
+    "none_found": "DigiKey lists nothing that fits {{query}}.",
+    "query_note": "Searched DigiKey for {{query}}. Value, voltage and power are checked against this line; always confirm the package and lead spacing yourself.",
+    "not_stocked": "{{what}} are not stocked by DigiKey or Mouser, so there is nothing to look up here. Try a specialist dealer.",
+    "not_stocked_tubes": "Valves",
+    "not_stocked_transformers": "Transformers",
+    "not_stocked_speakers": "Speakers",
+    "stock": "Stock",
+    "price": "Unit price",
+    "datasheet": "Datasheet",
+    "add": "Add to junkbin",
+    "view": "View",
+    "value_unknown": "value not confirmed"
   }
 }
-
