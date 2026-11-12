@@ -38,7 +38,10 @@ from apps.components.spec_parse import (
 # what a designator's letters say the part is
 DESIGNATOR_KIND = [(r'^(?:FB|FL|BL)\d', 'ferrite'), (r'^(?:R|RV|PR|RP|RA|RN|VR)\d', 'resistor'),
                    (r'^(?:C|CV|PC|CP|EC|BC)\d', 'capacitor'), (r'^(?:L|LV|PL)\d', 'inductor'),
-                   (r'^(?:RT|TH|NTC)\d', 'thermistor'), (r'^(?:Y|X|OSC)\d', 'crystal'), (r'^(?:F|PF)\d', 'fuse')]
+                   (r'^(?:RT|TH|NTC)\d', 'thermistor'), (r'^(?:Y|X|OSC)\d', 'crystal'), (r'^(?:F|PF)\d', 'fuse'),
+                   # chips: a passive's house code must not be read off a Q, D or U label ('2N7002_NC' on an
+                   # MSI board is a MOSFET, not a 2 nF 700 V 0402 capacitor)
+                   (r'^(?:Q|PQ|MQ|TR)\d', 'transistor'), (r'^(?:D|PD|ZD|CR)\d', 'diode'), (r'^(?:U|PU|IC)\d', 'ic')]
 IMPERIAL = ('01005', '0201', '0402', '0603', '0805', '1008', '1206', '1210', '1806', '1812', '2010', '2512')
 
 # Compal / LCFC: dielectric digit in the capacitor code
@@ -70,8 +73,9 @@ ODM_MARKS = [('compal', r'Compal Electronics|\bLA-[0-9A-Z]{4}P\b'), ('lcfc', r'\
              ('msi', r'MICRO-STAR|\bMS-\d{4}\b'),
              # Tongfang title blocks carry no maker name: its capacitor labels are the mark ('.1U-10-04R-K')
              ('tongfang', r'(?<![\w.])@?\d*\.?\d+[PNU]F?-\d*\.?\d+-\d\d[RXNY]-[BCDFGJKMZ]\b'),
-             # Gigabyte boards: value/size/dielectric/volts/tolerance ('0.01U/4/X7R/16V/K')
-             ('gigabyte', r'(?<![\w.])\d*\.?\d+[PNU]/\d{1,2}/(?:X5R|X7R|NPO|Y5V|X6S)/\d*\.?\d+V/[BCDFGJKMZX]\b')]
+             # Gigabyte boards: the title block ('GIGA-BYTE TECHNOLOGY') or the capacitor labels,
+             # value/size/dielectric/volts/tolerance ('0.01U/4/X7R/16V/K')
+             ('gigabyte', r'GIGA-?BYTE|(?<![\w.])\d*\.?\d+[PNU]/\d{1,2}/(?:X5R|X7R|NPO|Y5V|X6S)/\d*\.?\d+V/[BCDFGJKMZX]\b')]
 ODM_SIZE = {'quanta': {'2': '0201', '4': '0402', '6': '0603', '8': '0805', '12': '1206'},
             'clevo': {'02': '0201', '04': '0402', '06': '0603', '08': '0805'},
             'inventec': {'1': '0201', '2': '0402', '3': '0603', '6': '1206'},
@@ -82,8 +86,13 @@ ODM_SIZE = {'quanta': {'2': '0201', '4': '0402', '6': '0603', '8': '0805', '12':
             'gigabyte': {'4': '0402', '6': '0603', '8': '0805', '12': '1206'}}
 # Gigabyte: 0.1U/6/Y5V/25V/Z, 33P/4/NPO/50V/J, 22/4, 20K/4/1 (1%); size digit read off 2 boardviews (1,926
 # parts: /4 0402 in 1,310 of 1,311, /6 0603, /8 0805, /12 1206). A trailing 'X' is left unread.
-GIGA_CAP = re.compile(rf'^{NUM}([PNU])F?/(\d{{1,2}})(?:/(X5R|X7R|NPO|NP0|Y5V|X6S|C0G))?(?:/{NUM}V)?(?:/([BCDFGJKMZX]))?$', re.I)
+# Server boards abbreviate the dielectric to one letter ('0.01U/6/X/50V/B', '22P/4/N/50V/X'): the size and
+# voltage are read, the letter is not (unverified against a factory BOM)
+GIGA_CAP = re.compile(rf'^{NUM}([PNU])F?/(\d{{1,2}})(?:/(X5R|X7R|NPO|NP0|Y5V|X6S|C0G|[XYN]))?(?:/{NUM}V)?(?:/([BCDFGJKMZX]))?$', re.I)
 GIGA_RES = re.compile(rf'^{NUM}([KMR]?)/(\d{{1,2}})(?:/(1|X))?$', re.I)
+# older Gigabyte desktop boards put the voltage first: '0.1U/16V/X7R/4/X', '220P/50V/N/6'; inductors '10UH/8'
+GIGA_CAP_VOLT_FIRST = re.compile(rf'^{NUM}([PNU])F?/{NUM}V/(X5R|X7R|NPO|NP0|Y5V|X6S|C0G|[XYN])/(\d{{1,2}})(?:/([BCDFGJKMZX]))?$', re.I)
+GIGA_IND = re.compile(rf'^{NUM}(UH|NH|MH)/(\d{{1,2}})$', re.I)
 # Tongfang (GK5CN5Z, PF4PN2F, CT4RVC1...): value-volts-size+dielectric-tolerance, value[-power][-tol]-size.
 # Read off 14 boardviews (~20,000 labels): size 02/04/06/08/12 = 0201..1206 (or the 4-digit size); dielectric
 # N only on <= 1nF 50V 5% parts (C0G), Y only with Z tolerance (Y5V), X on 25-50V pF-nF parts (X7R), R on
@@ -117,6 +126,11 @@ WISTRON_RES = re.compile(r'^(\d+)([KM]?)(\d*)R(\d)([FGJ])-', re.I)
 # X_1KR1%0402-1, 33R, 330KR (the dielectric letters X/Y are not read: unchecked)
 MSI_CAP = re.compile(rf'^C{NUM}([PNU])(\d+(?:\.\d)?)?(?:[XYN]\d?)?(\d{{4}})?$', re.I)
 MSI_RES = re.compile(rf'^(?:X?_)?{NUM}([KM]?)R(\d+(?:\.\d+)?%)?(\d{{4}})?(?:-\d)?$', re.I)
+# MSI server boards glue the size to the value and add a suffix or a resistor-network prefix:
+# 47R0402-LF, 470R0402-RH, 33R0402-, 8P4R-47R0402 (8 pins, 4 resistors), X_10K0402, 4R70402 (4.7 ohm).
+# Read on its own, the R would be taken for the decimal point ('47.0402 ohm'); the trailing
+# imperial size says where the value ends.
+MSI_RES_GLUED = re.compile(r'^(?:X?_)?(?:\d+P\d+R-)?(\d+)(?:([KM])R?|R)(\d{1,2})?(' + '|'.join(IMPERIAL) + r')(?:-[A-Z0-9]*)?$', re.I)
 CAP_DIEL_WORDS = {'NPO': 'C0G', 'NP0': 'C0G'}
 
 
@@ -206,7 +220,7 @@ def _odm_token(t, odm):
         m = GIGA_CAP.match(t)
         if m and m.group(3) in size:
             spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6)}
-            if m.group(4):
+            if m.group(4) and len(m.group(4)) > 1:
                 spec['dielectric'] = {'NPO': 'C0G', 'NP0': 'C0G'}.get(m.group(4).upper(), m.group(4).upper())
             if m.group(5):
                 spec['voltage_v'] = float(m.group(5))
@@ -219,6 +233,17 @@ def _odm_token(t, odm):
             if m.group(4) == '1':
                 spec['tolerance'] = '1%'
             return 'resistor', spec, size[m.group(3)]
+        m = GIGA_CAP_VOLT_FIRST.match(t)
+        if m and m.group(5) in size:
+            spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6), 'voltage_v': float(m.group(3))}
+            if len(m.group(4)) > 1:
+                spec['dielectric'] = {'NPO': 'C0G', 'NP0': 'C0G'}.get(m.group(4).upper(), m.group(4).upper())
+            if m.group(6) and m.group(6).upper() != 'X':
+                spec['tolerance'] = TOL_LETTER[m.group(6).upper()]
+            return 'capacitor', spec, size[m.group(5)]
+        m = GIGA_IND.match(t)
+        if m and m.group(3) in size:
+            return 'inductor', {'inductance_uh': round(float(m.group(1)) * {'UH': 1, 'NH': 1e-3, 'MH': 1e3}[m.group(2).upper()], 6)}, size[m.group(3)]
     if odm == 'wistron':
         m = WISTRON_CAP.match(t)
         if m and m.group(7) in size:
@@ -490,6 +515,10 @@ def parse_token(token, kind=None, odm=None):
         if m.group(3):
             spec['tolerance'] = m.group(3)
         return 'resistor', spec, m.group(4) if m.group(4) in IMPERIAL else None, None
+    m = MSI_RES_GLUED.match(t)
+    if m and kind in (None, 'resistor'):
+        number = f'{m.group(1)}.{m.group(3)}' if m.group(3) else m.group(1)
+        return 'resistor', {'resistance_ohm': _ohms(number, m.group(2) or '')}, m.group(4), None
     m = COMPAL_CAP.match(t)
     if m:
         spec = {'capacitance_pf': round(float(m.group(1)) * UNIT_PF[m.group(2).upper()], 6),

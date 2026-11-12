@@ -372,8 +372,17 @@ class ComponentViewSet(viewsets.ModelViewSet):
             component.save(update_fields=['specifications'])
             return Response(specs['equivalent_parts'])
 
+        # a Generic part is asked for without a maker filter, and a BOM-line name
+        # ('FLASH MXIC MX25L8005PC-15G 8M SPI PDIP-8') by its part-number-shaped words
+        result, looked_up = None, None
+        tried = []
         try:
-            result = lookup_part(component.part_number, component.manufacturer)
+            for part_number, maker in parametric.exact_queries(component):
+                tried.append(part_number)
+                result = lookup_part(part_number, maker if component.manufacturer != 'Generic' else None)
+                if result:
+                    looked_up = {'part_number': part_number, 'manufacturer': maker}
+                    break
         except LookupUnavailable:
             logger.exception('No part lookup provider answered for %s', component.part_number)
             return Response(
@@ -387,8 +396,26 @@ class ComponentViewSet(viewsets.ModelViewSet):
             )
 
         if not result:
+            # no distributor lists the number (obsolete, the usual case on old boards): the
+            # current parts of its family, shown in the equivalents panel instead
+            try:
+                family, stem, cached = parametric.family_search(tried[0])
+            except SearchUnavailable:
+                family, stem, cached = [], '', False
+            except Exception:
+                logger.exception('Family search failed for %s', component.part_number)
+                family, stem, cached = [], '', False
+            if family:
+                specs = component.specifications or {}
+                specs['equivalent_parts'] = {
+                    'query': stem, 'family_of': tried[0], 'candidates': family,
+                    'cached': cached, 'last_updated': timezone.now().isoformat(),
+                }
+                component.specifications = specs
+                component.save(update_fields=['specifications'])
+                return Response(specs['equivalent_parts'])
             return Response(
-                {'detail': 'No results found for this part number.'},
+                {'detail': f"No results found for {', '.join(tried)}."},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -398,6 +425,8 @@ class ComponentViewSet(viewsets.ModelViewSet):
             **result,
             'last_updated': timezone.now().isoformat(),
         }
+        if looked_up and looked_up['part_number'] != component.part_number:
+            specs['nexar_data']['looked_up'] = looked_up
         component.specifications = specs
 
         # Auto-fill datasheet if empty

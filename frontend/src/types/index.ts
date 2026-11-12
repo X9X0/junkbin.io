@@ -635,19 +635,23 @@ export interface NexarData {
   specs: NexarSpec[];
   sellers: Seller[];
   last_updated: string;
+  // set when the part was found under a number read out of its name ("FLASH MXIC MX25L8005PC-15G ...")
+  looked_up?: { part_number: string; manufacturer: string | null };
 }
 
 // Distributor parts that fit a generic BOM line ("CAP 10nF 200V"), from the Lookup button
 export interface EquivalentFit {
   score: number;
   notes: string[];
-  value: 'match' | 'unknown';
+  value: 'match' | 'unknown' | 'family';
 }
 export interface EquivalentParts {
   query: string;
   candidates: (ExternalPart & { fit: EquivalentFit })[];
   cached: boolean;
   last_updated: string;
+  // set when no distributor lists the exact number: candidates are the current parts of its family
+  family_of?: string;
 }
 
 // Distributor search for parts the catalogue lacks

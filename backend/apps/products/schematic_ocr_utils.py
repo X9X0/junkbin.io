@@ -335,6 +335,7 @@ def _candidate(designator, page_number, value_text, parsed, strict, source):
         'component_type': kind or '',
         'package_type': (parsed or {}).get('package') or '',
         'description': description[:500],
+        'specifications': dict((parsed or {}).get('specs') or {}),
         'value_raw': value_text,
         'quantity': 1,
         'location_description': '',
@@ -380,12 +381,13 @@ def group_identical(candidates):
 MAX_OCR_PAGES = 30
 
 
-def build_candidates_from_schematic_file(file_obj, file_type):
+def build_candidates_from_schematic_file(file_obj, file_type, ocr=True):
     """
     Run OCR extraction across every page/image of a schematic file.
 
     file_type: 'pdf' renders each page at 300 DPI first; image types
-    (png/jpg/etc) are OCR'd directly.
+    (png/jpg/etc) are OCR'd directly. ocr=False reads only the PDF's text
+    layer and leaves scanned pages alone (a bulk sweep: seconds, not minutes).
     """
     from PIL import Image
 
@@ -402,6 +404,9 @@ def build_candidates_from_schematic_file(file_obj, file_type):
         from .schematic_values import detect_odm
         odm = detect_odm(' '.join(w['text'] for words in layers for w in words))   # whose size codes apply
         scanned = [n for n, words in enumerate(layers, start=1) if len(words) < MIN_TEXT_LAYER_WORDS]
+        if not ocr:
+            layers = [words if n not in scanned else [] for n, words in enumerate(layers, start=1)]
+            scanned = []
         if len(scanned) > MAX_OCR_PAGES:
             raise ValueError(
                 f'PDF has {len(scanned)} scanned pages (pages without a text layer) - OCR is limited to '

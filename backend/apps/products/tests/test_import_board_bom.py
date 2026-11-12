@@ -451,3 +451,21 @@ def test_part_marked_correct_is_reimported_without_the_mark(tmp_path, user_facto
     call_command('import_board_bom', path, stdout=StringIO())
     again = ProductComponent.objects.get(reference_designator='ZU2')
     assert again.pk != row.pk and not again.needs_review and again.component_id == row.component_id
+
+
+def test_components_can_be_added_to_another_imports_product(tmp_path, user_factory, product_factory):
+    user_factory(is_superuser=True, is_staff=True)
+    product = product_factory(manufacturer='ASUS', model_number='P4SD-VX', revision='R2.01', region='global',
+                              import_source='norway-schem:ASUS_P4SD-VX_R2.01', description='theirs')
+    bundle = {**_bundle(), 'source_tag': 'schematic-bom:asus-p4sd-vx-r201', 'add_components_to_existing': True}
+    folder = _write(tmp_path, bundle)
+    out = _run(folder)
+    assert 'products attached 1' in out and 'skipped' not in out
+    product.refresh_from_db()
+    assert product.import_source == 'norway-schem:ASUS_P4SD-VX_R2.01' and product.description == 'theirs'
+    rows = ProductComponent.objects.filter(product=product)
+    assert rows.exists() and set(rows.values_list('import_source', flat=True)) == {'schematic-bom:asus-p4sd-vx-r201'}
+    first = rows.count()
+    _run(folder)                                                        # re-run: replaced, not doubled
+    assert ProductComponent.objects.filter(product=product).count() == first
+    assert Product.objects.count() == 1

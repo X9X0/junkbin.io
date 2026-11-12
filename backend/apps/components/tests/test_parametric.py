@@ -128,3 +128,71 @@ def test_lookup_endpoint_answers_by_mode(user_factory):
 
     with patch('apps.components.parametric.search', side_effect=parametric.SearchUnavailable('budget')):
         assert client.post(f'/api/components/{cap.id}/lookup/').status_code == 503
+
+
+def test_exact_queries_find_the_part_number_inside_a_bom_line_name():
+    flash = _generic('FLASH MXIC MX25L8005PC-15G 8M SPI PDIP-8', 'eeprom', {})
+    assert parametric.exact_queries(flash) == [('MX25L8005PC-15G', 'Macronix')]
+    ram = _generic('2M*32-7 MICRON TSOP SDRAM MT48LC2M32B2TG-7 (HP)', 'ic', {})
+    assert parametric.exact_queries(ram) == [('MT48LC2M32B2TG-7', None)]           # SDRAM is not a maker
+    con = _generic('HEADER 2X5P R/A,2.54mm,K8,G/F PINREX/211-82-05GY09,YELLOW', 'connector', {})
+    assert parametric.exact_queries(con)[0] == ('211-82-05GY09', 'Pinrex')          # MAKER/PART
+    assert parametric.exact_queries(_generic('2N3904', 'transistor', {})) == [('2N3904', None)]
+    assert parametric.exact_queries(_generic('TRANSISTOR 2N3904 TO-92', 'transistor', {})) == [('2N3904', None)]
+    named = Component.objects.create(part_number='LM358DR', manufacturer='Texas Instruments', component_type='opamp')
+    assert parametric.exact_queries(named) == [('LM358DR', 'Texas Instruments')]
+
+
+def test_lookup_endpoint_asks_for_the_embedded_part_number_without_a_generic_maker_filter(user_factory):
+    client = APIClient()
+    client.force_authenticate(user_factory())
+    flash = _generic('FLASH MXIC MX25L8005PC-15G 8M SPI PDIP-8', 'eeprom', {})
+    answer = {'mpn': 'MX25L8005PC-15G', 'manufacturer': 'Macronix', 'sellers': [], 'sources': ['digikey']}
+    with patch('apps.components.lookup.lookup_part', return_value=answer) as call:
+        resp = client.post(f'/api/components/{flash.id}/lookup/')
+    assert resp.status_code == 200, resp.data
+    assert call.call_args.args == ('MX25L8005PC-15G', None)
+    flash.refresh_from_db()
+    assert flash.specifications['nexar_data']['looked_up'] == {'part_number': 'MX25L8005PC-15G', 'manufacturer': 'Macronix'}
+
+    with patch('apps.components.lookup.lookup_part', return_value=None), \
+            patch('apps.components.parametric.family_search', return_value=([], 'MX25L8005PC', False)):
+        resp = client.post(f'/api/components/{flash.id}/lookup/')
+    assert resp.status_code == 404 and 'MX25L8005PC-15G' in resp.data['detail']
+
+
+def test_family_search_tries_shorter_stems_and_keeps_the_family():
+    dk = MagicMock(is_configured=True, remaining=900)
+    answers = {'MX25L8005PC': [], 'MX25L8005': [], 'MX25L800': [_hit('MX25L8006EM1I-12G', 'IC FLASH 8MBIT SPI 86MHZ 8SOP', status='Not For New Designs', maker='Macronix'),
+                                                           _hit('MX25L8006EM1J-12G', 'IC FLASH 8MBIT SPI 86MHZ 8SOP', stock=781, maker='Macronix'),
+                                                           _hit('W25Q80DVSNIG', 'IC FLASH 8MBIT SPI 104MHZ 8SOIC', maker='Winbond')]}
+    with patch('apps.components.parametric.get_digikey', return_value=dk), \
+            patch('apps.components.parametric.digikey_keyword', side_effect=lambda c, q, limit: answers[q]) as call:
+        results, stem, cached = parametric.family_search('MX25L8005PC-15G')
+        assert stem == 'MX25L800' and not cached and call.call_count == 3
+        assert [r['mpn'] for r in results] == ['MX25L8006EM1J-12G', 'MX25L8006EM1I-12G']   # Winbond: not the family
+        assert results[0]['fit'] == {'score': 3, 'notes': [], 'value': 'family'}
+        assert results[1]['fit']['notes'] == ['Not For New Designs']
+        again = parametric.family_search('MX25L8005PC-15G')
+        assert again[2] and again[1] == 'MX25L800' and call.call_count == 3                  # cached by stem
+
+
+def test_family_search_gives_up_after_five_stems():
+    dk = MagicMock(is_configured=True, remaining=900)
+    with patch('apps.components.parametric.get_digikey', return_value=dk), \
+            patch('apps.components.parametric.digikey_keyword', return_value=[]) as call:
+        assert parametric.family_search('MX25L8005PC-15G') == ([], 'MX25L8005PC', False)
+        assert call.call_count == 5
+
+
+def test_lookup_endpoint_falls_back_to_the_family_when_the_number_is_gone(user_factory):
+    client = APIClient()
+    client.force_authenticate(user_factory())
+    flash = _generic('FLASH MXIC MX25L8005PC-15G 8M SPI PDIP-8', 'eeprom', {})
+    family = [{'mpn': 'MX25L8006EM1J-12G', 'manufacturer': 'Macronix', 'fit': {'score': 3, 'notes': [], 'value': 'family'}}]
+    with patch('apps.components.lookup.lookup_part', return_value=None), \
+            patch('apps.components.parametric.family_search', return_value=(family, 'MX25L800', False)):
+        resp = client.post(f'/api/components/{flash.id}/lookup/')
+    assert resp.status_code == 200 and resp.data['family_of'] == 'MX25L8005PC-15G' and resp.data['query'] == 'MX25L800'
+    detail = client.get(f'/api/components/{flash.id}/').data
+    assert detail['lookup_mode'] == 'exact' and detail['equivalent_parts']['candidates'][0]['mpn'] == 'MX25L8006EM1J-12G'
