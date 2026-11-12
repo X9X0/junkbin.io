@@ -215,3 +215,29 @@ def test_fractional_power_is_not_watts():
 def test_brackets_holding_fields_are_kept():
     p = sv.parse_label(['10UF/6.3V', '(0603)X5R'], 'C1')
     assert p['package'] == '0603' and p['specs']['dielectric'] == 'X5R'
+
+
+def test_chip_designators_are_not_read_as_passives():
+    # '2N7002_NC' beside Q44 on an MSI board is a MOSFET, not a 2 nF 700 V 0402 capacitor
+    p = sv.parse_label(['2N7002_NC', 'G'], 'Q44', odm='msi')
+    assert p['kind'] == 'transistor' and p['part_number'] == '2N7002' and p['specs'] == {}
+    assert p['confidence'] == 'medium' and 'not fitted by default' in p['flags']
+    assert sv.designator_kind('D12') == 'diode' and sv.designator_kind('U3') == 'ic' and sv.designator_kind('PQ5') == 'transistor'
+
+
+def test_gigabyte_title_block_and_one_letter_dielectric():
+    assert sv.detect_odm('GIGA-BYTE TECHNOLOGY CO., LTD. GIGA-BYTE TECHNOLOGY GIGABIT ETHERNET') == 'gigabyte'
+    p = sv.parse_label(['0.01U/6/X/50V/B'], 'C71', odm='gigabyte')
+    assert p['confidence'] == 'high' and p['package'] == '0603'
+    assert p['specs'] == {'capacitance_pf': 10000.0, 'voltage_v': 50.0, 'tolerance': '±0.1pF'}
+    assert 'dielectric' not in p['specs']                     # one letter: left unread
+    p = sv.parse_label(['22P/4/N/50V/X'], 'C9', odm='gigabyte')
+    assert p['specs'] == {'capacitance_pf': 22.0, 'voltage_v': 50.0} and p['package'] == '0402'
+
+
+def test_gigabyte_voltage_first_labels():
+    p = sv.parse_label(['0.1U/16V/X7R/4/X'], 'C12', odm='gigabyte')
+    assert p['specs'] == {'capacitance_pf': 100000.0, 'voltage_v': 16.0, 'dielectric': 'X7R'} and p['package'] == '0402'
+    assert sv.parse_label(['220P/50V/N/6'], 'C3', odm='gigabyte')['package'] == '0603'
+    p = sv.parse_label(['10UH/8'], 'L1', odm='gigabyte')
+    assert p['specs'] == {'inductance_uh': 10.0} and p['package'] == '0805' and p['confidence'] == 'high'

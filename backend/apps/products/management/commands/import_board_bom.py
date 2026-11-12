@@ -38,6 +38,9 @@ earlier that are no longer in the bundle are removed.
 
 With "attach_to_existing": true, a bundle whose product already exists under
 another owner adds its documents to that product and changes nothing else.
+With "add_components_to_existing": true, such a bundle adds its components to
+that product under the bundle's own tag (a parts list read from documents
+another import uploaded) and leaves the product's identity and documents alone.
 
 Generic passives come through as ordinary components (manufacturer "Generic",
 part_number a spec string such as "RES 10K 1% 1/10W 0603") whose
@@ -191,9 +194,16 @@ class Command(BaseCommand):
                 self.import_documents(bundle, existing, user, folder, dry_run, result)
                 self.import_firmware(bundle, existing, user, folder, dry_run, result)
                 return result
-            result['products_skipped'] = 1
-            return result
-        if product:
+            if bundle.get('add_components_to_existing') and existing:
+                # another import's product: this bundle's parts list goes on it under this tag
+                # (re-running replaces the rows this tag owns); identity and documents stay theirs
+                product = existing
+                product.product_components.filter(import_source=tag).delete()
+                result['products_attached'] = 1
+            else:
+                result['products_skipped'] = 1
+                return result
+        elif product:
             self.update_identity(product, {**p, 'description': full_description(bundle)})
             product.product_components.filter(import_source=tag).delete()
             result['products_updated'] = 1
