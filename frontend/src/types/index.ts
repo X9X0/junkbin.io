@@ -230,6 +230,10 @@ export interface Component {
   pricing_data?: NexarData | null;
   equivalent_parts?: EquivalentParts | null;
   lookup_mode?: 'exact' | 'equivalents' | 'not_stocked';
+  /** curated stand-ins (valves): same designations first, then drop-ins, then ones to check */
+  substitutes?: Substitute[];
+  /** brands producing this type now, from the valve substitution table */
+  made_today_by?: string[];
   created_by?: CreatedBy;
   primary_image?: ComponentImage | null;
   manufacturer_aliases?: string[];
@@ -652,6 +656,16 @@ export interface NexarData {
 }
 
 // Distributor parts that fit a generic BOM line ("CAP 10nF 200V"), from the Lookup button
+export interface Substitute {
+  id: string;
+  part_number: string;
+  manufacturer: string;
+  grade: 'same' | 'near' | 'check';
+  notes: string;
+  usage_count: number;
+  made_today: boolean;
+}
+
 export interface EquivalentFit {
   score: number;
   notes: string[];

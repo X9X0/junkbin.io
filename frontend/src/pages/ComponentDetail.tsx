@@ -354,6 +354,8 @@ export default function ComponentDetail() {
               componentType={component.component_type}
               mode={component.lookup_mode}
               equivalents={component.equivalent_parts}
+              substitutes={component.substitutes}
+              madeTodayBy={component.made_today_by}
             />
           ) : (
             <PricingPanel

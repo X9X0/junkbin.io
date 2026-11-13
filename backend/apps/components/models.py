@@ -904,6 +904,38 @@ class ComponentVote(models.Model):
         return f'{self.user} → {self.vote_type} on {self.product_component}'
 
 
+class Substitute(models.Model):
+    """
+    One part that can stand in for another, and how well. Curated (valve substitution
+    tables, maker cross-reference sheets) rather than looked up, for the parts no
+    distributor search can answer. Directional: `substitute` replaces `component`.
+    A 7189 replaces an EL84 outright; an EL84 replaces a 7189 only where the plate
+    voltage allows, so the two directions carry different grades and notes.
+    """
+    GRADES = [
+        ('same', _('Same part under another designation')),
+        ('near', _('Drop-in, with a difference to know about')),
+        ('check', _('Fits the socket; check ratings or bias first')),
+    ]
+    GRADE_ORDER = {'same': 0, 'near': 1, 'check': 2}
+
+    component = models.ForeignKey(Component, on_delete=models.CASCADE, related_name='substitutes')
+    substitute = models.ForeignKey(Component, on_delete=models.CASCADE, related_name='substitute_for')
+    grade = models.CharField(max_length=8, choices=GRADES)
+    notes = models.TextField(blank=True, help_text=_('What differs and what to check, in one or two sentences'))
+    source = models.CharField(max_length=200, blank=True, help_text=_('Where the equivalence comes from'))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = _('substitute')
+        verbose_name_plural = _('substitutes')
+        unique_together = [('component', 'substitute')]
+        ordering = ['component__part_number', 'grade', 'substitute__part_number']
+
+    def __str__(self):
+        return f'{self.substitute} for {self.component} ({self.grade})'
+
+
 class ExternalPartSearch(models.Model):
     """
     Cached distributor results (DigiKey/Mouser/Nexar) for a part-number search
