@@ -79,11 +79,16 @@ def search(query):
     return results, False
 
 
-def digikey_keyword(client, q, limit=MAX_RESULTS):
-    resp = client._call('post', client.KEYWORD_URL, json={'Keywords': q, 'Limit': limit})
+def digikey_search(client, body):
+    """Raw DigiKey v4 keyword-search answer for a request body ({} when DigiKey has nothing)."""
+    resp = client._call('post', client.KEYWORD_URL, json=body)
     if resp.status_code == 404:
-        return []
-    data = resp.json()
+        return {}
+    return resp.json()
+
+
+def digikey_keyword(client, q, limit=MAX_RESULTS):
+    data = digikey_search(client, {'Keywords': q, 'Limit': limit})
     products = (data.get('ExactMatches') or []) + (data.get('Products') or [])
     return [client._parse_part(p) for p in products]
 

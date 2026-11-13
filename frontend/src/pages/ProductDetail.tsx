@@ -1,4 +1,5 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import RevisionSelector from '../components/RevisionSelector';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { products, schematics, firmware, junkbin } from '../api/endpoints';
@@ -328,6 +329,7 @@ export default function ProductDetail() {
                     {t('product_detail.revision')} {product.revision}
                   </div>
                 )}
+                <RevisionSelector product={product} />
               </div>
               {product.is_featured && (
                 <span className="badge-cyber text-cyber-yellow border-cyber-yellow">

@@ -1,8 +1,12 @@
 """
 Product serializers for Junkbin.io API
 """
+import re
+
 from rest_framework import serializers
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from .models import (
@@ -14,6 +18,16 @@ from utils.file_validation import validate_firmware_file, validate_image_file, v
 from utils.image_processing import strip_exif
 
 User = get_user_model()
+
+
+def revision_key(revision):
+    """Sort key putting revisions in the order a board house numbers them: '' (the model
+    with no revision stated) first, then 0A, 0B, 1.0, 1.1, 2.0, 3.0B, 3.0C, 10 - digits
+    compared as numbers, letters as text."""
+    text = (revision or '').strip().upper()
+    if not text:
+        return (0, [])
+    return (1, [(0, int(part)) if part.isdigit() else (1, part) for part in re.findall(r'\d+|[^\d.\s_-]+', text)])
 
 
 class ProductImageSerializer(serializers.ModelSerializer):
@@ -180,6 +194,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     comment_count = serializers.SerializerMethodField()
     repair_report_count = serializers.SerializerMethodField()
+    revisions = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -191,8 +206,29 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'component_count', 'image_count', 'schematic_count', 'firmware_count',
             'comment_count', 'repair_report_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
-            'is_approved', 'is_featured'
+            'is_approved', 'is_featured', 'revisions'
         ]
+
+    def get_revisions(self, obj):
+        """The other hardware revisions (and region variants) of this model, each its own
+        product, so the page can offer them in one selector: [] when the model has only
+        this one. The product itself is in the list, in order, so the selector shows where
+        it sits. Unapproved siblings are listed only for staff and moderators."""
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        siblings = Product.objects.filter(manufacturer__iexact=obj.manufacturer, model_number__iexact=obj.model_number)
+        if not (user and (user.is_staff or getattr(user, 'is_moderator', False))):
+            siblings = siblings.filter(models.Q(is_approved=True) | models.Q(pk=obj.pk))
+        rows = list(siblings.annotate(
+            schematics_n=models.Count('schematics', filter=models.Q(schematics__is_approved=True), distinct=True)
+        ).values('id', 'slug', 'revision', 'region', 'component_count', 'schematics_n'))
+        if len(rows) < 2:
+            return []
+        regions = dict(settings.REGIONS)
+        return [{'id': str(r['id']), 'slug': r['slug'], 'revision': r['revision'], 'region': r['region'],
+                 'region_display': str(regions.get(r['region'], r['region'])), 'component_count': r['component_count'],
+                 'schematic_count': r['schematics_n']}
+                for r in sorted(rows, key=lambda r: (revision_key(r['revision']), r['region']))]
         read_only_fields = [
             'id', 'slug', 'component_count', 'view_count',
             'created_by', 'created_at', 'updated_at',

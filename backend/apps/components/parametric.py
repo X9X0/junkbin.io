@@ -4,10 +4,22 @@ Equivalent-part search for generic components.
 A BOM line like "CAP 10nF 200V" or "RES 10K 5% 1/4W" is stored as a Component
 with manufacturer "Generic" and the spec string as its part number. No
 distributor sells a part by that name, so the exact-match lookup (lookup.py)
-can never answer for it. This module asks DigiKey's keyword search with a
-spec-style query instead, keeps the hits whose ratings fit the line (same
-value, voltage and power at least as high, tolerance no wider) and ranks
-them by how close they are and whether they are in stock.
+can never answer for it. This module asks DigiKey for parts with the line's
+ratings instead, keeps the hits whose ratings fit (same value, voltage and
+power at least as high, tolerance no wider) and ranks them by how close they
+are and whether they are in stock.
+
+DigiKey's keyword search alone is not enough: it ranks by word relevance, so
+"5 pF 50V C0G 0603" returns fifty 0603 C0G parts of other values (the "5"
+also matches 0.5, 5.6 and 15 pF) and the real 5 pF parts never surface.
+The search therefore filters the way DigiKey's own site does: one call with
+the product category pinned returns the category's parametric filter values
+(FilterOptions.ParametricFilters: "Capacitance" -> "5 pF", "Voltage - Rated"
+-> "50V", "Package / Case" -> "0603 (1608 Metric)" ...), the values that fit
+the line are chosen, and a second call with those filters returns only parts
+of the right value. Category ids and parameter names were read from the API
+on 2026-11-12 (CATEGORY, VALUE_PARAMETER); a kind without a known category
+costs one more call to read the top hit's category.
 
 Results are cached in ExternalPartSearch under the query text, so the
 thousands of generic rows that share a spec string share one API call,
@@ -26,9 +38,10 @@ from django.core.cache import cache
 from django.utils import timezone
 
 from .distributors import get_digikey
-from .external_search import CACHE_DAYS, DIGIKEY_RESERVE, SearchUnavailable, digikey_keyword
+from .external_search import CACHE_DAYS, DIGIKEY_RESERVE, SearchUnavailable, digikey_keyword, digikey_search
 from .models import ExternalPartSearch
 from .spec_fill import _comparable
+from . import spec_parse
 from .spec_parse import SITE_TYPE, parse_description
 
 logger = logging.getLogger(__name__)
@@ -174,6 +187,135 @@ def query_for(component):
     return ' '.join(w for w in words if w)[:60]
 
 
+# DigiKey product categories (v4 API ids, read 2026-11-12). A kind that is not here, or whose
+# dielectric / mounting cannot be told from the line, is looked up from the top keyword hit.
+CATEGORY = {
+    'ceramic': 60, 'electrolytic': 58, 'tantalum': 59, 'film': 62, 'mica': 64,     # capacitors, by dielectric
+    'chip_resistor': 52, 'through_hole_resistor': 53,
+    'inductor': 71, 'ferrite': 841, 'fuse': 139, 'thermistor': 508,
+}
+CERAMIC_CODE = re.compile(r'^(?:[A-Z]\d[A-Z]|NP0|C0G|COG)$', re.I)       # X7R, Y5V, C0G ...
+# DigiKey parameter names that carry the line's value, per site type
+VALUE_PARAMETER = {
+    'resistor': ('Resistance',), 'potentiometer': ('Resistance',), 'thermistor': ('Resistance @ 25°C', 'Resistance'),
+    'capacitor': ('Capacitance',), 'inductor': ('Inductance',), 'fuse': ('Current Rating', 'Current Rating (Amps)'),
+    'crystal': ('Frequency',),
+}
+FILTER_LIMIT = 50
+
+
+def category_for(component):
+    """DigiKey category id for a generic line, or None when the API has to be asked."""
+    specs = _comparable(component.specifications or {})
+    kind = component.component_type
+    package = str(component.package_type or specs.get('size_on_bom') or '')
+    chip = bool(re.fullmatch(r'\d{4}', package))
+    if kind == 'capacitor':
+        d = str(specs.get('dielectric', '')).lower()
+        if CERAMIC_CODE.match(d):
+            d = 'ceramic'
+        return CATEGORY.get(d) or (CATEGORY['ceramic'] if chip else None)
+    if kind == 'resistor':
+        return CATEGORY['chip_resistor'] if chip else (CATEGORY['through_hole_resistor'] if package else None)
+    return CATEGORY.get(kind)
+
+
+def _value_of(name, kind):
+    """Numeric reading of a DigiKey filter value name ('5 pF', '10 kOhms', '0.1W, 1/10W')
+    in the unit the site stores the kind's value in."""
+    raw = spec_parse._norm(name)
+    u = raw.upper()
+    if kind in ('resistor', 'potentiometer', 'thermistor'):
+        return spec_parse._ohms(u, raw)
+    if kind == 'capacitor':
+        return spec_parse._farads_pf(u)
+    if kind == 'inductor':
+        return spec_parse._henries_uh(u)
+    if kind == 'crystal':
+        return spec_parse._hertz_mhz(u)
+    if kind == 'fuse':
+        return spec_parse._current(u)
+    return None
+
+
+def _same(a, b):
+    return isinstance(a, (int, float)) and isinstance(b, (int, float)) and b and abs(a - b) / b <= VALUE_SLACK
+
+
+def choose_filters(component, parametric_filters):
+    """DigiKey ParameterFilters for the line's value, voltage, power, package and dielectric,
+    chosen from the category's filter values. None when the category offers no value that
+    matches the line's (DigiKey then has nothing of that value: no second call is worth it)."""
+    kind = component.component_type
+    want = _comparable(component.specifications or {})
+    _, value_key, _ = KINDS[kind]
+    package = str(component.package_type or want.get('size_on_bom') or '').upper()
+    dielectric = str(want.get('dielectric', '')).upper()
+    chosen = []
+    value_filter_seen = False
+    for p in parametric_filters or []:
+        name, values = p.get('ParameterName', ''), p.get('FilterValues') or []
+        ids = []
+        if name in VALUE_PARAMETER.get(kind, ()):
+            value_filter_seen = True
+            ids = [v['ValueId'] for v in values if _same(_value_of(v.get('ValueName', ''), kind), want.get(value_key))]
+            if not ids:
+                return None
+        elif name in ('Voltage - Rated', 'Voltage Rating', 'Voltage - Rated DC') and isinstance(want.get('voltage_v'), (int, float)):
+            for v in values:
+                text = v.get('ValueName', '')
+                volts = None if 'AC' in text.upper() else spec_parse._voltage(spec_parse._norm(text).upper())
+                if isinstance(volts, (int, float)) and volts >= want['voltage_v'] * (1 - VALUE_SLACK):
+                    ids.append(v['ValueId'])
+        elif name == 'Power (Watts)' and isinstance(want.get('power_w'), (int, float)) and kind in ('resistor', 'potentiometer'):
+            for v in values:
+                watts = spec_parse._power(spec_parse._norm(v.get('ValueName', '')).upper())
+                if isinstance(watts, (int, float)) and watts >= want['power_w'] * (1 - VALUE_SLACK):
+                    ids.append(v['ValueId'])
+        elif name == 'Package / Case' and re.fullmatch(r'\d{4}', package):
+            ids = [v['ValueId'] for v in values if re.match(rf'{package}\b(?!\s*Metric)', v.get('ValueName', ''))]
+        elif name == 'Temperature Coefficient' and kind == 'capacitor' and CERAMIC_CODE.match(dielectric):
+            words = {'C0G', 'NP0', 'COG'} if dielectric in ('C0G', 'NP0', 'COG') else {dielectric}
+            ids = [v['ValueId'] for v in values if any(w in v.get('ValueName', '').upper() for w in words)]
+        if ids:
+            chosen.append({'ParameterId': p['ParameterId'], 'FilterValues': [{'Id': i} for i in ids]})
+    if not value_filter_seen:
+        return None                 # no value parameter in this category: filtering would not help
+    return chosen
+
+
+def _leaf_category(product):
+    cat = product.get('Category') or {}
+    while cat.get('ChildCategories'):
+        cat = cat['ChildCategories'][0]
+    return cat.get('CategoryId')
+
+
+def filtered_hits(digikey, component, query):
+    """Parts of the line's value from DigiKey, via the category's parametric filters.
+    Two API calls (three when the category has to be discovered)."""
+    category = category_for(component)
+    if category is None:
+        first = digikey_search(digikey, {'Keywords': query, 'Limit': 1})
+        top = (first.get('ExactMatches') or first.get('Products') or [None])[0]
+        category = top and _leaf_category(top)
+        if not category:
+            return []
+    options = digikey_search(digikey, {'Keywords': query, 'Limit': 1,
+                                       'FilterOptionsRequest': {'CategoryFilter': [{'Id': str(category)}]}})
+    filters = choose_filters(component, (options.get('FilterOptions') or {}).get('ParametricFilters'))
+    if filters is None:
+        return []
+    body = {'Keywords': query, 'Limit': FILTER_LIMIT,
+            'FilterOptionsRequest': {'ParameterFilterRequest': {'CategoryFilter': {'Id': str(category)},
+                                                                'ParameterFilters': filters}}}
+    data = digikey_search(digikey, body)
+    return [digikey._parse_part(p) for p in (data.get('ExactMatches') or []) + (data.get('Products') or [])]
+
+
+SOURCES = ['digikey', 'parametric', 'filtered']     # 'filtered' marks rows made by the filtered search
+
+
 def search(component):
     """(candidates, from_cache) for a generic component. Raises SearchUnavailable when
     DigiKey cannot be asked (reserve spent, not configured, outage)."""
@@ -181,7 +323,9 @@ def search(component):
     if not query:
         return [], False
     cached = ExternalPartSearch.objects.filter(query=query).first()
-    if cached and cached.fetched_at > timezone.now() - timedelta(days=CACHE_DAYS):
+    # rows from the keyword-only search (before 'filtered') held whatever DigiKey ranked first,
+    # often nothing of the right value: ask again rather than serve them
+    if cached and 'filtered' in cached.sources and cached.fetched_at > timezone.now() - timedelta(days=CACHE_DAYS):
         ExternalPartSearch.objects.filter(pk=cached.pk).update(search_count=cached.search_count + 1)
         return cached.results, True
 
@@ -189,7 +333,7 @@ def search(component):
     if not digikey.is_configured or cache.get('digikey_remaining', 1000) <= DIGIKEY_RESERVE:
         raise SearchUnavailable('DigiKey search budget for today is used up')
     try:
-        hits = digikey_keyword(digikey, query, limit=KEYWORD_LIMIT)
+        hits = filtered_hits(digikey, component, query)
     except Exception as exc:
         logger.warning('DigiKey parametric search failed for %s: %s', query, exc)
         raise SearchUnavailable(f'DigiKey did not answer ({exc})')
@@ -198,7 +342,7 @@ def search(component):
             cache.set('digikey_remaining', digikey.remaining, 6 * 3600)
     results = rank(hits, component)[:MAX_RESULTS]
     ExternalPartSearch.objects.update_or_create(
-        query=query, defaults={'results': results, 'sources': ['digikey', 'parametric'], 'fetched_at': timezone.now(),
+        query=query, defaults={'results': results, 'sources': SOURCES, 'fetched_at': timezone.now(),
                                'search_count': (cached.search_count + 1) if cached else 1})
     return results, False
 
