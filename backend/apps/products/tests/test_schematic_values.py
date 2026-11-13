@@ -258,3 +258,13 @@ def test_msi_value_glued_to_size_is_not_a_decimal(word, ohms, package):
     """'47R0402' on an MSI server board is 47 ohm in 0402, not 47.0402 ohm (R read as the point)."""
     p = sv.parse_label([word], 'R12', odm='msi')
     assert p['specs']['resistance_ohm'] == ohms and p['package'] == package, (word, p)
+
+
+def test_a_value_beside_a_chip_designator_is_not_its_part_number():
+    """'470Ohm' next to Q6202, '400MHz' at U47, '15V' at D9: a neighbour's value or the chip's
+    rating. The row is left without a part number (and so without a list entry) rather than
+    making a Generic "470Ohm" transistor."""
+    for word, designator in (('470Ohm', 'Q6202'), ('400MHz', 'U47'), ('15V', 'D9'), ('1500uF', 'Q3'), ('100KOhm', 'D3801'), ('1000mA', 'Q1')):
+        assert parse_label([word], designator)['part_number'] is None, word
+    for chip in ('W83627F', '83627F'):          # a long bare number with one letter is a chip
+        assert parse_label([chip], 'U7')['part_number'] == chip, chip

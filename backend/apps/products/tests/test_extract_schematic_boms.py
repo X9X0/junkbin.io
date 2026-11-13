@@ -133,3 +133,10 @@ def test_values_with_more_than_three_significant_digits_are_misreads():
         assert not plausible(bad), bad
     assert usable(_row('R1', 'RES 4.7K 0402', specs={'resistance_ohm': 4700.0}, kind='resistor'))
     assert not usable(_row('R2', 'RES 1.005K 0402', specs={'resistance_ohm': 1005.0}, kind='resistor'))
+
+
+def test_value_words_are_never_usable_chip_part_numbers():
+    from apps.products.management.commands.extract_schematic_boms import usable
+    row = {'manufacturer': '', 'reference_designator': 'D8', 'part_number': '680Ohm', 'specifications': {}}
+    assert not usable(row)
+    assert usable({**row, 'part_number': 'BAT54C-7'})
