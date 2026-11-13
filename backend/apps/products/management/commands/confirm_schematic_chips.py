@@ -153,6 +153,14 @@ class Command(BaseCommand):
 
     # ---- verify -------------------------------------------------------------------------
     def verify(self, options):
+        import fcntl
+        VERDICTS.parent.mkdir(parents=True, exist_ok=True)
+        lock = open(VERDICTS.parent / 'verify.lock', 'w')
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            self.stdout.write('verify: another verify run holds the lock; nothing done')
+            return
         verdicts = load_verdicts()
         digikey, mouser = get_digikey(), get_mouser()
         spent = {'digikey': 0, 'mouser': 0}

@@ -179,3 +179,9 @@ def test_family_listings_confirm_the_maker_or_leave_a_multi_sourced_part_generic
 def test_a_bare_number_is_never_asked_for_but_a_sot23_number_is_a_transistor():
     assert cl.candidates('3904-S-SOT23')[:2] == ['MMBT3904', '2N3904'] and cl.standard_from_label('3904-S-SOT23') == 'MMBT3904'
     assert cl.candidates('3904') == [] and cl.candidates('775-land') == ['775-LAND', '775LAND']
+
+
+def test_jis_transistors_are_standard_and_maker_codes_are_not():
+    assert cl.standard_from_label('2SB1197K') == '2SB1197K' and cl.standard_from_label('PNP-2SB1197K-S-SOT23') == '2SB1197K'
+    assert cl.standard_from_label('BSS138') == 'BSS138' and cl.standard_from_label('BZX84C5V1') == 'BZX84C5V1'
+    assert cl.standard_from_label('BSC032N03S') is None and cl.standard_from_label('BSC059N03SG') is None
