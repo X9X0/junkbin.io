@@ -195,6 +195,8 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     pricing_data = serializers.SerializerMethodField()
     equivalent_parts = serializers.SerializerMethodField()
     lookup_mode = serializers.SerializerMethodField()
+    substitutes = serializers.SerializerMethodField()
+    made_today_by = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     datasheets = serializers.SerializerMethodField()
@@ -208,8 +210,23 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at', 'pricing_data', 'equivalent_parts', 'lookup_mode',
-            'primary_image', 'images', 'datasheets',
+            'substitutes', 'made_today_by', 'primary_image', 'images', 'datasheets',
         ]
+
+    def get_substitutes(self, obj):
+        """Curated stand-ins (Substitute rows): same designations first, then drop-ins,
+        then the ones to check; within a grade the most-used part first."""
+        from .models import Substitute
+        rows = obj.substitutes.select_related('substitute').all()
+        rows = sorted(rows, key=lambda r: (Substitute.GRADE_ORDER.get(r.grade, 9), -r.substitute.usage_count, r.substitute.part_number))
+        return [{'id': str(r.substitute_id), 'part_number': r.substitute.part_number, 'manufacturer': r.substitute.manufacturer,
+                 'grade': r.grade, 'notes': r.notes, 'usage_count': r.substitute.usage_count,
+                 'made_today': bool((r.substitute.specifications or {}).get('made_today_by'))}
+                for r in rows]
+
+    def get_made_today_by(self, obj):
+        """Brands producing this type now (valves), from the substitution table."""
+        return (obj.specifications or {}).get('made_today_by') or []
         read_only_fields = [
             'id', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at'

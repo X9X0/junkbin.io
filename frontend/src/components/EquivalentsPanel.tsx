@@ -5,13 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Clock, ExternalLink, Package, Plus, RefreshCw, Search } from 'lucide-react';
 import { components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
-import type { EquivalentParts, ExternalPart } from '../types';
+import type { EquivalentParts, ExternalPart, Substitute } from '../types';
 
 interface Props {
   componentId: string;
   componentType: string;
   mode: 'equivalents' | 'not_stocked';
   equivalents?: EquivalentParts | null;
+  /** curated stand-ins (valves): shown instead of a distributor search */
+  substitutes?: Substitute[];
+  madeTodayBy?: string[];
 }
 
 const NOT_STOCKED_KEY: Record<string, string> = {
@@ -19,6 +22,58 @@ const NOT_STOCKED_KEY: Record<string, string> = {
   transformer: 'equivalents.not_stocked_transformers',
   speaker: 'equivalents.not_stocked_speakers',
 };
+
+const GRADE_STYLE: Record<Substitute['grade'], string> = {
+  same: 'text-cyber-green border-cyber-green/40',
+  near: 'text-cyber-cyan border-cyber-cyan/40',
+  check: 'text-cyber-yellow border-cyber-yellow/40',
+};
+
+/**
+ * What else fits a valve socket, from the substitution table (backend valves.py). No
+ * distributor the site asks stocks valves, so this is the whole answer for them: the same
+ * valve under its other names, drop-ins with a difference, and the ones that fit but need
+ * the bias or ratings checked first.
+ */
+function SubstitutesTable({ substitutes, madeTodayBy }: { substitutes: Substitute[]; madeTodayBy: string[] }) {
+  const { t } = useTranslation();
+  return (
+    <>
+      {madeTodayBy.length > 0 && (
+        <p className="text-gray-400 text-sm mb-3">{t('equivalents.made_today', { makers: madeTodayBy.join(', ') })}</p>
+      )}
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-cyber-light/10 text-gray-500 font-mono text-xs uppercase">
+              <th className="py-2 pr-4 text-left">Part</th>
+              <th className="py-2 pr-4 text-left">{t('equivalents.fit')}</th>
+              <th className="py-2 text-left">{t('equivalents.notes')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {substitutes.map((s) => (
+              <tr key={s.id} className="border-b border-cyber-light/5 hover:bg-cyber-light/5 align-top">
+                <td className="py-2.5 pr-4 whitespace-nowrap">
+                  <Link to={`/components/${s.id}`} className="text-white font-mono hover:text-cyber-cyan">{s.part_number}</Link>
+                  {s.made_today && <span className="ml-2 text-cyber-green text-xs" title={t('equivalents.in_production')}>●</span>}
+                  {s.usage_count > 0 && (
+                    <div className="text-gray-500 text-xs">{t('equivalents.used_in', { count: s.usage_count })}</div>
+                  )}
+                </td>
+                <td className="py-2.5 pr-4 whitespace-nowrap">
+                  <span className={`badge-cyber text-xs ${GRADE_STYLE[s.grade]}`}>{t(`equivalents.grade_${s.grade}`)}</span>
+                </td>
+                <td className="py-2.5 text-gray-400">{s.notes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-gray-600 text-xs mt-3">{t('equivalents.substitutes_note')}</p>
+    </>
+  );
+}
 
 function isStale(isoDate: string): boolean {
   return Date.now() - new Date(isoDate).getTime() > 7 * 24 * 3600 * 1000;
@@ -39,7 +94,7 @@ function timeAgo(isoDate: string): string {
  * Lookup button asks DigiKey for parts that fit its value and ratings instead
  * (backend parametric.py) and lists them with stock, price and an add button.
  */
-export default function EquivalentsPanel({ componentId, componentType, mode, equivalents }: Props) {
+export default function EquivalentsPanel({ componentId, componentType, mode, equivalents, substitutes = [], madeTodayBy = [] }: Props) {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
@@ -67,9 +122,14 @@ export default function EquivalentsPanel({ componentId, componentType, mode, equ
           <Search className="h-5 w-5 text-cyber-green" />
           {t('equivalents.title')}
         </h2>
-        <p className="text-gray-500 text-sm">
-          {t('equivalents.not_stocked', { what: t(NOT_STOCKED_KEY[componentType] || 'equivalents.not_stocked_tubes') })}
-        </p>
+        {substitutes.length > 0 ? (
+          <SubstitutesTable substitutes={substitutes} madeTodayBy={madeTodayBy} />
+        ) : (
+          <p className="text-gray-500 text-sm">
+            {t('equivalents.not_stocked', { what: t(NOT_STOCKED_KEY[componentType] || 'equivalents.not_stocked_tubes') })}
+            {componentType === 'vacuum_tube' && ` ${t('equivalents.none_curated')}`}
+          </p>
+        )}
       </div>
     );
   }
