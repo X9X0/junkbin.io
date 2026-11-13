@@ -10,6 +10,7 @@ parts whose part number a factory BOM line gave without confirmation: its BOM ro
 the REVIEW mark, and marking the part correct takes the mark off all of them at once.
 """
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.components.models import Component, ComponentDatasheet, ProductComponent
@@ -26,7 +27,7 @@ BATCHES = {
     'norway-ds': {'label': 'Datasheets attached to existing components', 'item_type': 'datasheet'},
     'norway-fw': {'label': 'Firmware / BIOS flash dumps (mostly laptops)', 'item_type': 'firmware'},
     'image-search': {'label': 'Product photos found by image search', 'item_type': 'image'},
-    'norway-bom-pn': {'label': 'Factory-BOM part numbers read from the line, not confirmed',
+    'norway-bom-pn': {'label': 'Part numbers read from a BOM line or a schematic label, not confirmed',
                       'item_type': 'bom-part'},
 }
 # the note import_board_bom gives a BOM row whose part number was read from the line, unconfirmed
@@ -51,9 +52,16 @@ def items(batch):
     return ComponentDatasheet.objects.filter(source_notes__startswith=f'[{batch}]')
 
 
+# the note extract_schematic_boms gives a chip read from a schematic label, unconfirmed
+UNCONFIRMED_LABEL = 'part number read from the schematic label; no factory BOM checked it'
+
+
 def unconfirmed_rows(component=None):
-    """BOM rows whose part number import_board_bom read from the line without confirming it."""
-    rows = ProductComponent.objects.filter(import_source__startswith='norway-bom:', notes__contains=UNCONFIRMED)
+    """BOM rows whose part number was read from a factory-BOM line or a schematic label
+    without anything confirming it (import_board_bom marks them needs_review)."""
+    rows = ProductComponent.objects.filter(
+        Q(import_source__startswith='norway-bom:', notes__contains=UNCONFIRMED)
+        | Q(import_source__startswith='schematic-bom:', notes__contains=UNCONFIRMED_LABEL))
     return rows.filter(component=component) if component is not None else rows
 
 
@@ -133,10 +141,11 @@ def evidence(batch, obj):
         rows = unconfirmed_rows(obj).select_related('product').order_by('product__model_number')
         lines, why = {}, {}
         for row in rows:
-            line, _, reason = row.notes.partition(f'; {UNCONFIRMED}: ')
-            line = line.removeprefix('Factory BOM line: ')
+            marker = UNCONFIRMED if UNCONFIRMED in row.notes else UNCONFIRMED_LABEL
+            line, _, reason = row.notes.partition(f'; {marker}')
+            line = line.removeprefix('Factory BOM line: ').removeprefix('Schematic label: ')
             lines[line] = lines.get(line, 0) + 1
-            why.setdefault(reason, None)
+            why.setdefault(reason.lstrip(': ') or ('read from a schematic label' if marker == UNCONFIRMED_LABEL else ''), None)
         products = {row.product_id: row.product for row in rows}
         return {
             'item_type': 'bom-part', 'id': str(obj.pk), 'component_id': str(obj.pk),
@@ -144,7 +153,7 @@ def evidence(batch, obj):
             'description': 'Not confirmed because ' + '; or '.join(r for r in why if r) + '.' if any(why) else '',
             'component_count': len(rows),
             'documents': [{'title': f'{p.manufacturer} {p.model_number} Rev {p.revision}', 'type': 'Used on',
-                           'url': f'/products/{p.slug}', 'description': ''} for p in list(products.values())[:4]],
+                           'url': f'/products/{p.pk}', 'description': ''} for p in list(products.values())[:4]],
             'bom_sample': [{'ref': f'{n} row' + ('s' if n > 1 else ''), 'part': obj.part_number,
                             'maker': obj.manufacturer, 'notes': line[:300]}
                            for line, n in sorted(lines.items(), key=lambda kv: -kv[1])[:6]],
