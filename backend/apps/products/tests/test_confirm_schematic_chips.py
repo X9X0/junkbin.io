@@ -179,3 +179,31 @@ def test_family_listings_confirm_the_maker_or_leave_a_multi_sourced_part_generic
 def test_a_bare_number_is_never_asked_for_but_a_sot23_number_is_a_transistor():
     assert cl.candidates('3904-S-SOT23')[:2] == ['MMBT3904', '2N3904'] and cl.standard_from_label('3904-S-SOT23') == 'MMBT3904'
     assert cl.candidates('3904') == [] and cl.candidates('775-land') == ['775-LAND', '775LAND']
+
+
+def test_jis_transistors_are_standard_and_maker_codes_are_not():
+    assert cl.standard_from_label('2SB1197K') == '2SB1197K' and cl.standard_from_label('PNP-2SB1197K-S-SOT23') == '2SB1197K'
+    assert cl.standard_from_label('BSS138') == 'BSS138' and cl.standard_from_label('BZX84C5V1') == 'BZX84C5V1'
+    assert cl.standard_from_label('BSC032N03S') is None and cl.standard_from_label('BSC059N03SG') is None
+
+
+def test_listings_under_a_company_s_old_and_new_names_are_one_maker():
+    assert cmd.one_maker(['NXP', 'Nexperia']) == 'Nexperia'
+    assert cmd.one_maker(['Fairchild (onsemi)', 'onsemi']) == 'onsemi'
+    assert cmd.one_maker(['Harris Corporation', 'Renesas']) == 'Renesas'
+    assert cmd.one_maker(['STMicroelectronics', 'Texas Instruments', 'onsemi']) is None
+    assert cmd.one_maker(['Texas Instruments']) == 'Texas Instruments'
+
+
+def test_rows_join_an_existing_part_under_the_company_s_older_name(product_factory, component_factory, tmp_path, monkeypatch):
+    board = product_factory(manufacturer='MSI', model_number='MS-6728', is_approved=True)
+    label = _chip(component_factory, 'INTS-HIP6501A-SOIC16', 'ic')
+    older = component_factory(manufacturer='Intersil', part_number='HIP6501A', component_type='ic')
+    _row(board, label, 'U40')
+    verdicts = tmp_path / 'verdicts.json'
+    verdicts.write_text(json.dumps({'INTS-HIP6501A-SOIC16': {'status': 'prefix', 'candidate': 'HIP6501A', 'manufacturer': None,
+                                                             'makers': ['Harris Corporation', 'Renesas'], 'listed': ['HIP6501ACB'], 'sources': ['digikey']}}))
+    monkeypatch.setattr(cmd, 'VERDICTS', verdicts)
+    call_command('confirm_schematic_chips', 'apply', stdout=StringIO())
+    assert ProductComponent.objects.get(reference_designator='U40').component == older
+    assert not Component.objects.filter(pk=label.pk).exists() and not Component.objects.filter(manufacturer='Renesas', part_number='HIP6501A').exists()

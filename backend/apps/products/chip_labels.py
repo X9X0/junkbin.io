@@ -37,7 +37,10 @@ MAKER_WORDS = {'TI': 'Texas Instruments', 'NS': 'Texas Instruments', 'ON': 'onse
                'INTERSIL': 'Intersil', 'ITE': 'ITE', 'ICS': 'IDT', 'NIKO': 'Niko Semiconductor', 'ATL': ''}
 JEDEC = re.compile(r'^((?:1N|2N)\d{3,5}[A-RT-Z]?)(?:S|SR|-R|S-R)?$')  # the MSI 'S' (SMD) and reel marks stripped
 MMBT = re.compile(r'^MMBT\d{4}[A-Z0-9]{0,5}$')                         # SMD 2N transistors, every maker
-PRO_ELECTRON = re.compile(r'^B(?:A[STVWX]|C[A-Z]?|D[A-Z]?|F[A-Z]?|S[A-Z]|Z[XVT])\d{2,3}[A-Z0-9]{0,6}$')
+# Pro Electron: B + type letter(s) + 2-3 digits + a grade letter or two (BAT54A, BAV99, BC847B,
+# BSS138, BZX84C5V1); not a maker's own code with digits after the letters (Infineon BSC032N03S)
+PRO_ELECTRON = re.compile(r'^B(?:A[STVWX]|C[A-Z]?|D[A-Z]?|F[A-Z]?|S[A-Z]|Z[XVT])\d{2,3}[A-Z]{0,2}(?:C?\d+V\d+)?$')
+JIS = re.compile(r'^2S[ABCDJK]\d{3,4}[A-Z]{0,3}$')                     # JEITA-registered transistors: 2SC1815, 2SB1197K
 LOGIC = re.compile(r'^(?:SN|MC|CD|HD|TC|M|NC)?74[A-Z]{1,5}\d{1,4}[A-Z0-9]{0,6}$|^(?:CD|HEF|MC1)4\d{3}[A-Z]{0,4}$')
 NET = re.compile(r'^(?:[A-Z]{0,4}\d{0,4}(?:CLK|RST|PWR|PLL|SCLK)\d{0,4}[PN]?|VCC\w*|VDD\w*|GND\w*|VSS\w*)$')
 BARE_TRANSISTOR = re.compile(r'^(?:M?MBT)?(\d{4}[A-Z0-9]{0,5})$')      # '3904LT1' behind NPN-/PNP-
@@ -98,7 +101,7 @@ def standard_type(mpn):
     j = JEDEC.match(u)
     if j:
         return j.group(1)
-    if MMBT.match(u) or PRO_ELECTRON.match(u) or LOGIC.match(u):
+    if MMBT.match(u) or PRO_ELECTRON.match(u) or LOGIC.match(u) or JIS.match(u):
         return u
     return None
 

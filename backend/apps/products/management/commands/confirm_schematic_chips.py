@@ -64,6 +64,32 @@ STANDARD_NOTE = 'industry-standard type number read from the schematic label; an
 CONFIRMED_NOTE = 'part number read from the schematic label, confirmed at {source}'
 CONFIRMED_LINE_NOTE = 'part number read from the factory BOM line, confirmed at {source}'
 PREFIX_SUFFIX_MAX = 6                 # 'LT1087' -> 'LT1087CT#PBF': an ordering suffix, not another part
+# one company under its old and new names: listings under both are one maker, named by the first
+FAMILIES = [
+    ('Nexperia', 'NXP', 'Philips', 'NXP Semiconductors'),
+    ('onsemi', 'Fairchild (onsemi)', 'Fairchild Semiconductor', 'Fairchild', 'Motorola', 'ON Semiconductor'),
+    ('Renesas', 'Intersil', 'Harris Corporation', 'Harris (Intersil)', 'Renesas (Intersil)', 'IDT (Renesas)', 'ICS (Renesas)',
+     'Hitachi/Renesas', 'Renesas Electronics Corporation'),
+    ('Texas Instruments', 'National Semiconductor (TI)', 'National Semiconductor', 'Burr-Brown', 'Texas Instruments (Chipcon)'),
+    ('Analog Devices', 'Linear Technology', 'Maxim Integrated', 'Analog Devices (Linear Technology)'),
+    ('Vishay', 'Vishay Siliconix', 'Siliconix', 'General Semiconductor', 'Vishay General Semiconductor'),
+    ('Infineon', 'International Rectifier', 'Siemens (Infineon)', 'Infineon (Cypress)', 'Cypress'),
+    ('Microchip Technology', 'Atmel (Microchip Technology)', 'SST (Microchip Technology)', 'Micrel (Microchip Technology)', 'Atmel', 'Micrel'),
+    ('Diodes Incorporated', 'Zetex (Diodes Inc.)', 'Pericom (Diodes Inc.)', 'Zetex', 'Pericom'),
+    ('Nuvoton', 'Winbond'),
+]
+
+
+def one_maker(makers):
+    """The one maker a list of listing makers amounts to (its current name), or None when
+    they are really different companies."""
+    makers = [canonical_maker(m) or m for m in makers if m]
+    if len(set(makers)) == 1:
+        return makers[0]
+    for family in FAMILIES:
+        if all(m in family for m in makers):
+            return family[0]
+    return None
 
 
 def review_rows():
@@ -132,6 +158,9 @@ class Command(BaseCommand):
         parser.add_argument('--reserve', type=int, default=DIGIKEY_RESERVE, help='verify: DigiKey calls to leave for the site')
         parser.add_argument('--mouser-budget', type=int, default=400, help='verify: Mouser calls this run may spend')
         parser.add_argument('--dry-run', action='store_true', help='apply: report and roll back')
+        parser.add_argument('--mouser-only', action='store_true',
+                            help='verify: ask Mouser alone (exact matches) and record only the hits, for when the DigiKey '
+                                 'budget is spent but Mouser calls are left; the misses stay unchecked for DigiKey')
 
     def handle(self, *args, **options):
         getattr(self, options['stage'])(options)
@@ -153,6 +182,14 @@ class Command(BaseCommand):
 
     # ---- verify -------------------------------------------------------------------------
     def verify(self, options):
+        import fcntl
+        VERDICTS.parent.mkdir(parents=True, exist_ok=True)
+        lock = open(VERDICTS.parent / 'verify.lock', 'w')
+        try:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            self.stdout.write('verify: another verify run holds the lock; nothing done')
+            return
         verdicts = load_verdicts()
         digikey, mouser = get_digikey(), get_mouser()
         spent = {'digikey': 0, 'mouser': 0}
@@ -168,21 +205,32 @@ class Command(BaseCommand):
             else:
                 exact_needed = True
             cands = candidates(name, population)
-            if spent['digikey'] + len(cands) * (2 if exact_needed else 1) > options['budget']:
+            if options['mouser_only']:
+                if not exact_needed:
+                    continue
+                if spent['mouser'] + len(cands) > options['mouser_budget']:
+                    stop = 'Mouser budget for this run spent'
+                    break
+            elif spent['digikey'] + len(cands) * (2 if exact_needed else 1) > options['budget']:
                 stop = 'DigiKey budget for this run spent'
                 break
-            if digikey.remaining is not None and digikey.remaining <= options['reserve']:
+            elif digikey.remaining is not None and digikey.remaining <= options['reserve']:
                 stop = f'DigiKey reserve reached ({digikey.remaining} left)'
                 break
             verdict = {'status': 'notfound', 'tried': cands, 'population': population, 'prefix_checked': True,
                        'checked_at': datetime.now(timezone.utc).isoformat(timespec='seconds')}
             try:
                 for cand in cands:
-                    hit, source = self.ask(cand, digikey, mouser, spent, options['mouser_budget']) if exact_needed else (None, None)
+                    if options['mouser_only']:
+                        hit, source = self.ask(cand, None, mouser, spent, options['mouser_budget'])
+                    else:
+                        hit, source = self.ask(cand, digikey, mouser, spent, options['mouser_budget']) if exact_needed else (None, None)
                     if hit:
                         verdict.update({'status': 'confirmed', 'candidate': cand, **compact(hit, source)})
                         confirmed += 1
                         break
+                    if options['mouser_only']:
+                        continue
                     family = self.family(cand, digikey, spent)
                     if family:
                         verdict.update({'status': 'prefix', 'candidate': cand, **family})
@@ -191,13 +239,16 @@ class Command(BaseCommand):
             except DistributorError as exc:
                 stop = f'a distributor refused ({str(exc)[:120]})'
                 break
+            if options['mouser_only'] and verdict['status'] != 'confirmed':
+                checked += 1
+                continue                      # a Mouser miss proves nothing: leave it for DigiKey
             verdicts[name] = verdict
             checked += 1
             if checked % 25 == 0:
                 save_verdicts(verdicts)
                 self.stdout.write(f'  {checked} names checked, {confirmed} confirmed, DigiKey left {digikey.remaining}')
         save_verdicts(verdicts)
-        if digikey.remaining is not None:
+        if digikey.remaining is not None and not options['mouser_only']:
             cache.set('digikey_remaining', digikey.remaining, 6 * 3600)
         self.stdout.write(f'verify: {checked} names checked, {confirmed} confirmed; DigiKey calls {spent["digikey"]}, '
                           f'Mouser {spent["mouser"]}; verdicts on file {len(verdicts)}'
@@ -207,7 +258,7 @@ class Command(BaseCommand):
     def ask(cand, digikey, mouser, spent, mouser_budget):
         """(hit, source) for an exact match of cand: DigiKey first, Mouser only when DigiKey
         has nothing and the Mouser budget allows. Raises DistributorError when refused."""
-        if digikey.is_configured:
+        if digikey is not None and digikey.is_configured:
             spent['digikey'] += 1
             hit = digikey.search_mpn(cand, None)
             time.sleep(0.4)
@@ -269,7 +320,7 @@ class Command(BaseCommand):
                     at = ' and '.join(verdict.get('sources') or ['a distributor'])
                     if verdict.get('status') == 'prefix':
                         at += ' as the family ' + ', '.join(verdict.get('listed') or [])
-                        if not verdict.get('manufacturer'):
+                        if not verdict.get('manufacturer') and not one_maker(verdict.get('makers') or []):
                             at += ' (made by ' + ', '.join(verdict.get('makers') or []) + ')'
                     note = (STANDARD_NOTE if kind == 'standard'
                             else (CONFIRMED_NOTE if population == 'labels' else CONFIRMED_LINE_NOTE).format(source=at))
@@ -304,10 +355,14 @@ class Command(BaseCommand):
             if (description or '').startswith(name):
                 description = mpn + description[len(name):]      # 'NPN-3904LT1-S-SOT23 (transistor)' -> 'MMBT3904LT1 (transistor)'
         else:
-            maker = canonical_maker(verdict.get('manufacturer') or '') or verdict.get('manufacturer') or 'Generic'
+            maker = (canonical_maker(verdict.get('manufacturer') or '') or verdict.get('manufacturer')
+                     or one_maker(verdict.get('makers') or []) or 'Generic')
             mpn = verdict.get('candidate') if verdict.get('status') == 'prefix' else (verdict.get('mpn') or verdict.get('candidate'))
             description = source.description if population == 'lines' else (verdict.get('description') or source.description)
-        existing = Component.objects.filter(manufacturer__iexact=maker, part_number__iexact=mpn).exclude(pk=source.pk).first()
+        # an existing part of that number under the maker's old or new name is the same part: keep it
+        family = next((f for f in FAMILIES if maker in f), (maker,))
+        existing = (Component.objects.filter(part_number__iexact=mpn, manufacturer__in=family).exclude(pk=source.pk)
+                    .order_by('-usage_count').first())
         target = existing or source
         changed = []
         if target is source:
