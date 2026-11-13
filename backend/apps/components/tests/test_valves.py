@@ -67,3 +67,13 @@ def test_component_api_lists_substitutes_by_grade_then_use(component_factory):
     assert '7189' in near and 'upgrade' in near['7189']['notes']
     assert resp.data['made_today_by'] == valves.MADE_TODAY_BY['EL84']
     assert resp.data['lookup_mode'] == 'not_stocked'
+
+
+def test_valve_pages_list_specialist_dealers_and_other_parts_do_not(component_factory):
+    tube = component_factory(manufacturer='Generic', part_number='EL34', component_type='vacuum_tube')
+    res = component_factory(manufacturer='Generic', part_number='RES 10K', component_type='resistor')
+    api = APIClient()
+    dealers = api.get(f'/api/components/{tube.pk}/').data['dealers']
+    assert dealers == valves.DEALERS and {'name', 'url', 'region'} <= set(dealers[0])
+    assert all(d['url'].startswith('https://') for d in dealers)
+    assert api.get(f'/api/components/{res.pk}/').data['dealers'] == []

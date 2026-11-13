@@ -197,6 +197,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     lookup_mode = serializers.SerializerMethodField()
     substitutes = serializers.SerializerMethodField()
     made_today_by = serializers.SerializerMethodField()
+    dealers = serializers.SerializerMethodField()
     primary_image = serializers.SerializerMethodField()
     images = serializers.SerializerMethodField()
     datasheets = serializers.SerializerMethodField()
@@ -210,7 +211,7 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at', 'pricing_data', 'equivalent_parts', 'lookup_mode',
-            'substitutes', 'made_today_by', 'primary_image', 'images', 'datasheets',
+            'substitutes', 'made_today_by', 'dealers', 'primary_image', 'images', 'datasheets',
         ]
 
     def get_substitutes(self, obj):
@@ -227,6 +228,11 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     def get_made_today_by(self, obj):
         """Brands producing this type now (valves), from the substitution table."""
         return (obj.specifications or {}).get('made_today_by') or []
+
+    def get_dealers(self, obj):
+        """Specialist shops for a part no distributor the site asks stocks (valves)."""
+        from .valves import DEALERS
+        return DEALERS if obj.component_type == 'vacuum_tube' else []
         read_only_fields = [
             'id', 'usage_count', 'is_verified',
             'created_by', 'created_at', 'updated_at'

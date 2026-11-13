@@ -356,6 +356,7 @@ export default function ComponentDetail() {
               equivalents={component.equivalent_parts}
               substitutes={component.substitutes}
               madeTodayBy={component.made_today_by}
+              dealers={component.dealers}
             />
           ) : (
             <PricingPanel

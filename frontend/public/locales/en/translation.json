@@ -1387,6 +1387,7 @@
     "query_note": "Searched DigiKey for {{query}}. Value, voltage and power are checked against this line; always confirm the package and lead spacing yourself.",
     "not_stocked": "{{what}} are not stocked by DigiKey or Mouser, so there is nothing to look up here. Try a specialist dealer.",
     "none_curated": "No substitutes are recorded for this valve yet.",
+    "dealers": "Specialist dealers",
     "made_today": "Made today by {{makers}}.",
     "fit": "Fit",
     "notes": "What to know",

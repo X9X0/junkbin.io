@@ -240,6 +240,23 @@ MADE_TODAY_BY = {
 }
 
 
+# specialist dealers that stock new and new-old-stock valves, shown on every valve page
+# because no distributor the site asks carries them. Long-established shops, a few per
+# region; no affiliation. Domains checked 2026-11-12.
+DEALERS = [
+    {'name': 'Antique Electronic Supply', 'url': 'https://www.tubesandmore.com/', 'region': 'US'},
+    {'name': 'The Tube Store', 'url': 'https://www.thetubestore.com/', 'region': 'CA/US'},
+    {'name': 'Tube Depot', 'url': 'https://www.tubedepot.com/', 'region': 'US'},
+    {'name': 'Watford Valves', 'url': 'https://watfordvalves.com/', 'region': 'UK'},
+    {'name': 'Hot Rox', 'url': 'https://www.hotroxuk.com/', 'region': 'UK'},
+    {'name': 'Langrex', 'url': 'https://www.langrex.co.uk/', 'region': 'UK, new-old-stock'},
+    {'name': 'Tube Amp Doctor', 'url': 'https://www.tubeampdoctor.com/', 'region': 'DE'},
+    {'name': 'BTB Elektronik', 'url': 'https://btb-elektronik.de/', 'region': 'DE'},
+    {'name': 'Banzai Music', 'url': 'https://www.banzaimusic.com/', 'region': 'DE'},
+    {'name': 'Evatco', 'url': 'https://www.evatco.com.au/', 'region': 'AU'},
+]
+
+
 def groups():
     """{designation: head} for every name in SAME (head = first name of its group)."""
     return {name: group[0] for group in SAME for name in group}
