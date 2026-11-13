@@ -234,6 +234,8 @@ export interface Component {
   substitutes?: Substitute[];
   /** brands producing this type now, from the valve substitution table */
   made_today_by?: string[];
+  /** specialist shops for parts no distributor stocks (valves); [] otherwise */
+  dealers?: Dealer[];
   created_by?: CreatedBy;
   primary_image?: ComponentImage | null;
   manufacturer_aliases?: string[];
@@ -656,6 +658,12 @@ export interface NexarData {
 }
 
 // Distributor parts that fit a generic BOM line ("CAP 10nF 200V"), from the Lookup button
+export interface Dealer {
+  name: string;
+  url: string;
+  region: string;
+}
+
 export interface Substitute {
   id: string;
   part_number: string;

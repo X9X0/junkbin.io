@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertTriangle, Clock, ExternalLink, Package, Plus, RefreshCw, Search } from 'lucide-react';
 import { components } from '../api/endpoints';
 import { useAuth } from '../context/AuthContext';
-import type { EquivalentParts, ExternalPart, Substitute } from '../types';
+import type { Dealer, EquivalentParts, ExternalPart, Substitute } from '../types';
 
 interface Props {
   componentId: string;
@@ -15,6 +15,8 @@ interface Props {
   /** curated stand-ins (valves): shown instead of a distributor search */
   substitutes?: Substitute[];
   madeTodayBy?: string[];
+  /** specialist shops, for parts no distributor stocks */
+  dealers?: Dealer[];
 }
 
 const NOT_STOCKED_KEY: Record<string, string> = {
@@ -94,7 +96,7 @@ function timeAgo(isoDate: string): string {
  * Lookup button asks DigiKey for parts that fit its value and ratings instead
  * (backend parametric.py) and lists them with stock, price and an add button.
  */
-export default function EquivalentsPanel({ componentId, componentType, mode, equivalents, substitutes = [], madeTodayBy = [] }: Props) {
+export default function EquivalentsPanel({ componentId, componentType, mode, equivalents, substitutes = [], madeTodayBy = [], dealers = [] }: Props) {
   const { t } = useTranslation();
   const { isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
@@ -128,6 +130,20 @@ export default function EquivalentsPanel({ componentId, componentType, mode, equ
           <p className="text-gray-500 text-sm">
             {t('equivalents.not_stocked', { what: t(NOT_STOCKED_KEY[componentType] || 'equivalents.not_stocked_tubes') })}
             {componentType === 'vacuum_tube' && ` ${t('equivalents.none_curated')}`}
+          </p>
+        )}
+        {dealers.length > 0 && (
+          <p className="text-gray-500 text-xs mt-4 leading-relaxed">
+            <span className="font-mono uppercase text-gray-600 mr-2">{t('equivalents.dealers')}</span>
+            {dealers.map((d, i) => (
+              <span key={d.url}>
+                {i > 0 && <span className="text-gray-700"> · </span>}
+                <a href={d.url} target="_blank" rel="noopener noreferrer" className="text-cyber-cyan hover:text-white">
+                  {d.name}
+                </a>
+                <span className="text-gray-600"> ({d.region})</span>
+              </span>
+            ))}
           </p>
         )}
       </div>
