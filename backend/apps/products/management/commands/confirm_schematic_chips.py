@@ -64,6 +64,32 @@ STANDARD_NOTE = 'industry-standard type number read from the schematic label; an
 CONFIRMED_NOTE = 'part number read from the schematic label, confirmed at {source}'
 CONFIRMED_LINE_NOTE = 'part number read from the factory BOM line, confirmed at {source}'
 PREFIX_SUFFIX_MAX = 6                 # 'LT1087' -> 'LT1087CT#PBF': an ordering suffix, not another part
+# one company under its old and new names: listings under both are one maker, named by the first
+FAMILIES = [
+    ('Nexperia', 'NXP', 'Philips', 'NXP Semiconductors'),
+    ('onsemi', 'Fairchild (onsemi)', 'Fairchild Semiconductor', 'Fairchild', 'Motorola', 'ON Semiconductor'),
+    ('Renesas', 'Intersil', 'Harris Corporation', 'Harris (Intersil)', 'Renesas (Intersil)', 'IDT (Renesas)', 'ICS (Renesas)',
+     'Hitachi/Renesas', 'Renesas Electronics Corporation'),
+    ('Texas Instruments', 'National Semiconductor (TI)', 'National Semiconductor', 'Burr-Brown', 'Texas Instruments (Chipcon)'),
+    ('Analog Devices', 'Linear Technology', 'Maxim Integrated', 'Analog Devices (Linear Technology)'),
+    ('Vishay', 'Vishay Siliconix', 'Siliconix', 'General Semiconductor', 'Vishay General Semiconductor'),
+    ('Infineon', 'International Rectifier', 'Siemens (Infineon)', 'Infineon (Cypress)', 'Cypress'),
+    ('Microchip Technology', 'Atmel (Microchip Technology)', 'SST (Microchip Technology)', 'Micrel (Microchip Technology)', 'Atmel', 'Micrel'),
+    ('Diodes Incorporated', 'Zetex (Diodes Inc.)', 'Pericom (Diodes Inc.)', 'Zetex', 'Pericom'),
+    ('Nuvoton', 'Winbond'),
+]
+
+
+def one_maker(makers):
+    """The one maker a list of listing makers amounts to (its current name), or None when
+    they are really different companies."""
+    makers = [canonical_maker(m) or m for m in makers if m]
+    if len(set(makers)) == 1:
+        return makers[0]
+    for family in FAMILIES:
+        if all(m in family for m in makers):
+            return family[0]
+    return None
 
 
 def review_rows():
@@ -277,7 +303,7 @@ class Command(BaseCommand):
                     at = ' and '.join(verdict.get('sources') or ['a distributor'])
                     if verdict.get('status') == 'prefix':
                         at += ' as the family ' + ', '.join(verdict.get('listed') or [])
-                        if not verdict.get('manufacturer'):
+                        if not verdict.get('manufacturer') and not one_maker(verdict.get('makers') or []):
                             at += ' (made by ' + ', '.join(verdict.get('makers') or []) + ')'
                     note = (STANDARD_NOTE if kind == 'standard'
                             else (CONFIRMED_NOTE if population == 'labels' else CONFIRMED_LINE_NOTE).format(source=at))
@@ -312,10 +338,14 @@ class Command(BaseCommand):
             if (description or '').startswith(name):
                 description = mpn + description[len(name):]      # 'NPN-3904LT1-S-SOT23 (transistor)' -> 'MMBT3904LT1 (transistor)'
         else:
-            maker = canonical_maker(verdict.get('manufacturer') or '') or verdict.get('manufacturer') or 'Generic'
+            maker = (canonical_maker(verdict.get('manufacturer') or '') or verdict.get('manufacturer')
+                     or one_maker(verdict.get('makers') or []) or 'Generic')
             mpn = verdict.get('candidate') if verdict.get('status') == 'prefix' else (verdict.get('mpn') or verdict.get('candidate'))
             description = source.description if population == 'lines' else (verdict.get('description') or source.description)
-        existing = Component.objects.filter(manufacturer__iexact=maker, part_number__iexact=mpn).exclude(pk=source.pk).first()
+        # an existing part of that number under the maker's old or new name is the same part: keep it
+        family = next((f for f in FAMILIES if maker in f), (maker,))
+        existing = (Component.objects.filter(part_number__iexact=mpn, manufacturer__in=family).exclude(pk=source.pk)
+                    .order_by('-usage_count').first())
         target = existing or source
         changed = []
         if target is source:
