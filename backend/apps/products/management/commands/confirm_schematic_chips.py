@@ -158,6 +158,9 @@ class Command(BaseCommand):
         parser.add_argument('--reserve', type=int, default=DIGIKEY_RESERVE, help='verify: DigiKey calls to leave for the site')
         parser.add_argument('--mouser-budget', type=int, default=400, help='verify: Mouser calls this run may spend')
         parser.add_argument('--dry-run', action='store_true', help='apply: report and roll back')
+        parser.add_argument('--mouser-only', action='store_true',
+                            help='verify: ask Mouser alone (exact matches) and record only the hits, for when the DigiKey '
+                                 'budget is spent but Mouser calls are left; the misses stay unchecked for DigiKey')
 
     def handle(self, *args, **options):
         getattr(self, options['stage'])(options)
@@ -202,21 +205,32 @@ class Command(BaseCommand):
             else:
                 exact_needed = True
             cands = candidates(name, population)
-            if spent['digikey'] + len(cands) * (2 if exact_needed else 1) > options['budget']:
+            if options['mouser_only']:
+                if not exact_needed:
+                    continue
+                if spent['mouser'] + len(cands) > options['mouser_budget']:
+                    stop = 'Mouser budget for this run spent'
+                    break
+            elif spent['digikey'] + len(cands) * (2 if exact_needed else 1) > options['budget']:
                 stop = 'DigiKey budget for this run spent'
                 break
-            if digikey.remaining is not None and digikey.remaining <= options['reserve']:
+            elif digikey.remaining is not None and digikey.remaining <= options['reserve']:
                 stop = f'DigiKey reserve reached ({digikey.remaining} left)'
                 break
             verdict = {'status': 'notfound', 'tried': cands, 'population': population, 'prefix_checked': True,
                        'checked_at': datetime.now(timezone.utc).isoformat(timespec='seconds')}
             try:
                 for cand in cands:
-                    hit, source = self.ask(cand, digikey, mouser, spent, options['mouser_budget']) if exact_needed else (None, None)
+                    if options['mouser_only']:
+                        hit, source = self.ask(cand, None, mouser, spent, options['mouser_budget'])
+                    else:
+                        hit, source = self.ask(cand, digikey, mouser, spent, options['mouser_budget']) if exact_needed else (None, None)
                     if hit:
                         verdict.update({'status': 'confirmed', 'candidate': cand, **compact(hit, source)})
                         confirmed += 1
                         break
+                    if options['mouser_only']:
+                        continue
                     family = self.family(cand, digikey, spent)
                     if family:
                         verdict.update({'status': 'prefix', 'candidate': cand, **family})
@@ -225,13 +239,16 @@ class Command(BaseCommand):
             except DistributorError as exc:
                 stop = f'a distributor refused ({str(exc)[:120]})'
                 break
+            if options['mouser_only'] and verdict['status'] != 'confirmed':
+                checked += 1
+                continue                      # a Mouser miss proves nothing: leave it for DigiKey
             verdicts[name] = verdict
             checked += 1
             if checked % 25 == 0:
                 save_verdicts(verdicts)
                 self.stdout.write(f'  {checked} names checked, {confirmed} confirmed, DigiKey left {digikey.remaining}')
         save_verdicts(verdicts)
-        if digikey.remaining is not None:
+        if digikey.remaining is not None and not options['mouser_only']:
             cache.set('digikey_remaining', digikey.remaining, 6 * 3600)
         self.stdout.write(f'verify: {checked} names checked, {confirmed} confirmed; DigiKey calls {spent["digikey"]}, '
                           f'Mouser {spent["mouser"]}; verdicts on file {len(verdicts)}'
@@ -241,7 +258,7 @@ class Command(BaseCommand):
     def ask(cand, digikey, mouser, spent, mouser_budget):
         """(hit, source) for an exact match of cand: DigiKey first, Mouser only when DigiKey
         has nothing and the Mouser budget allows. Raises DistributorError when refused."""
-        if digikey.is_configured:
+        if digikey is not None and digikey.is_configured:
             spent['digikey'] += 1
             hit = digikey.search_mpn(cand, None)
             time.sleep(0.4)
