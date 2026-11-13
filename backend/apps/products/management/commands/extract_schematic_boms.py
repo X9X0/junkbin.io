@@ -37,6 +37,7 @@ from django.db.models import Count
 
 from apps.components.models import Component
 from apps.components.spec_parse import guess_maker
+from apps.products.schematic_values import VALUE_WORD
 from apps.products.models import Product, Schematic
 from apps.products.schematic_ocr_utils import build_candidates_from_schematic_file, group_identical
 
@@ -155,6 +156,8 @@ def usable(row):
     if row['manufacturer'] == 'Generic':
         return bool(row.get('specifications')) and plausible(row['specifications'])
     pn = (row['part_number'] or '').strip()
+    if VALUE_WORD.match(pn):
+        return False                    # '470Ohm' at D8: a neighbour's value, not a diode's part number
     return bool(row['manufacturer'] or (CHIP_DESIGNATOR.match(row['reference_designator']) and PART_SHAPED.match(pn)))
 
 

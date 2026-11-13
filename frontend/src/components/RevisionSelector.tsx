@@ -37,7 +37,8 @@ export default function RevisionSelector({ product }: { product: Product }) {
           value={current}
           onChange={(e) => {
             const target = revisions.find((r) => r.id === e.target.value);
-            if (target && target.id !== product.id) navigate(`/products/${target.slug || target.id}`);
+            // product pages are addressed by id: the API has no slug route (slugs are for export files)
+            if (target && target.id !== product.id) navigate(`/products/${target.id}`);
           }}
           className="input-cyber appearance-none pr-10 w-full sm:min-w-[22rem] text-sm"
         >

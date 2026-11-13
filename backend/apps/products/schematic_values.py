@@ -264,6 +264,12 @@ def _odm_token(t, odm):
 NOT_FITTED = re.compile(r'^\*|^@$')
 VARIANT = re.compile(r'^([A-Z0-9]+)@', re.I)
 IC_PN = re.compile(r'^(?=.*\d)(?=.*[A-Z])[A-Z0-9][A-Z0-9-]{5,}$')
+# a rating or value, never a part number: '470Ohm', '400MHz', '1500uF', '15V', '1000mA' beside a
+# chip designator belong to a neighbouring part or are the chip's rating, not its number.
+# Up to three digits take any unit letter; a longer number needs a prefix letter too, so the
+# Winbond '83627F' and Intel '8041A' stay part numbers while '1500uF' and '1000mA' do not.
+VALUE_WORD = re.compile(r'^(?:\d{1,3}(?:\.\d+)?\s*[KMUNPkmunpµ]?(?:OHMS?|R|K|M|HZ|F|H|V|W|A|%)'
+                        r'|\d+(?:\.\d+)?\s*[KMUNPkmunpµ](?:OHMS?|HZ|F|H|V|W|A))$', re.I)
 SAME_KIND = {('inductor', 'ferrite'), ('ferrite', 'inductor'), ('resistor', 'thermistor')}
 
 
@@ -653,7 +659,7 @@ def _parse_label(tokens, designator, odm):
             out['maker'], out['part_number'] = pn
     if not found and want not in ('resistor', 'capacitor', 'inductor', 'ferrite', 'thermistor'):
         # a chip's label is its part number; the maker is left for the reviewer
-        pn = next((c for c in (_clean(t)[0] for t in tokens) if IC_PN.match(c.upper())), None)
+        pn = next((c for c in (_clean(t)[0] for t in tokens) if IC_PN.match(c.upper()) and not VALUE_WORD.match(c)), None)
         if pn:
             out['part_number'] = pn
             out['confidence'] = 'medium'
