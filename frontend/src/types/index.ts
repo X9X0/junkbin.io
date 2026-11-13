@@ -105,6 +105,18 @@ export interface Product {
   region_display?: string;
   view_count?: number;
   updated_at?: string;
+  /** every revision of this model that is its own product, this one included, in order; [] when alone */
+  revisions?: ProductRevision[];
+}
+
+export interface ProductRevision {
+  id: string;
+  slug: string;
+  revision: string;
+  region: string;
+  region_display: string;
+  component_count: number;
+  schematic_count: number;
 }
 
 export interface ProductImage {

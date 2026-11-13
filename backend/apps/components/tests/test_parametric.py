@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 from django.core.cache import cache
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from apps.components import parametric
@@ -83,19 +84,122 @@ def test_rank_resistor_power_and_tolerance():
     assert '±10% (wants ±5%)' in ranked[2]['fit']['notes']
 
 
-def test_search_asks_digikey_once_and_caches_by_query():
-    a = _generic('CAP 10nF', 'capacitor', {'capacitance_pf': 10000})
-    b = _generic('CAP 10nF 200V', 'capacitor', {'capacitance_pf': 10000})       # same query text
+CERAMIC_FILTERS = [
+    {'ParameterId': 2049, 'ParameterName': 'Capacitance', 'FilterValues': [
+        {'ValueId': '4.7 pF', 'ValueName': '4.7 pF'}, {'ValueId': '5 pF', 'ValueName': '5 pF'}, {'ValueId': '15 pF', 'ValueName': '15 pF'}]},
+    {'ParameterId': 14, 'ParameterName': 'Voltage - Rated', 'FilterValues': [
+        {'ValueId': '25v', 'ValueName': '25V'}, {'ValueId': '50v', 'ValueName': '50V'}, {'ValueId': '250v', 'ValueName': '250V'},
+        {'ValueId': '250vac', 'ValueName': '250VAC'}]},
+    {'ParameterId': 16, 'ParameterName': 'Package / Case', 'FilterValues': [
+        {'ValueId': '0201', 'ValueName': '0201 (0603 Metric)'}, {'ValueId': '0603', 'ValueName': '0603 (1608 Metric)'}]},
+    {'ParameterId': 17, 'ParameterName': 'Temperature Coefficient', 'FilterValues': [
+        {'ValueId': 'c0g', 'ValueName': 'C0G, NP0'}, {'ValueId': 'c0g1b', 'ValueName': 'C0G, NP0 (1B)'}, {'ValueId': 'x7r', 'ValueName': 'X7R'}]},
+    {'ParameterId': 3, 'ParameterName': 'Tolerance', 'FilterValues': [{'ValueId': 't', 'ValueName': '±5%'}]},
+]
+
+
+def _digikey(filters, products):
+    """A DigiKey client whose keyword search answers the filter-options call with `filters`
+    and the filtered call with `products` (site-shaped hits; _parse_part passes them through)."""
     dk = MagicMock(is_configured=True, remaining=900)
+    dk._parse_part.side_effect = lambda p: p
+    dk.calls = []
+
+    def answer(client, body):
+        dk.calls.append(body)
+        request = body.get('FilterOptionsRequest') or {}
+        if 'CategoryFilter' in request:
+            return {'Products': [], 'FilterOptions': {'ParametricFilters': filters}}
+        if 'ParameterFilterRequest' in request:
+            return {'Products': products}
+        return {'Products': [{'Category': {'CategoryId': 3, 'ChildCategories': [{'CategoryId': 60, 'ChildCategories': []}]}}]}
+    return dk, answer
+
+
+def test_search_filters_by_the_category_parameters_digikey_offers():
+    """"5 pF" is asked for with DigiKey's own filter ids (value, voltage at least 50 V, the
+    0603 package - not '0201 (0603 Metric)' - and the C0G temperature coefficient), so
+    the keyword ranking cannot bury the right value under other 0603 C0G parts."""
+    c = _generic('CAP 5pF 50V C0G ±0.25pF 0603', 'capacitor',
+                 {'capacitance_pf': 5, 'voltage_v': 50, 'dielectric': 'C0G', 'tolerance': '±0.25pF'}, package='0603')
+    dk, answer = _digikey(CERAMIC_FILTERS, [_hit('C1608NP0509CGTS', '5 pF ±0.25pF 50V Ceramic Capacitor C0G, NP0 0603 (1608 Metric)', maker='Darfon')])
     with patch('apps.components.parametric.get_digikey', return_value=dk), \
-            patch('apps.components.parametric.digikey_keyword', return_value=[_hit('X', 'CAP CER 0.01UF 50V X7R 0805')]) as call:
-        results, cached = parametric.search(a)
+            patch('apps.components.parametric.digikey_search', side_effect=answer):
+        results, cached = parametric.search(c)
+    assert [r['mpn'] for r in results] == ['C1608NP0509CGTS'] and results[0]['fit']['value'] == 'match'
+    assert len(dk.calls) == 2                                   # known category: options + filtered search
+    assert dk.calls[0]['FilterOptionsRequest'] == {'CategoryFilter': [{'Id': '60'}]}
+    request = dk.calls[1]['FilterOptionsRequest']['ParameterFilterRequest']
+    assert request['CategoryFilter'] == {'Id': '60'}
+    chosen = {f['ParameterId']: [v['Id'] for v in f['FilterValues']] for f in request['ParameterFilters']}
+    assert chosen == {2049: ['5 pF'], 14: ['50v', '250v'], 16: ['0603'], 17: ['c0g', 'c0g1b']}
+    assert ExternalPartSearch.objects.get(query='CAP 5PF 50V C0G 0603').sources == ['digikey', 'parametric', 'filtered']
+
+
+def test_search_stops_after_one_call_when_digikey_has_no_part_of_that_value():
+    c = _generic('CAP 5.3pF 50V 0603', 'capacitor', {'capacitance_pf': 5.3, 'voltage_v': 50}, package='0603')
+    dk, answer = _digikey(CERAMIC_FILTERS, [_hit('NEVER', 'nothing')])
+    with patch('apps.components.parametric.get_digikey', return_value=dk), \
+            patch('apps.components.parametric.digikey_search', side_effect=answer):
+        results, _ = parametric.search(c)
+    assert results == [] and len(dk.calls) == 1
+
+
+def test_search_asks_for_the_category_when_the_line_does_not_tell_it():
+    """A capacitor with no dielectric and no chip size could be in any capacitor category:
+    the top keyword hit's category is used (one extra call)."""
+    c = _generic('CAP 5pF 50V', 'capacitor', {'capacitance_pf': 5, 'voltage_v': 50})
+    assert parametric.category_for(c) is None
+    dk, answer = _digikey(CERAMIC_FILTERS, [_hit('X', '5 pF 50V Ceramic Capacitor C0G, NP0 0603 (1608 Metric)')])
+    with patch('apps.components.parametric.get_digikey', return_value=dk), \
+            patch('apps.components.parametric.digikey_search', side_effect=answer):
+        results, _ = parametric.search(c)
+    assert [r['mpn'] for r in results] == ['X'] and len(dk.calls) == 3
+    assert dk.calls[1]['FilterOptionsRequest'] == {'CategoryFilter': [{'Id': '60'}]}
+
+
+def test_category_for_reads_dielectric_and_mounting():
+    assert parametric.category_for(_generic('a', 'capacitor', {'capacitance_pf': 1, 'dielectric': 'X7R'})) == 60
+    assert parametric.category_for(_generic('b', 'capacitor', {'capacitance_pf': 1, 'dielectric': 'electrolytic'})) == 58
+    assert parametric.category_for(_generic('c', 'capacitor', {'capacitance_pf': 1}, package='0402')) == 60
+    assert parametric.category_for(_generic('d', 'resistor', {'resistance_ohm': 1}, package='0603')) == 52
+    assert parametric.category_for(_generic('e', 'resistor', {'resistance_ohm': 1}, package='Axial')) == 53
+    assert parametric.category_for(_generic('f', 'resistor', {'resistance_ohm': 1})) is None
+    assert parametric.category_for(_generic('g', 'inductor', {'inductance_uh': 1})) == 71
+    assert parametric.category_for(_generic('h', 'crystal', {'frequency_mhz': 1})) is None
+
+
+def test_choose_filters_reads_resistor_values_power_and_package():
+    r = _generic('RES 4.7K 1% 1/4W 1206', 'resistor', {'resistance_ohm': 4700, 'tolerance': '1%', 'power_w': 0.25}, package='1206')
+    filters = [
+        {'ParameterId': 2085, 'ParameterName': 'Resistance', 'FilterValues': [
+            {'ValueId': 'a', 'ValueName': '4.7 kOhms'}, {'ValueId': 'b', 'ValueName': '47 kOhms'}, {'ValueId': 'c', 'ValueName': '4.75 kOhms'}]},
+        {'ParameterId': 2, 'ParameterName': 'Power (Watts)', 'FilterValues': [
+            {'ValueId': 'p1', 'ValueName': '0.1W, 1/10W'}, {'ValueId': 'p2', 'ValueName': '0.25W, 1/4W'}, {'ValueId': 'p3', 'ValueName': '0.5W, 1/2W'}]},
+        {'ParameterId': 16, 'ParameterName': 'Package / Case', 'FilterValues': [
+            {'ValueId': 's1', 'ValueName': '1206 (3216 Metric)'}, {'ValueId': 's2', 'ValueName': '0603 (1608 Metric)'}]},
+    ]
+    chosen = {f['ParameterId']: [v['Id'] for v in f['FilterValues']] for f in parametric.choose_filters(r, filters)}
+    assert chosen == {2085: ['a', 'c'], 2: ['p2', 'p3'], 16: ['s1']}       # 4.75 k is within the 2% E-series slack
+    # a category whose filters carry no value parameter cannot be narrowed
+    assert parametric.choose_filters(r, filters[1:]) is None
+
+
+def test_search_refetches_rows_the_keyword_only_search_left():
+    """Rows cached before the filtered search carry sources without 'filtered' and often
+    nothing of the right value; they are asked again, and the new row replaces them."""
+    c = _generic('CAP 5pF 50V C0G 0603', 'capacitor', {'capacitance_pf': 5, 'voltage_v': 50, 'dielectric': 'C0G'}, package='0603')
+    ExternalPartSearch.objects.create(query='CAP 5PF 50V C0G 0603', results=[], sources=['digikey', 'parametric'], search_count=4,
+                                      fetched_at=timezone.now())
+    dk, answer = _digikey(CERAMIC_FILTERS, [_hit('X', '5 pF ±0.25pF 50V Ceramic Capacitor C0G, NP0 0603 (1608 Metric)')])
+    with patch('apps.components.parametric.get_digikey', return_value=dk), \
+            patch('apps.components.parametric.digikey_search', side_effect=answer):
+        results, cached = parametric.search(c)
         assert not cached and [r['mpn'] for r in results] == ['X']
-        again, cached = parametric.search(b)
+        again, cached = parametric.search(c)
         assert cached and again == results
-        assert call.call_count == 1
-    row = ExternalPartSearch.objects.get(query='CAP 10NF')
-    assert row.sources == ['digikey', 'parametric'] and row.search_count == 2
+    row = ExternalPartSearch.objects.get(query='CAP 5PF 50V C0G 0603')
+    assert row.sources == ['digikey', 'parametric', 'filtered'] and row.search_count == 6 and len(dk.calls) == 2
 
 
 def test_search_unavailable_when_digikey_reserve_is_spent():
