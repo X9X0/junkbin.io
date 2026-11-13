@@ -301,6 +301,8 @@ class Command(BaseCommand):
         package = chip_labels.split(name)[1] if population == 'labels' else None
         if kind == 'standard':
             maker, mpn, description = 'Generic', chip_labels.standard_from_label(name), source.description
+            if (description or '').startswith(name):
+                description = mpn + description[len(name):]      # 'NPN-3904LT1-S-SOT23 (transistor)' -> 'MMBT3904LT1 (transistor)'
         else:
             maker = canonical_maker(verdict.get('manufacturer') or '') or verdict.get('manufacturer') or 'Generic'
             mpn = verdict.get('candidate') if verdict.get('status') == 'prefix' else (verdict.get('mpn') or verdict.get('candidate'))
