@@ -109,7 +109,7 @@ function FlaggedList({ batch }: { batch: string }) {
 }
 
 function ItemLink({ item }: { item: ImportReviewItem }) {
-  const to = ['product', 'firmware', 'image'].includes(item.item_type) ? `/products/${item.slug || item.id}`
+  const to = ['product', 'firmware', 'image', 'link'].includes(item.item_type) ? `/products/${item.slug || item.id}`
     : `/components/${item.item_type === 'component' ? item.id : item.component_id}`;
   return (
     <Link to={to} target="_blank" className="text-white hover:text-cyber-cyan">
@@ -196,6 +196,8 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
                 ? 'Check: is this photo of this product (or, when the caption says series, of its series)? Flag a part, a different model, a placeholder or a badly cut-out photo.'
                 : item.item_type === 'bom-part'
                 ? 'Check: do these factory BOM lines name this maker and part number? Correct removes the REVIEW mark from every row using it. Flag (and say why) a misread part number, a package or rating read as one, or the wrong maker.'
+                : item.item_type === 'link'
+                ? 'Check: does this board really go into this device? Open both; the board\'s description says where the connection was read (filename, parts listing). Flag a different model line or a sub-board filed under the wrong machine.'
                 : 'Check: is this the right product/part, revision and category, and do the documents belong to it?'}
             </p>
             <textarea className="input-cyber w-full mb-3 text-sm" rows={2} value={note} onChange={(e) => setNote(e.target.value)}

@@ -580,6 +580,41 @@ export default function ProductDetail() {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="card-cyber p-6">
+            {((product.fitted_in && product.fitted_in.length > 0) || (product.parts && product.parts.length > 0)) && (
+              <div className="mb-6 space-y-4">
+                {product.fitted_in && product.fitted_in.length > 0 && (
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-white mb-2">{t('product_detail.fitted_in')}</h3>
+                    <ul className="flex flex-wrap gap-2">
+                      {product.fitted_in.map((p) => (
+                        <li key={p.id}>
+                          <Link to={`/products/${p.slug || p.id}`} title={p.evidence}
+                            className={`inline-block px-3 py-1 rounded border text-sm hover:border-cyber-cyan/60 ${p.is_approved ? 'border-cyber-light/40 text-white' : 'border-cyber-pink/40 text-gray-400'}`}>
+                            {p.manufacturer} {p.model_number}{p.revision ? ` · Rev ${p.revision}` : ''}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {product.parts && product.parts.length > 0 && (
+                  <div>
+                    <h3 className="font-display text-lg font-semibold text-white mb-2">{t('product_detail.boards_inside')}</h3>
+                    <ul className="flex flex-wrap gap-2">
+                      {product.parts.map((p) => (
+                        <li key={p.id}>
+                          <Link to={`/products/${p.slug || p.id}`} title={p.evidence}
+                            className={`inline-block px-3 py-1 rounded border text-sm hover:border-cyber-cyan/60 ${p.is_approved ? 'border-cyber-light/40 text-white' : 'border-cyber-pink/40 text-gray-400'}`}>
+                            {p.manufacturer} {p.model_number}{p.revision ? ` · Rev ${p.revision}` : ''}
+                            {p.subcategory && <span className="text-gray-500"> · {p.subcategory}</span>}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
             {product.teardown_notes ? (
               <div>
                 <h3 className="font-display text-lg font-semibold text-white mb-4">

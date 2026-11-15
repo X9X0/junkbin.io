@@ -26,13 +26,13 @@ from django.core.management.base import BaseCommand
 from django.core.serializers.json import DjangoJSONEncoder
 
 from apps.components.models import Component, ComponentDatasheet, ProductComponent
-from apps.products.models import Firmware, ImportReview, Product, ProductImage, Schematic
+from apps.products.models import Firmware, ImportReview, Product, ProductImage, ProductLink, Schematic
 from apps.users.models import User
 
 # load order: what a row refers to is loaded before it
 MODELS = ['components.Component', 'products.Product', 'products.ProductImage', 'products.Schematic',
           'products.Firmware', 'components.ComponentDatasheet', 'components.ProductComponent',
-          'products.ImportReview']
+          'products.ProductLink', 'products.ImportReview']
 USER_FIELDS = ('created_by', 'uploaded_by', 'verified_by', 'reviewer')
 
 
@@ -63,6 +63,7 @@ class Command(BaseCommand):
             'products.Firmware': Firmware.objects.filter(product__in=imported),
             'components.ComponentDatasheet': ComponentDatasheet.objects.filter(uploaded_at__gte=since),
             'components.ProductComponent': ProductComponent.objects.filter(product__in=imported),
+            'products.ProductLink': ProductLink.objects.exclude(import_source=''),
             'products.ImportReview': ImportReview.objects.all(),
         }
 

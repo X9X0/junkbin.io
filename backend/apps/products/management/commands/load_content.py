@@ -34,7 +34,7 @@ from django.db.models import Count, OuterRef, Subquery
 from django.db.models.functions import Coalesce
 
 from apps.components.models import Component, ComponentDatasheet, ProductComponent
-from apps.products.models import Firmware, ImportReview, Product, ProductImage, Schematic
+from apps.products.models import Firmware, ImportReview, Product, ProductImage, ProductLink, Schematic
 from apps.users.models import User
 
 from .export_content import MODELS, USER_FIELDS
@@ -132,6 +132,7 @@ class Command(BaseCommand):
         self.load_children('products.Firmware', Firmware)
         self.load_datasheets()
         self.load_placements()
+        self.load_links()
         self.load_reviews()
 
     # --- components ---------------------------------------------------------------
@@ -262,6 +263,28 @@ class Command(BaseCommand):
                 new.append(o)
             ProductComponent.objects.bulk_create(new)
             self.n['placements added'] += len(new)
+
+    def load_links(self):
+        """Board-to-device links: both ends must be here (merged products follow their map)."""
+        for batch in self.objects('products.ProductLink'):
+            new = []
+            have = set(ProductLink.objects.filter(pk__in=[o.pk for o, _ in batch]).values_list('pk', flat=True))
+            for o, _ in batch:
+                if o.pk in have:
+                    self.n['links already here'] += 1
+                    continue
+                o.part_id = self.pmap.get(o.part_id, o.part_id)
+                o.host_id = self.pmap.get(o.host_id, o.host_id)
+                if not Product.objects.filter(pk__in=[o.part_id, o.host_id]).count() == 2:
+                    self.n['links skipped (product not here)'] += 1
+                    continue
+                if ProductLink.objects.filter(part_id=o.part_id, host_id=o.host_id, kind=o.kind).exists():
+                    self.n['links already here'] += 1
+                    continue
+                self.map_users(o)
+                new.append(o)
+            ProductLink.objects.bulk_create(new)
+            self.n['links added'] += len(new)
 
     def load_reviews(self):
         for batch in self.objects('products.ImportReview'):

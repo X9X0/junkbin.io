@@ -9,7 +9,7 @@ from django.utils.html import format_html
 
 from .models import (
     Product, ProductImage, ProductComment, Schematic, Firmware,
-    ComponentSuggestion, RepairReport, ImageRejection, ProductImageAlternate,
+    ComponentSuggestion, RepairReport, ImageRejection, ProductImageAlternate, ProductLink,
 )
 
 
@@ -229,6 +229,17 @@ class ProductImageAdmin(admin.ModelAdmin):
             )
         return '-'
     image_preview.short_description = 'Preview'
+
+
+@admin.register(ProductLink)
+class ProductLinkAdmin(admin.ModelAdmin):
+    """A board fitted in a device: the link a reader follows from the machine to its board's schematic."""
+    list_display = ['part', 'kind', 'host', 'is_approved', 'import_source', 'created_at']
+    list_filter = ['kind', 'is_approved']
+    search_fields = ['part__manufacturer', 'part__model_number', 'host__manufacturer', 'host__model_number', 'evidence']
+    raw_id_fields = ['part', 'host']
+    readonly_fields = ['id', 'created_by', 'created_at']
+    ordering = ['-created_at']
 
 
 @admin.register(Schematic)
