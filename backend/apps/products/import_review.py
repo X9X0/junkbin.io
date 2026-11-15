@@ -22,7 +22,7 @@ SAMPLE_TARGET = 100
 BATCHES = {
     'norway-bom': {'label': 'Factory-BOM boards (Asus, 2002-2007)', 'item_type': 'product'},
     'norway-schem': {'label': 'Schematic boards up to 2008 (Asus, MSI, Gigabyte)', 'item_type': 'product'},
-    'norway-board': {'label': 'Notebook mainboards by board code (Compal LA-, Quanta DA-)', 'item_type': 'product'},
+    'norway-board': {'label': 'Notebook mainboards by board code (Compal LA-, Quanta DA-, Lenovo NM-)', 'item_type': 'product'},
     'norway-svc': {'label': 'Products from service manuals', 'item_type': 'product'},
     'norway-ds-new': {'label': 'Components created from datasheets', 'item_type': 'component'},
     'norway-ds': {'label': 'Datasheets attached to existing components', 'item_type': 'datasheet'},
