@@ -107,6 +107,23 @@ export interface Product {
   updated_at?: string;
   /** every revision of this model that is its own product, this one included, in order; [] when alone */
   revisions?: ProductRevision[];
+  /** the devices this board is fitted in */
+  fitted_in?: ProductLinkRef[];
+  /** the boards fitted in this device */
+  parts?: ProductLinkRef[];
+}
+
+export interface ProductLinkRef {
+  id: string;
+  slug: string;
+  manufacturer: string;
+  model_number: string;
+  revision: string;
+  category: string;
+  subcategory: string;
+  kind: string;
+  evidence: string;
+  is_approved: boolean;
 }
 
 export interface ProductRevision {

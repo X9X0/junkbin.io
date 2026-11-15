@@ -1145,6 +1145,38 @@ class RepairReportVote(models.Model):
         return f'{self.user} → {self.vote_type} on {self.repair_report}'
 
 
+class ProductLink(models.Model):
+    """One product goes into another: a mainboard or sub-board (the part) fitted in a laptop or
+    other device (the host). Knowing which board sits in which machine is what lets a reader go
+    from the machine on their bench to the schematic of the board inside it. Read-only on the
+    site; bulk imports create links unapproved and a review batch makes them public."""
+
+    class Kind(models.TextChoices):
+        FITTED_IN = 'fitted_in', _('Fitted in')
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    part = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='host_links',
+                             help_text=_('The board'))
+    host = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='part_links',
+                             help_text=_('The device the board is fitted in'))
+    kind = models.CharField(max_length=20, choices=Kind.choices, default=Kind.FITTED_IN)
+    evidence = models.TextField(blank=True, max_length=1000,
+                                help_text=_('Where the connection was read from (filename, parts listing, service manual)'))
+    import_source = models.CharField(max_length=120, blank=True, db_index=True,
+                                     help_text=_('Bulk-import batch tag; never shown on the site'))
+    is_approved = models.BooleanField(default=False)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+                                   related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['part', 'host', 'kind'], name='unique_product_link')]
+        ordering = ['host__manufacturer', 'host__model_number']
+
+    def __str__(self):
+        return f'{self.part} {self.get_kind_display().lower()} {self.host}'
+
+
 class ImportReview(models.Model):
     """
     A person's verdict on one item of a bulk-import batch (a product or component the

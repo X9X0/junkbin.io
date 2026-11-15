@@ -62,6 +62,7 @@ MAKER/PART echo; its ratings (value, voltage, power, current, tolerance, ...), p
 and type are read from that line and checked against its part number.
 """
 import json
+import re
 from pathlib import Path
 
 from django.contrib.auth import get_user_model
@@ -78,7 +79,7 @@ from apps.components.spec_fill import fill, plan
 from apps.components.spec_parse import clean_bom_text, ic_package
 from apps.products.import_review import UNCONFIRMED      # a row's note: part number not confirmed
 from apps.products.import_text import bom_component_type, clean_text, clean_title
-from apps.products.models import Firmware, ImportReview, Product, ProductImage, Schematic
+from apps.products.models import Firmware, ImportReview, Product, ProductImage, ProductLink, Schematic
 
 PASSIVE_TYPES = ('resistor', 'capacitor', 'inductor', 'ferrite', 'crystal', 'thermistor', 'fuse')
 REFDES_MAX = ProductComponent._meta.get_field('reference_designator').max_length or 100_000
@@ -286,6 +287,7 @@ class Command(BaseCommand):
         self.import_documents(bundle, product, user, folder, dry_run, result)
         self.import_images(bundle, product, user, folder, dry_run, result)
         self.import_firmware(bundle, product, user, folder, dry_run, result)
+        self.import_links(bundle, product, user, dry_run, result)
         return result
 
     @staticmethod
@@ -348,6 +350,7 @@ class Command(BaseCommand):
         self.import_documents(bundle, product, user, folder, dry_run, result)
         self.import_images(bundle, product, user, folder, dry_run, result)
         self.import_firmware(bundle, product, user, folder, dry_run, result)
+        self.import_links(bundle, product, user, dry_run, result)
         return result
 
     @staticmethod
@@ -412,6 +415,80 @@ class Command(BaseCommand):
                     source_notes=f"[{tag}] {item.get('source_notes', '')} md5:{item['md5']}",
                     uploaded_by=user, is_approved=False,
                 )
+
+    FAMILIES = ('THINKPAD', 'IDEAPAD', 'LEGION', 'YOGA', 'THINKBOOK', 'INSPIRON', 'LATITUDE', 'VOSTRO', 'PRECISION', 'XPS',
+                'PAVILION', 'ENVY', 'ELITEBOOK', 'PROBOOK', 'ZBOOK', 'OMEN', 'SPECTRE', 'COMPAQ', 'PRESARIO', 'ASPIRE',
+                'TRAVELMATE', 'EXTENSA', 'NITRO', 'PREDATOR', 'SWIFT', 'SATELLITE', 'TECRA', 'PORTEGE', 'QOSMIO', 'VAIO',
+                'VIVOBOOK', 'ZENBOOK', 'ROG', 'TUF', 'LIFEBOOK', 'AMILO', 'IDEACENTRE', 'THINKCENTRE', 'ONE', 'PRO', 'SLIM',
+                'GAMING', 'EDGE', 'ESSENTIAL', 'NOTEBOOK', 'LAPTOP', 'SERIES', 'STUDIO', 'MINI')
+
+    @classmethod
+    def host_products(cls, name, exclude_tag_prefix='norway-board:'):
+        """The products a retail name ('Lenovo ThinkPad T440', 'Dell Inspiron 15 7567', 'Acer Aspire E1-431 E1-471')
+        names exactly: brand = the product's manufacturer; the rest, with or without the family word, or each
+        model token of a multi-model name, must equal the product's model number once spaces, dashes and
+        case are dropped. No substring matching: 'HP G4' alone matches nothing."""
+        words = name.split()
+        if len(words) < 2:
+            return []
+        brand, rest = words[0], words[1:]
+        if rest and rest[0].upper() in cls.FAMILIES and len(rest) == 1:
+            return []
+        norm = lambda s: re.sub(r'[^a-z0-9]', '', s.lower())
+        forms = {norm(' '.join(rest))}
+        family = rest[0] if rest[0].upper() in cls.FAMILIES else None
+        body = rest[1:] if family else rest
+        if family and body:
+            forms.add(norm(' '.join(body)))
+        tokens = [t for t in body if re.search(r'\d', t) and not re.fullmatch(r'\d{1,2}"?', t)]   # not '15' (inches)
+        if len(tokens) > 1:                                 # 'E1-431 E1-471': each is a model
+            for t in tokens:
+                forms.add(norm(t))
+                if family:
+                    forms.add(norm(f'{family} {t}'))
+        forms.discard('')
+        if not forms:
+            return []
+        hosts = Product.objects.filter(manufacturer__iexact=brand).exclude(import_source__startswith=exclude_tag_prefix)
+        return [p for p in hosts.only('id', 'model_number', 'import_source') if norm(p.model_number) in forms]
+
+    def import_links(self, bundle, product, user, dry_run, result):
+        """bundle['links']: [{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': '...'}] - the devices
+        this board is fitted in, by retail name. Each name that is exactly a product on the site becomes a
+        ProductLink (unapproved, tagged); links under this tag that the bundle no longer names are removed."""
+        if 'links' not in bundle:
+            return
+        tag = bundle['source_tag'].replace('norway-board:', 'norway-board-links:', 1)
+        wanted = {}
+        for link in bundle['links']:
+            kind = link.get('kind', ProductLink.Kind.FITTED_IN)
+            if kind not in ProductLink.Kind.values:
+                raise CommandError(f"unknown link kind {kind!r}")
+            for host in self.host_products(link['host']):
+                if host.pk != product.pk:
+                    wanted.setdefault((host.pk, kind), (host, link.get('evidence', '')[:1000]))
+        result['links_unresolved'] = result.get('links_unresolved', 0) + sum(
+            1 for link in bundle['links'] if not self.host_products(link['host']))
+        ours = {(l.host_id, l.kind): l for l in ProductLink.objects.filter(part=product, import_source=tag)}
+        for key, l in ours.items():
+            if key not in wanted:
+                result['links_removed'] = result.get('links_removed', 0) + 1
+                if not dry_run:
+                    l.delete()
+        for key, (host, evidence) in wanted.items():
+            if key in ours:
+                result['links_kept'] = result.get('links_kept', 0) + 1
+                if not dry_run and ours[key].evidence != evidence:
+                    ours[key].evidence = evidence
+                    ours[key].save(update_fields=['evidence'])
+                continue
+            if ProductLink.objects.filter(part=product, host=host, kind=key[1]).exists():
+                result['links_kept'] = result.get('links_kept', 0) + 1       # somebody else's link, same fact
+                continue
+            result['links_added'] = result.get('links_added', 0) + 1
+            if not dry_run:
+                ProductLink.objects.create(part=product, host=host, kind=key[1], evidence=evidence,
+                                           import_source=tag, created_by=user, is_approved=False)
 
     @staticmethod
     def import_documents(bundle, product, user, folder, dry_run, result):

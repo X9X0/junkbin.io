@@ -16,6 +16,7 @@ SIDEBAR_GROUPS = {
         ('components', 'component'),
         ('components', 'productcomponent'),
         ('products', 'schematic'),
+        ('products', 'productlink'),
         ('products', 'firmware'),
         ('products', 'repairreport'),
         ('products', 'componentsuggestion'),

@@ -195,6 +195,8 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     comment_count = serializers.SerializerMethodField()
     repair_report_count = serializers.SerializerMethodField()
     revisions = serializers.SerializerMethodField()
+    fitted_in = serializers.SerializerMethodField()
+    parts = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -206,8 +208,31 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'component_count', 'image_count', 'schematic_count', 'firmware_count',
             'comment_count', 'repair_report_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
-            'is_approved', 'is_featured', 'revisions'
+            'is_approved', 'is_featured', 'revisions', 'fitted_in', 'parts'
         ]
+
+    def _links(self, obj, side):
+        """The products linked to this one: side 'host' lists the devices this board is fitted in,
+        side 'part' the boards fitted in this device. Unapproved links, and links to unapproved
+        products, are shown only to staff and moderators."""
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        qs = obj.host_links if side == 'host' else obj.part_links
+        qs = qs.select_related(side)
+        if not (user and (user.is_staff or getattr(user, 'is_moderator', False))):
+            qs = qs.filter(is_approved=True, **{f'{side}__is_approved': True})
+        return [{'id': str(getattr(l, side).pk), 'slug': getattr(l, side).slug,
+                 'manufacturer': getattr(l, side).manufacturer, 'model_number': getattr(l, side).model_number,
+                 'revision': getattr(l, side).revision, 'category': getattr(l, side).category,
+                 'subcategory': getattr(l, side).subcategory, 'kind': l.kind, 'evidence': l.evidence,
+                 'is_approved': l.is_approved}
+                for l in qs[:60]]
+
+    def get_fitted_in(self, obj):
+        return self._links(obj, 'host')
+
+    def get_parts(self, obj):
+        return self._links(obj, 'part')
 
     def get_revisions(self, obj):
         """The other hardware revisions (and region variants) of this model, each its own
