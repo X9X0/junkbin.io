@@ -27,6 +27,8 @@ def test_sentence():
     assert facts_sentence([], ['HP spare 5188-1234'], ['HP Pavilion a1250n']) == \
         ' Used in: HP Pavilion a1250n. Sold as HP spare 5188-1234 (web search).'
     assert facts_sentence([], []) == ''
+    assert facts_sentence([], [], notes=['OEM board for HP (HP name Leonite)', 'Intel 945P chipset, socket LGA 775, micro-ATX']) == \
+        ' OEM board for HP (HP name Leonite). Intel 945P chipset, socket LGA 775, micro-ATX (web search).'
 
 
 def test_board_facts_link_the_board_to_named_machines(tmp_path):
@@ -35,11 +37,16 @@ def test_board_facts_link_the_board_to_named_machines(tmp_path):
     pc = Product.objects.create(manufacturer='HP', model_number='Pavilion a1250n', category='desktop')
     other = Product.objects.create(manufacturer='HP', model_number='Pavilion a1250n', revision='B', category='desktop')
     facts = [{'product_id': str(board.pk), 'used_in': ['HP Pavilion a1250n', 'HP Media Center m7000'],
-              'parts': ['HP spare 5188-1234'], 'evidence': 'named for the board in 7 parts listings'}]
+              'parts': ['HP spare 5188-1234'], 'notes': ['OEM board for HP (HP name Leonite)', 'Intel 945P chipset, micro-ATX'],
+              'evidence': 'named for the board in 7 parts listings'}]
     out = _run(tmp_path, facts)
     board.refresh_from_db()
-    assert board.description == ('Asus P5LP-LE motherboard. Used in: HP Pavilion a1250n, HP Media Center m7000. '
-                                 'Sold as HP spare 5188-1234 (web search).')
+    assert board.description == ('Asus P5LP-LE motherboard. OEM board for HP (HP name Leonite). Intel 945P chipset, micro-ATX. '
+                                 'Used in: HP Pavilion a1250n, HP Media Center m7000. Sold as HP spare 5188-1234 (web search).')
+    facts[0]['notes'] = ['Intel 945P chipset, micro-ATX']
+    _run(tmp_path, facts)
+    board.refresh_from_db()
+    assert board.description.count('(web search)') == 1 and 'Leonite' not in board.description
     assert 'links added 2' in out
     assert {l.host_id for l in ProductLink.objects.filter(part=board)} == {pc.pk, other.pk}
     assert 'links kept 2' in _run(tmp_path, facts)

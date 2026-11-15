@@ -25,11 +25,14 @@ from django.db import transaction
 from apps.products.models import Product, ProductLink
 from .import_board_bom import Command as Importer
 
-SENTENCE = re.compile(r'\s*(?:Boards inside|Used in|Sold as|Also sold as): .*?\(web search\)\.', re.S)
+SENTENCE = re.compile(r'\s*(?:Boards inside|Used in|Sold as|Also sold as|OEM board for|Also called|[A-Za-z]+ [A-Za-z0-9/+ ]+ chipset|[Ss]ocket )'
+                      r'.*?\(web search\)\.', re.S)
 
 
-def facts_sentence(boards, parts, used_in=(), aliases=()):
-    bits = []
+def facts_sentence(boards, parts, used_in=(), aliases=(), notes=()):
+    """notes: free sentences from spec pages ('OEM board for HP (HP name Leonite)', 'Intel 945P chipset, socket LGA 775,
+    micro-ATX'); they come first so the sentence still starts with a known marker for SENTENCE to find again."""
+    bits = [n[0].upper() + n[1:] for n in notes if n]
     if boards:
         bits.append('Boards inside: ' + ', '.join(f"{b['maker']} {b['code']}" for b in boards))
     if aliases:
@@ -69,7 +72,8 @@ class Command(BaseCommand):
     @staticmethod
     def apply(product, f, dry_run, totals):
         boards, parts, used_in = f.get('boards', []), f.get('parts', []), f.get('used_in', [])
-        new_desc = SENTENCE.sub('', product.description).rstrip() + facts_sentence(boards, parts, used_in, f.get('aliases', []))
+        new_desc = SENTENCE.sub('', product.description).rstrip() \
+            + facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []))
         if new_desc != product.description:
             totals['descriptions_changed'] += 1
             if not dry_run:
