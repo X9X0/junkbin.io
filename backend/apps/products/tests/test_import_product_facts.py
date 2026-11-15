@@ -84,3 +84,17 @@ def test_facts_write_description_and_links_idempotently(tmp_path):
     laptop.refresh_from_db()
     assert laptop.description == 'Lenovo G50-70 laptop. Boards inside: Lenovo NM-A271 (web search).'
     assert 'links kept 1' in out and ProductLink.objects.filter(host=laptop).count() == 1
+
+
+def test_facts_fall_back_to_the_product_name_when_the_id_is_gone(tmp_path):
+    board = Product.objects.create(manufacturer='Gigabyte', model_number='GA-B150M-D3V', revision='1.0', category='desktop',
+                                   description='Gigabyte GA-B150M-D3V motherboard.', import_source='norway-schem:x')
+    facts = [{'product_id': '00000000-0000-0000-0000-000000000001',
+              'product': {'manufacturer': 'gigabyte', 'model_number': 'ga-b150m-d3v', 'revision': '1.0'},
+              'notes': ['Intel B150 chipset, socket LGA 1151, micro-ATX']},
+             {'product_id': '00000000-0000-0000-0000-000000000002',
+              'product': {'manufacturer': 'Gigabyte', 'model_number': 'GA-B150M-D3V', 'revision': '2.0'}, 'notes': ['x']}]
+    out = _run(tmp_path, facts)
+    assert 'products 1' in out and 'by name 1' in out and 'missing 1' in out
+    board.refresh_from_db()
+    assert board.description == 'Gigabyte GA-B150M-D3V motherboard. Intel B150 chipset, socket LGA 1151, micro-ATX (web search).'

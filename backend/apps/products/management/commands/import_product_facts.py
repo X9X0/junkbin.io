@@ -4,9 +4,14 @@ numbers for them - without re-running the lane that created the products.
 
     manage.py import_product_facts FACTS.json [--dry-run]
 
-FACTS.json: [{"product_id": "<uuid>", "boards": [{"maker": "Lenovo", "code": "NM-A271", "n": 5}],
+FACTS.json: [{"product_id": "<uuid>", "product": {"manufacturer": "Lenovo", "model_number": "G50-70", "revision": ""},
+              "boards": [{"maker": "Lenovo", "code": "NM-A271", "n": 5}],
               "parts": ["Lenovo FRU 5B20G36639"], "used_in": ["HP Pavilion a1250n"],
               "evidence": "named with the Lenovo G50-70 in 12 parts listings"}]
+
+"product" is the fallback key: when no product has that id here (the lane that made it has not been
+published yet, or re-created it with a new id), every product with that manufacturer, model number and
+revision takes the facts instead.
 
 For each product: one sentence 'Boards inside: ... (web search).' (a machine: the boards named for it,
 its mainboard's order numbers) or 'Used in: ... (web search).' (a board: the machines named for it) is
@@ -55,16 +60,22 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         with open(opts['facts'], encoding='utf-8') as fh:
             facts = json.load(fh)
-        totals = {'products': 0, 'missing': 0, 'descriptions_changed': 0, 'links_added': 0, 'links_kept': 0,
+        totals = {'products': 0, 'by_name': 0, 'missing': 0, 'descriptions_changed': 0, 'links_added': 0, 'links_kept': 0,
                   'links_removed': 0, 'codes_without_product': 0}
         with transaction.atomic():
             for f in facts:
-                product = Product.objects.filter(pk=f['product_id']).first()
-                if not product:
+                products = list(Product.objects.filter(pk=f['product_id']))
+                if not products and f.get('product'):
+                    k = f['product']
+                    products = list(Product.objects.filter(manufacturer__iexact=k['manufacturer'], model_number__iexact=k['model_number'],
+                                                           revision=k.get('revision', '')))
+                    totals['by_name'] += bool(products)
+                if not products:
                     totals['missing'] += 1
                     continue
-                totals['products'] += 1
-                self.apply(product, f, opts['dry_run'], totals)
+                for product in products:
+                    totals['products'] += 1
+                    self.apply(product, f, opts['dry_run'], totals)
             if opts['dry_run']:
                 transaction.set_rollback(True)
         self.stdout.write(('DRY RUN (rolled back) - ' if opts['dry_run'] else '')
