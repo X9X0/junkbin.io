@@ -9,7 +9,7 @@ from django.contrib.auth import get_user_model
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from .models import (
+from .models import (ProductLink, 
     Product, ProductImage, ProductComment, Schematic, Firmware,
     ComponentSuggestion, RepairReport, RepairReportVote,
 )
@@ -197,6 +197,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
     revisions = serializers.SerializerMethodField()
     fitted_in = serializers.SerializerMethodField()
     parts = serializers.SerializerMethodField()
+    also_in = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -208,7 +209,7 @@ class ProductDetailSerializer(serializers.ModelSerializer):
             'component_count', 'image_count', 'schematic_count', 'firmware_count',
             'comment_count', 'repair_report_count', 'view_count', 'images',
             'created_by', 'created_at', 'updated_at',
-            'is_approved', 'is_featured', 'revisions', 'fitted_in', 'parts'
+            'is_approved', 'is_featured', 'revisions', 'fitted_in', 'parts', 'also_in'
         ]
 
     def _links(self, obj, side):
@@ -230,6 +231,36 @@ class ProductDetailSerializer(serializers.ModelSerializer):
 
     def get_fitted_in(self, obj):
         return self._links(obj, 'host')
+
+    def get_also_in(self, obj):
+        """The other boards fitted in the machines this board is fitted in, each with the machines they share
+        ('via'): derived from the fitted_in links, so nothing has to be asserted about two boards directly. []
+        for a machine. Unapproved links and products count only for staff and moderators."""
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        staff = bool(user and (user.is_staff or getattr(user, 'is_moderator', False)))
+        mine = obj.host_links.filter(kind=ProductLink.Kind.FITTED_IN)
+        if not staff:
+            mine = mine.filter(is_approved=True, host__is_approved=True)
+        host_ids = list(mine.values_list('host_id', flat=True)[:60])
+        if not host_ids:
+            return []
+        qs = ProductLink.objects.filter(host_id__in=host_ids, kind=ProductLink.Kind.FITTED_IN).exclude(part=obj) \
+            .select_related('part', 'host').order_by('part__manufacturer', 'part__model_number')
+        if not staff:
+            qs = qs.filter(is_approved=True, part__is_approved=True)
+        out = {}
+        for l in qs[:200]:
+            p = l.part
+            row = out.setdefault(p.pk, {'id': str(p.pk), 'slug': p.slug, 'manufacturer': p.manufacturer, 'model_number': p.model_number,
+                                        'revision': p.revision, 'category': p.category, 'subcategory': p.subcategory,
+                                        'kind': 'also_in', 'evidence': '', 'is_approved': l.is_approved, 'via': []})
+            name = f'{l.host.manufacturer} {l.host.model_number}'
+            if name not in row['via']:
+                row['via'].append(name)
+        for row in out.values():
+            row['evidence'] = 'Also fitted in ' + ', '.join(row['via'][:4])
+        return list(out.values())[:40]
 
     def get_parts(self, obj):
         return self._links(obj, 'part')

@@ -452,7 +452,10 @@ class Command(BaseCommand):
         hosts = Product.objects.filter(manufacturer__iexact=brand)
         if exclude_tag_prefix:
             hosts = hosts.exclude(import_source__startswith=exclude_tag_prefix)
-        return [p for p in hosts.only('id', 'model_number', 'import_source') if norm(p.model_number) in forms]
+        # Apple names a machine by its A-number alone ('Apple A1398'); the site's product is 'MacBook Pro A1398'
+        a_number = body[0].lower() if brand.lower() == 'apple' and len(body) == 1 and re.fullmatch(r'A\d{4}', body[0], re.I) else None
+        return [p for p in hosts.only('id', 'model_number', 'import_source')
+                if norm(p.model_number) in forms or (a_number and norm(p.model_number).endswith(a_number))]
 
     def import_links(self, bundle, product, user, dry_run, result):
         """bundle['links']: [{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': '...'}] - the devices
@@ -462,15 +465,19 @@ class Command(BaseCommand):
             return
         tag = bundle['source_tag'].replace('norway-board:', 'norway-board-links:', 1)
         wanted = {}
+
+        def hosts_of(link):                              # a 'part_of' host is itself a board of this lane
+            kind = link.get('kind', ProductLink.Kind.FITTED_IN)
+            return self.host_products(link['host'], exclude_tag_prefix=None if kind == ProductLink.Kind.PART_OF else 'norway-board:')
+
         for link in bundle['links']:
             kind = link.get('kind', ProductLink.Kind.FITTED_IN)
             if kind not in ProductLink.Kind.values:
                 raise CommandError(f"unknown link kind {kind!r}")
-            for host in self.host_products(link['host']):
+            for host in hosts_of(link):
                 if host.pk != product.pk:
                     wanted.setdefault((host.pk, kind), (host, link.get('evidence', '')[:1000]))
-        result['links_unresolved'] = result.get('links_unresolved', 0) + sum(
-            1 for link in bundle['links'] if not self.host_products(link['host']))
+        result['links_unresolved'] = result.get('links_unresolved', 0) + sum(1 for link in bundle['links'] if not hosts_of(link))
         ours = {(l.host_id, l.kind): l for l in ProductLink.objects.filter(part=product, import_source=tag)}
         for key, l in ours.items():
             if key not in wanted:

@@ -1153,6 +1153,7 @@ class ProductLink(models.Model):
 
     class Kind(models.TextChoices):
         FITTED_IN = 'fitted_in', _('Fitted in')
+        PART_OF = 'part_of', _('Sub-board of')          # a daughterboard (part) and the mainboard it belongs with (host)
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     part = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='host_links',

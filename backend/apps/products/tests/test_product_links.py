@@ -131,3 +131,38 @@ def test_links_travel_with_export_and_load(tmp_path, hosts, settings):
     assert sorted(l.host.model_number for l in links) == ['T440', 'ThinkPad T440']      # both revisions of the host
     call_command('load_content', str(out), '--allow-missing-files')                  # loading twice adds nothing
     assert ProductLink.objects.count() == 2
+
+
+def test_sub_boards_link_to_their_mainboard_and_boards_sharing_a_machine_show_as_also_in(tmp_path, hosts):
+    _run(_write(tmp_path, _board_bundle([{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': 'e'}])))
+    board = Product.objects.get(model_number='LA-D993P')
+    other = _board_bundle([{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': 'e'}])
+    other['source_tag'] = 'norway-board:Compal_LA-D994P_1.0'
+    other['product'] = {**other['product'], 'model_number': 'LA-D994P'}
+    _run(_write(tmp_path, other, 'Compal_LA-D994P_1.0'))
+    sub = _board_bundle([{'host': 'Compal LA-D993P', 'kind': 'part_of', 'evidence': 'both title pages say NWQAA'}])
+    sub['source_tag'] = 'norway-board:Compal_LS-D991P_1.0'
+    sub['product'] = {**sub['product'], 'model_number': 'LS-D991P', 'subcategory': 'Daughterboard'}
+    out = _run(_write(tmp_path, sub, 'Compal_LS-D991P_1.0'))
+    assert 'links added 1' in out and 'links unresolved' not in out
+    link = ProductLink.objects.get(part__model_number='LS-D991P')
+    assert link.host == board and link.kind == ProductLink.Kind.PART_OF and not link.is_approved
+    ev = import_review.evidence('norway-board-links', link)
+    assert 'LS-D991P sub-board of Compal LA-D993P' in ev['title'] and ev['documents'][1]['type'] == 'Sub-board of'
+    Product.objects.update(is_approved=True)
+    ProductLink.objects.update(is_approved=True)
+    client = APIClient()
+    d = client.get(f'/api/products/{board.pk}/').json()
+    assert [(p['model_number'], p['kind']) for p in d['parts']] == [('LS-D991P', 'part_of')]
+    assert [p['model_number'] for p in d['also_in']] == ['LA-D994P'] and 'Lenovo ThinkPad T440' in d['also_in'][0]['via']
+    assert client.get(f'/api/products/{link.part.pk}/').json()['fitted_in'][0]['kind'] == 'part_of'
+    t440 = Product.objects.get(model_number='ThinkPad T440')
+    assert client.get(f'/api/products/{t440.pk}/').json()['also_in'] == []            # machines have no siblings
+
+
+def test_apple_machines_match_by_their_a_number():
+    mac = Product.objects.create(manufacturer='Apple', model_number='MacBook Pro A1398', category='laptop', is_approved=True)
+    Product.objects.create(manufacturer='Apple', model_number='iMac A1311', category='desktop', is_approved=True)
+    assert Command.host_products('Apple A1398') == [mac]
+    assert Command.host_products('Apple MacBook Pro A1398') == [mac]
+    assert Command.host_products('Apple A9999') == []

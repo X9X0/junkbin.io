@@ -109,8 +109,10 @@ export interface Product {
   revisions?: ProductRevision[];
   /** the devices this board is fitted in */
   fitted_in?: ProductLinkRef[];
-  /** the boards fitted in this device */
+  /** the boards fitted in this device (kind fitted_in) and, for a mainboard, its sub-boards (kind part_of) */
   parts?: ProductLinkRef[];
+  /** other boards fitted in the same machines as this board, derived from the links; `via` names the machines */
+  also_in?: ProductLinkRef[];
 }
 
 export interface ProductLinkRef {
@@ -123,6 +125,7 @@ export interface ProductLinkRef {
   subcategory: string;
   kind: string;
   evidence: string;
+  via?: string[];
   is_approved: boolean;
 }
 

@@ -134,13 +134,13 @@ def evidence(batch, obj):
         part, host = obj.part, obj.host
         return {
             'item_type': 'link', 'id': str(obj.pk), 'slug': part.slug,
-            'title': f'{part.manufacturer} {part.model_number} fitted in {host.manufacturer} {host.model_number}',
+            'title': f'{part.manufacturer} {part.model_number} {obj.get_kind_display().lower()} {host.manufacturer} {host.model_number}',
             'revision': part.revision, 'category': part.get_category_display(), 'subcategory': part.subcategory,
             'description': obj.evidence,
             'documents': [{'title': f'{part.manufacturer} {part.model_number}' + (f' Rev {part.revision}' if part.revision else ''),
                            'type': 'Board', 'url': f'/products/{part.slug}', 'description': part.description[:200]},
                           {'title': f'{host.manufacturer} {host.model_number}' + (f' Rev {host.revision}' if host.revision else ''),
-                           'type': 'Fitted in', 'url': f'/products/{host.slug}', 'description': host.description[:200]}],
+                           'type': str(obj.get_kind_display()), 'url': f'/products/{host.slug}', 'description': host.description[:200]}],
         }
     if kind == 'image':
         product = obj.product
