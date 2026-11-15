@@ -27,6 +27,8 @@ def test_sentence():
     assert facts_sentence([], ['HP spare 5188-1234'], ['HP Pavilion a1250n']) == \
         ' Used in: HP Pavilion a1250n. Sold as HP spare 5188-1234 (web search).'
     assert facts_sentence([], []) == ''
+    assert facts_sentence([{'maker': 'Compal', 'code': 'LA-7782P', 'n': 1}], [], source='firmware label') == \
+        ' Boards inside: Compal LA-7782P (firmware label).'
     assert facts_sentence([], [], notes=['OEM board for HP (HP name Leonite)', 'Intel 945P chipset, socket LGA 775, micro-ATX']) == \
         ' OEM board for HP (HP name Leonite). Intel 945P chipset, socket LGA 775, micro-ATX (web search).'
 

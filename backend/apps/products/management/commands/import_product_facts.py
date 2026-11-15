@@ -26,10 +26,11 @@ from apps.products.models import Product, ProductLink
 from .import_board_bom import Command as Importer
 
 SENTENCE = re.compile(r'\s*(?:Boards inside|Used in|Sold as|Also sold as|OEM board for|Also called|[A-Za-z]+ [A-Za-z0-9/+ ]+ chipset|[Ss]ocket )'
-                      r'.*?\(web search\)\.', re.S)
+                      r'.*?\((?:web search|firmware label|service manual)\)\.', re.S)
+SOURCES = ('web search', 'firmware label', 'service manual')
 
 
-def facts_sentence(boards, parts, used_in=(), aliases=(), notes=()):
+def facts_sentence(boards, parts, used_in=(), aliases=(), notes=(), source='web search'):
     """notes: free sentences from spec pages ('OEM board for HP (HP name Leonite)', 'Intel 945P chipset, socket LGA 775,
     micro-ATX'); they come first so the sentence still starts with a known marker for SENTENCE to find again."""
     bits = [n[0].upper() + n[1:] for n in notes if n]
@@ -41,7 +42,7 @@ def facts_sentence(boards, parts, used_in=(), aliases=(), notes=()):
         bits.append('Used in: ' + ', '.join(used_in[:8]))
     if parts:
         bits.append(('Mainboard sold as ' if boards else 'Sold as ') + ', '.join(parts[:6]))
-    return (' ' + '. '.join(bits) + ' (web search).') if bits else ''
+    return (' ' + '. '.join(bits) + f' ({source}).') if bits else ''
 
 
 class Command(BaseCommand):
@@ -72,14 +73,17 @@ class Command(BaseCommand):
     @staticmethod
     def apply(product, f, dry_run, totals):
         boards, parts, used_in = f.get('boards', []), f.get('parts', []), f.get('used_in', [])
+        source = f.get('source', 'web search')
+        if source not in SOURCES:
+            raise CommandError(f'unknown facts source {source!r}')
         new_desc = SENTENCE.sub('', product.description).rstrip() \
-            + facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []))
+            + facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []), source)
         if new_desc != product.description:
             totals['descriptions_changed'] += 1
             if not dry_run:
                 product.description = new_desc
                 product.save(update_fields=['description'])
-        tag = f'norway-board-links:web:{product.pk}'
+        tag = f"norway-board-links:{'web' if source == 'web search' else source.split()[0]}:{product.pk}"
         wanted = {}
         for b in boards:
             found = list(Product.objects.filter(model_number__iexact=b['code'], import_source__startswith='norway-board:'))
