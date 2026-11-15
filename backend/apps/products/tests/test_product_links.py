@@ -60,8 +60,11 @@ def test_host_products_match_exactly_not_by_substring(hosts):
     assert names(Command.host_products('Lenovo ThinkPad T440')) == ['Lenovo T440', 'Lenovo ThinkPad T440']
     # a multi-model name links each model
     assert names(Command.host_products('Acer Aspire E1-431 E1-471')) == ['Acer Aspire E1-471']
-    # 'HP G4' must not reach ProBook 450 G4; a family word alone names nothing
+    # 'HP G4' must not reach ProBook 450 G4; a family word alone names nothing; 'HP 650 G1' is not the HP 650
     assert Command.host_products('HP G4') == []
+    Product.objects.create(manufacturer='HP', model_number='650', category='laptop', is_approved=True)
+    assert Command.host_products('HP 650 G1') == []
+    assert names(Command.host_products('HP 650')) == ['HP 650']
     assert Command.host_products('HP Pavilion') == []
     assert Command.host_products('Dell') == []
 

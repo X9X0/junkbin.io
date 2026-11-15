@@ -440,7 +440,7 @@ class Command(BaseCommand):
         body = rest[1:] if family else rest
         if family and body:
             forms.add(norm(' '.join(body)))
-        tokens = [t for t in body if re.search(r'\d', t) and not re.fullmatch(r'\d{1,2}"?', t)]   # not '15' (inches)
+        tokens = [t for t in body if re.search(r'\d', t) and not re.fullmatch(r'\d{1,2}"?|G\d{1,2}|GEN\s?\d{1,2}', t, re.I)]   # not '15' (inches), not 'G1' (HP generation)
         if len(tokens) > 1:                                 # 'E1-431 E1-471': each is a model
             for t in tokens:
                 forms.add(norm(t))
