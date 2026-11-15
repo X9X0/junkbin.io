@@ -23,8 +23,26 @@ def _run(tmp_path, facts, *args):
 def test_sentence():
     assert facts_sentence([{'maker': 'Lenovo', 'code': 'NM-A271', 'n': 3}], ['Lenovo FRU 5B20G36639']) == \
         ' Boards inside: Lenovo NM-A271. Mainboard sold as Lenovo FRU 5B20G36639 (web search).'
-    assert facts_sentence([], ['HP spare 1']) == ' Boards inside: mainboard sold as HP spare 1 (web search).'
+    assert facts_sentence([], ['HP spare 1']) == ' Sold as HP spare 1 (web search).'
+    assert facts_sentence([], ['HP spare 5188-1234'], ['HP Pavilion a1250n']) == \
+        ' Used in: HP Pavilion a1250n. Sold as HP spare 5188-1234 (web search).'
     assert facts_sentence([], []) == ''
+
+
+def test_board_facts_link_the_board_to_named_machines(tmp_path):
+    board = Product.objects.create(manufacturer='Asus', model_number='P5LP-LE', revision='1.04', category='desktop',
+                                   description='Asus P5LP-LE motherboard.', import_source='norway-schem:x')
+    pc = Product.objects.create(manufacturer='HP', model_number='Pavilion a1250n', category='desktop')
+    other = Product.objects.create(manufacturer='HP', model_number='Pavilion a1250n', revision='B', category='desktop')
+    facts = [{'product_id': str(board.pk), 'used_in': ['HP Pavilion a1250n', 'HP Media Center m7000'],
+              'parts': ['HP spare 5188-1234'], 'evidence': 'named for the board in 7 parts listings'}]
+    out = _run(tmp_path, facts)
+    board.refresh_from_db()
+    assert board.description == ('Asus P5LP-LE motherboard. Used in: HP Pavilion a1250n, HP Media Center m7000. '
+                                 'Sold as HP spare 5188-1234 (web search).')
+    assert 'links added 2' in out
+    assert {l.host_id for l in ProductLink.objects.filter(part=board)} == {pc.pk, other.pk}
+    assert 'links kept 2' in _run(tmp_path, facts)
 
 
 def test_facts_write_description_and_links_idempotently(tmp_path):

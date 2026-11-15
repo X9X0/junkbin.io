@@ -449,7 +449,9 @@ class Command(BaseCommand):
         forms.discard('')
         if not forms:
             return []
-        hosts = Product.objects.filter(manufacturer__iexact=brand).exclude(import_source__startswith=exclude_tag_prefix)
+        hosts = Product.objects.filter(manufacturer__iexact=brand)
+        if exclude_tag_prefix:
+            hosts = hosts.exclude(import_source__startswith=exclude_tag_prefix)
         return [p for p in hosts.only('id', 'model_number', 'import_source') if norm(p.model_number) in forms]
 
     def import_links(self, bundle, product, user, dry_run, result):
