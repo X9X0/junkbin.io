@@ -227,7 +227,7 @@ class Command(BaseCommand):
                 manufacturer=p['manufacturer'], model_number=p['model_number'],
                 revision=p.get('revision', ''), region='global',
                 category=p['category'], subcategory=p.get('subcategory', ''),
-                year_manufactured=p.get('year_manufactured'),
+                year_manufactured=p.get('year_manufactured'), part_number=p.get('part_number', ''),
                 description=full_description(bundle), import_source=tag,
                 created_by=user, is_approved=False,
             )
@@ -324,6 +324,8 @@ class Command(BaseCommand):
                   'revision': p.get('revision', ''), 'description': p.get('description', ''),
                   'year_manufactured': p.get('year_manufactured'), 'category': p['category'],
                   'subcategory': p.get('subcategory', '')}
+        if 'part_number' in p:                      # the maker's order number (Lenovo FRU); absent = leave as is
+            fields['part_number'] = p['part_number'] or ''
         if product.category_locked:                 # a moderator re-filed it
             del fields['category'], fields['subcategory']
         changed = [k for k, v in fields.items() if getattr(product, k) != v]
