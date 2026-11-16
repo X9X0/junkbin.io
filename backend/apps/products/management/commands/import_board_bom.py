@@ -525,6 +525,9 @@ class Command(BaseCommand):
         model = cls.stub_model(words[1:])
         if not model:
             return None
+        existing = Product.objects.filter(manufacturer__iexact=brand, model_number__iexact=model).first()
+        if existing:
+            return existing                                 # 'Dell Inspiron 15 7567' cleaned is the Dell Inspiron 7567 the site has
         stub = link['stub']
         result['machines_created'] = result.get('machines_created', 0) + 1
         if dry_run:
@@ -541,7 +544,9 @@ class Command(BaseCommand):
             created_by=user, is_approved=False)
 
     NOT_MODEL = re.compile(r'^(?:GT\d{3}M?X?|GTX\d{3,4}|MX\d{3}|RTX\d{4}|HM\d{2,3}|QM\d{2,3}|PM\d{2,3}|UM\d{2,3}|HD\d{4}|\d+GB|\d+TB|'
-                           r'I[3579]|\d{1,2}(?:\.\d)?"?|GEN\s?\d|G\d{1,2}|[A-Z]{2}\d{2}[A-Z]?\d{2,3}[A-Z]{0,2}|N\d{2}[A-Z]-[A-Z]{2})$', re.I)
+                           r'I[3579]|\d{1,2}(?:\.\d)?"?|GEN\s?\d|G\d{1,2}|[A-Z]{2}\d{2}[A-Z]?\d{2,3}[A-Z]{0,2}|N\d{2}[A-Z]-[A-Z]{2}|'
+                           r'DA0?[0-9A-Z]{2,4}(?:MB|LB|DB)[0-9A-Z]{2,4}|L[AS]-?[A-Z0-9]{4,5}P?|N[MS]-?[A-Z]\d{3,4}|6050A\d{7}(?:-[A-Z0-9]+)*|'
+                           r'BA41-\d{5}[A-Z]?|820-\d{4,5}(?:-[A-Z0-9]+)?|\d{5}-[A-Z0-9]{1,3})$', re.I)   # ODM board codes are not models
 
     @classmethod
     def stub_model(cls, words):
@@ -549,13 +554,17 @@ class Command(BaseCommand):
         chipset, memory and generation tokens ('GT540M HM65', '8GB', 'G6') are skipped, and a token shaped like a
         model already taken ('Satellite P750 P755', 'E1-431 E1-471') names another machine, so the name stops there."""
         family, models, shapes = [], [], set()
+        words = [t for w in words for t in w.split('/') if t]                  # 'E1-572/E1-570' lists two models
         for w in words:
             if re.search(r'\d', w):
-                if cls.NOT_MODEL.match(w):
-                    continue
+                if cls.NOT_MODEL.match(w) and not (re.fullmatch(r'\d{1,2}[A-Z]?', w, re.I) and family
+                                                   and family[-1].lower() in ('iphone', 'ipad', 'galaxy', 'pixel', 'surface')):
+                    continue                               # 'iPhone 7 Plus': the 7 is the model
                 shape = re.sub(r'\d', '9', w.upper())
                 if shape in shapes:
                     break                                  # a sibling model: another machine
+                if models and re.fullmatch(r'[A-Z0-9]{4,5}', w) and sum(c.isalpha() for c in w) >= 2:
+                    break                                  # an ODM project code after the model (Z485 LZ2B)
                 models.append(w)
                 shapes.add(shape)
             elif not models:

@@ -208,3 +208,14 @@ def test_stub_model_keeps_the_family_and_first_model_only():
     assert sm('EliteBook 840 G2'.split()) == 'EliteBook 840'
     assert sm('MacBook Pro A1398'.split()) == 'MacBook Pro A1398'
     assert sm('G6 HM65'.split()) is None
+    assert sm('E1-572/E1-570'.split()) == 'E1-572'
+    assert sm('Z485 Dalz2AMB8F0 Dalz2CMB8E0 LZ2B'.split()) == 'Z485'
+    assert sm('iPhone 7 Plus A1661'.split()) == 'iPhone 7 Plus A1661'
+    assert sm('iPad Pro 12.9'.split()) == 'iPad Pro 12.9'
+
+
+def test_a_stub_name_that_cleans_to_an_existing_product_links_to_it(tmp_path, hosts):
+    bundle = _board_bundle([{'host': 'Dell Inspiron 15 7567 GT540M', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}}])
+    out = _run(_write(tmp_path, bundle))
+    assert 'machines created' not in out and 'links added 1' in out
+    assert ProductLink.objects.get().host.model_number == 'Inspiron 7567'
