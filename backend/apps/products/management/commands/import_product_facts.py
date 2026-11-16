@@ -20,6 +20,12 @@ revision) becomes a ProductLink part -> this host; every machine name that is ex
 becomes a ProductLink this part -> host. Links are unapproved and tagged norway-board-links:web:<product id>
 so the norway-board-links review batch gates them; links under that tag the facts no longer name are
 removed. Idempotent.
+
+Stubs (2026-11-15): a board code with no board product becomes one (unapproved, tag
+norway-board-stub:<Maker>_<code>, batch norway-board-stub) when two or more listings name it for the
+machine, or a BIOS dump label does; a machine name with no product becomes a stub machine (batch
+norway-machine) under import_board_bom's rules when the board's listings number two or more. A stub
+board is removed as soon as a schematic lane brings the real board.
 """
 import json
 import re
@@ -33,6 +39,8 @@ from .import_board_bom import Command as Importer
 SENTENCE = re.compile(r'\s*(?:Boards inside|Used in|Sold as|Also sold as|OEM board for|Also called|[A-Za-z]+ [A-Za-z0-9/+ ]+ chipset|[Ss]ocket )'
                       r'.*?\((?:web search|firmware label|service manual)\)\.', re.S)
 SOURCES = ('web search', 'firmware label', 'service manual')
+BOARD_STUB_TAG = 'norway-board-stub'
+MAKERS = {'Compal', 'Quanta', 'Lenovo', 'Wistron', 'Inventec', 'Samsung', 'Apple', 'Foxconn', 'Pegatron'}
 
 
 def facts_sentence(boards, parts, used_in=(), aliases=(), notes=(), source='web search'):
@@ -61,7 +69,8 @@ class Command(BaseCommand):
         with open(opts['facts'], encoding='utf-8') as fh:
             facts = json.load(fh)
         totals = {'products': 0, 'by_name': 0, 'missing': 0, 'descriptions_changed': 0, 'links_added': 0, 'links_kept': 0,
-                  'links_removed': 0, 'codes_without_product': 0}
+                  'links_removed': 0, 'codes_without_product': 0, 'board_stubs_created': 0, 'board_stubs_retired': 0,
+                  'machines_created': 0}
         with transaction.atomic():
             for f in facts:
                 products = list(Product.objects.filter(pk=f['product_id']))
@@ -82,6 +91,30 @@ class Command(BaseCommand):
                           + ', '.join(f'{k.replace("_", " ")} {v}' for k, v in totals.items()))
 
     @staticmethod
+    def board_stub_allowed(b, source):
+        """Two or more listings, or a BIOS label, and a maker the lanes know."""
+        return b.get('maker') in MAKERS and (source != 'web search' or b.get('n', 0) >= 2)
+
+    @staticmethod
+    def board_stub(machine, b, source, f, dry_run, totals):
+        """A board product for a code no schematic lane has brought yet, so the machine links to it and other
+        machines naming the same code meet there. Tagged norway-board-stub:<Maker>_<code>; the facts of the next
+        machine naming the code find it by model number."""
+        totals['board_stubs_created'] += 1
+        if dry_run:
+            return None
+        maker, code = b['maker'], b['code']
+        how = (f"the BIOS dump label of the {machine.manufacturer} {machine.model_number}" if source == 'firmware label'
+               else f"{b.get('n', 0)} parts listings found by web search, which name it for the {machine.manufacturer} {machine.model_number}")
+        words = 'notebook mainboard' if machine.category == 'laptop' else 'mainboard'
+        extra = (f" Wistron files the board by its PCB number {code}; listings add the revision after a dash." if maker == 'Wistron' else '')
+        return Product.objects.create(
+            manufacturer=maker, model_number=code, category=machine.category if machine.category in ('laptop', 'desktop', 'tablet', 'phone') else 'laptop',
+            subcategory='Mainboard',
+            description=f"{maker} {code} {words}, known from {how}.{extra} No schematic in the collection yet.",
+            import_source=f'{BOARD_STUB_TAG}:{maker}_{code}', is_approved=False)
+
+    @staticmethod
     def apply(product, f, dry_run, totals):
         boards, parts, used_in = f.get('boards', []), f.get('parts', []), f.get('used_in', [])
         source = f.get('source', 'web search')
@@ -97,15 +130,38 @@ class Command(BaseCommand):
         tag = f"norway-board-links:{'web' if source == 'web search' else source.split()[0]}:{product.pk}"
         wanted = {}
         for b in boards:
-            found = list(Product.objects.filter(model_number__iexact=b['code'], import_source__startswith='norway-board:'))
-            if not found:
+            found = list(Product.objects.filter(model_number__iexact=b['code'], import_source__startswith='norway-board'))
+            real = [p for p in found if not p.import_source.startswith(f'{BOARD_STUB_TAG}:')]
+            if real and len(real) < len(found):             # a schematic lane brought the board: the stub goes
+                for stub in found:
+                    if stub not in real:
+                        totals['board_stubs_retired'] += 1
+                        if not dry_run:
+                            stub.delete()
+                found = real
+            allowed = not found and Command.board_stub_allowed(b, source)
+            if allowed:
+                stub = Command.board_stub(product, b, source, f, dry_run, totals)
+                found = [stub] if stub else []
+            if not found and not (dry_run and allowed):
                 totals['codes_without_product'] += 1
             for part in found:
                 if part.pk != product.pk:
                     wanted[part.pk] = (part, f"{part.manufacturer} {part.model_number} is {f.get('evidence', 'named with this machine')}.")
         hosts = {}
+        listings = re.search(r'in (\d+) parts listings', f.get('evidence', ''))
+        strong = source != 'web search' or (listings and int(listings.group(1)) >= 2)
         for name in used_in:
             found = Importer.host_products(name, exclude_tag_prefix=None)      # any product may be the machine
+            if not found and strong:
+                stub = Importer.make_stub(
+                    name, product.category if product.category in ('desktop', 'laptop') else 'laptop',
+                    tag=f'{Importer.STUB_TAG}:facts:{product.pk}',
+                    describe=lambda brand, model: (
+                        f"{brand} {model}: known from parts listings found by web search that name it for the "
+                        f"{product.manufacturer} {product.model_number} mainboard. It uses that board. No manual, firmware or photos yet."),
+                    user=None, dry_run=dry_run, result=totals)
+                found = [stub] if stub else []
             for host in found:
                 if host.pk != product.pk:
                     hosts[host.pk] = (host, f"{product.manufacturer} {product.model_number} is "

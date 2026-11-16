@@ -515,7 +515,24 @@ class Command(BaseCommand):
         Only when the bundle vouches for the name (link['stub'] = {'category', 'source'}: the collection's own
         filename, or two or more parts listings), the brand already exists on the site and the model carries a
         digit. Unapproved, tagged norway-machine:<board folder>, in the norway-machine review batch."""
-        words = link['host'].split()
+        stub = link['stub']
+        bp = bundle['product']
+        return cls.make_stub(
+            link['host'], stub.get('category') or bp.get('category') or 'laptop',
+            tag=f"{cls.STUB_TAG}:{bundle['source_tag'].split(':', 1)[1]}",
+            describe=lambda brand, model: (
+                f"{brand} {model}: known from the {bp['manufacturer']} {bp['model_number']} schematic in the "
+                f"letus.repair collection, which names this machine ({stub.get('source', 'in its filename')}). "
+                f"It uses the {bp['manufacturer']} {bp['model_number']} {bp.get('subcategory', 'mainboard').lower()}. "
+                f"No manual, firmware or photos yet."),
+            user=user, dry_run=dry_run, result=result, link=link)
+
+    @classmethod
+    def make_stub(cls, name, category, tag, describe, user, dry_run, result, link=None):
+        """The product for a machine name, created as a stub when the site lacks it: None when the name cannot be
+        trusted (one word, no digit, unknown brand, a family word alone), the existing product when the cleaned
+        name is one, else a new unapproved product tagged `tag`."""
+        words = name.split()
         if len(words) < 2 or not re.search(r'\d', ' '.join(words[1:])):
             return None
         brand = Product.objects.filter(manufacturer__iexact=words[0]).exclude(import_source__startswith=f'{cls.STUB_TAG}:') \
@@ -528,20 +545,14 @@ class Command(BaseCommand):
         existing = Product.objects.filter(manufacturer__iexact=brand, model_number__iexact=model).first()
         if existing:
             return existing                                 # 'Dell Inspiron 15 7567' cleaned is the Dell Inspiron 7567 the site has
-        stub = link['stub']
         result['machines_created'] = result.get('machines_created', 0) + 1
         if dry_run:
-            link['_would_stub'] = True
+            if link is not None:
+                link['_would_stub'] = True
             return None
-        bp = bundle['product']
-        return Product.objects.create(
-            manufacturer=brand, model_number=model, category=stub.get('category') or bp.get('category') or 'laptop',
-            description=(f"{brand} {model}: known from the {bp['manufacturer']} {bp['model_number']} schematic in the "
-                         f"letus.repair collection, which names this machine ({stub.get('source', 'in its filename')}). "
-                         f"It uses the {bp['manufacturer']} {bp['model_number']} {bp.get('subcategory', 'mainboard').lower()}. "
-                         f"No manual, firmware or photos yet."),
-            import_source=f"{cls.STUB_TAG}:{bundle['source_tag'].split(':', 1)[1]}",
-            created_by=user, is_approved=False)
+        return Product.objects.create(manufacturer=brand, model_number=model, category=category,
+                                      description=describe(brand, model), import_source=tag,
+                                      created_by=user, is_approved=False)
 
     NOT_MODEL = re.compile(r'^(?:GT\d{3}M?X?|GTX\d{3,4}|MX\d{3}|RTX\d{4}|HM\d{2,3}|QM\d{2,3}|PM\d{2,3}|UM\d{2,3}|HD\d{4}|\d+GB|\d+TB|'
                            r'I[3579]|\d{1,2}(?:\.\d)?"?|GEN\s?\d|G\d{1,2}|[A-Z]{2}\d{2}[A-Z]?\d{2,3}[A-Z]{0,2}|N\d{2}[A-Z]-[A-Z]{2}|'
