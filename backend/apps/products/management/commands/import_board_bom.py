@@ -470,14 +470,21 @@ class Command(BaseCommand):
             kind = link.get('kind', ProductLink.Kind.FITTED_IN)
             return self.host_products(link['host'], exclude_tag_prefix=None if kind == ProductLink.Kind.PART_OF else 'norway-board:')
 
+        unresolved = 0
         for link in bundle['links']:
             kind = link.get('kind', ProductLink.Kind.FITTED_IN)
             if kind not in ProductLink.Kind.values:
                 raise CommandError(f"unknown link kind {kind!r}")
-            for host in hosts_of(link):
+            hosts = hosts_of(link)
+            if not hosts and link.get('stub') and kind == ProductLink.Kind.FITTED_IN:
+                stub = self.stub_machine(bundle, product, link, user, dry_run, result)
+                hosts = [stub] if stub else []
+            if not hosts and not (dry_run and link.get('_would_stub')):
+                unresolved += 1
+            for host in hosts:
                 if host.pk != product.pk:
                     wanted.setdefault((host.pk, kind), (host, link.get('evidence', '')[:1000]))
-        result['links_unresolved'] = result.get('links_unresolved', 0) + sum(1 for link in bundle['links'] if not hosts_of(link))
+        result['links_unresolved'] = result.get('links_unresolved', 0) + unresolved
         ours = {(l.host_id, l.kind): l for l in ProductLink.objects.filter(part=product, import_source=tag)}
         for key, l in ours.items():
             if key not in wanted:
@@ -498,6 +505,40 @@ class Command(BaseCommand):
             if not dry_run:
                 ProductLink.objects.create(part=product, host=host, kind=key[1], evidence=evidence,
                                            import_source=tag, created_by=user, is_approved=False)
+
+    STUB_TAG = 'norway-machine'
+
+    @classmethod
+    def stub_machine(cls, bundle, board, link, user, dry_run, result):
+        """A machine the lane names (link['host'] = 'HP Pavilion x2 12-b') that is not a product yet becomes one, so the
+        board has a host page to link to and later lanes (manuals, firmware, photos) attach to the same product.
+        Only when the bundle vouches for the name (link['stub'] = {'category', 'source'}: the collection's own
+        filename, or two or more parts listings), the brand already exists on the site and the model carries a
+        digit. Unapproved, tagged norway-machine:<board folder>, in the norway-machine review batch."""
+        words = link['host'].split()
+        if len(words) < 2 or not re.search(r'\d', ' '.join(words[1:])):
+            return None
+        brand = Product.objects.filter(manufacturer__iexact=words[0]).exclude(import_source__startswith=f'{cls.STUB_TAG}:') \
+            .values_list('manufacturer', flat=True).first()
+        if not brand:
+            return None                                     # a brand the site has never seen is not worth a stub
+        model = ' '.join(words[1:])[:100]
+        if model.upper() in cls.FAMILIES:
+            return None
+        stub = link['stub']
+        result['machines_created'] = result.get('machines_created', 0) + 1
+        if dry_run:
+            link['_would_stub'] = True
+            return None
+        bp = bundle['product']
+        return Product.objects.create(
+            manufacturer=brand, model_number=model, category=stub.get('category') or bp.get('category') or 'laptop',
+            description=(f"{brand} {model}: known from the {bp['manufacturer']} {bp['model_number']} schematic in the "
+                         f"letus.repair collection, which names this machine ({stub.get('source', 'in its filename')}). "
+                         f"It uses the {bp['manufacturer']} {bp['model_number']} {bp.get('subcategory', 'mainboard').lower()}. "
+                         f"No manual, firmware or photos yet."),
+            import_source=f"{cls.STUB_TAG}:{bundle['source_tag'].split(':', 1)[1]}",
+            created_by=user, is_approved=False)
 
     @staticmethod
     def import_documents(bundle, product, user, folder, dry_run, result):

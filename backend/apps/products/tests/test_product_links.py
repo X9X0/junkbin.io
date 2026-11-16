@@ -169,3 +169,29 @@ def test_apple_machines_match_by_their_a_number():
     assert Command.host_products('Apple A1398') == [mac]
     assert Command.host_products('Apple MacBook Pro A1398') == [mac]
     assert Command.host_products('Apple A9999') == []
+
+
+def test_a_named_machine_the_site_lacks_becomes_a_stub_product_when_the_bundle_vouches_for_it(tmp_path, hosts):
+    bundle = _board_bundle([
+        {'host': 'HP Pavilion x2 12-b', 'kind': 'fitted_in', 'evidence': 'filename',
+         'stub': {'category': 'laptop', 'source': "in the collection's filename"}},
+        {'host': 'HP Omen 15', 'kind': 'fitted_in', 'evidence': 'one web listing'},                  # no stub: not vouched for
+        {'host': 'Sony Vaio SVF15N', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}},   # no stub: no Sony on the site
+        {'host': 'HP Pavilion', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}},        # no stub: family word alone
+    ])
+    out = _run(_write(tmp_path, bundle), '--dry-run')
+    assert 'machines created 1' in out and 'links unresolved 3' in out and not Product.objects.filter(model_number='Pavilion x2 12-b').exists()
+    out = _run(_write(tmp_path / 'r', bundle) if (tmp_path / 'r').mkdir() is None else None)
+    assert 'machines created 1' in out and 'links added 1' in out
+    stub = Product.objects.get(model_number='Pavilion x2 12-b')
+    assert stub.manufacturer == 'HP' and stub.category == 'laptop' and not stub.is_approved
+    assert stub.import_source == 'norway-machine:Compal_LA-D993P_1.0' and 'known from the Compal LA-D993P schematic' in stub.description
+    assert import_review.stats('norway-machine')['total'] == 1
+    assert ProductLink.objects.get(host=stub).part.model_number == 'LA-D993P'
+    # a second board naming the same machine links to the one stub; nothing is created twice
+    other = _board_bundle([{'host': 'HP Pavilion x2 12-b', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}}])
+    other['source_tag'] = 'norway-board:Quanta_DAYB3BMBAD0_1A'
+    other['product'] = {**other['product'], 'manufacturer': 'Quanta', 'model_number': 'DAYB3BMBAD0', 'revision': '1A'}
+    out = _run(_write(tmp_path, other, 'Quanta_DAYB3BMBAD0_1A'))
+    assert 'machines created' not in out and 'links added 1' in out
+    assert Product.objects.filter(model_number__iexact='Pavilion x2 12-b').count() == 1 and ProductLink.objects.filter(host=stub).count() == 2
