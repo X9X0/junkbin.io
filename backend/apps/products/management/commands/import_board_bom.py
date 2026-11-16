@@ -548,6 +548,9 @@ class Command(BaseCommand):
                            r'DA0?[0-9A-Z]{2,4}(?:MB|LB|DB)[0-9A-Z]{2,4}|L[AS]-?[A-Z0-9]{4,5}P?|N[MS]-?[A-Z]\d{3,4}|6050A\d{7}(?:-[A-Z0-9]+)*|'
                            r'BA41-\d{5}[A-Z]?|820-\d{4,5}(?:-[A-Z0-9]+)?|\d{5}-[A-Z0-9]{1,3})$', re.I)   # ODM board codes are not models
 
+    SUFFIX_WORDS = {'PLUS', 'PRO', 'MAX', 'MINI', 'AIR', 'ULTRA', 'LITE', 'SE', 'XL', 'DUO', 'SLIM', 'TOUCH', 'EDGE', 'NOTE', 'FE',
+                    'NEO', 'PRIME', 'ACTIVE'}
+
     @classmethod
     def stub_model(cls, words):
         """The model a stub gets from a listing name: the family words and the model tokens that follow; GPU,
@@ -557,8 +560,8 @@ class Command(BaseCommand):
         words = [t for w in words for t in w.split('/') if t]                  # 'E1-572/E1-570' lists two models
         for w in words:
             if re.search(r'\d', w):
-                if cls.NOT_MODEL.match(w) and not (re.fullmatch(r'\d{1,2}[A-Z]?', w, re.I) and family
-                                                   and family[-1].lower() in ('iphone', 'ipad', 'galaxy', 'pixel', 'surface')):
+                if cls.NOT_MODEL.match(w) and not (re.fullmatch(r'\d{1,2}(?:\.\d)?[A-Z]?', w, re.I)
+                                                   and any(f.lower() in ('iphone', 'ipad', 'galaxy', 'pixel', 'surface') for f in family)):
                     continue                               # 'iPhone 7 Plus': the 7 is the model
                 shape = re.sub(r'\d', '9', w.upper())
                 if shape in shapes:
@@ -569,6 +572,8 @@ class Command(BaseCommand):
                 shapes.add(shape)
             elif not models:
                 family.append(w)
+            elif w.upper() in cls.SUFFIX_WORDS:
+                models.append(w)                           # 'iPhone 7 Plus', 'Galaxy S7 Edge'
             else:
                 break                                      # words after the model (chipset names, 'Laptop')
         if not models or (not family and len(re.sub(r'[^A-Za-z0-9]', '', ''.join(models))) < 3):
