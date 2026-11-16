@@ -522,8 +522,8 @@ class Command(BaseCommand):
             .values_list('manufacturer', flat=True).first()
         if not brand:
             return None                                     # a brand the site has never seen is not worth a stub
-        model = ' '.join(words[1:])[:100]
-        if model.upper() in cls.FAMILIES:
+        model = cls.stub_model(words[1:])
+        if not model:
             return None
         stub = link['stub']
         result['machines_created'] = result.get('machines_created', 0) + 1
@@ -539,6 +539,32 @@ class Command(BaseCommand):
                          f"No manual, firmware or photos yet."),
             import_source=f"{cls.STUB_TAG}:{bundle['source_tag'].split(':', 1)[1]}",
             created_by=user, is_approved=False)
+
+    NOT_MODEL = re.compile(r'^(?:GT\d{3}M?X?|GTX\d{3,4}|MX\d{3}|RTX\d{4}|HM\d{2,3}|QM\d{2,3}|PM\d{2,3}|UM\d{2,3}|HD\d{4}|\d+GB|\d+TB|'
+                           r'I[3579]|\d{1,2}(?:\.\d)?"?|GEN\s?\d|G\d{1,2}|[A-Z]{2}\d{2}[A-Z]?\d{2,3}[A-Z]{0,2}|N\d{2}[A-Z]-[A-Z]{2})$', re.I)
+
+    @classmethod
+    def stub_model(cls, words):
+        """The model a stub gets from a listing name: the family words and the model tokens that follow; GPU,
+        chipset, memory and generation tokens ('GT540M HM65', '8GB', 'G6') are skipped, and a token shaped like a
+        model already taken ('Satellite P750 P755', 'E1-431 E1-471') names another machine, so the name stops there."""
+        family, models, shapes = [], [], set()
+        for w in words:
+            if re.search(r'\d', w):
+                if cls.NOT_MODEL.match(w):
+                    continue
+                shape = re.sub(r'\d', '9', w.upper())
+                if shape in shapes:
+                    break                                  # a sibling model: another machine
+                models.append(w)
+                shapes.add(shape)
+            elif not models:
+                family.append(w)
+            else:
+                break                                      # words after the model (chipset names, 'Laptop')
+        if not models or (not family and len(re.sub(r'[^A-Za-z0-9]', '', ''.join(models))) < 3):
+            return None
+        return ' '.join([*family, *models])[:100]
 
     @staticmethod
     def import_documents(bundle, product, user, folder, dry_run, result):

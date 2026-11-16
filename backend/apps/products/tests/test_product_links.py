@@ -195,3 +195,16 @@ def test_a_named_machine_the_site_lacks_becomes_a_stub_product_when_the_bundle_v
     out = _run(_write(tmp_path, other, 'Quanta_DAYB3BMBAD0_1A'))
     assert 'machines created' not in out and 'links added 1' in out
     assert Product.objects.filter(model_number__iexact='Pavilion x2 12-b').count() == 1 and ProductLink.objects.filter(host=stub).count() == 2
+
+
+def test_stub_model_keeps_the_family_and_first_model_only():
+    sm = Command.stub_model
+    assert sm('Pavilion x2 12-b'.split()) == 'Pavilion x2 12-b'
+    assert sm('Satellite P750 P755 GT540M HM65'.split()) == 'Satellite P750'
+    assert sm('Aspire ES1-132'.split()) == 'Aspire ES1-132'
+    assert sm('Alienware M11X R3 R2'.split()) == 'Alienware M11X R3'
+    assert sm('Aspire E1-431 E1-471'.split()) == 'Aspire E1-431'
+    assert sm('Inspiron 15 7567'.split()) == 'Inspiron 7567'
+    assert sm('EliteBook 840 G2'.split()) == 'EliteBook 840'
+    assert sm('MacBook Pro A1398'.split()) == 'MacBook Pro A1398'
+    assert sm('G6 HM65'.split()) is None
