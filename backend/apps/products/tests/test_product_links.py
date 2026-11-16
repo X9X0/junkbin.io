@@ -60,8 +60,11 @@ def test_host_products_match_exactly_not_by_substring(hosts):
     assert names(Command.host_products('Lenovo ThinkPad T440')) == ['Lenovo T440', 'Lenovo ThinkPad T440']
     # a multi-model name links each model
     assert names(Command.host_products('Acer Aspire E1-431 E1-471')) == ['Acer Aspire E1-471']
-    # 'HP G4' must not reach ProBook 450 G4; a family word alone names nothing
+    # 'HP G4' must not reach ProBook 450 G4; a family word alone names nothing; 'HP 650 G1' is not the HP 650
     assert Command.host_products('HP G4') == []
+    Product.objects.create(manufacturer='HP', model_number='650', category='laptop', is_approved=True)
+    assert Command.host_products('HP 650 G1') == []
+    assert names(Command.host_products('HP 650')) == ['HP 650']
     assert Command.host_products('HP Pavilion') == []
     assert Command.host_products('Dell') == []
 
@@ -131,3 +134,88 @@ def test_links_travel_with_export_and_load(tmp_path, hosts, settings):
     assert sorted(l.host.model_number for l in links) == ['T440', 'ThinkPad T440']      # both revisions of the host
     call_command('load_content', str(out), '--allow-missing-files')                  # loading twice adds nothing
     assert ProductLink.objects.count() == 2
+
+
+def test_sub_boards_link_to_their_mainboard_and_boards_sharing_a_machine_show_as_also_in(tmp_path, hosts):
+    _run(_write(tmp_path, _board_bundle([{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': 'e'}])))
+    board = Product.objects.get(model_number='LA-D993P')
+    other = _board_bundle([{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': 'e'}])
+    other['source_tag'] = 'norway-board:Compal_LA-D994P_1.0'
+    other['product'] = {**other['product'], 'model_number': 'LA-D994P'}
+    _run(_write(tmp_path, other, 'Compal_LA-D994P_1.0'))
+    sub = _board_bundle([{'host': 'Compal LA-D993P', 'kind': 'part_of', 'evidence': 'both title pages say NWQAA'}])
+    sub['source_tag'] = 'norway-board:Compal_LS-D991P_1.0'
+    sub['product'] = {**sub['product'], 'model_number': 'LS-D991P', 'subcategory': 'Daughterboard'}
+    out = _run(_write(tmp_path, sub, 'Compal_LS-D991P_1.0'))
+    assert 'links added 1' in out and 'links unresolved' not in out
+    link = ProductLink.objects.get(part__model_number='LS-D991P')
+    assert link.host == board and link.kind == ProductLink.Kind.PART_OF and not link.is_approved
+    ev = import_review.evidence('norway-board-links', link)
+    assert 'LS-D991P sub-board of Compal LA-D993P' in ev['title'] and ev['documents'][1]['type'] == 'Sub-board of'
+    Product.objects.update(is_approved=True)
+    ProductLink.objects.update(is_approved=True)
+    client = APIClient()
+    d = client.get(f'/api/products/{board.pk}/').json()
+    assert [(p['model_number'], p['kind']) for p in d['parts']] == [('LS-D991P', 'part_of')]
+    assert [p['model_number'] for p in d['also_in']] == ['LA-D994P'] and 'Lenovo ThinkPad T440' in d['also_in'][0]['via']
+    assert client.get(f'/api/products/{link.part.pk}/').json()['fitted_in'][0]['kind'] == 'part_of'
+    t440 = Product.objects.get(model_number='ThinkPad T440')
+    assert client.get(f'/api/products/{t440.pk}/').json()['also_in'] == []            # machines have no siblings
+
+
+def test_apple_machines_match_by_their_a_number():
+    mac = Product.objects.create(manufacturer='Apple', model_number='MacBook Pro A1398', category='laptop', is_approved=True)
+    Product.objects.create(manufacturer='Apple', model_number='iMac A1311', category='desktop', is_approved=True)
+    assert Command.host_products('Apple A1398') == [mac]
+    assert Command.host_products('Apple MacBook Pro A1398') == [mac]
+    assert Command.host_products('Apple A9999') == []
+
+
+def test_a_named_machine_the_site_lacks_becomes_a_stub_product_when_the_bundle_vouches_for_it(tmp_path, hosts):
+    bundle = _board_bundle([
+        {'host': 'HP Pavilion x2 12-b', 'kind': 'fitted_in', 'evidence': 'filename',
+         'stub': {'category': 'laptop', 'source': "in the collection's filename"}},
+        {'host': 'HP Omen 15', 'kind': 'fitted_in', 'evidence': 'one web listing'},                  # no stub: not vouched for
+        {'host': 'Sony Vaio SVF15N', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}},   # no stub: no Sony on the site
+        {'host': 'HP Pavilion', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}},        # no stub: family word alone
+    ])
+    out = _run(_write(tmp_path, bundle), '--dry-run')
+    assert 'machines created 1' in out and 'links unresolved 3' in out and not Product.objects.filter(model_number='Pavilion x2 12-b').exists()
+    out = _run(_write(tmp_path / 'r', bundle) if (tmp_path / 'r').mkdir() is None else None)
+    assert 'machines created 1' in out and 'links added 1' in out
+    stub = Product.objects.get(model_number='Pavilion x2 12-b')
+    assert stub.manufacturer == 'HP' and stub.category == 'laptop' and not stub.is_approved
+    assert stub.import_source == 'norway-machine:Compal_LA-D993P_1.0' and 'known from the Compal LA-D993P schematic' in stub.description
+    assert import_review.stats('norway-machine')['total'] == 1
+    assert ProductLink.objects.get(host=stub).part.model_number == 'LA-D993P'
+    # a second board naming the same machine links to the one stub; nothing is created twice
+    other = _board_bundle([{'host': 'HP Pavilion x2 12-b', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}}])
+    other['source_tag'] = 'norway-board:Quanta_DAYB3BMBAD0_1A'
+    other['product'] = {**other['product'], 'manufacturer': 'Quanta', 'model_number': 'DAYB3BMBAD0', 'revision': '1A'}
+    out = _run(_write(tmp_path, other, 'Quanta_DAYB3BMBAD0_1A'))
+    assert 'machines created' not in out and 'links added 1' in out
+    assert Product.objects.filter(model_number__iexact='Pavilion x2 12-b').count() == 1 and ProductLink.objects.filter(host=stub).count() == 2
+
+
+def test_stub_model_keeps_the_family_and_first_model_only():
+    sm = Command.stub_model
+    assert sm('Pavilion x2 12-b'.split()) == 'Pavilion x2 12-b'
+    assert sm('Satellite P750 P755 GT540M HM65'.split()) == 'Satellite P750'
+    assert sm('Aspire ES1-132'.split()) == 'Aspire ES1-132'
+    assert sm('Alienware M11X R3 R2'.split()) == 'Alienware M11X R3'
+    assert sm('Aspire E1-431 E1-471'.split()) == 'Aspire E1-431'
+    assert sm('Inspiron 15 7567'.split()) == 'Inspiron 7567'
+    assert sm('EliteBook 840 G2'.split()) == 'EliteBook 840'
+    assert sm('MacBook Pro A1398'.split()) == 'MacBook Pro A1398'
+    assert sm('G6 HM65'.split()) is None
+    assert sm('E1-572/E1-570'.split()) == 'E1-572'
+    assert sm('Z485 Dalz2AMB8F0 Dalz2CMB8E0 LZ2B'.split()) == 'Z485'
+    assert sm('iPhone 7 Plus A1661'.split()) == 'iPhone 7 Plus A1661'
+    assert sm('iPad Pro 12.9'.split()) == 'iPad Pro 12.9'
+
+
+def test_a_stub_name_that_cleans_to_an_existing_product_links_to_it(tmp_path, hosts):
+    bundle = _board_bundle([{'host': 'Dell Inspiron 15 7567 GT540M', 'kind': 'fitted_in', 'evidence': 'e', 'stub': {'category': 'laptop'}}])
+    out = _run(_write(tmp_path, bundle))
+    assert 'machines created' not in out and 'links added 1' in out
+    assert ProductLink.objects.get().host.model_number == 'Inspiron 7567'

@@ -440,7 +440,7 @@ class Command(BaseCommand):
         body = rest[1:] if family else rest
         if family and body:
             forms.add(norm(' '.join(body)))
-        tokens = [t for t in body if re.search(r'\d', t) and not re.fullmatch(r'\d{1,2}"?', t)]   # not '15' (inches)
+        tokens = [t for t in body if re.search(r'\d', t) and not re.fullmatch(r'\d{1,2}"?|G\d{1,2}|GEN\s?\d{1,2}', t, re.I)]   # not '15' (inches), not 'G1' (HP generation)
         if len(tokens) > 1:                                 # 'E1-431 E1-471': each is a model
             for t in tokens:
                 forms.add(norm(t))
@@ -452,7 +452,10 @@ class Command(BaseCommand):
         hosts = Product.objects.filter(manufacturer__iexact=brand)
         if exclude_tag_prefix:
             hosts = hosts.exclude(import_source__startswith=exclude_tag_prefix)
-        return [p for p in hosts.only('id', 'model_number', 'import_source') if norm(p.model_number) in forms]
+        # Apple names a machine by its A-number alone ('Apple A1398'); the site's product is 'MacBook Pro A1398'
+        a_number = body[0].lower() if brand.lower() == 'apple' and len(body) == 1 and re.fullmatch(r'A\d{4}', body[0], re.I) else None
+        return [p for p in hosts.only('id', 'model_number', 'import_source')
+                if norm(p.model_number) in forms or (a_number and norm(p.model_number).endswith(a_number))]
 
     def import_links(self, bundle, product, user, dry_run, result):
         """bundle['links']: [{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': '...'}] - the devices
@@ -462,15 +465,26 @@ class Command(BaseCommand):
             return
         tag = bundle['source_tag'].replace('norway-board:', 'norway-board-links:', 1)
         wanted = {}
+
+        def hosts_of(link):                              # a 'part_of' host is itself a board of this lane
+            kind = link.get('kind', ProductLink.Kind.FITTED_IN)
+            return self.host_products(link['host'], exclude_tag_prefix=None if kind == ProductLink.Kind.PART_OF else 'norway-board:')
+
+        unresolved = 0
         for link in bundle['links']:
             kind = link.get('kind', ProductLink.Kind.FITTED_IN)
             if kind not in ProductLink.Kind.values:
                 raise CommandError(f"unknown link kind {kind!r}")
-            for host in self.host_products(link['host']):
+            hosts = hosts_of(link)
+            if not hosts and link.get('stub') and kind == ProductLink.Kind.FITTED_IN:
+                stub = self.stub_machine(bundle, product, link, user, dry_run, result)
+                hosts = [stub] if stub else []
+            if not hosts and not (dry_run and link.get('_would_stub')):
+                unresolved += 1
+            for host in hosts:
                 if host.pk != product.pk:
                     wanted.setdefault((host.pk, kind), (host, link.get('evidence', '')[:1000]))
-        result['links_unresolved'] = result.get('links_unresolved', 0) + sum(
-            1 for link in bundle['links'] if not self.host_products(link['host']))
+        result['links_unresolved'] = result.get('links_unresolved', 0) + unresolved
         ours = {(l.host_id, l.kind): l for l in ProductLink.objects.filter(part=product, import_source=tag)}
         for key, l in ours.items():
             if key not in wanted:
@@ -491,6 +505,91 @@ class Command(BaseCommand):
             if not dry_run:
                 ProductLink.objects.create(part=product, host=host, kind=key[1], evidence=evidence,
                                            import_source=tag, created_by=user, is_approved=False)
+
+    STUB_TAG = 'norway-machine'
+
+    @classmethod
+    def stub_machine(cls, bundle, board, link, user, dry_run, result):
+        """A machine the lane names (link['host'] = 'HP Pavilion x2 12-b') that is not a product yet becomes one, so the
+        board has a host page to link to and later lanes (manuals, firmware, photos) attach to the same product.
+        Only when the bundle vouches for the name (link['stub'] = {'category', 'source'}: the collection's own
+        filename, or two or more parts listings), the brand already exists on the site and the model carries a
+        digit. Unapproved, tagged norway-machine:<board folder>, in the norway-machine review batch."""
+        stub = link['stub']
+        bp = bundle['product']
+        return cls.make_stub(
+            link['host'], stub.get('category') or bp.get('category') or 'laptop',
+            tag=f"{cls.STUB_TAG}:{bundle['source_tag'].split(':', 1)[1]}",
+            describe=lambda brand, model: (
+                f"{brand} {model}: known from the {bp['manufacturer']} {bp['model_number']} schematic in the "
+                f"letus.repair collection, which names this machine ({stub.get('source', 'in its filename')}). "
+                f"It uses the {bp['manufacturer']} {bp['model_number']} {bp.get('subcategory', 'mainboard').lower()}. "
+                f"No manual, firmware or photos yet."),
+            user=user, dry_run=dry_run, result=result, link=link)
+
+    @classmethod
+    def make_stub(cls, name, category, tag, describe, user, dry_run, result, link=None):
+        """The product for a machine name, created as a stub when the site lacks it: None when the name cannot be
+        trusted (one word, no digit, unknown brand, a family word alone), the existing product when the cleaned
+        name is one, else a new unapproved product tagged `tag`."""
+        words = name.split()
+        if len(words) < 2 or not re.search(r'\d', ' '.join(words[1:])):
+            return None
+        brand = Product.objects.filter(manufacturer__iexact=words[0]).exclude(import_source__startswith=f'{cls.STUB_TAG}:') \
+            .values_list('manufacturer', flat=True).first()
+        if not brand:
+            return None                                     # a brand the site has never seen is not worth a stub
+        model = cls.stub_model(words[1:])
+        if not model:
+            return None
+        existing = Product.objects.filter(manufacturer__iexact=brand, model_number__iexact=model).first()
+        if existing:
+            return existing                                 # 'Dell Inspiron 15 7567' cleaned is the Dell Inspiron 7567 the site has
+        result['machines_created'] = result.get('machines_created', 0) + 1
+        if dry_run:
+            if link is not None:
+                link['_would_stub'] = True
+            return None
+        return Product.objects.create(manufacturer=brand, model_number=model, category=category,
+                                      description=describe(brand, model), import_source=tag,
+                                      created_by=user, is_approved=False)
+
+    NOT_MODEL = re.compile(r'^(?:GT\d{3}M?X?|GTX\d{3,4}|MX\d{3}|RTX\d{4}|HM\d{2,3}|QM\d{2,3}|PM\d{2,3}|UM\d{2,3}|HD\d{4}|\d+GB|\d+TB|'
+                           r'I[3579]|\d{1,2}(?:\.\d)?"?|GEN\s?\d|G\d{1,2}|[A-Z]{2}\d{2}[A-Z]?\d{2,3}[A-Z]{0,2}|N\d{2}[A-Z]-[A-Z]{2}|'
+                           r'DA0?[0-9A-Z]{2,4}(?:MB|LB|DB)[0-9A-Z]{2,4}|L[AS]-?[A-Z0-9]{4,5}P?|N[MS]-?[A-Z]\d{3,4}|6050A\d{7}(?:-[A-Z0-9]+)*|'
+                           r'BA41-\d{5}[A-Z]?|820-\d{4,5}(?:-[A-Z0-9]+)?|\d{5}-[A-Z0-9]{1,3})$', re.I)   # ODM board codes are not models
+
+    SUFFIX_WORDS = {'PLUS', 'PRO', 'MAX', 'MINI', 'AIR', 'ULTRA', 'LITE', 'SE', 'XL', 'DUO', 'SLIM', 'TOUCH', 'EDGE', 'NOTE', 'FE',
+                    'NEO', 'PRIME', 'ACTIVE'}
+
+    @classmethod
+    def stub_model(cls, words):
+        """The model a stub gets from a listing name: the family words and the model tokens that follow; GPU,
+        chipset, memory and generation tokens ('GT540M HM65', '8GB', 'G6') are skipped, and a token shaped like a
+        model already taken ('Satellite P750 P755', 'E1-431 E1-471') names another machine, so the name stops there."""
+        family, models, shapes = [], [], set()
+        words = [t for w in words for t in w.split('/') if t]                  # 'E1-572/E1-570' lists two models
+        for w in words:
+            if re.search(r'\d', w):
+                if cls.NOT_MODEL.match(w) and not (re.fullmatch(r'\d{1,2}(?:\.\d)?[A-Z]?', w, re.I)
+                                                   and any(f.lower() in ('iphone', 'ipad', 'galaxy', 'pixel', 'surface') for f in family)):
+                    continue                               # 'iPhone 7 Plus': the 7 is the model
+                shape = re.sub(r'\d', '9', w.upper())
+                if shape in shapes:
+                    break                                  # a sibling model: another machine
+                if models and re.fullmatch(r'[A-Z0-9]{4,5}', w) and sum(c.isalpha() for c in w) >= 2:
+                    break                                  # an ODM project code after the model (Z485 LZ2B)
+                models.append(w)
+                shapes.add(shape)
+            elif not models:
+                family.append(w)
+            elif w.upper() in cls.SUFFIX_WORDS:
+                models.append(w)                           # 'iPhone 7 Plus', 'Galaxy S7 Edge'
+            else:
+                break                                      # words after the model (chipset names, 'Laptop')
+        if not models or (not family and len(re.sub(r'[^A-Za-z0-9]', '', ''.join(models))) < 3):
+            return None
+        return ' '.join([*family, *models])[:100]
 
     @staticmethod
     def import_documents(bundle, product, user, folder, dry_run, result):

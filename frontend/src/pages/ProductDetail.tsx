@@ -41,7 +41,7 @@ import {
   ChevronUp,
   ChevronDown,
 } from 'lucide-react';
-import type { JunkbinItem, Schematic } from '../types';
+import type { JunkbinItem, ProductLinkRef, Schematic } from '../types';
 import clsx from 'clsx';
 import { useMemo, useState } from 'react';
 import LazyImage from '../components/LazyImage';
@@ -580,41 +580,42 @@ export default function ProductDetail() {
         {/* Tab Content */}
         {activeTab === 'overview' && (
           <div className="card-cyber p-6">
-            {((product.fitted_in && product.fitted_in.length > 0) || (product.parts && product.parts.length > 0)) && (
-              <div className="mb-6 space-y-4">
-                {product.fitted_in && product.fitted_in.length > 0 && (
-                  <div>
-                    <h3 className="font-display text-lg font-semibold text-white mb-2">{t('product_detail.fitted_in')}</h3>
-                    <ul className="flex flex-wrap gap-2">
-                      {product.fitted_in.map((p) => (
-                        <li key={p.id}>
-                          <Link to={`/products/${p.slug || p.id}`} title={p.evidence}
-                            className={`inline-block px-3 py-1 rounded border text-sm hover:border-cyber-cyan/60 ${p.is_approved ? 'border-cyber-light/40 text-white' : 'border-cyber-pink/40 text-gray-400'}`}>
-                            {p.manufacturer} {p.model_number}{p.revision ? ` · Rev ${p.revision}` : ''}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {product.parts && product.parts.length > 0 && (
-                  <div>
-                    <h3 className="font-display text-lg font-semibold text-white mb-2">{t('product_detail.boards_inside')}</h3>
-                    <ul className="flex flex-wrap gap-2">
-                      {product.parts.map((p) => (
-                        <li key={p.id}>
-                          <Link to={`/products/${p.slug || p.id}`} title={p.evidence}
-                            className={`inline-block px-3 py-1 rounded border text-sm hover:border-cyber-cyan/60 ${p.is_approved ? 'border-cyber-light/40 text-white' : 'border-cyber-pink/40 text-gray-400'}`}>
-                            {p.manufacturer} {p.model_number}{p.revision ? ` · Rev ${p.revision}` : ''}
-                            {p.subcategory && <span className="text-gray-500"> · {p.subcategory}</span>}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
+            {(() => {
+              const fittedIn = (product.fitted_in || []).filter((p) => p.kind !== 'part_of');
+              const partOf = (product.fitted_in || []).filter((p) => p.kind === 'part_of');
+              const boardsInside = (product.parts || []).filter((p) => p.kind !== 'part_of');
+              const subBoards = (product.parts || []).filter((p) => p.kind === 'part_of');
+              const alsoIn = product.also_in || [];
+              const groups: { key: string; title: string; items: ProductLinkRef[] }[] = [
+                { key: 'fitted_in', title: t('product_detail.fitted_in'), items: fittedIn },
+                { key: 'part_of', title: t('product_detail.part_of'), items: partOf },
+                { key: 'boards_inside', title: t('product_detail.boards_inside'), items: boardsInside },
+                { key: 'sub_boards', title: t('product_detail.sub_boards'), items: subBoards },
+                { key: 'also_in', title: t('product_detail.also_in'), items: alsoIn },
+              ].filter((g) => g.items.length > 0);
+              if (groups.length === 0) return null;
+              return (
+                <div className="mb-6 space-y-4">
+                  {groups.map((g) => (
+                    <div key={g.key}>
+                      <h3 className="font-display text-lg font-semibold text-white mb-2">{g.title}</h3>
+                      <ul className="flex flex-wrap gap-2">
+                        {g.items.map((p) => (
+                          <li key={p.id}>
+                            <Link to={`/products/${p.slug || p.id}`} title={p.evidence}
+                              className={`inline-block px-3 py-1 rounded border text-sm hover:border-cyber-cyan/60 ${p.is_approved ? 'border-cyber-light/40 text-white' : 'border-cyber-pink/40 text-gray-400'}`}>
+                              {p.manufacturer} {p.model_number}{p.revision ? ` · Rev ${p.revision}` : ''}
+                              {p.subcategory && g.key !== 'fitted_in' && g.key !== 'part_of' && <span className="text-gray-500"> · {p.subcategory}</span>}
+                              {g.key === 'also_in' && p.via && p.via.length > 0 && <span className="text-gray-500"> · {p.via.slice(0, 2).join(', ')}</span>}
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             {product.teardown_notes ? (
               <div>
                 <h3 className="font-display text-lg font-semibold text-white mb-4">

@@ -22,7 +22,9 @@ SAMPLE_TARGET = 100
 BATCHES = {
     'norway-bom': {'label': 'Factory-BOM boards (Asus, 2002-2007)', 'item_type': 'product'},
     'norway-schem': {'label': 'Schematic boards up to 2008 (Asus, MSI, Gigabyte)', 'item_type': 'product'},
-    'norway-board': {'label': 'Notebook mainboards by board code (Compal LA-, Quanta DA-, Lenovo NM-)', 'item_type': 'product'},
+    'norway-board': {'label': 'Mainboards by board code (Compal, Quanta, Lenovo, Wistron, Inventec, Samsung, Apple)', 'item_type': 'product'},
+    'norway-machine': {'label': 'Machines known only from a board schematic or listings that name them (stub products)', 'item_type': 'product'},
+    'norway-board-stub': {'label': 'Boards known only from listings or BIOS labels, no schematic yet (stub products)', 'item_type': 'product'},
     'norway-svc': {'label': 'Products from service manuals', 'item_type': 'product'},
     'norway-board-links': {'label': 'Boards fitted in laptops (board-to-device links)', 'item_type': 'link'},
     'norway-ds-new': {'label': 'Components created from datasheets', 'item_type': 'component'},
@@ -134,13 +136,13 @@ def evidence(batch, obj):
         part, host = obj.part, obj.host
         return {
             'item_type': 'link', 'id': str(obj.pk), 'slug': part.slug,
-            'title': f'{part.manufacturer} {part.model_number} fitted in {host.manufacturer} {host.model_number}',
+            'title': f'{part.manufacturer} {part.model_number} {obj.get_kind_display().lower()} {host.manufacturer} {host.model_number}',
             'revision': part.revision, 'category': part.get_category_display(), 'subcategory': part.subcategory,
             'description': obj.evidence,
             'documents': [{'title': f'{part.manufacturer} {part.model_number}' + (f' Rev {part.revision}' if part.revision else ''),
                            'type': 'Board', 'url': f'/products/{part.slug}', 'description': part.description[:200]},
                           {'title': f'{host.manufacturer} {host.model_number}' + (f' Rev {host.revision}' if host.revision else ''),
-                           'type': 'Fitted in', 'url': f'/products/{host.slug}', 'description': host.description[:200]}],
+                           'type': str(obj.get_kind_display()), 'url': f'/products/{host.slug}', 'description': host.description[:200]}],
         }
     if kind == 'image':
         product = obj.product
