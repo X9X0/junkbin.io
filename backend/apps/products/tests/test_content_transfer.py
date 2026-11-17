@@ -145,3 +145,19 @@ def test_restore_dates_repairs_an_earlier_load(site, tmp_path):
     placement = ProductComponent.objects.filter(product=product).first()
     assert placement.created_at < now and placement.updated_at == now + datetime.timedelta(hours=1)
     assert Product.objects.count() == 1                                      # nothing else loaded
+
+
+def test_update_descriptions_refreshes_an_imported_product_already_here(site, tmp_path):
+    out = _export(tmp_path)
+    product = Product.objects.get(pk=site['product_pk'])
+    exported = product.description
+    product.description = 'the older text'
+    product.save(update_fields=['description'])
+
+    call_command('load_content', str(out))                                  # by default the site's text stays
+    product.refresh_from_db()
+    assert product.description == 'the older text'
+
+    call_command('load_content', str(out), update_descriptions=True)
+    product.refresh_from_db()
+    assert product.description == exported
