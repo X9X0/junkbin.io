@@ -79,6 +79,7 @@ from apps.components.spec_fill import fill, plan
 from apps.components.spec_parse import clean_bom_text, ic_package
 from apps.products.import_review import UNCONFIRMED      # a row's note: part number not confirmed
 from apps.products.import_text import bom_component_type, clean_text, clean_title
+from apps.products.stub_names import Resolver
 from apps.products.models import Firmware, ImportReview, Product, ProductImage, ProductLink, Schematic
 
 PASSIVE_TYPES = ('resistor', 'capacitor', 'inductor', 'ferrite', 'crystal', 'thermistor', 'fuse')
@@ -158,6 +159,7 @@ class Command(BaseCommand):
                                  '(revision, description, ...) and documents; leave components alone')
 
     def handle(self, *args, **options):
+        type(self)._resolver = None                      # a fresh view of the site's names for this run
         files = []
         for p in map(Path, options['paths']):
             files += sorted(p.rglob('bundle.json')) if p.is_dir() else [p]
@@ -454,8 +456,22 @@ class Command(BaseCommand):
             hosts = hosts.exclude(import_source__startswith=exclude_tag_prefix)
         # Apple names a machine by its A-number alone ('Apple A1398'); the site's product is 'MacBook Pro A1398'
         a_number = body[0].lower() if brand.lower() == 'apple' and len(body) == 1 and re.fullmatch(r'A\d{4}', body[0], re.I) else None
-        return [p for p in hosts.only('id', 'model_number', 'import_source')
-                if norm(p.model_number) in forms or (a_number and norm(p.model_number).endswith(a_number))]
+        found = [p for p in hosts.only('id', 'model_number', 'import_source')
+                 if norm(p.model_number) in forms or (a_number and norm(p.model_number).endswith(a_number))]
+        if not found and len(tokens) <= 1:
+            # the same machine under another spelling ('Dell Inspirion 15-3567' -> the site's 'Dell 15-3567'): see stub_names
+            one = cls.resolver().find(brand, ' '.join(rest), exclude_tag_prefix=exclude_tag_prefix)
+            if one is not None:
+                found = [one]
+        return found
+
+    _resolver = None
+
+    @classmethod
+    def resolver(cls):
+        if cls._resolver is None:
+            cls._resolver = Resolver()
+        return cls._resolver
 
     def import_links(self, bundle, product, user, dry_run, result):
         """bundle['links']: [{'host': 'Lenovo ThinkPad T440', 'kind': 'fitted_in', 'evidence': '...'}] - the devices
@@ -545,14 +561,23 @@ class Command(BaseCommand):
         existing = Product.objects.filter(manufacturer__iexact=brand, model_number__iexact=model).first()
         if existing:
             return existing                                 # 'Dell Inspiron 15 7567' cleaned is the Dell Inspiron 7567 the site has
+        cleaned = cls.resolver().clean(brand, model)        # one spelling per machine: see stub_names
+        if cleaned is None:
+            return None
+        existing = cls.resolver().find(brand, cleaned, category=category)
+        if existing is not None:
+            return existing                                 # 'Dell Inspirion 15-3567' is the site's 'Dell 15-3567'
+        model = cleaned.name
         result['machines_created'] = result.get('machines_created', 0) + 1
         if dry_run:
             if link is not None:
                 link['_would_stub'] = True
             return None
-        return Product.objects.create(manufacturer=brand, model_number=model, category=category,
+        stub = Product.objects.create(manufacturer=brand, model_number=model, category=category,
                                       description=describe(brand, model), import_source=tag,
                                       created_by=user, is_approved=False)
+        cls.resolver().remember(stub)
+        return stub
 
     NOT_MODEL = re.compile(r'^(?:GT\d{3}M?X?|GTX\d{3,4}|MX\d{3}|RTX\d{4}|HM\d{2,3}|QM\d{2,3}|PM\d{2,3}|UM\d{2,3}|HD\d{4}|\d+GB|\d+TB|'
                            r'I[3579]|\d{1,2}(?:\.\d)?"?|GEN\s?\d|G\d{1,2}|[A-Z]{2}\d{2}[A-Z]?\d{2,3}[A-Z]{0,2}|N\d{2}[A-Z]-[A-Z]{2}|'
