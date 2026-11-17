@@ -147,3 +147,29 @@ def test_dedupe_approved_stub_makes_its_survivor_approved():
     survivor.refresh_from_db()
     assert survivor.is_approved
     assert Product.objects.filter(manufacturer='Toshiba', import_source=STUB).count() == 1
+
+
+def test_find_takes_the_product_spelled_as_the_name_when_several_real_ones_share_its_family():
+    product('Lenovo', 'Yoga 11S')
+    product('Lenovo', 'Yoga 11S VIUU4')
+    product('Lenovo', 'ALL IN ONE C240', category='desktop')
+    product('Lenovo', 'C240', src=STUB)
+    r = Resolver()
+    assert r.find('Lenovo', 'IdeaPad Yoga 11S') == Product.objects.get(model_number='Yoga 11S')
+    assert r.clean('Lenovo', 'ALL IN ONE C240').family == ()                          # a form factor, not a family
+    assert r.find('Lenovo', 'Lenovo Aio C240') == Product.objects.get(model_number='ALL IN ONE C240')
+
+
+def test_make_stub_never_creates_a_name_the_site_has():
+    from apps.products.management.commands.import_board_bom import Command as Importer
+    product('Lenovo', 'IdeaPad 320')
+    product('Lenovo', 'IdeaPad 330')
+    product('Lenovo', 'IdeaPad Yoga 11S', src=STUB)
+    product('Lenovo', 'Yoga 11S')
+    product('Lenovo', 'Yoga 11S VIUU4')
+    product('Lenovo', 'Yoga 11S 20246', category='tablet')                          # three real ones: ambiguous
+    Importer._resolver = None
+    got = Importer.make_stub('Lenovo Ideadpad Yoga 11S', 'laptop', tag=STUB, describe=lambda b, m: 'x', user=None,
+                             dry_run=False, result={})
+    assert got == Product.objects.get(model_number='Yoga 11S')                         # the real one, spelled plainly
+    assert Product.objects.filter(model_number='IdeaPad Yoga 11S').count() == 1       # and nothing new beside the old stub

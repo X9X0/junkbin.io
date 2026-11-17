@@ -162,6 +162,7 @@ class Resolver:
         left (no model token, or the model tokens belong to another maker's board)."""
         family, models, tokens, size, gen = [], [], [], None, None
         brand_l = brand.lower()
+        model = re.sub(r'\ball[- ]in[- ]one\b', ' ', model, flags=re.I)        # 'ALL IN ONE C240': a form factor, not a family
         words = [t for w in model.replace(',', ' ').split() for t in w.split('/') if t]
         for w in words:
             w = w.strip('.;:()[]')
@@ -291,6 +292,10 @@ class Resolver:
         if real:
             if len(real) > 1:
                 exact = [r for r in real if r.family == fam]
+                if len(exact) != 1:                      # 'Yoga 11S' and 'Yoga 11S VIUU4': the one spelled as the name,
+                    pool = exact or real                 # else the one spelled canonically (no project code glued on)
+                    named = [r for r in pool if r.model.lower() == cleaned.name.lower()]
+                    exact = named if len(named) == 1 else [r for r in pool if r.canonical]
                 if len(exact) != 1:
                     return None
                 real = exact
