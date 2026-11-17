@@ -161,3 +161,17 @@ def test_update_descriptions_refreshes_an_imported_product_already_here(site, tm
     call_command('load_content', str(out), update_descriptions=True)
     product.refresh_from_db()
     assert product.description == exported
+
+
+def test_a_placement_re_created_under_a_new_id_is_not_added_twice(site, tmp_path):
+    out = _export(tmp_path)
+    product = Product.objects.get(pk=site['product_pk'])
+    rows = list(ProductComponent.objects.filter(product=product))
+    assert rows
+    for row in rows:                                                        # the exporting site's lane re-ran: new ids
+        ProductComponent.objects.create(product=row.product, component=row.component,
+                                        reference_designator=row.reference_designator, quantity=row.quantity)
+        row.delete()
+    n = ProductComponent.objects.filter(product=product).count()
+    call_command('load_content', str(out))
+    assert ProductComponent.objects.filter(product=product).count() == n
