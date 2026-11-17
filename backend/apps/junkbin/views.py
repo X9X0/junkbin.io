@@ -1,10 +1,13 @@
 """
 Junkbin views for Junkbin.io API
 """
+import uuid
+
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.prefetch import GenericPrefetch
 from django.db import models
 from rest_framework import viewsets, permissions, status
+from rest_framework.exceptions import ValidationError
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -95,6 +98,10 @@ class JunkbinItemViewSet(viewsets.ModelViewSet):
 
         object_id = params.get('object_id')
         if object_id:
+            try:
+                uuid.UUID(str(object_id))
+            except ValueError:
+                raise ValidationError({'object_id': 'must be a UUID (a product or component id, not its slug)'})
             qs = qs.filter(object_id=object_id)
 
         filter_status = params.get('status')

@@ -12,7 +12,7 @@
 # Core Django
 # ========================================
 Django==6.0.8
-djangorestframework==3.18.0
+djangorestframework==3.18.2
 django-environ==0.14.0
 django-cors-headers==4.9.0
 
@@ -25,7 +25,8 @@ dj-database-url==3.1.2
 # ========================================
 # Authentication & Authorization
 # ========================================
-django-allauth[socialaccount]==65.19.1
+django-allauth[socialaccount]==65.22.1
+oauthlib==4.0.1  # pinned above allauth's floor: CVE fixes (pip-audit gate)
 djangorestframework-simplejwt==5.5.1
 PyJWT==2.15.1
 requests==2.34.2
@@ -54,12 +55,12 @@ pywebpush==2.4.0
 # ========================================
 # Image Processing
 # ========================================
-Pillow==12.3.0
+Pillow==13.0.0
 pillow-avif-plugin==1.6.0
 django-imagekit==6.1.0
 
 # Self-hosted background removal (no external API) - see apps/media_tools
-rembg[cpu]==2.0.81
+rembg[cpu]==2.0.87
 pymatting==1.1.15
 
 # ========================================
@@ -112,10 +113,10 @@ faker==40.37.0
 # ========================================
 # Code Quality
 # ========================================
-black==26.5.1
+black==26.10.1
 flake8==7.3.0
 isort==9.0.1
-pylint==4.0.8
+pylint==4.0.9
 pylint-django==2.8.0
 
 # ========================================

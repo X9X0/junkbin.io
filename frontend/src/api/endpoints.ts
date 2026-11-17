@@ -401,7 +401,8 @@ export const components = {
 
   crossReference: async (id: string): Promise<Product[]> => {
     const response = await api.get(`/components/${id}/products/`);
-    return response.data.results || response.data;
+    const data = response.data;
+    return Array.isArray(data) ? data : (data?.results ?? []);
   },
 
   lookup: async (id: string): Promise<NexarData> => {
