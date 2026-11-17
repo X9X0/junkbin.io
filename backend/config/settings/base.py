@@ -638,6 +638,9 @@ DIGIKEY_CLIENT_ID = env('DIGIKEY_CLIENT_ID', default='')
 DIGIKEY_CLIENT_SECRET = env('DIGIKEY_CLIENT_SECRET', default='')
 MOUSER_API_KEY = env('MOUSER_API_KEY', default='')
 
+# eBay developer program: the token entered with the account-deletion endpoint (apps.api.ebay)
+EBAY_VERIFICATION_TOKEN = env('EBAY_VERIFICATION_TOKEN', default='')
+
 # Site URL for webhook embeds
 SITE_URL = env('SITE_URL', default='http://localhost:8000')
 
