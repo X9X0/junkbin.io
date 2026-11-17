@@ -66,6 +66,9 @@ class Command(BaseCommand):
         parser.add_argument('--allow-missing-files', action='store_true')
         parser.add_argument('--restore-dates', action='store_true',
                             help='only put the exported dates back on rows an earlier load added')
+        parser.add_argument('--update-descriptions', action='store_true',
+                            help="an imported product already here takes the export's description when it differs "
+                                 "(a lane re-run with better web research); user-made products are never touched")
 
     def records(self, label):
         with open(os.path.join(self.dir, f'{label}.jsonl'), encoding='utf-8') as fh:
@@ -85,6 +88,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         self.dir = opts['dir']
+        self.update_descriptions = opts['update_descriptions']
         for label in MODELS:
             if not os.path.exists(os.path.join(self.dir, f'{label}.jsonl')):
                 raise CommandError(f'{label}.jsonl missing from {self.dir}')
@@ -124,7 +128,7 @@ class Command(BaseCommand):
         unknown = [name for pk, name in wanted.items() if self.users[pk] is None]
         if unknown:
             self.notes.append(f'users not on this site (fields left empty): {", ".join(sorted(unknown))}')
-        self.cmap, self.pmap, self.images = {}, {}, set()
+        self.cmap, self.pmap, self.images, self.redescribed = {}, {}, set(), set()
         self.load_components()
         self.load_products()
         self.load_children('products.ProductImage', ProductImage)
@@ -187,6 +191,12 @@ class Command(BaseCommand):
                 if o.pk in have:
                     self.pmap[o.pk] = o.pk
                     self.n['products already here'] += 1
+                    if self.update_descriptions and o.import_source:
+                        changed = Product.objects.filter(pk=o.pk, import_source=o.import_source).exclude(
+                            description=o.description).update(description=o.description)
+                        self.n['descriptions updated'] += changed
+                        if changed:
+                            self.redescribed.add(o.pk)
                     continue
                 same = Product.objects.filter(manufacturer=o.manufacturer, model_number=o.model_number,
                                               revision=o.revision, region=o.region).values_list('pk', flat=True).first()
@@ -309,6 +319,11 @@ class Command(BaseCommand):
         new_products = [k for k, v in self.pmap.items() if k == v]
         for batch in chunks(new_products):
             Product.objects.filter(pk__in=batch, search_vector__isnull=True).update(search_vector=(
+                SearchVector('manufacturer', weight='A') + SearchVector('model_number', weight='A') +
+                SearchVector('fcc_id', weight='B') + SearchVector('description', weight='C') +
+                SearchVector('teardown_notes', weight='D')))
+        for batch in chunks(list(self.redescribed)):                      # a changed description: its vector follows
+            Product.objects.filter(pk__in=batch).update(search_vector=(
                 SearchVector('manufacturer', weight='A') + SearchVector('model_number', weight='A') +
                 SearchVector('fcc_id', weight='B') + SearchVector('description', weight='C') +
                 SearchVector('teardown_notes', weight='D')))
