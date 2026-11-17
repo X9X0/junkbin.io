@@ -18,6 +18,7 @@ from rest_framework_simplejwt.views import (
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.users.models import UserActivity
+from .ebay import EbayAccountDeletionView
 from .views import APIRootView, SearchView, HealthCheckView, StatsView, AnalyticsView, staff_auth_check
 
 
@@ -195,4 +196,7 @@ urlpatterns = [
 
     # Search endpoint
     path('search/', SearchView.as_view(), name='search'),
+
+    # eBay developer program: account-deletion notifications (challenge + acknowledgement)
+    path('ebay/account-deletion/', EbayAccountDeletionView.as_view(), name='ebay-account-deletion'),
 ]
