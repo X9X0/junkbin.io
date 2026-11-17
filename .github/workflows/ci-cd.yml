@@ -36,6 +36,9 @@ jobs:
           cache: pip
           cache-dependency-path: backend/requirements.txt
 
+      - name: Install system packages the backend image has (OCR tests read PDFs with poppler and tesseract)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends tesseract-ocr poppler-utils libmagic1
+
       - name: Install dependencies
         run: pip install -r backend/requirements.txt
 
