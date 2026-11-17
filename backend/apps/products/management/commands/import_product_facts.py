@@ -66,6 +66,7 @@ class Command(BaseCommand):
         parser.add_argument('--dry-run', action='store_true')
 
     def handle(self, *args, **opts):
+        Importer._resolver = None                        # a fresh view of the site's names for this run
         with open(opts['facts'], encoding='utf-8') as fh:
             facts = json.load(fh)
         totals = {'products': 0, 'by_name': 0, 'missing': 0, 'descriptions_changed': 0, 'links_added': 0, 'links_kept': 0,
