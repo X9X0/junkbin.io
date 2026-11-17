@@ -565,6 +565,8 @@ class Command(BaseCommand):
         if cleaned is None:
             return None
         existing = cls.resolver().find(brand, cleaned, category=category)
+        if existing is None and cleaned.name.lower() != model.lower():
+            existing = Product.objects.filter(manufacturer__iexact=brand, model_number__iexact=cleaned.name).first()
         if existing is not None:
             return existing                                 # 'Dell Inspirion 15-3567' is the site's 'Dell 15-3567'
         model = cleaned.name
