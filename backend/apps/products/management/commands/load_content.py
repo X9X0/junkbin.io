@@ -260,6 +260,11 @@ class Command(BaseCommand):
     def load_placements(self):
         for batch in self.objects('components.ProductComponent'):
             have = set(ProductComponent.objects.filter(pk__in=[o.pk for o, _ in batch]).values_list('pk', flat=True))
+            # a lane re-run re-creates a product's placements under new ids: the same part at the same designator
+            # on the same product is the placement this site already has
+            products = {self.pmap.get(o.product_id, o.product_id) for o, _ in batch}
+            placed = set(ProductComponent.objects.filter(product_id__in=products)
+                         .values_list('product_id', 'component_id', 'reference_designator'))
             new = []
             for o, _ in batch:
                 if o.pk in have:
@@ -267,6 +272,11 @@ class Command(BaseCommand):
                     continue
                 o.product_id = self.pmap.get(o.product_id, o.product_id)
                 o.component_id = self.cmap.get(o.component_id, o.component_id)
+                key = (o.product_id, o.component_id, o.reference_designator)
+                if key in placed:
+                    self.n['placements already here'] += 1
+                    continue
+                placed.add(key)
                 if o.image_reference_id and o.image_reference_id not in self.images:
                     o.image_reference_id = None
                 self.map_users(o)
