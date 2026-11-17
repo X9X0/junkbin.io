@@ -21,7 +21,8 @@ from collections import Counter
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-from apps.products.models import Firmware, ImportReview, Product, ProductImage, ProductLink, Schematic
+from apps.products.merging import delete_product, merge_product
+from apps.products.models import Product
 from apps.products.stub_names import Resolver
 
 STUB_PREFIX = 'norway-machine'
@@ -96,39 +97,9 @@ class Command(BaseCommand):
                 self.n['unchanged'] += 1
 
     def merge(self, stub, target, r):
-        for link in ProductLink.objects.filter(host=stub):
-            twin = ProductLink.objects.filter(part_id=link.part_id, host=target, kind=link.kind).first()
-            if twin or link.part_id == target.pk:
-                if twin and link.is_approved and not twin.is_approved:
-                    twin.is_approved = True
-                    twin.save(update_fields=['is_approved'])
-                link.delete()
-                self.n['duplicate links dropped'] += 1
-            else:
-                link.host = target
-                link.save(update_fields=['host'])
-                self.n['links moved'] += 1
-        for link in ProductLink.objects.filter(part=stub):
-            if link.host_id == target.pk or ProductLink.objects.filter(part=target, host_id=link.host_id, kind=link.kind).exists():
-                link.delete()
-                self.n['duplicate links dropped'] += 1
-            else:
-                link.part = target
-                link.save(update_fields=['part'])
-                self.n['links moved'] += 1
-        for model in (ProductImage, Schematic, Firmware):
-            moved = model.objects.filter(product=stub).update(product=target)
-            if moved:
-                self.n['files moved'] += moved
-        if stub.is_approved and not target.is_approved:
-            target.is_approved = True
-            target.save(update_fields=['is_approved'])
-            self.n['survivors approved'] += 1
-        self.remove(stub, r)
+        merge_product(stub, target, self.n)
+        r.forget(stub)
 
     def remove(self, stub, r):
-        ProductLink.objects.filter(host=stub).delete()
-        ProductLink.objects.filter(part=stub).delete()
-        ImportReview.objects.filter(object_id=stub.pk).delete()
+        delete_product(stub)
         r.forget(stub)
-        stub.delete()
