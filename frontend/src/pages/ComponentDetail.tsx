@@ -418,8 +418,9 @@ export default function ComponentDetail() {
 
         {/* WHO HAS THIS? — only shown if there are any junkbin items */}
         {swapItems && swapItems.count > 0 && (() => {
-          const haveItems = swapItems.results.filter((i) => i.item_type === 'have');
-          const wantItems = swapItems.results.filter((i) => i.item_type === 'want');
+          const swapList = Array.isArray(swapItems?.results) ? swapItems.results : [];
+          const haveItems = swapList.filter((i) => i.item_type === 'have');
+          const wantItems = swapList.filter((i) => i.item_type === 'want');
           return (
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-4">

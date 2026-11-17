@@ -36,6 +36,7 @@ htmlcov/
 # Static and media (built/collected separately)
 staticfiles/
 media/
+.import_tmp/
 
 # Documentation
 docs/

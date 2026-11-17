@@ -74,3 +74,29 @@ def test_critical_emails_are_never_batched(user_factory):
     send_verification_email(newcomer)
     send_password_reset_email(newcomer, 'token', 'uid')
     assert [m.to for m in mail.outbox] == [[newcomer.email], [newcomer.email]]
+
+
+def test_a_quota_refusal_pauses_the_digests_instead_of_erroring_per_user(moderator, user_factory, product_factory, monkeypatch):
+    import smtplib
+
+    from django.core.cache import cache
+
+    import utils.email
+    from apps.notifications import tasks
+
+    cache.delete(tasks.REVIEW_DIGEST_PAUSE_KEY)
+    users = [user_factory() for _ in range(3)]
+    for u in users:
+        ReviewEmail.objects.create(user=u, content_type='product', content_str='x', content_url='', approved=True)
+    attempts = []
+
+    def refused(user, approved, rejected):
+        attempts.append(user.pk)
+        raise smtplib.SMTPRecipientsRefused({user.email: (550, b'5.4.6 Sender Domain Daily Quota Exceeded')})
+
+    monkeypatch.setattr(utils.email, 'send_review_digest_email', refused)
+    assert send_review_email_digests() == 0
+    assert len(attempts) == 1                                                # stopped after the first refusal
+    assert ReviewEmail.objects.filter(sent_at__isnull=True).count() == 3      # nothing marked sent
+    assert send_review_email_digests() == 0 and len(attempts) == 1            # paused: no attempt at all
+    cache.delete(tasks.REVIEW_DIGEST_PAUSE_KEY)

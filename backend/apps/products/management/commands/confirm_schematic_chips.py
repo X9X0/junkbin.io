@@ -359,6 +359,8 @@ class Command(BaseCommand):
                      or one_maker(verdict.get('makers') or []) or 'Generic')
             mpn = verdict.get('candidate') if verdict.get('status') == 'prefix' else (verdict.get('mpn') or verdict.get('candidate'))
             description = source.description if population == 'lines' else (verdict.get('description') or source.description)
+        if len(mpn or '') > 200 or len(maker or '') > 200:
+            return source                                 # a 200+ character "part number" is a scraped sentence, not a part
         # an existing part of that number under the maker's old or new name is the same part: keep it
         family = next((f for f in FAMILIES if maker in f), (maker,))
         existing = (Component.objects.filter(part_number__iexact=mpn, manufacturer__in=family).exclude(pk=source.pk)

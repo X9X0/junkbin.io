@@ -3,6 +3,7 @@ Celery tasks for the notifications app -- Web Push delivery.
 """
 import json
 import logging
+import re
 
 from celery import shared_task
 from django.conf import settings
@@ -79,6 +80,19 @@ REVIEW_DIGEST_MAX_EMAILS = 40       # users mailed per run; the rest go out on t
 REVIEW_EMAIL_KEEP_DAYS = 30
 
 
+REVIEW_DIGEST_PAUSE_KEY = 'review_digest_paused'
+REVIEW_DIGEST_PAUSE_SECONDS = 3600
+
+
+def quota_refusal(exc):
+    """An SMTP refusal that says the relay's sending quota is used up (550 5.4.6 'Sender Domain Daily Quota',
+    452 4.2.2 'quota exceeded', ...): nothing else will go out for a while either."""
+    text = str(exc).lower()
+    if 'quota' in text or 'rate limit' in text or 'too many messages' in text:
+        return True
+    return bool(re.search(r"\b(?:452|550)\b.*\b[45]\.[24]\.[26]\b", text))
+
+
 @shared_task
 def send_review_email_digests():
     """Email each user one summary of their approved/rejected contributions queued since the
@@ -92,6 +106,10 @@ def send_review_email_digests():
 
     from .models import ReviewEmail
 
+    from django.core.cache import cache
+
+    if cache.get(REVIEW_DIGEST_PAUSE_KEY):
+        return 0                                      # the mail relay refused for quota a moment ago: try again later
     user_ids = list(ReviewEmail.objects.filter(sent_at__isnull=True)
                     .order_by('user_id').values_list('user_id', flat=True).distinct()[:REVIEW_DIGEST_MAX_EMAILS])
     sent = 0
@@ -106,7 +124,14 @@ def send_review_email_digests():
                 try:
                     send_review_digest_email(user, [i for i in items if i.approved],
                                              [i for i in items if not i.approved])
-                except Exception:
+                except Exception as e:                # noqa: BLE001
+                    if quota_refusal(e):
+                        # the relay's daily quota is gone: every further mail today would fail the same way
+                        # (2026-11-07: 427 errors in one day). Pause and keep the rows for a later run.
+                        cache.set(REVIEW_DIGEST_PAUSE_KEY, True, REVIEW_DIGEST_PAUSE_SECONDS)
+                        logger.warning('review digests paused for %s s: mail relay refused for quota (%s)',
+                                       REVIEW_DIGEST_PAUSE_SECONDS, str(e)[:200])
+                        break
                     logger.exception('review digest to user %s failed; retrying next run', user_id)
                     continue
                 sent += 1
