@@ -142,3 +142,16 @@ def test_machines_a_board_is_named_for_become_stubs_when_listings_are_two_or_mor
     facts[0]['evidence'] = 'named for the Asus A7S-LE in 1 parts listings found by web search'
     facts[0]['used_in'] = ['Sony Vaio PCV-RX460']
     assert 'machines created 0' in _run(tmp_path, facts)                                # one listing is not enough
+
+
+def test_a_bare_note_is_written_once_however_often_the_facts_run(tmp_path):
+    board = Product.objects.create(manufacturer='MSI', model_number='MS-6758', category='desktop', import_source='norway-schem:x',
+                                   description='MSI MS-6758 mainboard. ATX (web search). ATX (web search). ATX (web search).')
+    facts = [{'product_id': str(board.pk), 'boards': [], 'parts': [], 'notes': ['ATX'], 'evidence': 'spec page'}]
+    _run(tmp_path, facts)
+    board.refresh_from_db()
+    assert board.description == 'MSI MS-6758 mainboard. ATX (web search).'
+    out = _run(tmp_path, facts)
+    board.refresh_from_db()
+    assert board.description == 'MSI MS-6758 mainboard. ATX (web search).'
+    assert 'descriptions changed 0' in out

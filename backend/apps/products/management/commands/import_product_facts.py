@@ -38,9 +38,23 @@ from .import_board_bom import Command as Importer
 
 SENTENCE = re.compile(r'\s*(?:Boards inside|Used in|Sold as|Also sold as|OEM board for|Also called|[A-Za-z]+ [A-Za-z0-9/+ ]+ chipset|[Ss]ocket )'
                       r'.*?\((?:web search|firmware label|service manual)\)\.', re.S)
+# a facts sentence that starts with none of those words ('ATX (web search).', a bare form factor): no periods or
+# parentheses inside, so it cannot reach into the product's own text
+BARE_SENTENCE = re.compile(r'\s*[^.()]*\((?:web search|firmware label|service manual)\)\.')
 SOURCES = ('web search', 'firmware label', 'service manual')
 BOARD_STUB_TAG = 'norway-board-stub'
 MAKERS = {'Compal', 'Quanta', 'Lenovo', 'Wistron', 'Inventec', 'Samsung', 'Apple', 'Foxconn', 'Pegatron'}
+
+
+def strip_facts(description):
+    """The description without any facts sentence an earlier run wrote, however many (a run before 2026-11-18 could
+    add a bare note like 'ATX (web search).' again each time)."""
+    text = description
+    while True:
+        cleaned = BARE_SENTENCE.sub('', SENTENCE.sub('', text))
+        if cleaned == text:
+            return text.rstrip()
+        text = cleaned
 
 
 def facts_sentence(boards, parts, used_in=(), aliases=(), notes=(), source='web search'):
@@ -121,7 +135,7 @@ class Command(BaseCommand):
         source = f.get('source', 'web search')
         if source not in SOURCES:
             raise CommandError(f'unknown facts source {source!r}')
-        new_desc = SENTENCE.sub('', product.description).rstrip() \
+        new_desc = strip_facts(product.description) \
             + facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []), source)
         if new_desc != product.description:
             totals['descriptions_changed'] += 1
