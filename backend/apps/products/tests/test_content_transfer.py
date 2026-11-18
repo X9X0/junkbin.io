@@ -9,7 +9,7 @@ from django.core.management import CommandError, call_command
 from django.utils import timezone
 
 from apps.components.models import Component, ComponentDatasheet, ProductComponent
-from apps.products.models import ImportReview, Product, ProductImage, Schematic
+from apps.products.models import ImportReview, Product, ProductImage, ProductLink, Schematic
 
 SINCE = (timezone.now() - datetime.timedelta(days=1)).date().isoformat()
 
@@ -175,3 +175,18 @@ def test_a_placement_re_created_under_a_new_id_is_not_added_twice(site, tmp_path
     n = ProductComponent.objects.filter(product=product).count()
     call_command('load_content', str(out))
     assert ProductComponent.objects.filter(product=product).count() == n
+
+
+def test_retire_links_drops_unapproved_links_the_export_no_longer_carries(site, tmp_path, product_factory):
+    out = _export(tmp_path)
+    product = Product.objects.get(pk=site['product_pk'])
+    other = product_factory(manufacturer='Compal', model_number='LA-0000P')
+    stale = ProductLink.objects.create(part=other, host=product, kind='fitted_in', import_source='norway-board-links:x',
+                                       is_approved=False)
+    kept = ProductLink.objects.create(part=product, host=other, kind='fitted_in', import_source='norway-board-links:y',
+                                      is_approved=True)                                   # approved: never retired
+    foreign = ProductLink.objects.create(part=other, host=product, kind='part_of', import_source='user', is_approved=False)
+
+    call_command('load_content', str(out), retire_links=['norway-board-links'])
+    assert not ProductLink.objects.filter(pk=stale.pk).exists()
+    assert ProductLink.objects.filter(pk__in=[kept.pk, foreign.pk]).count() == 2
