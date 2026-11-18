@@ -2,7 +2,10 @@
 Apply facts found about existing products - which boards sit inside a machine, the maker's order
 numbers for them - without re-running the lane that created the products.
 
-    manage.py import_product_facts FACTS.json [--dry-run]
+    manage.py import_product_facts FACTS.json [MORE.json ...] [--dry-run]
+
+Give every facts file of a run together: entries for one product and source are merged across files (a desktop board
+that is also in the devices file), so none of them overwrites another's sentence or links.
 
 FACTS.json: [{"product_id": "<uuid>", "product": {"manufacturer": "Lenovo", "model_number": "G50-70", "revision": ""},
               "boards": [{"maker": "Lenovo", "code": "NM-A271", "n": 5}],
@@ -53,6 +56,25 @@ BOARD_STUB_TAG = 'norway-board-stub'
 MAKERS = {'Compal', 'Quanta', 'Lenovo', 'Wistron', 'Inventec', 'Samsung', 'Apple', 'Foxconn', 'Pegatron'}
 
 
+def merged_entries(facts):
+    """One entry per product: a file naming a product twice (a board under two schematic revisions) would otherwise
+    have the second entry remove the first one's links on every run."""
+    out, by_key = [], {}
+    for f in facts:
+        key = (f['product_id'], f.get('source', 'web search'))
+        if key not in by_key:
+            by_key[key] = dict(f)
+            out.append(by_key[key])
+            continue
+        m = by_key[key]
+        for field in ('boards', 'parts', 'used_in', 'aliases', 'notes'):
+            seen = {json.dumps(x, sort_keys=True) for x in m.get(field, [])}
+            m[field] = list(m.get(field, [])) + [x for x in f.get(field, []) if json.dumps(x, sort_keys=True) not in seen]
+        if not m.get('product') and f.get('product'):
+            m['product'] = f['product']
+    return out
+
+
 def strip_facts(description, source):
     """The description without any facts sentence an earlier run of this source wrote (however many copies: a run
     before 2026-11-18 could add a bare note like 'ATX (web search).' again each time). Other sources' sentences stay."""
@@ -65,21 +87,27 @@ def strip_facts(description, source):
         text = cleaned
 
 
-def with_facts(description, source, sentence):
+def with_facts(description, source, sentence, notes=()):
     """The description with this source's facts sentence in the place its earlier one had (so a machine known from a
-    firmware label and from web search keeps both sentences in a stable order), or appended when there was none."""
+    firmware label and from web search keeps both sentences in a stable order), or appended when there was none.
+    Note sentences a run before 2026-11-18 left in front of the marked sentence ('Micro-ATX. Micro-ATX. Used in: ...')
+    are removed."""
     marked, bare = sentence_patterns(source)
     m = marked.search(description) or bare.search(description)
     if not m:
         return strip_facts(description, source) + sentence
     head, tail = description[:m.start()].rstrip(), strip_facts(description[m.end():], source)
+    orphans = tuple(n[0].upper() + n[1:] + '.' for n in notes if n)
+    while orphans and head.endswith(orphans):
+        head = head[:head.rfind(' ')].rstrip() if ' ' in head else ''
     return (head + sentence + (' ' + tail.lstrip() if tail else '')).rstrip()
 
 
 def facts_sentence(boards, parts, used_in=(), aliases=(), notes=(), source='web search'):
     """notes: free sentences from spec pages ('OEM board for HP (HP name Leonite)', 'Intel 945P chipset, socket LGA 775,
-    micro-ATX'); they come first so the sentence still starts with a known marker for SENTENCE to find again."""
-    bits = [n[0].upper() + n[1:] for n in notes if n]
+    micro-ATX'); they come last, so the group starts with a known marker whenever it has one (a notes-only group
+    starts with the note, which sentence_patterns' bare form or the chipset/OEM markers find again)."""
+    bits = []
     if boards:
         bits.append('Boards inside: ' + ', '.join(f"{b['maker']} {b['code']}" for b in boards))
     if aliases:
@@ -88,6 +116,7 @@ def facts_sentence(boards, parts, used_in=(), aliases=(), notes=(), source='web 
         bits.append('Used in: ' + ', '.join(used_in[:8]))
     if parts:
         bits.append(('Mainboard sold as ' if boards else 'Sold as ') + ', '.join(parts[:6]))
+    bits += [n[0].upper() + n[1:] for n in notes if n]
     return (' ' + '. '.join(bits) + f' ({source}).') if bits else ''
 
 
@@ -95,13 +124,16 @@ class Command(BaseCommand):
     help = __doc__
 
     def add_arguments(self, parser):
-        parser.add_argument('facts')
+        parser.add_argument('facts', nargs='+')
         parser.add_argument('--dry-run', action='store_true')
 
     def handle(self, *args, **opts):
         Importer._resolver = None                        # a fresh view of the site's names for this run
-        with open(opts['facts'], encoding='utf-8') as fh:
-            facts = json.load(fh)
+        facts = []
+        for path in opts['facts']:
+            with open(path, encoding='utf-8') as fh:
+                facts += json.load(fh)
+        facts = merged_entries(facts)
         totals = {'products': 0, 'by_name': 0, 'missing': 0, 'descriptions_changed': 0, 'links_added': 0, 'links_kept': 0,
                   'links_removed': 0, 'codes_without_product': 0, 'board_stubs_created': 0, 'board_stubs_retired': 0,
                   'machines_created': 0}
@@ -155,7 +187,8 @@ class Command(BaseCommand):
         if source not in SOURCES:
             raise CommandError(f'unknown facts source {source!r}')
         new_desc = with_facts(product.description, source,
-                              facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []), source))
+                              facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []), source),
+                              f.get('notes', []))
         if new_desc != product.description:
             totals['descriptions_changed'] += 1
             if not dry_run:

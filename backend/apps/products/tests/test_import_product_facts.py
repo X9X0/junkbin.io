@@ -43,8 +43,8 @@ def test_board_facts_link_the_board_to_named_machines(tmp_path):
               'evidence': 'named for the board in 7 parts listings'}]
     out = _run(tmp_path, facts)
     board.refresh_from_db()
-    assert board.description == ('Asus P5LP-LE motherboard. OEM board for HP (HP name Leonite). Intel 945P chipset, micro-ATX. '
-                                 'Used in: HP Pavilion a1250n, HP Media Center m7000. Sold as HP spare 5188-1234 (web search).')
+    assert board.description == ('Asus P5LP-LE motherboard. Used in: HP Pavilion a1250n, HP Media Center m7000. '
+                                 'Sold as HP spare 5188-1234. OEM board for HP (HP name Leonite). Intel 945P chipset, micro-ATX (web search).')
     facts[0]['notes'] = ['Intel 945P chipset, micro-ATX']
     _run(tmp_path, facts)
     board.refresh_from_db()
@@ -172,3 +172,36 @@ def test_sources_keep_their_own_sentence(tmp_path):
     assert 'descriptions changed 0' in _run(tmp_path, label)
     machine.refresh_from_db()
     assert machine.description.count('Boards inside') == 2
+
+
+def test_notes_follow_the_marked_bits_and_old_orphan_notes_are_removed(tmp_path):
+    assert facts_sentence([], ['HP spare 1'], notes=['micro-ATX']) == ' Sold as HP spare 1. Micro-ATX (web search).'
+    board = Product.objects.create(manufacturer='MSI', model_number='MS-7075', category='desktop', import_source='norway-schem:x',
+                                   description='MSI MS-7075 mainboard. Micro-ATX. Micro-ATX. Micro-ATX. Used in: Medion MS-7075 (web search).')
+    facts = [{'product_id': str(board.pk), 'boards': [], 'parts': [], 'used_in': ['Medion MS-7075'], 'notes': ['micro-ATX'],
+              'evidence': 'named in 3 parts listings found by web search'},
+             {'product_id': str(board.pk), 'boards': [], 'parts': [], 'used_in': ['Medion MS-7075'], 'notes': ['micro-ATX'],
+              'evidence': 'named in 3 parts listings found by web search'}]                 # the same product twice
+    _run(tmp_path, facts)
+    board.refresh_from_db()
+    assert board.description == 'MSI MS-7075 mainboard. Used in: Medion MS-7075. Micro-ATX (web search).'
+    out = _run(tmp_path, facts)
+    board.refresh_from_db()
+    assert board.description == 'MSI MS-7075 mainboard. Used in: Medion MS-7075. Micro-ATX (web search).'
+    assert 'descriptions changed 0' in out and 'links removed 0' in out
+
+
+def test_several_files_in_one_run_merge_a_product_they_share(tmp_path):
+    board = Product.objects.create(manufacturer='MSI', model_number='MS-7075', category='desktop', import_source='norway-schem:x',
+                                   description='MSI MS-7075 mainboard.')
+    a = tmp_path / 'a.json'; b = tmp_path / 'b.json'
+    a.write_text(json.dumps([{'product_id': str(board.pk), 'boards': [], 'parts': [], 'used_in': ['Medion MS-7075'], 'notes': ['micro-ATX'],
+                              'evidence': 'named in 3 parts listings found by web search'}]))
+    b.write_text(json.dumps([{'product_id': str(board.pk), 'boards': [], 'parts': ['Medion part 20012345'], 'used_in': ['Medion Titanium MD 8080'],
+                              'evidence': 'named in 2 parts listings found by web search'}]))
+    out = StringIO(); call_command('import_product_facts', str(a), str(b), stdout=out)
+    board.refresh_from_db()
+    assert board.description == ('MSI MS-7075 mainboard. Used in: Medion MS-7075, Medion Titanium MD 8080. '
+                                 'Sold as Medion part 20012345. Micro-ATX (web search).')
+    out = StringIO(); call_command('import_product_facts', str(a), str(b), stdout=out)
+    assert 'descriptions changed 0' in out.getvalue()
