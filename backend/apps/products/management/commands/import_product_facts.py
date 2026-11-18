@@ -36,25 +36,44 @@ from django.db import transaction
 from apps.products.models import Product, ProductLink
 from .import_board_bom import Command as Importer
 
-SENTENCE = re.compile(r'\s*(?:Boards inside|Used in|Sold as|Also sold as|OEM board for|Also called|[A-Za-z]+ [A-Za-z0-9/+ ]+ chipset|[Ss]ocket )'
-                      r'.*?\((?:web search|firmware label|service manual)\)\.', re.S)
-# a facts sentence that starts with none of those words ('ATX (web search).', a bare form factor): no periods or
-# parentheses inside, so it cannot reach into the product's own text
-BARE_SENTENCE = re.compile(r'\s*[^.()]*\((?:web search|firmware label|service manual)\)\.')
 SOURCES = ('web search', 'firmware label', 'service manual')
+MARKERS = r'(?:Boards inside|Used in|Sold as|Also sold as|Mainboard sold as|OEM board for|Also called|[A-Za-z]+ [A-Za-z0-9/+ ]+ chipset|[Ss]ocket )'
+
+
+def sentence_patterns(source):
+    """The facts sentence an earlier run of this source wrote: from a known first word to '(source).', and, for a
+    sentence starting with none of those words ('ATX (web search).', a bare form factor), one without periods or
+    parentheses inside, so it cannot reach into the product's own text."""
+    src = re.escape(source)
+    any_end = r'\((?:' + '|'.join(map(re.escape, SOURCES)) + r')\)\.'
+    # from a marker to this source's end, never running over another sentence's end on the way
+    return (re.compile(r'\s*' + MARKERS + r'(?:(?!' + any_end + r').)*?\(' + src + r'\)\.', re.S),
+            re.compile(r'\s*[^.()]*\(' + src + r'\)\.'))
 BOARD_STUB_TAG = 'norway-board-stub'
 MAKERS = {'Compal', 'Quanta', 'Lenovo', 'Wistron', 'Inventec', 'Samsung', 'Apple', 'Foxconn', 'Pegatron'}
 
 
-def strip_facts(description):
-    """The description without any facts sentence an earlier run wrote, however many (a run before 2026-11-18 could
-    add a bare note like 'ATX (web search).' again each time)."""
+def strip_facts(description, source):
+    """The description without any facts sentence an earlier run of this source wrote (however many copies: a run
+    before 2026-11-18 could add a bare note like 'ATX (web search).' again each time). Other sources' sentences stay."""
+    marked, bare = sentence_patterns(source)
     text = description
     while True:
-        cleaned = BARE_SENTENCE.sub('', SENTENCE.sub('', text))
+        cleaned = bare.sub('', marked.sub('', text))
         if cleaned == text:
             return text.rstrip()
         text = cleaned
+
+
+def with_facts(description, source, sentence):
+    """The description with this source's facts sentence in the place its earlier one had (so a machine known from a
+    firmware label and from web search keeps both sentences in a stable order), or appended when there was none."""
+    marked, bare = sentence_patterns(source)
+    m = marked.search(description) or bare.search(description)
+    if not m:
+        return strip_facts(description, source) + sentence
+    head, tail = description[:m.start()].rstrip(), strip_facts(description[m.end():], source)
+    return (head + sentence + (' ' + tail.lstrip() if tail else '')).rstrip()
 
 
 def facts_sentence(boards, parts, used_in=(), aliases=(), notes=(), source='web search'):
@@ -135,8 +154,8 @@ class Command(BaseCommand):
         source = f.get('source', 'web search')
         if source not in SOURCES:
             raise CommandError(f'unknown facts source {source!r}')
-        new_desc = strip_facts(product.description) \
-            + facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []), source)
+        new_desc = with_facts(product.description, source,
+                              facts_sentence(boards, parts, used_in, f.get('aliases', []), f.get('notes', []), source))
         if new_desc != product.description:
             totals['descriptions_changed'] += 1
             if not dry_run:

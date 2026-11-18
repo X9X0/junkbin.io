@@ -155,3 +155,20 @@ def test_a_bare_note_is_written_once_however_often_the_facts_run(tmp_path):
     board.refresh_from_db()
     assert board.description == 'MSI MS-6758 mainboard. ATX (web search).'
     assert 'descriptions changed 0' in out
+
+
+def test_sources_keep_their_own_sentence(tmp_path):
+    machine = Product.objects.create(manufacturer='Dell', model_number='Latitude E6430', category='laptop',
+                                     import_source='norway-fw:x', description='Dell Latitude E6430. Firmware.')
+    web = [{'product_id': str(machine.pk), 'boards': [{'maker': 'Compal', 'code': 'LA-7781P', 'n': 5}], 'parts': [],
+            'evidence': 'named in 5 parts listings found by web search'}]
+    label = [{'product_id': str(machine.pk), 'boards': [{'maker': 'Compal', 'code': 'LA-7782P', 'n': 1}], 'parts': [],
+              'source': 'firmware label', 'evidence': 'the BIOS dump label'}]
+    _run(tmp_path, web); _run(tmp_path, label)
+    machine.refresh_from_db()
+    assert machine.description == ('Dell Latitude E6430. Firmware. Boards inside: Compal LA-7781P (web search). '
+                                   'Boards inside: Compal LA-7782P (firmware label).')
+    assert 'descriptions changed 0' in _run(tmp_path, web)                      # the web sentence is already there
+    assert 'descriptions changed 0' in _run(tmp_path, label)
+    machine.refresh_from_db()
+    assert machine.description.count('Boards inside') == 2
