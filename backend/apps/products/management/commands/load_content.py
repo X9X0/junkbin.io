@@ -66,6 +66,9 @@ class Command(BaseCommand):
         parser.add_argument('--allow-missing-files', action='store_true')
         parser.add_argument('--restore-dates', action='store_true',
                             help='only put the exported dates back on rows an earlier load added')
+        parser.add_argument('--retire-links', metavar='PREFIX', action='append', default=[],
+                            help="delete this site's unapproved links whose import_source starts with PREFIX when the export "
+                                 "no longer carries them (the exporting site's lane dropped them); repeatable")
         parser.add_argument('--update-descriptions', action='store_true',
                             help="an imported product already here takes the export's description when it differs "
                                  "(a lane re-run with better web research); user-made products are never touched")
@@ -89,6 +92,7 @@ class Command(BaseCommand):
     def handle(self, *args, **opts):
         self.dir = opts['dir']
         self.update_descriptions = opts['update_descriptions']
+        self.retire_prefixes = opts['retire_links']
         for label in MODELS:
             if not os.path.exists(os.path.join(self.dir, f'{label}.jsonl')):
                 raise CommandError(f'{label}.jsonl missing from {self.dir}')
@@ -102,6 +106,7 @@ class Command(BaseCommand):
             with transaction.atomic():
                 if not opts['restore_dates']:
                     self.load()
+                    self.retire_links()
                     self.rebuild()
                 self.restore_dates()
                 self.report()
@@ -317,6 +322,22 @@ class Command(BaseCommand):
             self.n['review verdicts'] += len(new)
 
     # --- afterwards ---------------------------------------------------------------
+    def retire_links(self):
+        """Unapproved links under the named import-source prefixes that the export no longer carries are deleted:
+        the exporting site's lane corrected its names and dropped them, so this site should not keep offering them
+        for review."""
+        if not self.retire_prefixes:
+            return
+        keys = set()
+        for d in self.records('products.ProductLink'):
+            f = d['fields']
+            keys.add((str(self.pmap.get(f['part'], f['part'])), str(self.pmap.get(f['host'], f['host'])), f['kind']))
+        for prefix in self.retire_prefixes:
+            stale = [l.pk for l in ProductLink.objects.filter(is_approved=False, import_source__startswith=prefix)
+                     .only('pk', 'part_id', 'host_id', 'kind') if (str(l.part_id), str(l.host_id), l.kind) not in keys]
+            n, _ = ProductLink.objects.filter(pk__in=stale).delete()
+            self.n['links retired'] += n
+
     def rebuild(self):
         touched = set(self.cmap.values())
         for batch in chunks(touched):
