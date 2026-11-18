@@ -23,6 +23,7 @@ if (dsn) {
     ignoreErrors: [
       'Error invoking postEvent: Method not found',
       "Failed to execute 'removeChild' on 'Node'",
+      'Invalid call to runtime.sendMessage()',           // a browser extension talking to itself
     ],
   });
 }
