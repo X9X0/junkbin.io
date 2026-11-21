@@ -380,7 +380,8 @@ class ComponentTypeImageAdmin(admin.ModelAdmin):
     Leave package_type blank for a type-wide default.
     """
 
-    list_display = ['component_type', 'package_type', 'image_preview']
+    list_display = ['component_type', 'package_type', 'image_preview', 'is_approved', 'source_notes']
+    list_filter = ['is_approved', 'component_type']
     list_filter = ['component_type']
     search_fields = ['component_type', 'package_type']
     readonly_fields = ['id', 'image_preview']

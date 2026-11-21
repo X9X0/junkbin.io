@@ -109,7 +109,9 @@ function FlaggedList({ batch }: { batch: string }) {
 }
 
 function ItemLink({ item }: { item: ImportReviewItem }) {
-  const to = ['product', 'firmware', 'image', 'link'].includes(item.item_type) ? `/products/${item.slug || item.id}`
+  const to = item.item_type === 'type-image'
+    ? `/components?component_type=${encodeURIComponent(item.component_type || '')}&package_type=${encodeURIComponent(item.package_type || '')}`
+    : ['product', 'firmware', 'image', 'link'].includes(item.item_type) ? `/products/${item.slug || item.id}`
     : `/components/${item.item_type === 'component' ? item.id : item.component_id}`;
   return (
     <Link to={to} target="_blank" className="text-white hover:text-cyber-cyan">
@@ -194,6 +196,10 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
                 ? 'Check: does the label and file name fit this product (brand, model, category)? Use Flag if the product name was misread from the label.'
                 : item.item_type === 'image'
                 ? 'Check: is this photo of this product (or, when the caption says series, of its series)? Flag a part, a different model, a placeholder or a badly cut-out photo.'
+                : item.item_type === 'type-image'
+                ? 'Check: is this a clean, typical photo of this component type and package, good enough to stand in for every such part without a photo of its own? Flag the wrong package, a board shot, a drawing or a poor cut-out.'
+                : item.item_type === 'component-image'
+                ? 'Check: do the colour bands (or the printed value) match this part\'s value and tolerance, and is the body the right kind? Flag a wrong band, a wrong body type or a value the part does not have.'
                 : item.item_type === 'bom-part'
                 ? 'Check: do these factory BOM lines name this maker and part number? Correct removes the REVIEW mark from every row using it. Flag (and say why) a misread part number, a package or rating read as one, or the wrong maker.'
                 : item.item_type === 'link'

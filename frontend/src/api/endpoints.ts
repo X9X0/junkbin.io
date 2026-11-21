@@ -629,7 +629,8 @@ export interface ImportBatch {
   flagged: number; target: number; unapproved: number; can_approve: boolean;
 }
 export interface ImportReviewItem {
-  item_type: 'product' | 'component' | 'datasheet' | 'firmware' | 'image' | 'bom-part' | 'link'; id: string; slug?: string; title: string; revision?: string;
+  item_type: 'product' | 'component' | 'datasheet' | 'firmware' | 'image' | 'bom-part' | 'link' | 'type-image' | 'component-image'; id: string; slug?: string; title: string; revision?: string;
+  component_type?: string; package_type?: string;
   category?: string; subcategory?: string; year?: number | null; description?: string; component_count?: number;
   component_id?: string; image?: string | null; note?: string; reviewer?: string | null;
   documents: { title: string; type: string; url: string; description?: string }[];
