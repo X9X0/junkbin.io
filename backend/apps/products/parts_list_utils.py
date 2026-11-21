@@ -25,6 +25,32 @@ REFDES = (r'(?:IC|Q|D|R|C|L|T|X|F|CN|J|U|VR|SW|BD|FB|TR|ZD|LED|RL|PC|VD|TH|RT|SP
           r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP|LUG|SC(?=\d{3}))\d{1,5}[A-Z]?')
 REFDES_RE = re.compile(rf'^{REFDES}$')
 REFLIST_RE = re.compile(rf'^{REFDES}(?:\s*,\s*{REFDES})*,?$')
+# a run of positions printed as a range ('C234-245', 'R101-105', 'C234-45'): the same prefix, start to end
+RANGE_RE = re.compile(rf'^({REFDES})-(\d{{1,4}})$')
+
+
+def expand_refs(token):
+    """['C234', 'C235', ..., 'C245'] for 'C234-245' (or 'C234-45'); [token] for a single position; [] otherwise."""
+    if REFDES_RE.match(token):
+        return [token]
+    m = RANGE_RE.match(token)
+    if not m:
+        return []
+    start, tail = m.group(1), m.group(2)
+    mm = re.match(r'^([A-Z]+)(\d+)$', start)
+    if not mm:
+        return [token]
+    prefix, a = mm.group(1), mm.group(2)
+    b = tail if len(tail) >= len(a) else a[:len(a) - len(tail)] + tail
+    lo, hi = int(a), int(b)
+    if hi < lo or hi - lo > 60:
+        return [token]
+    return [f'{prefix}{n}' for n in range(lo, hi + 1)]
+
+
+def _is_ref(token):
+    return bool(REFDES_RE.match(token) or RANGE_RE.match(token))
+
 # Sharp's own codes: 'RH-EXA741WJQZY', 'QSOCNA229WJZZ' (three digits), 'RCiLFA134WJZZY' (a lowercase i), and
 # fixed-width (13-14) semiconductor / passive codes padded with / or + ('VSUM6K1N///-1', 'VHiNJM2584M-1Y',
 # 'VHD1SS390++-1Y', 'VCFYFA1HA334J+', 'VRS-TP2BD3R3J', 'RCiLP0343TAZZY', 'RR-HRSM1R5J3W')
@@ -160,11 +186,11 @@ def parse_page(text):
             safety = SAFETY_MARK.match(chunks[i])
             chunk = chunks[i][safety.end():] if safety else chunks[i]
             words = chunk.split()
-            if len(words) >= 2 and REFDES_RE.match(words[0]) and CODE_RE.match(words[1]) \
-                    and not REFDES_RE.match(words[1]):
+            if len(words) >= 2 and _is_ref(words[0]) and CODE_RE.match(words[1]) \
+                    and not _is_ref(words[1]):
                 ref, code, first, j = words[0], words[1], words[2:], i + 1
-            elif REFDES_RE.match(chunk) and i + 1 < len(chunks) and CODE_RE.match(chunks[i + 1].split()[0]) \
-                    and not REFDES_RE.match(chunks[i + 1].split()[0]):
+            elif _is_ref(chunk) and i + 1 < len(chunks) and CODE_RE.match(chunks[i + 1].split()[0]) \
+                    and not _is_ref(chunks[i + 1].split()[0]):
                 parts = chunks[i + 1].split()
                 ref, code, first, j = chunk, parts[0], parts[1:], i + 2
             else:
@@ -177,7 +203,7 @@ def parse_page(text):
                 j += 1
             desc = ' '.join(desc)
             if WORDS_RE.search(desc) or VALUE_RE.search(desc):
-                rows.append((code, [ref], '⚠ ' + desc if safety else desc))
+                rows.append((code, expand_refs(ref), '⚠ ' + desc if safety else desc))
                 i = j
             else:
                 i += 1
@@ -216,10 +242,10 @@ def _starts_row(chunks, j):
     safety = SAFETY_MARK.match(chunks[j])
     chunk = chunks[j][safety.end():] if safety else chunks[j]
     words = chunk.split()
-    if len(words) >= 2 and REFDES_RE.match(words[0]) and CODE_RE.match(words[1]) and not REFDES_RE.match(words[1]):
+    if len(words) >= 2 and _is_ref(words[0]) and CODE_RE.match(words[1]) and not _is_ref(words[1]):
         return True
-    return bool(REFDES_RE.match(chunk) and j + 1 < len(chunks) and chunks[j + 1].split()
-                and CODE_RE.match(chunks[j + 1].split()[0]) and not REFDES_RE.match(chunks[j + 1].split()[0]))
+    return bool(_is_ref(chunk) and j + 1 < len(chunks) and chunks[j + 1].split()
+                and CODE_RE.match(chunks[j + 1].split()[0]) and not _is_ref(chunks[j + 1].split()[0]))
 
 
 # --- tables whose code column comes later in the row ----------------------------------------------

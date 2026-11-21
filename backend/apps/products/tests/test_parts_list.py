@@ -25,6 +25,18 @@ def test_the_three_row_shapes():
     assert ('ZD517600', ['C170'], 'C.MYLAR 100pF 100V') in rows and len(rows) == 20       # two tables per line
     assert pl.parse_page(FACTORY)[0] == ('SE000015500', ['CH40', 'CT330'], 'S CER CAP 47U 6.3V M X5R 0603')
 
+    # positions printed as a range, in the first table and in the second (Yamaha R-S202 page 52): the range is
+    # every position, and the second table's row is its own row, not the tail of the first one's description
+    page = '\n'.join(['   CB601           ZS226200      CN             24P TE SCFS852254                C234-245    UR867100     C.EL           10uF     50V',
+                      '   C103-104        UR867100      C.EL           10uF       50V                   C272        US046100     C.CE.CHP       1uF      25V',
+                      '   C1              UR828470      C.EL           470uF      10V                   C248-251    UR865220     C.EL           0.22uF   50V'])
+    rows = pl.parse_page(page)
+    assert ('ZS226200', ['CB601'], 'CN 24P TE SCFS852254') in rows
+    assert ('UR867100', [f'C{n}' for n in range(234, 246)], 'C.EL 10uF 50V') in rows
+    assert ('UR867100', ['C103', 'C104'], 'C.EL 10uF 50V') in rows and ('US046100', ['C272'], 'C.CE.CHP 1uF 25V') in rows
+    assert ('UR828470', ['C1'], 'C.EL 470uF 10V') in rows and ('UR865220', ['C248', 'C249', 'C250', 'C251'], 'C.EL 0.22uF 50V') in rows
+    assert pl.expand_refs('C234-45') == [f'C{n}' for n in range(234, 246)] and pl.expand_refs('R7') == ['R7'] and pl.expand_refs('10uF') == []
+
 
 def test_a_document_needs_a_real_parts_list():
     rows, why = pl.parse_document([SONY, SONY + '\n' + SONY])
