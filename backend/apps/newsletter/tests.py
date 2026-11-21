@@ -212,3 +212,13 @@ class UnsubscribeAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         victim.refresh_from_db()
         self.assertTrue(victim.is_active)
+
+
+def test_whats_new_quota_wait_reads_the_relays_time():
+    from datetime import datetime, timedelta, timezone
+    from apps.newsletter.management.commands.send_whats_new_email import quota_wait
+    till = (datetime.now(timezone.utc) + timedelta(minutes=30)).strftime('%Y-%m-%d %H:%M:%S')
+    msg = f"{{'a@b.c': (550, b'5.4.6 Sender Domain Hourly Quota Exceeded - [domain=x] will not be allowed to send emails till [time={till} UTC] as hourly email sending limit has been exceeded([sent_emails=300] out of [limit=300])')}}"
+    assert 29 * 60 <= quota_wait(msg) <= 32 * 60
+    assert quota_wait('Quota Exceeded with no time') == 3600
+    assert quota_wait('SMTPRecipientsRefused 550 user unknown') == 0

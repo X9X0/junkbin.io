@@ -29,9 +29,15 @@ week.json shape:
 
 Each entry in "items"/"earlier" can be a plain string, or an object with
 "text" and an optional "url" to render that one bullet as a link.
+
+The relay allows 300 mails an hour for the whole domain: sends are paced (--per-hour, default 240), a quota
+refusal is waited out until the time the relay names, --sent-log records who was sent to so a re-run skips
+them, and --skip N resumes a run that was cut off (recipients go in address order).
 """
 import json
+import re
 import time
+from datetime import datetime, timezone as dt_timezone
 
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -40,6 +46,21 @@ from apps.newsletter.models import Subscriber
 from apps.newsletter.tokens import make_unsubscribe_token
 from apps.users.models import User
 from utils.email import send_templated_email
+
+
+QUOTA_TILL = re.compile(r'Quota Exceeded.*?\[time=(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) UTC\]')
+
+
+def quota_wait(error_text):
+    """Seconds to wait when the relay refused for the domain's hourly quota ('5.4.6 Sender Domain Hourly Quota
+    Exceeded ... till [time=2026-11-21 22:39:13 UTC]'), else 0. Never more than six hours; a minute's margin."""
+    if 'Quota Exceeded' not in error_text:
+        return 0
+    m = QUOTA_TILL.search(error_text)
+    if not m:
+        return 3600
+    till = datetime.strptime(m.group(1), '%Y-%m-%d %H:%M:%S').replace(tzinfo=dt_timezone.utc)
+    return max(60, min(6 * 3600, int((till - datetime.now(dt_timezone.utc)).total_seconds()) + 60))
 
 
 def _normalize_bullets(raw, field_name):
@@ -74,6 +95,11 @@ class Command(BaseCommand):
         parser.add_argument('--earlier', action='append', dest='earlier', help='One "earlier improvements" bullet - repeat for each item (optional)')
         parser.add_argument('--dry-run', action='store_true', help='Show recipients and the rendered content without sending')
         parser.add_argument('--yes', action='store_true', help='Skip the confirmation prompt')
+        parser.add_argument('--per-hour', type=int, default=240,
+                            help='Pace sends to at most this many an hour (the relay allows 300 for the whole domain; default 240 leaves room for the site\'s own mail)')
+        parser.add_argument('--skip', type=int, default=0,
+                            help='Skip the first N recipients in address order (resume a run the relay cut off: they were sent in that order)')
+        parser.add_argument('--sent-log', help='File that records each address sent to; on a re-run those are skipped')
 
     def handle(self, *args, **options):
         content = self._load_content(options)
@@ -142,33 +168,56 @@ class Command(BaseCommand):
                 return
 
         site_url = getattr(settings, 'SITE_URL', '')
+        already = set()
+        if options.get('sent_log'):
+            try:
+                with open(options['sent_log']) as fh:
+                    already = {line.strip() for line in fh if line.strip()}
+            except OSError:
+                pass
+        todo = [r for r in recipients[options['skip']:] if r[0] not in already]
+        if options['skip'] or already:
+            self.stdout.write(f'Skipping {count - len(todo)} already sent; {len(todo)} to go.')
+        pause = 3600.0 / max(1, options['per_hour'])
         sent = 0
         failed = 0
-        for email, kind, identifier in recipients:
+        for email, kind, identifier in todo:
             self.stdout.write(f'Sending to {email}... ', ending='')
-            try:
-                unsubscribe_url = f"{site_url}/unsubscribe/{make_unsubscribe_token(kind, identifier)}"
-                send_templated_email(
-                    subject=f"What's New on Junkbin.io — {content['week']}",
-                    template_name='whats_new',
-                    context={
-                        'week': content['week'],
-                        'dates': content['dates'],
-                        'intro': content['intro'],
-                        'items': content['items'],
-                        'earlier': content.get('earlier'),
-                    },
-                    recipient_list=[email],
-                    unsubscribe_url=unsubscribe_url,
-                )
-                self.stdout.write(self.style.SUCCESS('OK'))
-                sent += 1
-            except Exception as e:
-                self.stdout.write(self.style.ERROR(f'FAILED ({e})'))
-                failed += 1
+            unsubscribe_url = f"{site_url}/unsubscribe/{make_unsubscribe_token(kind, identifier)}"
+            for attempt in range(3):
+                try:
+                    send_templated_email(
+                        subject=f"What's New on Junkbin.io — {content['week']}",
+                        template_name='whats_new',
+                        context={
+                            'week': content['week'],
+                            'dates': content['dates'],
+                            'intro': content['intro'],
+                            'items': content['items'],
+                            'earlier': content.get('earlier'),
+                        },
+                        recipient_list=[email],
+                        unsubscribe_url=unsubscribe_url,
+                    )
+                    self.stdout.write(self.style.SUCCESS('OK'))
+                    sent += 1
+                    if options.get('sent_log'):
+                        with open(options['sent_log'], 'a') as fh:
+                            fh.write(email + '\n')
+                    break
+                except Exception as e:
+                    wait = quota_wait(str(e))
+                    if wait and attempt < 2:
+                        # the relay's hourly domain quota: wait it out, then carry on where we were
+                        self.stdout.write(self.style.WARNING(f'quota exceeded, waiting {wait // 60} min... '), ending='')
+                        time.sleep(wait)
+                        continue
+                    self.stdout.write(self.style.ERROR(f'FAILED ({e})'))
+                    failed += 1
+                    break
 
-            # Small delay between sends to avoid rate limits
-            time.sleep(0.5)
+            # paced so the domain stays under the relay's hourly quota
+            time.sleep(pause)
 
         self.stdout.write('')
         self.stdout.write(self.style.SUCCESS(f'Done. Sent: {sent}, Failed: {failed}'))
