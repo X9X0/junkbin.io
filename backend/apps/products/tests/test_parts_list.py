@@ -52,6 +52,16 @@ def test_a_document_needs_a_real_parts_list():
     clevo = '\n'.join(f'Z{2000 + i}      M{i}      MS_DATA{i} XD14 xD _D2 SD_C MD SD3' for i in range(30))
     rows, why = pl.parse_document([clevo, clevo])
     assert rows == [] and 'positions' in why
+    # a TPV page whose codes come in several related shapes (061G0402103, 061G04021002FF, 065G040210412KY) and one
+    # heatsink row of another shape keeps every row: the rarer shapes start like the leading one
+    tpv = '\n'.join([f'R{700 + i}        061G04021002FF        RST CHIPR {i + 1}0KOHM +-1% 1/16W FENGHUA' for i in range(13)]
+                     + [f'C{400 + i}        065G040210412KY        CAP 0402 100nF 10% 16V X7R' for i in range(7)]
+                     + [f'R{800 + i}        061G0402103        RST CHIP 10K 1/16W 5% TZAI YUAN' for i in range(4)]
+                     + [f'D{100 + i}        093G6094{i}6        SCHOTTKY {i}' for i in range(3)]
+                     + [f'Q{100 + i}        357G060065060{i}        MOSFET {i}' for i in range(3)]
+                     + [f'F{100 + i}        061G56A10{i}        PTCR SMD' for i in range(3)]
+                     + ['HS401        P90T0059202        HEATSINK'])
+    assert pl._page_kept(pl.page_rows(tpv)) and len(pl.page_rows(tpv)) == 34
 
 
 def test_rows_become_typed_suggestions(monkeypatch):
