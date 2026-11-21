@@ -34,6 +34,8 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('dir')
         parser.add_argument('--dry-run', action='store_true')
+        parser.add_argument('--replace-approved', action='store_true',
+                            help="a corrected rendering replaces this batch's earlier one even when that was approved (the approval is kept); a person's photo is still never displaced")
 
     def handle(self, *args, **opts):
         folder = Path(opts['dir'])
@@ -41,7 +43,7 @@ class Command(BaseCommand):
         if not manifest.exists():
             raise CommandError(f'{manifest} missing')
         entries = json.loads(manifest.read_text(encoding='utf-8'))['images']
-        n = {'added': 0, 'replaced': 0, 'unchanged': 0, 'kept (approved or a person\'s)': 0, 'part not found': 0, 'missing file': 0}
+        n = {'added': 0, 'replaced': 0, 'replaced (approval kept)': 0, 'unchanged': 0, 'kept (approved or a person\'s)': 0, 'part not found': 0, 'missing file': 0}
         try:
             with transaction.atomic():
                 for e in entries:
@@ -60,16 +62,18 @@ class Command(BaseCommand):
                     if ours.filter(source_notes__contains=f'md5={md5}').exists():
                         n['unchanged'] += 1
                         continue
-                    if part.images.filter(is_approved=True).exists() or part.images.exclude(source_notes__startswith=f'[{BATCH}]').exists():
+                    others = part.images.exclude(source_notes__startswith=f'[{BATCH}]')
+                    if others.exists() or (ours.filter(is_approved=True).exists() and not opts['replace_approved']):
                         n["kept (approved or a person's)"] += 1
                         continue
+                    approved = ours.filter(is_approved=True).exists()
                     if ours.exists():
                         ours.delete()
-                        n['replaced'] += 1
+                        n['replaced (approval kept)' if approved else 'replaced'] += 1
                     else:
                         n['added'] += 1
                     img = ComponentImage(component=part, image_type=e.get('image_type', 'package'), caption=e.get('caption', '')[:500],
-                                         source_url=e.get('source_url', '')[:500], source_notes=note, is_approved=False)
+                                         source_url=e.get('source_url', '')[:500], source_notes=note, is_approved=approved)
                     with path.open('rb') as fh:
                         img.image.save(path.name, File(fh), save=False)
                     img.save()

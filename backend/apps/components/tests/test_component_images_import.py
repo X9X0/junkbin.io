@@ -46,3 +46,18 @@ def test_renderings_are_imported_once_and_reviewed(tmp_path, api_client, user_fa
     assert r.data.get('primary_image') is not None
     out = io.StringIO(); call_command('import_component_images', str(folder), stdout=out)
     assert 'unchanged 2' in out.getvalue() and 'added 0' in out.getvalue()
+
+
+def test_a_corrected_rendering_replaces_an_approved_one_only_when_asked(tmp_path):
+    part = Component.objects.create(manufacturer='Generic', part_number='CAP 100uF 25V ELEC', component_type='capacitor')
+    folder = _folder(tmp_path, [{'component': {'manufacturer': 'Generic', 'part_number': 'CAP 100uF 25V ELEC'}, 'file': 'images/a.png',
+                                 'caption': 'first', 'source_notes': 'rendered'}])
+    call_command('import_component_images', str(folder), stdout=io.StringIO())
+    ComponentImage.objects.filter(component=part).update(is_approved=True)
+    (folder / 'images' / 'a.png').write_bytes((folder / 'images' / 'a.png').read_bytes() + b'\x00')     # a changed rendering
+    out = io.StringIO(); call_command('import_component_images', str(folder), stdout=out)
+    assert "kept (approved or a person's) 1" in out.getvalue() and ComponentImage.objects.get(component=part).caption == 'first'
+    out = io.StringIO(); call_command('import_component_images', str(folder), '--replace-approved', stdout=out)
+    assert 'replaced (approval kept) 1' in out.getvalue()
+    img = ComponentImage.objects.get(component=part)
+    assert img.is_approved and ComponentImage.objects.filter(component=part).count() == 1
