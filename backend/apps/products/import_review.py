@@ -13,13 +13,17 @@ from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.components.models import Component, ComponentDatasheet, ProductComponent
+from django.conf import settings
+
+from apps.components.models import Component, ComponentDatasheet, ComponentTypeImage, ProductComponent
 from utils.cache import clear_page_cache
 from .models import Firmware, ImportReview, Product, ProductImage, ProductLink, Schematic
 
 SAMPLE_TARGET = 100
 
 BATCHES = {
+    'type-image': {'label': 'Default photos per component type and package (shown for every part without a photo of its own)',
+                   'item_type': 'type-image'},
     'norway-bom': {'label': 'Factory-BOM boards (Asus, 2002-2007)', 'item_type': 'product'},
     'norway-schem': {'label': 'Schematic boards up to 2008 (Asus, MSI, Gigabyte)', 'item_type': 'product'},
     'norway-board': {'label': 'Mainboards by board code (Compal, Quanta, Lenovo, Wistron, Inventec, Samsung, Apple)', 'item_type': 'product'},
@@ -53,6 +57,8 @@ def items(batch):
         return Firmware.objects.filter(source_notes__startswith=f'[{batch}:')
     if kind == 'image':
         return ProductImage.objects.filter(source_notes__startswith=f'[{batch}]')
+    if kind == 'type-image':
+        return ComponentTypeImage.objects.filter(source_notes__startswith=f'[{batch}]')
     if kind == 'link':
         return ProductLink.objects.filter(import_source__startswith=f'{batch}:')
     if kind == 'bom-part':
@@ -90,7 +96,7 @@ def stats(batch):
 
 def unapproved_count(batch):
     kind = BATCHES[batch]['item_type']
-    if kind in ('product', 'firmware', 'image', 'link'):
+    if kind in ('product', 'firmware', 'image', 'link', 'type-image'):
         return items(batch).filter(is_approved=False).count()
     if kind == 'bom-part':                  # its rows show the REVIEW mark until accepted
         return items(batch).filter(product_components__in=unconfirmed_rows().filter(needs_review=True)) \
@@ -157,6 +163,20 @@ def evidence(batch, obj):
                          if obj.source_url else [],
             'image': obj.image.url,
         }
+    if kind == 'type-image':
+        types = dict(settings.COMPONENT_TYPES)
+        return {
+            'item_type': 'type-image', 'id': str(obj.pk), 'slug': '',
+            'component_type': obj.component_type, 'package_type': obj.package_type,
+            'title': f"{types.get(obj.component_type, obj.component_type)} · {obj.package_type or 'any package'}",
+            'revision': '', 'category': 'default photo',
+            'description': ('Shown for every ' + str(types.get(obj.component_type, obj.component_type)).lower()
+                            + (f' in a {obj.package_type} package' if obj.package_type else ' without a package-specific default')
+                            + ' that has no photo of its own.'),
+            'documents': [{'title': obj.source_url, 'type': 'Found on', 'url': obj.source_url,
+                           'description': obj.source_notes.removeprefix(f'[{batch}]').strip()}] if obj.source_url else [],
+            'image': obj.image.url,
+        }
     if kind == 'bom-part':
         rows = unconfirmed_rows(obj).select_related('product').order_by('product__model_number')
         lines, why = {}, {}
@@ -218,6 +238,8 @@ def approve_batch(batch, user=None, force=False):
         counts['firmware'] = files.filter(is_approved=False).update(is_approved=True)
     elif kind == 'image':
         counts['images'] = items(batch).filter(is_approved=False).update(is_approved=True)
+    elif kind == 'type-image':
+        counts['type_images'] = items(batch).filter(is_approved=False).update(is_approved=True)
     elif kind == 'link':
         counts['links'] = items(batch).filter(is_approved=False).update(is_approved=True)
     elif kind == 'bom-part':

@@ -534,6 +534,21 @@ class ComponentTypeImage(models.Model):
         help_text=_('Default image for this type/package combination'),
         validators=[FileExtensionValidator(allowed_extensions=ALLOWED_IMAGE_EXTENSIONS)]
     )
+    is_approved = models.BooleanField(
+        default=True,
+        db_index=True,
+        help_text=_('Only approved default images are shown; imported ones wait in the type-image review batch')
+    )
+    source_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text=_('Page the photo came from (for attribution and takedown)')
+    )
+    source_notes = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text=_('Licence and author of the photo; an imported one starts with its review batch in brackets')
+    )
     thumbnail = ImageSpecField(
         source='image',
         processors=[AlphaToBlack(), ResizeToFill(300, 300)],

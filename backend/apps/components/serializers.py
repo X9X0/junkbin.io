@@ -123,7 +123,7 @@ class PrimaryImageMixin:
         """Load all ComponentTypeImage records once per serializer context."""
         if '_type_images' not in self.context:
             cache = {}
-            for ti in ComponentTypeImage.objects.all():
+            for ti in ComponentTypeImage.objects.filter(is_approved=True):
                 cache[(ti.component_type, ti.package_type)] = ti
             self.context['_type_images'] = cache
         return self.context['_type_images']
@@ -277,9 +277,9 @@ def _component_duplicate_thumbnail(component, request):
         return request.build_absolute_uri(url) if request else url
 
     type_img = ComponentTypeImage.objects.filter(
-        component_type=component.component_type, package_type=component.package_type
+        component_type=component.component_type, package_type=component.package_type, is_approved=True
     ).first() or ComponentTypeImage.objects.filter(
-        component_type=component.component_type, package_type=''
+        component_type=component.component_type, package_type='', is_approved=True
     ).first()
     if type_img and type_img.thumbnail:
         url = type_img.thumbnail.url
