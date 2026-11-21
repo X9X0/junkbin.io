@@ -31,6 +31,8 @@ BATCHES = {
     'norway-ds': {'label': 'Datasheets attached to existing components', 'item_type': 'datasheet'},
     'norway-fw': {'label': 'Firmware / BIOS flash dumps (mostly laptops)', 'item_type': 'firmware'},
     'image-search': {'label': 'Product photos found by image search', 'item_type': 'image'},
+    'teardown': {'label': 'Products and parts lists from teardown write-ups (blogs, iFixit), facts only, source linked',
+                 'item_type': 'product'},
     'norway-bom-pn': {'label': 'Part numbers read from a BOM line or a schematic label, not confirmed',
                       'item_type': 'bom-part'},
 }
