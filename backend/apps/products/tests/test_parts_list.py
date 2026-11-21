@@ -36,6 +36,10 @@ def test_the_three_row_shapes():
     assert ('UR867100', ['C103', 'C104'], 'C.EL 10uF 50V') in rows and ('US046100', ['C272'], 'C.CE.CHP 1uF 25V') in rows
     assert ('UR828470', ['C1'], 'C.EL 470uF 10V') in rows and ('UR865220', ['C248', 'C249', 'C250', 'C251'], 'C.EL 0.22uF 50V') in rows
     assert pl.expand_refs('C234-45') == [f'C{n}' for n in range(234, 246)] and pl.expand_refs('R7') == ['R7'] and pl.expand_refs('10uF') == []
+    # Sony's second table of links and chokes ('PS003 1-533-940-21 RINK, CHIP IC') is its own rows, not the tail
+    sony = '\n'.join([f'IC{300 + i}     8-759-699-{10 + i}     IC CXD9611R{i}             PS00{i}     1-533-940-21     RINK, CHIP IC' for i in range(10)])
+    rows = pl.parse_page(sony)
+    assert ('8-759-699-10', ['IC300'], 'IC CXD9611R0') in rows and ('1-533-940-21', ['PS000'], 'RINK, CHIP IC') in rows and len(rows) == 20
 
 
 def test_a_document_needs_a_real_parts_list():
@@ -44,6 +48,10 @@ def test_a_document_needs_a_real_parts_list():
     assert pl.parse_document([SONY])[0] == []                        # 10 rows: not a parts list
     schematic_labels = '\n'.join(f'R{i}      0.1U_0402_16V7K      NET{i}' for i in range(30))
     assert pl.parse_document([schematic_labels])[0] == []
+    # a laptop manual's schematic pages: the 'codes' are the drawing's own positions (Clevo Z2020)
+    clevo = '\n'.join(f'Z{2000 + i}      M{i}      MS_DATA{i} XD14 xD _D2 SD_C MD SD3' for i in range(30))
+    rows, why = pl.parse_document([clevo, clevo])
+    assert rows == [] and 'positions' in why
 
 
 def test_rows_become_typed_suggestions(monkeypatch):

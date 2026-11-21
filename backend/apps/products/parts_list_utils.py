@@ -22,7 +22,7 @@ import subprocess
 import tempfile
 
 REFDES = (r'(?:IC|Q|D|R|C|L|T|X|F|CN|J|U|VR|SW|BD|FB|TR|ZD|LED|RL|PC|VD|TH|RT|SP|MIC|ANT|BAT|M|K|P|S|Y|E|B|W|H|'
-          r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP|LUG|SC(?=\d{3}))\d{1,5}[A-Z]?')
+          r'CT|CH|CV|PR|PL|PQ|PU|PD|PJ|RV|LV|UV|CB|JK|ST|RB|RN|RA|RP|RJ|LB|JS|FL|ET|CP|LUG|SC(?=\d{3})|PS|LF|RX|RW|HS|CTH|IXJ)\d{1,5}[A-Z]?')   # PS/LF: Sony links and chokes; RX: Panasonic arrays; RW/CTH/IXJ: Hitachi
 REFDES_RE = re.compile(rf'^{REFDES}$')
 REFLIST_RE = re.compile(rf'^{REFDES}(?:\s*,\s*{REFDES})*,?$')
 # a run of positions printed as a range ('C234-245', 'R101-105', 'C234-45'): the same prefix, start to end
@@ -102,6 +102,7 @@ def part_type(desc, refs=()):
 MIN_PAGE_ROWS = 8
 MIN_ROWS = 20
 MIN_SHAPE_SHARE = 0.7
+POSITION_LIKE_CODE = re.compile(r'^[A-Z]\d{1,5}$')          # 'Z2020', 'J9210': a position, not a part code
 MAX_REPEATED_SHARE = 0.25
 
 
@@ -463,6 +464,11 @@ def parse_document(pages):
     if printed and repeated / printed >= MAX_REPEATED_SHARE:
         return [], f'positions repeat on their pages ({repeated} of {printed}): a code table, not a parts list'
     coded = [r for r in kept if r[1]]
+    # schematic pages of a laptop manual read as a list whose 'codes' are the drawing's own positions
+    # ('Z2020  M1  MS_DATA3 XD14', Clevo): a part code is never one letter and a few digits for most rows
+    position_like = sum(1 for r in coded if POSITION_LIKE_CODE.match(r[1]))
+    if coded and position_like / len(coded) >= MIN_SHAPE_SHARE:
+        return [], f'codes look like schematic positions ({position_like} of {len(coded)}), not part codes'
     shapes, sharp = _shapes([r[1] for r in coded])
     # a maker's codes come in a few related shapes (Panasonic F1H1H104B047 / ERJ2GEJ103X): the shapes that
     # each hold >= 10% of the rows must together hold >= 70%; then rarer shapes that start like the top
