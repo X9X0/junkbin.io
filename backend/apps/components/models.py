@@ -438,6 +438,16 @@ class ComponentImage(models.Model):
         blank=True,
         help_text=_('Image caption or description')
     )
+    source_url = models.URLField(
+        max_length=500,
+        blank=True,
+        help_text=_('Page the photo came from, or empty for a rendering made here')
+    )
+    source_notes = models.CharField(
+        max_length=500,
+        blank=True,
+        help_text=_('Licence/author, or how a rendering was made; an imported one starts with its review batch in brackets')
+    )
     display_order = models.PositiveSmallIntegerField(
         default=0,
         help_text=_('Order in image gallery')

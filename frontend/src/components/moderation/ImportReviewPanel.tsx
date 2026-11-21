@@ -198,6 +198,8 @@ function ReviewSession({ batch, onExit, onVerdict }: { batch: ImportBatch; onExi
                 ? 'Check: is this photo of this product (or, when the caption says series, of its series)? Flag a part, a different model, a placeholder or a badly cut-out photo.'
                 : item.item_type === 'type-image'
                 ? 'Check: is this a clean, typical photo of this component type and package, good enough to stand in for every such part without a photo of its own? Flag the wrong package, a board shot, a drawing or a poor cut-out.'
+                : item.item_type === 'component-image'
+                ? 'Check: do the colour bands (or the printed value) match this part\'s value and tolerance, and is the body the right kind? Flag a wrong band, a wrong body type or a value the part does not have.'
                 : item.item_type === 'bom-part'
                 ? 'Check: do these factory BOM lines name this maker and part number? Correct removes the REVIEW mark from every row using it. Flag (and say why) a misread part number, a package or rating read as one, or the wrong maker.'
                 : item.item_type === 'link'
