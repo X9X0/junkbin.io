@@ -430,7 +430,14 @@ def _page_kept(rows):
     if len(rows) - len(coded) >= MIN_PAGE_ROWS:
         return True
     shapes, sharp = _shapes([r[0] for r in coded])
-    return bool(coded) and (sum(v for _, v in shapes.most_common(3)) + sharp) / len(coded) >= MIN_SHAPE_SHARE
+    if not coded:
+        return False
+    # the three leading shapes, and the rarer ones that start like the leader (TPV '061G0402103' /
+    # '061G04021002FF' / '065G040210412KY' on one page), as the document rule counts them
+    top = [sh for sh, _ in shapes.most_common(3)]
+    start = top[0][:2] if top else ''
+    kept = sum(v for sh, v in shapes.items() if sh in top or (start and sh[:2] == start))
+    return (kept + sharp) / len(coded) >= MIN_SHAPE_SHARE
 
 
 def page_rows(text):
