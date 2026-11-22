@@ -60,6 +60,8 @@ SHARP = (r'[A-Z]{2,4}-?[A-Zi]{1,4}\d{3,4}WJ[0-9A-Z]{1,4}'
 CODE_RE = re.compile(r'^(?!(?:SMD?)?(?:01005|0201|0402|0603|0805|1206|1210|2512)$|(?:SOT|SOD|SOP|SOIC|TSSOP|QFN|DFN)-?\d+$)'
                      rf'(?:(?=(?:\D*\d){{4}})[0-9A-Z][0-9A-Z\-./]{{4,24}}|{SHARP})$')
 WORDS_RE = re.compile(r'[A-Za-z]{3,}')
+# a description that is only a type abbreviation and a part number: 'IC BD3491FS', 'TR 2SC5712', 'D 1N4148'
+TYPE_PN_RE = re.compile(r'^(?:IC|TR|Q|D|DI|ZD|LED|FET|X|CN|JK|SW|TH|RL|F)(?:\.\w+)?\s+[A-Z0-9][A-Z0-9.\-/]{3,}$')
 VALUE_RE = re.compile(r'\d(?:\.\d+)?\s*(?:UF|NF|PF|UH|NH|K|M|OHM|Ω|V)\b', re.I)
 # a maker part number printed beside the internal code on factory BOMs ('MURATA GRM188R60J476ME15D')
 MAKER_PN_RE = re.compile(r'\b([A-Z][A-Z0-9]{2,}[0-9][A-Z0-9\-]{3,})\b')
@@ -209,7 +211,7 @@ def parse_page(text):
                 desc.append(chunks[j])
                 j += 1
             desc = ' '.join(desc)
-            if WORDS_RE.search(desc) or VALUE_RE.search(desc):
+            if WORDS_RE.search(desc) or VALUE_RE.search(desc) or TYPE_PN_RE.match(desc):
                 rows.append((code, expand_refs(ref), '⚠ ' + desc if safety else desc))
                 i = j
             else:

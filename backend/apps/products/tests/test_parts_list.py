@@ -45,6 +45,13 @@ def test_the_three_row_shapes():
     assert ('X0515B00', ['IC250'], 'IC LM61CIZ THERMAL') in rows and ('WW865102', ['R137', 'R138'], 'R.CAR.FP 2.2KΩ 1/4W') in rows
     assert ('YF471A00', ['IC501'], 'IC HT16515-44LQFP') in rows and ('WW863301', ['R139'], '⚠ R.CAR.FP 100Ω 1/4W') in rows
     assert ('WW863901', ['R191'], 'R.CAR.FP 330Ω 1/4W') in rows and ('RD356220', ['R302'], 'R.CHP 2.2KΩ 1/16W J') in rows
+    # a row whose description is only the type and a part number ('IC BD3491FS', 'TR 2SC5712') is a row too: before,
+    # the merged tail was what kept it
+    page = '\n'.join(['    IC202      YF439A00      IC             BD3491FS                               R132-134   RD356820      R.CHP         8.2KΩ   1/16W J',
+                      '    Q121       ZC256500      TR             2SC5712                            ⚠ * R169       WW864101      R.CAR.FP      470Ω    1/4W'])
+    rows = pl.parse_page(page)
+    assert ('YF439A00', ['IC202'], 'IC BD3491FS') in rows and ('RD356820', ['R132', 'R133', 'R134'], 'R.CHP 8.2KΩ 1/16W J') in rows
+    assert ('ZC256500', ['Q121'], 'TR 2SC5712') in rows and ('WW864101', ['R169'], '⚠ R.CAR.FP 470Ω 1/4W') in rows
     # Sony's second table of links and chokes ('PS003 1-533-940-21 RINK, CHIP IC') is its own rows, not the tail
     sony = '\n'.join([f'IC{300 + i}     8-759-699-{10 + i}     IC CXD9611R{i}             PS00{i}     1-533-940-21     RINK, CHIP IC' for i in range(10)])
     rows = pl.parse_page(sony)
