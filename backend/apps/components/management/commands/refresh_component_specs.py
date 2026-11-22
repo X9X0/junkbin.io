@@ -3,7 +3,7 @@ Fill in component ratings (value, voltage, power, current, tolerance, dielectric
 ...), package and type from descriptions and part numbers, and give BOM-imported
 components their own factory line as description.
 
-    manage.py refresh_component_specs [--lines FILE] [--types] [--dry-run] [--report FILE]
+    manage.py refresh_component_specs [--lines FILE] [--types] [--dry-run] [--report FILE] [--manufacturer NAME ...]
 
 --lines   site_export_lines.json from the Norway BOM export: every exported
           part's own BOM line(s). A component whose description is machine-made
@@ -101,6 +101,8 @@ class Command(BaseCommand):
         parser.add_argument('--types', action='store_true', help='also correct contradicted component types')
         parser.add_argument('--dry-run', action='store_true')
         parser.add_argument('--report', help='write a TSV of changes and conflicts')
+        parser.add_argument('--manufacturer', nargs='+', default=[],
+                            help="only these makers' parts (after a decoder is taught one maker's codes)")
 
     def handle(self, *args, **options):
         lines = {}
@@ -132,7 +134,10 @@ class Command(BaseCommand):
                                 'conflicts', 'disputed'), 0)
         rows = []
         with transaction.atomic():
-            for comp in Component.objects.order_by('manufacturer', 'part_number').iterator(chunk_size=500):
+            parts = Component.objects.order_by('manufacturer', 'part_number')
+            if options['manufacturer']:
+                parts = parts.filter(manufacturer__in=options['manufacturer'])
+            for comp in parts.iterator(chunk_size=500):
                 counts['components'] += 1
                 change = self.refresh(comp, lines, all_lines, options['types'], imported, manual_only)
                 if not change:

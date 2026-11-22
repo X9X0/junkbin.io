@@ -302,3 +302,16 @@ def test_a_service_code_takes_its_values_from_a_second_lines_file(tmp_path, comp
     code.refresh_from_db()
     assert code.specifications == {'resistance_ohm': 68000.0, 'tolerance': '5%', 'power_w': 0.0625}
     assert code.package_type == '0402'
+
+
+def test_manufacturer_filter_refreshes_only_that_makers_parts(component_factory):
+    # a decoder taught one maker's codes (Yamaha service numbers) is applied to that maker alone
+    yamaha = component_factory(manufacturer='Yamaha', part_number='UF037100', component_type='capacitor',
+                               package_type='', description='Electrolytic Cap. (chip) 10uF 16V 01', specifications={})
+    other = component_factory(manufacturer='Rubycon', part_number='6.3ZL2200', component_type='capacitor',
+                              package_type='', description='CAP EL 2200U/6.3V/ZL 10*23', specifications={})
+    out = _run('--manufacturer', 'Yamaha')
+    yamaha.refresh_from_db(); other.refresh_from_db()
+    assert yamaha.package_type == 'SMD' and yamaha.specifications['capacitance_pf'] == 1e7
+    assert other.package_type == '' and other.specifications == {}
+    assert 'components: 1,' in out
