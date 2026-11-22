@@ -469,6 +469,13 @@ def array_power(manufacturer, part_number):
     return None
 
 
+# Yamaha service codes (see decode_mpn): the mounting each prefix names, and the voltage digit of the
+# capacitor codes as the manuals' lines read it (no line in the mirror shows digits 5 or 8)
+YAMAHA_MOUNT = {'RD': 'SMD', 'RF': 'SMD', 'US': 'SMD', 'UF': 'SMD', 'HF': 'Axial', 'FG': 'Radial', 'UA': 'Radial',
+                'UR': 'Radial'}
+YAMAHA_VOLTS = {'1': 6.3, '2': 10, '3': 16, '4': 25, '6': 50, '7': 63, '9': 100}
+YAMAHA_SERIES_VOLTS = {'UA35': 50, 'FG64': 50}
+MOUNT_ONLY = ('SMD', 'Radial', 'Axial')          # a package that names the mounting but no size
 PANA_ERJ_SIZE = {'1G': '0201', '2G': '0402', '2R': '0402', '2B': '0402', '3G': '0603', '3E': '0603', '3R': '0603',
                  '3B': '0603', '6G': '0805', '6E': '0805', '6R': '0805', '6B': '0805', '8G': '1206', '8E': '1206',
                  '8R': '1206', '14': '1210', '12': '1812', '1T': '2512'}
@@ -550,12 +557,37 @@ def decode_mpn(manufacturer, part_number):
             if v:
                 spec.update(tolerance=RES_TOL[m.group(3)], power_w=watts)
             return 'resistor', spec, size
-    # Yamaha RD35 service codes are chip resistors whose code carries the value: RD35 + exponent + two
-    # digits + 0 (RD353220 = 2.2 ohm, RD356470 = 4.7k); every Yamaha manual line for them in the mirror
-    # (51 codes) reads 1/16 W, J
-    if 'YAMAHA' in mfr and (m := re.fullmatch(r'RD35(\d)(\d\d)0', pn)):
-        v = round(int(m.group(2)) * 10.0 ** (int(m.group(1)) - 4), 6)
-        return 'resistor', ({'resistance_ohm': v, 'tolerance': '5%', 'power_w': 0.0625} if v else {'resistance_ohm': 0.0}), None
+    # Yamaha service codes for passives carry the value: two letters name the kind and the mounting (its
+    # parts lists say '(chip)' for exactly these: RD / RF chip resistors, US chip ceramics, UF chip electrolytics;
+    # HF leaded carbon resistors, FG leaded ceramics, UA mylar and UR leaded electrolytics), then a series
+    # digit or two, a decade digit and a three-digit mantissa. Resistors: RD353220 = 2.2 ohm, RD356470 = 4.7k,
+    # HF755330 = 330 ohm; capacitors carry the voltage digit before the decade: UF037100 = 10 uF 16 V chip,
+    # UR749680 = 6800 uF 25 V, UR865220 = 0.22 uF 50 V, US061100 = 10 pF 50 V; UA and FG name the voltage by
+    # the series (UA35, FG64: 50 V), UA354470 = 0.047 uF, FG644100 = 0.01 uF.
+    # Checked against every Yamaha line in the mirror's manuals (PSR-1500, R-S202 ...): 42 of 42 UF/UR,
+    # 26 US, 12 UA, 11 HF, 60 RD, 10 RF agree; RD35 lines all read 1/16 W J, RD15 lines 1/4 W J, HF 1/4 W J.
+    # A trailing R (UF12847R, RD35618R) is the reel-packed part, its last digit a 0; the mantissa is two
+    # significant digits, so a code whose last digit is neither (RD354223 on a 22 ohm line) isn't read.
+    # UM electrolytics and V9 stock numbers use other digits and are not decoded.
+    if 'YAMAHA' in mfr and (m := re.fullmatch(r'(RD|RF|HF)(\d\d)(\d)(\d\d[0R])', pn)):
+        v = round(int(m.group(4).replace('R', '0')) / 100 * 10.0 ** (int(m.group(3)) - 3), 6)
+        if not v:
+            return 'resistor', {'resistance_ohm': 0.0}, YAMAHA_MOUNT[m.group(1)]
+        spec = {'resistance_ohm': v}
+        if m.group(1) in ('RD', 'HF'):
+            spec['tolerance'] = '5%'
+        power = {('RD', '35'): 0.0625, ('RD', '15'): 0.25, ('HF', '45'): 0.25, ('HF', '75'): 0.25}.get((m.group(1), m.group(2)))
+        if power:
+            spec['power_w'] = power
+        return 'resistor', spec, YAMAHA_MOUNT[m.group(1)]
+    if 'YAMAHA' in mfr and (m := re.fullmatch(r'(UF|UR|US|UA|FG)(\d)(\d)(\d)(\d\d[0R])', pn)):
+        spec = {'capacitance_pf': round(int(m.group(5).replace('R', '0')) * 10.0 ** (int(m.group(4)) - 2), 6)}
+        volts = YAMAHA_VOLTS.get(m.group(3)) if m.group(1) in ('UF', 'UR', 'US') else YAMAHA_SERIES_VOLTS.get(pn[:4])
+        if volts:
+            spec['voltage_v'] = volts
+        if m.group(1) in ('UF', 'UR'):
+            spec['dielectric'] = 'electrolytic'
+        return 'capacitor', spec, YAMAHA_MOUNT[m.group(1)]
     # Sharp VRS / VRD: EIA value and tolerance letter ('VRS-CH1JF100JY' = 10 ohm 5%), as all 269 of Sharp's
     # manual lines for them in the mirror agree. The '1J' isn't a power code: CY parts read 1/10 W, CH 1/16 W
     if 'SHARP' in mfr and (m := re.fullmatch(r'VR[SD]-[A-Z]{2}\d[A-Z][A-Z](\d{3})([FGJ])Y', pn)):
@@ -741,6 +773,8 @@ def derive(manufacturer, part_number, description, component_type=''):
     if not mp:
         return {'kind': dk, 'specs': ds, 'package': dp, 'source': 'description' if ds else None, 'conflict': []}
     mk, ms, mpk = mp
+    if mpk in MOUNT_ONLY and dp:          # the number names only the mounting; the text names the size
+        mpk = dp
     bad = conflicts(ds, ms) if dk and SITE_TYPE.get(dk) == SITE_TYPE.get(mk) else []
     if dp and mpk and dp != mpk:
         bad.append('package')

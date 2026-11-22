@@ -73,7 +73,7 @@ def test_rows_become_typed_suggestions(monkeypatch):
     monkeypatch.setattr(pl, '_layout_pages', lambda raw: [YAMAHA_TWO_TABLES])     # one manual, one code shape
     rows = pl.build_candidates_from_parts_list(io.BytesIO(b'%PDF'), 'Yamaha')
     yamaha_r = next(r for r in rows if r['part_number'].startswith('RD35'))
-    assert yamaha_r['component_type'] == 'resistor'
+    assert yamaha_r['component_type'] == 'resistor' and yamaha_r['package_type'] == 'SMD'   # RD: a chip, by the code
     assert 'safety-critical' in yamaha_r['description'] and '⚠' not in yamaha_r['description']
 
 

@@ -139,8 +139,21 @@ def test_clean_bom_text_drops_markers_and_the_maker_part_echo():
     ('Sanyo', '25TQC5R6M', ('capacitor', {'capacitance_pf': 5.6e6, 'tolerance': '20%'}, None)),
     ('Sanyo', '6SEPC470M', ('capacitor', {'capacitance_pf': 4.7e8, 'tolerance': '20%'}, None)),     # a 6.3 V part
     ('Fujitsu', 'FP-2R5RE821M-L8C', ('capacitor', {'capacitance_pf': 8.2e8, 'voltage_v': 2.5, 'tolerance': '20%'}, None)),
-    ('Yamaha', 'RD353220', ('resistor', {'resistance_ohm': 2.2, 'tolerance': '5%', 'power_w': 0.0625}, None)),
-    ('Yamaha', 'RD359100', ('resistor', {'resistance_ohm': 1e6, 'tolerance': '5%', 'power_w': 0.0625}, None)),
+    # Yamaha service codes: the prefix names the kind and the mounting ('(chip)' in the parts lists), the
+    # digits the value (and the voltage, for capacitors)
+    ('Yamaha', 'RD353220', ('resistor', {'resistance_ohm': 2.2, 'tolerance': '5%', 'power_w': 0.0625}, 'SMD')),
+    ('Yamaha', 'RD359100', ('resistor', {'resistance_ohm': 1e6, 'tolerance': '5%', 'power_w': 0.0625}, 'SMD')),
+    ('Yamaha', 'RD350000', ('resistor', {'resistance_ohm': 0.0}, 'SMD')),
+    ('Yamaha', 'RF457180', ('resistor', {'resistance_ohm': 18000.0}, 'SMD')),
+    ('Yamaha', 'HF755330', ('resistor', {'resistance_ohm': 330.0, 'tolerance': '5%', 'power_w': 0.25}, 'Axial')),
+    ('Yamaha', 'UF037100', ('capacitor', {'capacitance_pf': 1e7, 'voltage_v': 16, 'dielectric': 'electrolytic'}, 'SMD')),
+    ('Yamaha', 'UF018100', ('capacitor', {'capacitance_pf': 1e8, 'voltage_v': 6.3, 'dielectric': 'electrolytic'}, 'SMD')),
+    ('Yamaha', 'UR749680', ('capacitor', {'capacitance_pf': 6.8e9, 'voltage_v': 25, 'dielectric': 'electrolytic'}, 'Radial')),
+    ('Yamaha', 'UR865220', ('capacitor', {'capacitance_pf': 2.2e5, 'voltage_v': 50, 'dielectric': 'electrolytic'}, 'Radial')),
+    ('Yamaha', 'US061100', ('capacitor', {'capacitance_pf': 10.0, 'voltage_v': 50}, 'SMD')),
+    ('Yamaha', 'US035100', ('capacitor', {'capacitance_pf': 1e5, 'voltage_v': 16}, 'SMD')),
+    ('Yamaha', 'UA354470', ('capacitor', {'capacitance_pf': 47000.0, 'voltage_v': 50}, 'Radial')),
+    ('Yamaha', 'FG644100', ('capacitor', {'capacitance_pf': 10000.0, 'voltage_v': 50}, 'Radial')),
     ('Sharp', 'VRS-TQ2EF124FY', ('resistor', {'resistance_ohm': 120000.0, 'tolerance': '1%'}, None)),
     # arrays: the series fixes the power per element; the BOM line gives the value
     ('Uni-Ohm', '4D02WGJ0102TCE', ('res_array', {'power_w': 0.0625}, None)),
@@ -155,6 +168,17 @@ def test_unknown_or_other_makers_part_numbers_are_not_decoded():
     assert decode_mpn('Sony', '1-216-685-11') is None
     assert decode_mpn('Murata', 'RC0603FR-0720KL') is None        # a YAGEO number under the wrong maker
     assert decode_mpn('TAIYO YUDEN', 'CEEMK325BJ106KN-T') is None   # prefix not understood: no guess
+    assert decode_mpn('Yamaha', 'UM397470') is None                 # UM electrolytics use other voltage digits
+    assert decode_mpn('Yamaha', 'V9452100') is None                 # a stock number, no scheme
+    assert decode_mpn('Yamaha', 'UF03710R') == decode_mpn('Yamaha', 'UF037100')    # R: the reel-packed part
+    assert decode_mpn('Yamaha', 'RD35618R') == decode_mpn('Yamaha', 'RD356180')
+    assert decode_mpn('Yamaha', 'RD354223') is None                 # three significant digits: not the scheme
+
+
+def test_a_mounting_only_package_from_the_code_yields_to_the_lines_size():
+    d = derive('Yamaha', 'RF456120', 'Carbon Resistor (chip) 1.2K D 1608')
+    assert d['package'] == '0603' and d['conflict'] == [] and d['specs']['resistance_ohm'] == 1200
+    assert derive('Yamaha', 'UF037100', 'Electrolytic Cap. (chip) 10uF 16V 01')['package'] == 'SMD'
 
 
 def test_part_number_settles_ratings_but_not_a_disputed_value():
