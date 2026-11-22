@@ -1,12 +1,15 @@
 import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Check, ExternalLink, Flag, Loader2, ShieldCheck } from 'lucide-react';
+import { Check, ChevronDown, ChevronRight, ExternalLink, Flag, Loader2, ShieldCheck } from 'lucide-react';
 import { importReview, type ImportBatch, type ImportReviewItem } from '../../api/endpoints';
 import { FileOverlay } from './ReviewViewer';
 
 /** A plain click previews over the page; ctrl/cmd/shift/middle click still opens a tab. */
 const plainClick = (e: React.MouseEvent) => !(e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) && e.button === 0;
+
+/** A batch with nothing left to publish and no open flag is done; it rests, collapsed, under Completed. */
+export const isCompleted = (b: ImportBatch) => b.unapproved === 0 && b.flagged === 0;
 
 /**
  * Review random samples of each bulk-import batch, then approve the batch.
@@ -17,6 +20,7 @@ export default function ImportReviewPanel() {
   const { data: batches, isLoading } = useQuery({ queryKey: ['importBatches'], queryFn: importReview.batches });
   const [reviewing, setReviewing] = useState<string | null>(null);
   const [showFlagged, setShowFlagged] = useState<string | null>(null);
+  const [showCompleted, setShowCompleted] = useState(false);
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['importBatches'] });
 
   if (isLoading) return <div className="card-cyber p-6 text-gray-500 font-mono text-sm"><Loader2 className="h-4 w-4 animate-spin inline mr-2" />Loading batches</div>;
@@ -26,6 +30,14 @@ export default function ImportReviewPanel() {
     return <ReviewSession batch={batch!} onExit={() => { setReviewing(null); refresh(); }} onVerdict={refresh} />;
   }
 
+  const open = batches?.filter((b) => !isCompleted(b)) ?? [];
+  const completed = batches?.filter(isCompleted) ?? [];
+  const row = (b: ImportBatch) => (
+    <BatchRow key={b.batch} batch={b} onReview={() => setReviewing(b.batch)}
+      onFlagged={() => setShowFlagged(showFlagged === b.batch ? null : b.batch)}
+      flaggedOpen={showFlagged === b.batch} onApproved={refresh} />
+  );
+
   return (
     <div className="space-y-4">
       <div className="card-cyber p-4 text-sm text-gray-400">
@@ -33,11 +45,18 @@ export default function ImportReviewPanel() {
         can be approved once {batches?.[0]?.target ?? 100} items (or the whole batch, if smaller) are marked correct
         and nothing is flagged. Flags tell us which rule to fix before trying again.
       </div>
-      {batches?.map((b) => (
-        <BatchRow key={b.batch} batch={b} onReview={() => setReviewing(b.batch)}
-          onFlagged={() => setShowFlagged(showFlagged === b.batch ? null : b.batch)}
-          flaggedOpen={showFlagged === b.batch} onApproved={refresh} />
-      ))}
+      {open.map(row)}
+      {completed.length > 0 && (
+        <div>
+          <button onClick={() => setShowCompleted(!showCompleted)} aria-expanded={showCompleted}
+            className="flex items-center gap-2 text-sm text-gray-400 hover:text-white font-mono py-2">
+            {showCompleted ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            Completed ({completed.length})
+            <span className="text-xs text-gray-600">· published, nothing flagged; more items can still be reviewed</span>
+          </button>
+          {showCompleted && <div className="space-y-4 mt-2">{completed.map(row)}</div>}
+        </div>
+      )}
     </div>
   );
 }

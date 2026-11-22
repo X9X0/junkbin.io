@@ -61,3 +61,25 @@ def test_a_corrected_rendering_replaces_an_approved_one_only_when_asked(tmp_path
     assert 'replaced (approval kept) 1' in out.getvalue()
     img = ComponentImage.objects.get(component=part)
     assert img.is_approved and ComponentImage.objects.filter(component=part).count() == 1
+
+
+def test_a_replaced_renderings_reviews_follow_it_and_its_flag_is_cleared(tmp_path, user_factory):
+    from apps.products.models import ImportReview
+    ok = Component.objects.create(manufacturer='Generic', part_number='CAP 330nF 50V', component_type='capacitor')
+    bad = Component.objects.create(manufacturer='Generic', part_number='CAP 220nF 50V', component_type='capacitor')
+    folder = _folder(tmp_path, [
+        {'component': {'manufacturer': 'Generic', 'part_number': 'CAP 330nF 50V'}, 'file': 'images/a.png', 'caption': 'a', 'source_notes': 'rendered'},
+        {'component': {'manufacturer': 'Generic', 'part_number': 'CAP 220nF 50V'}, 'file': 'images/b.png', 'caption': 'b', 'source_notes': 'rendered'},
+    ])
+    call_command('import_component_images', str(folder), stdout=io.StringIO())
+    ComponentImage.objects.update(is_approved=True)
+    who = user_factory()
+    ImportReview.objects.create(batch='component-image', item_type='component-image', object_id=ComponentImage.objects.get(component=ok).pk, verdict='correct', reviewer=who)
+    ImportReview.objects.create(batch='component-image', item_type='component-image', object_id=ComponentImage.objects.get(component=bad).pk, verdict='flagged', note='print off centre', reviewer=who)
+    for name in ('a', 'b'):                                                                    # both renderings corrected
+        (folder / 'images' / f'{name}.png').write_bytes((folder / 'images' / f'{name}.png').read_bytes() + b'\x00')
+    out = io.StringIO(); call_command('import_component_images', str(folder), '--replace-approved', stdout=out)
+    assert 'replaced (approval kept) 2' in out.getvalue() and 'reviews carried over 1' in out.getvalue() and 'flags cleared 1' in out.getvalue()
+    assert ImportReview.objects.count() == 1
+    assert ImportReview.objects.get().object_id == ComponentImage.objects.get(component=ok).pk               # the verdict names the new picture
+    assert not ImportReview.objects.filter(verdict='flagged').exists()                                      # the corrected one waits for a fresh look
