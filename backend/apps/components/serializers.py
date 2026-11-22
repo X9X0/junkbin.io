@@ -159,7 +159,16 @@ class PrimaryImageMixin:
         return None
 
 
-class ComponentListSerializer(PrimaryImageMixin, serializers.ModelSerializer):
+class PackageMetricMixin:
+    """package_metric: the IEC/JIS twin of an EIA chip code ('1608' for '0603'), '' otherwise. The serializer
+    declares the field itself (a plain mixin's class attributes are not collected as fields)."""
+
+    def get_package_metric(self, obj):
+        from .packages import metric_for
+        return metric_for(obj.package_type)
+
+
+class ComponentListSerializer(PackageMetricMixin, PrimaryImageMixin, serializers.ModelSerializer):
     """Serializer for component list view."""
 
     component_type_display = serializers.CharField(
@@ -170,17 +179,19 @@ class ComponentListSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     ratings = serializers.DictField(read_only=True)
     primary_image = serializers.SerializerMethodField()
 
+    package_metric = serializers.SerializerMethodField()
+
     class Meta:
         model = Component
         fields = [
             'id', 'part_number', 'manufacturer', 'component_type',
-            'component_type_display', 'package_type', 'typical_function',
+            'component_type_display', 'package_type', 'package_metric', 'typical_function',
             'primary_value', 'ratings', 'primary_image', 'datasheet_url',
             'usage_count', 'is_verified'
         ]
 
 
-class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
+class ComponentDetailSerializer(PackageMetricMixin, PrimaryImageMixin, serializers.ModelSerializer):
     """Detailed serializer for single component view."""
 
     component_type_display = serializers.CharField(
@@ -202,11 +213,13 @@ class ComponentDetailSerializer(PrimaryImageMixin, serializers.ModelSerializer):
     images = serializers.SerializerMethodField()
     datasheets = serializers.SerializerMethodField()
 
+    package_metric = serializers.SerializerMethodField()
+
     class Meta:
         model = Component
         fields = [
             'id', 'part_number', 'manufacturer', 'manufacturer_aliases',
-            'component_type', 'component_type_display', 'package_type',
+            'component_type', 'component_type_display', 'package_type', 'package_metric',
             'description', 'typical_function', 'specifications', 'primary_value', 'ratings', 'description_disagrees',
             'datasheet_url', 'octopart_url', 'alternative_part_numbers',
             'cross_references', 'usage_count', 'is_verified',

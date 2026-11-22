@@ -28,8 +28,10 @@
     "points_pending_one": "Sign up within 7 days to claim {{count}} discovery point (+{{bonus}} bonus)",
     "points_pending_other": "Sign up within 7 days to claim {{count}} discovery points (+{{bonus}} bonus)"
   },
-  "_meta": { "generated": "2026-03-02", "method": "source" },
-
+  "_meta": {
+    "generated": "2026-03-02",
+    "method": "source"
+  },
   "nav": {
     "products": "PRODUCTS",
     "components": "COMPONENTS",
@@ -57,7 +59,6 @@
     "submit_new": "+ SUBMIT NEW",
     "my_junkbin_upper": "MY JUNKBIN"
   },
-
   "auth": {
     "login": {
       "title": "SYSTEM LOGIN",
@@ -131,7 +132,6 @@
       "go_to_login": "GO TO LOGIN"
     }
   },
-
   "home": {
     "under_construction": "SITE UNDER CONSTRUCTION",
     "tagline_command": "cat /etc/warning.txt",
@@ -193,7 +193,6 @@
     "countdown_seconds": "SEC",
     "countdown_live": "WE'RE LIVE"
   },
-
   "products": {
     "title": "PRODUCT",
     "title_highlight": "DATABASE",
@@ -223,7 +222,6 @@
     "no_products_desc": "Try adjusting your search or filters",
     "add_product": "ADD A PRODUCT"
   },
-
   "components": {
     "title": "COMPONENT",
     "title_highlight": "CATALOG",
@@ -231,7 +229,7 @@
     "search_placeholder": "Search by part number, manufacturer, description...",
     "value_placeholder": "Value (10k, 4.7uF...)",
     "value_hint": "Search by value, e.g. 10k, 4.7uF, 16MHz, 3.3V",
-    "package_placeholder": "Package (0805, SOT-23...)",
+    "package_placeholder": "Package (0603 or 1608, SOT-23...)",
     "all_types": "All Types",
     "most_used": "Most Used",
     "least_used": "Least Used",
@@ -300,9 +298,9 @@
       "type_sensor": "Sensor",
       "type_module": "Module",
       "type_other": "Other"
-    }
+    },
+    "package_hint": "Chip sizes match either way: 0603 (EIA) finds 1608 (metric) and 1608 finds 0603"
   },
-
   "schematics": {
     "title": "SCHEMATICS & DOCUMENTATION",
     "subtitle": "Service manuals, block diagrams, PCB layouts, and technical documentation",
@@ -391,7 +389,6 @@
       "source_unknown": "Unknown Source"
     }
   },
-
   "firmware": {
     "upload": {
       "drop_hint": "Click to upload or drag and drop",
@@ -424,7 +421,6 @@
       "source_unknown": "Unknown Source"
     }
   },
-
   "bom_pdf": {
     "title": "EXTRACT PARTS FROM MANUAL",
     "title_scanning": "SCANNING: {{title}}",
@@ -472,7 +468,6 @@
     "extract_another": "EXTRACT FROM ANOTHER PDF",
     "error": "Failed to process PDF. Please try again."
   },
-
   "recipes": {
     "title": "PROJECT RECIPES",
     "subtitle": "Community electronics projects with parts lists",
@@ -504,7 +499,6 @@
     "optional": "OPTIONAL",
     "have": "HAVE"
   },
-
   "recipe_detail": {
     "loading": "LOADING RECIPE...",
     "not_found_title": "RECIPE NOT FOUND",
@@ -546,7 +540,6 @@
     "missing_parts": "MISSING PARTS AVAILABLE FROM OTHER USERS",
     "available_from": "available from:"
   },
-
   "submit": {
     "title": "SUBMIT DOCUMENTATION",
     "subtitle": "Help build the e-waste salvage database",
@@ -626,7 +619,6 @@
     "error_component": "Failed to create component. Please try again.",
     "duplicate_desc": "This already exists in the database. View it below to contribute photos, schematics, or details instead of creating a duplicate."
   },
-
   "submit_recipe": {
     "title": "SUBMIT RECIPE",
     "edit_title": "EDIT RECIPE",
@@ -661,7 +653,6 @@
     "col_notes": "NOTES",
     "col_optional": "OPT"
   },
-
   "swap": {
     "title": "SWAP SHOP",
     "subtitle": "Browse items the community has for trade or is looking for",
@@ -681,7 +672,6 @@
     "available": "AVAILABLE",
     "not_for_trade": "NOT FOR TRADE"
   },
-
   "community": {
     "title": "COMMUNITY",
     "subtitle": "Top contributors ranked by reputation",
@@ -696,7 +686,6 @@
     "no_contributors": "No contributors yet",
     "redirecting": "Redirecting to Community..."
   },
-
   "profile": {
     "discovery_points_one": "+{{count}} discovery point",
     "discovery_points_other": "+{{count}} discovery points",
@@ -756,7 +745,6 @@
     "add_first_product": "ADD YOUR FIRST PRODUCT",
     "add_first_component": "ADD YOUR FIRST COMPONENT"
   },
-
   "messages": {
     "title": "MESSAGES",
     "count_conversations": "{{count}} conversations",
@@ -776,7 +764,6 @@
     "send_error": "Failed to send message. Please try again.",
     "download": "Download"
   },
-
   "new_conversation": {
     "title": "NEW MESSAGE",
     "to_label": "TO:",
@@ -790,7 +777,6 @@
     "write_message_to": "Write a message to {{username}}...",
     "send_error": "Failed to send message. Please try again."
   },
-
   "my_junkbin": {
     "title": "MY JUNKBIN",
     "tab_have": "HAVE",
@@ -814,7 +800,6 @@
     "visibility_private": "Private",
     "remove_confirm": "Remove from junkbin?"
   },
-
   "my_submissions": {
     "title": "MY SUBMISSIONS",
     "subtitle": "Track all your contributions to junkbin.io",
@@ -827,7 +812,6 @@
     "no_recipes": "NO RECIPES YET",
     "no_components": "NO COMPONENTS YET"
   },
-
   "not_found": {
     "line1": "NO USER SERVICEABLE",
     "line2": "PARTS INSIDE",
@@ -838,7 +822,6 @@
     "return_home": "RETURN HOME",
     "go_back": "GO BACK"
   },
-
   "search": {
     "title": "SEARCH DATABASE",
     "placeholder": "Search products, components...",
@@ -852,7 +835,6 @@
     "search_error": "Error performing search",
     "enter_to_search": "Enter at least 2 characters to search"
   },
-
   "guidelines": {
     "title": "COMMUNITY GUIDELINES",
     "subtitle": "Standards for contributing to the Junkbin.io community",
@@ -909,14 +891,12 @@
     "appeals_email": "appeals@junkbin.io",
     "appeals_text_after": "with your username and a description of the situation. Appeals are reviewed by a different moderator than the one who took the original action. We aim to respond within 48 hours."
   },
-
   "docs": {
     "title": "DOCUMENTATION",
     "subtitle": "Everything you need to use and contribute to Junkbin.io",
     "close": "Close",
     "last_updated": "Last updated: February 2026"
   },
-
   "verify_email": {
     "verifying_title": "VERIFYING EMAIL",
     "verifying_message": "Please wait while we verify your email address...",
@@ -925,7 +905,6 @@
     "invalid_link": "Invalid verification link.",
     "continue_to_site": "CONTINUE TO SITE"
   },
-
   "moderation": {
     "tab_imports": "Import review",
     "title": "MODERATION DASHBOARD",
@@ -964,7 +943,6 @@
     "no_reviews": "NO REVIEWS",
     "no_reports": "ALL CLEAR"
   },
-
   "analytics": {
     "title": "ANALYTICS",
     "subtitle": "Site metrics & engagement",
@@ -980,7 +958,6 @@
     "trending_components": "Trending Components",
     "activity_breakdown": "Activity Breakdown"
   },
-
   "buildable": {
     "title": "WHAT CAN I BUILD?",
     "subtitle": "Recipes matched against your junkbin — sorted by how many parts you already have",
@@ -994,7 +971,6 @@
     "no_recipes_title": "NO MATCHING RECIPES",
     "no_recipes_desc": "Add more components to your junkbin to find matching recipes"
   },
-
   "product_detail": {
     "refdes_more_one": "+{{count}} more",
     "refdes_more_other": "+{{count}} more",
@@ -1042,7 +1018,7 @@
     "col_notes": "STATUS",
     "col_action": "ACTION",
     "download": "Download",
-    "source": "Source:",
+    "source": "Source",
     "schematic_product": "Product:",
     "reference": "REF",
     "quantity": "QTY",
@@ -1126,11 +1102,9 @@
     "label_ic_id": "IC ID",
     "label_part_number": "Part Number",
     "label_description": "Description",
-    "source": "Source",
     "add_image_btn": "ADD",
     "add_plus": "+ ADD"
   },
-
   "component_detail": {
     "loading": "LOADING CROSS-REFERENCE DATA...",
     "not_found_title": "COMPONENT NOT FOUND",
@@ -1162,7 +1136,6 @@
     "swap_not_for_trade": "NOT FOR TRADE",
     "download": "Download"
   },
-
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong. Please try again.",
@@ -1199,7 +1172,6 @@
       "not_for_trade": "NOT FOR TRADE"
     }
   },
-
   "footer": {
     "tagline": "A community-driven database for electronic component documentation. Supporting the Right to Repair movement by making schematics and component information freely accessible.",
     "motto": "NO USER SERVICEABLE PARTS INSIDE",
@@ -1217,7 +1189,6 @@
     "community_docs": "Documentation",
     "contribute_translations": "Improve translations"
   },
-
   "modals": {
     "add_junkbin_title": "ADD TO JUNKBIN",
     "already_in_junkbin": "Already in your junkbin",
@@ -1269,7 +1240,6 @@
     "resolve_note": "Note",
     "resolve_submit": "RESOLVE"
   },
-
   "forms": {
     "manufacturer_placeholder": "e.g. Flipper Devices",
     "model_placeholder": "e.g. Flipper Zero",
@@ -1286,20 +1256,17 @@
     "notes_placeholder": "Optional notes...",
     "search_component_placeholder": "Search by part number or manufacturer..."
   },
-
   "keyboard_shortcuts": {
     "title": "KEYBOARD SHORTCUTS",
     "navigation": "Navigation",
     "actions": "Actions",
     "close": "Close"
   },
-
   "onboarding": {
     "title": "GETTING STARTED",
     "dismiss": "Dismiss",
     "got_it": "Got it"
   },
-
   "errors": {
     "not_found": "Page not found",
     "unauthorized": "You must be logged in",
@@ -1308,7 +1275,6 @@
     "network_error": "Network error. Check your connection.",
     "load_failed": "Failed to load data"
   },
-
   "user_profile": {
     "not_found_title": "USER NOT FOUND",
     "not_found_desc": "This user doesn't exist or their account has been deactivated.",
@@ -1332,7 +1298,6 @@
     "trusted": "TRUSTED",
     "website": "Website"
   },
-
   "lang": {
     "switcher_label": "Language",
     "en": "English",
@@ -1354,7 +1319,6 @@
     "hu": "Magyar",
     "tr": "Türkçe"
   },
-
   "ratings": {
     "value": "Value",
     "voltage": "Voltage",
@@ -1378,7 +1342,6 @@
     "tolerance_hint": "Exact tolerance: 1%, 5%, 0.25pF, +80/-20%",
     "any_dielectric": "Any dielectric"
   },
-
   "equivalents": {
     "title": "EQUIVALENT PARTS",
     "find": "Find equivalents",

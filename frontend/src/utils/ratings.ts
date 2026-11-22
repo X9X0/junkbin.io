@@ -1,3 +1,4 @@
+import { formatPackage } from './packages';
 // Component ratings as the API sends them (Component.ratings on the backend):
 // display text plus a number in base units for sorting.
 export interface Rating {
@@ -63,7 +64,7 @@ export function sortBom<T extends HasComponent>(rows: T[], key: BomSortKey, dir:
       case 'manufacturer': return c.manufacturer;
       case 'type': return c.component_type_display || c.component_type;
       case 'qty': return r.quantity ?? null;
-      case 'package': return c.package_type || null;
+      case 'package': return formatPackage(c.package_type) || null;
       default: {
         const rating = c.ratings?.[key];
         if (!rating) return key === 'value' && c.primary_value ? c.primary_value : null;

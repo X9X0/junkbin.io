@@ -16,6 +16,7 @@ import clsx from 'clsx';
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import ProductName from '../components/ProductName';
+import { formatPackage } from '../utils/packages';
 
 interface SearchResult {
   products: Array<{
@@ -265,7 +266,7 @@ export default function Search() {
                               </span>
                               {component.package_type && (
                                 <span className="badge-cyber text-gray-400 border-gray-600 text-[10px]">
-                                  {component.package_type}
+                                  {formatPackage(component.package_type)}
                                 </span>
                               )}
                               {component.primary_value && (
