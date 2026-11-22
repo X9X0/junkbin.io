@@ -36,6 +36,15 @@ def test_the_three_row_shapes():
     assert ('UR867100', ['C103', 'C104'], 'C.EL 10uF 50V') in rows and ('US046100', ['C272'], 'C.CE.CHP 1uF 25V') in rows
     assert ('UR828470', ['C1'], 'C.EL 470uF 10V') in rows and ('UR865220', ['C248', 'C249', 'C250', 'C251'], 'C.EL 0.22uF 50V') in rows
     assert pl.expand_refs('C234-45') == [f'C{n}' for n in range(234, 246)] and pl.expand_refs('R7') == ['R7'] and pl.expand_refs('10uF') == []
+    # Yamaha marks a changed part with * before its position, after the safety mark when both apply (R-S202 page
+    # 50): the second table's marked row is its own row, not the tail of the IC's description
+    page = '\n'.join(['     IC250      X0515B00      IC             LM61CIZ THERMAL                      * R137-138   WW865102      R.CAR.FP      2.2KΩ   1/4W',
+                      '     IC501      YF471A00      IC             HT16515-44LQFP                     ⚠ * R139       WW863301      R.CAR.FP      100Ω    1/4W',
+                      '  * R191        WW863901     R.CAR.FP      330Ω    1/4W                    R302        RD356220     R.CHP          2.2KΩ     1/16W J'])
+    rows = pl.parse_page(page)
+    assert ('X0515B00', ['IC250'], 'IC LM61CIZ THERMAL') in rows and ('WW865102', ['R137', 'R138'], 'R.CAR.FP 2.2KΩ 1/4W') in rows
+    assert ('YF471A00', ['IC501'], 'IC HT16515-44LQFP') in rows and ('WW863301', ['R139'], '⚠ R.CAR.FP 100Ω 1/4W') in rows
+    assert ('WW863901', ['R191'], 'R.CAR.FP 330Ω 1/4W') in rows and ('RD356220', ['R302'], 'R.CHP 2.2KΩ 1/16W J') in rows
     # Sony's second table of links and chokes ('PS003 1-533-940-21 RINK, CHIP IC') is its own rows, not the tail
     sony = '\n'.join([f'IC{300 + i}     8-759-699-{10 + i}     IC CXD9611R{i}             PS00{i}     1-533-940-21     RINK, CHIP IC' for i in range(10)])
     rows = pl.parse_page(sony)
