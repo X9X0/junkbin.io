@@ -10,6 +10,7 @@ import { ComponentGridSkeleton } from '../components/Skeleton';
 import { COMPONENT_TYPES } from '../constants/componentTypes';
 import MissingPartPanel from '../components/MissingPartPanel';
 import { RATING_COLUMNS } from '../utils/ratings';
+import { formatPackage } from '../utils/packages';
 
 const RATING_FILTERS = ['voltage_min', 'power_min', 'current_min', 'tolerance', 'dielectric'] as const;
 const DIELECTRICS = ['C0G', 'X7R', 'X5R', 'Y5V', 'CH', 'electrolytic', 'tantalum', 'polymer'];
@@ -123,6 +124,7 @@ export default function Components() {
               value={packageType}
               onChange={(e) => updateFilter('package_type', e.target.value)}
               placeholder={t('components.package_placeholder')}
+              title={t('components.package_hint')}
               className="input-cyber w-full lg:w-36"
             />
 
@@ -269,7 +271,7 @@ export default function Components() {
                   <div className="text-xs text-gray-500 mt-1">
                     {component.component_type_display || component.component_type}
                     {component.package_type && (
-                      <span className="ml-2 text-gray-600">• {component.package_type}</span>
+                      <span className="ml-2 text-gray-600">• {formatPackage(component.package_type, component.package_metric)}</span>
                     )}
                   </div>
 

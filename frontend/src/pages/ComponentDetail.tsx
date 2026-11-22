@@ -16,6 +16,7 @@ import { ArrowLeft, Cpu, ExternalLink, CheckCircle, Package, Archive, ImagePlus,
 import type { JunkbinItem } from '../types';
 import ProductName from '../components/ProductName';
 import { RATING_COLUMNS } from '../utils/ratings';
+import { formatPackage } from '../utils/packages';
 
 function CompactSwapCard({ item, currentUserId, isAuthenticated, t }: {
   item: JunkbinItem;
@@ -188,7 +189,7 @@ export default function ComponentDetail() {
                 </span>
                 {component.package_type && (
                   <span className="badge-cyber text-gray-400 border-gray-600">
-                    {component.package_type}
+                    {formatPackage(component.package_type, component.package_metric)}
                   </span>
                 )}
               </div>
@@ -202,7 +203,7 @@ export default function ComponentDetail() {
                 const rows: [string, string, string?][] = RATING_COLUMNS
                   .filter((key) => component.ratings?.[key])
                   .map((key) => [t(`ratings.${key}`), component.ratings![key]!.text, differs[key]]);
-                if (component.package_type) rows.push([t('ratings.package'), component.package_type]);
+                if (component.package_type) rows.push([t('ratings.package'), formatPackage(component.package_type, component.package_metric)]);
                 const bValue = component.specifications?.b_value_k;
                 if (bValue) rows.push([t('ratings.b_value'), `${bValue} K`]);
                 if (rows.length === 0) return null;

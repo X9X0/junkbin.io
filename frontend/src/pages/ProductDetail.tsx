@@ -49,6 +49,7 @@ import Lightbox from '../components/Lightbox';
 import RetroactiveBgRemoval from '../components/RetroactiveBgRemoval';
 import { productNameText } from '../components/ProductName';
 import RefdesList from '../components/RefdesList';
+import { formatPackage } from '../utils/packages';
 import {
   type BomSortKey, hasPackageColumn, ratingText, sortBom, visibleRatingColumns,
 } from '../utils/ratings';
@@ -836,7 +837,7 @@ export default function ProductDetail() {
                           ))}
                           {showPackage && (
                             <td className="py-3 px-3 font-mono text-sm text-gray-300 whitespace-nowrap">
-                              {pc.component.package_type || <span className="text-gray-600">-</span>}
+                              {formatPackage(pc.component.package_type) || <span className="text-gray-600">-</span>}
                             </td>
                           )}
                           <td className="py-3 px-4 text-gray-400">
@@ -878,7 +879,7 @@ export default function ProductDetail() {
                           {(() => {
                             const rest = [
                               ...ratingColumns.filter((key) => key !== 'value').map((key) => ratingText(pc, key)),
-                              pc.component.package_type,
+                              formatPackage(pc.component.package_type),
                             ].filter(Boolean);
                             return rest.length > 0 && (
                               <div className="text-xs font-mono text-gray-300 truncate">{rest.join(' · ')}</div>

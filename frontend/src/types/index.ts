@@ -239,6 +239,7 @@ export interface Component {
   component_type_display?: string;
   description?: string;
   package_type?: string;
+  package_metric?: string;
   primary_value?: string;
   ratings?: Ratings;
   // ratings the description states differently, as the description gives them: { current: '400 mA' }

@@ -48,7 +48,7 @@ class ComponentFilter(django_filters.FilterSet):
     part_number = django_filters.CharFilter(lookup_expr='icontains')
     manufacturer = django_filters.CharFilter(lookup_expr='icontains')
     component_type = django_filters.CharFilter(lookup_expr='exact')
-    package_type = django_filters.CharFilter(lookup_expr='icontains')
+    package_type = django_filters.CharFilter(method='filter_package')      # '0603' or its metric '1608'
     typical_function = django_filters.CharFilter(lookup_expr='icontains')
 
     # Verification status
@@ -173,6 +173,13 @@ class ComponentFilter(django_filters.FilterSet):
             Q(description__icontains=value) |
             Q(typical_function__icontains=value)
         )
+
+    def filter_package(self, queryset, name, value):
+        from .packages import query_terms
+        q = Q()
+        for term in query_terms(value):
+            q |= Q(package_type__icontains=term)
+        return queryset.filter(q)
 
     def filter_has_datasheet(self, queryset, name, value):
         """
