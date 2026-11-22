@@ -143,7 +143,14 @@ SPACED_REF = re.compile(r'(?<!\S)([A-Z]{1,3}) (\d{3,4})(?= +([0-9A-Z][0-9A-Z\-./
 
 
 # the safety mark printed before a position ('! C806   RC-M2E473RESC   0.047 RE473C 275V Film')
-SAFETY_MARK = re.compile(r'^[!⚠]\s+(?=[A-Z])')
+# marks before a position: the safety mark (! or ⚠) and Yamaha's * for a changed part, in any order
+SAFETY_MARK = re.compile(r'^(?:[!⚠*]\s+)+(?=[A-Z])')
+
+
+def _marked(chunk):
+    """(chunk without its leading marks, safety-marked?)"""
+    m = SAFETY_MARK.match(chunk)
+    return (chunk[m.end():], bool(re.search('[!⚠]', m.group(0)))) if m else (chunk, False)
 
 
 def _join_ref(m):
@@ -184,8 +191,7 @@ def parse_page(text):
         # may be one space apart ('R195 HL006150 R.MTL.OXD 1.5KΩ 1/2W')
         i = 0
         while i < len(chunks):
-            safety = SAFETY_MARK.match(chunks[i])
-            chunk = chunks[i][safety.end():] if safety else chunks[i]
+            chunk, safety = _marked(chunks[i])
             words = chunk.split()
             if len(words) >= 2 and _is_ref(words[0]) and CODE_RE.match(words[1]) \
                     and not _is_ref(words[1]):
@@ -240,8 +246,7 @@ def _tidy(code, desc):
 
 
 def _starts_row(chunks, j):
-    safety = SAFETY_MARK.match(chunks[j])
-    chunk = chunks[j][safety.end():] if safety else chunks[j]
+    chunk, _safety = _marked(chunks[j])
     words = chunk.split()
     if len(words) >= 2 and _is_ref(words[0]) and CODE_RE.match(words[1]) and not _is_ref(words[1]):
         return True
