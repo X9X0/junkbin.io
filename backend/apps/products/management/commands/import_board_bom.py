@@ -75,6 +75,7 @@ from django.utils.text import slugify
 
 from apps.components.makers import canonical_part, canonical_product_maker
 from apps.components.models import Component, ProductComponent
+from apps.components.mounting import mount_default
 from apps.components.spec_fill import fill, plan
 from apps.components.spec_parse import clean_bom_text, ic_package
 from apps.products.import_review import UNCONFIRMED      # a row's note: part number not confirmed
@@ -239,7 +240,7 @@ class Command(BaseCommand):
 
         rows = []
         for c in bundle['components']:
-            component, created = self.get_component(c, user)
+            component, created = self.get_component(c, user, tag)
             result['components_created'] += created
             for ref in c.get('alternates', []) + c.get('equivalents', []):
                 if 'component_type' in ref and c['manufacturer'] == 'Generic':
@@ -664,10 +665,11 @@ class Command(BaseCommand):
                 )
 
     @staticmethod
-    def get_component(c, user):
+    def get_component(c, user, tag=''):
         """The component for a bundle entry. A new one gets its ratings, package and type from its
         own BOM line; an existing one is never edited, except that ratings and a package it lacks
-        are filled in from the line."""
+        are filled in from the line. A new part whose line names no package gets the mounting its
+        board implies (mounting.mount_default: 'SMD' on a mainboard, 'Axial' in an amplifier)."""
         line = c.get('description', '')
         own_line = (c.get('manufacturer') != 'Generic'          # these describe another part's line:
                     and not line.startswith(('Factory-approved alternate', 'Current equivalent')))
@@ -694,6 +696,8 @@ class Command(BaseCommand):
                 component.component_type = planned['type']
             elif not component.package_type and component.component_type not in PASSIVE_TYPES:
                 component.package_type = ic_package(line) or ''
+        if not component.package_type:
+            component.package_type = mount_default(tag, component.component_type, component.specifications)
         component.save()
         return component, 1
 
