@@ -469,3 +469,20 @@ def test_components_can_be_added_to_another_imports_product(tmp_path, user_facto
     _run(folder)                                                        # re-run: replaced, not doubled
     assert ProductComponent.objects.filter(product=product).count() == first
     assert Product.objects.count() == 1
+
+
+def test_a_new_part_without_a_package_gets_the_mounting_its_board_implies(tmp_path, user_factory):
+    user_factory(username='Admin')
+    bundle = _bundle(source_tag='schematicheaven:Fender_Twin_Reverb')
+    bundle['components'] = [{
+        'part_number': 'RES 100K 1/2W', 'manufacturer': 'Generic', 'component_type': 'resistor', 'package_type': '',
+        'description': 'Generic resistor: 100K 1/2W', 'specifications': {'resistance_ohm': 100000.0, 'power_w': 0.5},
+        'reference_designators': ['R7'], 'quantity': 1, 'notes': '', 'alternates': [], 'equivalents': [],
+    }, {
+        'part_number': 'CAP 22uF 450V', 'manufacturer': 'Generic', 'component_type': 'capacitor', 'package_type': '',
+        'description': 'Generic capacitor: 22uF 450V', 'specifications': {'capacitance_pf': 22e6, 'voltage_v': 450.0},
+        'reference_designators': ['C3'], 'quantity': 1, 'notes': '', 'alternates': [], 'equivalents': [],
+    }]
+    call_command('import_board_bom', str(_write(tmp_path, bundle)), stdout=StringIO())
+    assert Component.objects.get(part_number='RES 100K 1/2W').package_type == 'Axial'
+    assert Component.objects.get(part_number='CAP 22uF 450V').package_type == ''
