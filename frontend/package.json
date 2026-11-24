@@ -19,7 +19,7 @@
     "autoprefixer": "^10.4.23",
     "axios": "^1.13.4",
     "clsx": "^2.1.1",
-    "i18next": "^25.8.13",
+    "i18next": "^27.2.7",
     "i18next-browser-languagedetector": "^8.2.1",
     "i18next-http-backend": "^3.0.2",
     "lucide-react": "^0.563.0",
